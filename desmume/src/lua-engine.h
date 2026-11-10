@@ -214,7 +214,7 @@ struct TieredRegion
 
 	FORCEINLINE int NotEmpty()
 	{
-		return broad.islands.size();
+		return (int)broad.islands.size();
 	}
 
 	// note: it is illegal to call this if NotEmpty() returns 0

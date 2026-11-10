@@ -4917,46 +4917,58 @@
 		D5A100000000000000000026 /* VideoToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D5A100000000000000000003 /* VideoToolbox.framework */; };
 		D5A100000000000000000027 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D5A100000000000000000004 /* CoreMedia.framework */; };
 		A7E500000000000000000007 /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E51000000000000040 /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E500000000000000000008 /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E500000000000000000009 /* MacMetalOSDRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000005 /* MacMetalOSDRenderer.mm */; };
 		A7E50000000000000000000A /* MacMetalOSDShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000006 /* MacMetalOSDShaders.metal */; };
 		A7E50000000000000000000B /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E51000000000000041 /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E50000000000000000000C /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E50000000000000000000D /* MacMetalOSDRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000005 /* MacMetalOSDRenderer.mm */; };
 		A7E50000000000000000000E /* MacMetalOSDShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000006 /* MacMetalOSDShaders.metal */; };
 		A7E50000000000000000000F /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E51000000000000042 /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E500000000000000000010 /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E500000000000000000011 /* MacMetalOSDRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000005 /* MacMetalOSDRenderer.mm */; };
 		A7E500000000000000000012 /* MacMetalOSDShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000006 /* MacMetalOSDShaders.metal */; };
 		A7E500000000000000000013 /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E51000000000000043 /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E500000000000000000014 /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E500000000000000000015 /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E51000000000000044 /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E500000000000000000016 /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E500000000000000000017 /* MacMetalOSDRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000005 /* MacMetalOSDRenderer.mm */; };
 		A7E500000000000000000018 /* MacMetalOSDShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000006 /* MacMetalOSDShaders.metal */; };
 		A7E500000000000000000019 /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E51000000000000045 /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E50000000000000000001A /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E50000000000000000001B /* MacMetalOSDRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000005 /* MacMetalOSDRenderer.mm */; };
 		A7E50000000000000000001C /* MacMetalOSDShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000006 /* MacMetalOSDShaders.metal */; };
 		A7E50000000000000000001D /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E51000000000000046 /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E50000000000000000001E /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E50000000000000000001F /* MacMetalOSDRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000005 /* MacMetalOSDRenderer.mm */; };
 		A7E500000000000000000020 /* MacMetalOSDShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000006 /* MacMetalOSDShaders.metal */; };
 		A7E500000000000000000021 /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E51000000000000047 /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E500000000000000000022 /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E500000000000000000023 /* MacMetalOSDRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000005 /* MacMetalOSDRenderer.mm */; };
 		A7E500000000000000000024 /* MacMetalOSDShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000006 /* MacMetalOSDShaders.metal */; };
 		A7E500000000000000000025 /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E51000000000000048 /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E500000000000000000026 /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E500000000000000000027 /* MacMetalOSDRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000005 /* MacMetalOSDRenderer.mm */; };
 		A7E500000000000000000028 /* MacMetalOSDShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000006 /* MacMetalOSDShaders.metal */; };
 		A7E500000000000000000029 /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E51000000000000049 /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E50000000000000000002A /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E50000000000000000002B /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E5100000000000004A /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E50000000000000000002C /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E50000000000000000002D /* MacMetalOSDRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000005 /* MacMetalOSDRenderer.mm */; };
 		A7E50000000000000000002E /* MacMetalOSDShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000006 /* MacMetalOSDShaders.metal */; };
 		A7E50000000000000000002F /* MacMetalOSDDraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000002 /* MacMetalOSDDraw.cpp */; };
+		A7E5100000000000004B /* LuaJITApi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E510000000000000000001 /* LuaJITApi.cpp */; };
 		A7E500000000000000000030 /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E500000000000000000031 /* MacMetalOSDRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000005 /* MacMetalOSDRenderer.mm */; };
 		A7E500000000000000000032 /* MacMetalOSDShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000006 /* MacMetalOSDShaders.metal */; };
@@ -5349,7 +5361,6 @@
 		AB9038AC17C5ED2200F410BD /* slot1comp_mc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_mc.h; sourceTree = "<group>"; };
 		AB9038AD17C5ED2200F410BD /* slot1comp_rom.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_rom.cpp; sourceTree = "<group>"; };
 		AB9038AE17C5ED2200F410BD /* slot1comp_rom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_rom.h; sourceTree = "<group>"; };
-		AB96EE541F990E4700B7AA67 /* lapi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lapi.c; sourceTree = "<group>"; };
 		AB96EE551F990E4700B7AA67 /* lapi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lapi.h; sourceTree = "<group>"; };
 		AB96EE561F990E4700B7AA67 /* lauxlib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lauxlib.c; sourceTree = "<group>"; };
 		AB96EE571F990E4700B7AA67 /* lauxlib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lauxlib.h; sourceTree = "<group>"; };
@@ -5885,6 +5896,9 @@
 		D5A100000000000000000004 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		A7E500000000000000000001 /* MacMetalOSDDraw.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MacMetalOSDDraw.h; sourceTree = "<group>"; };
 		A7E500000000000000000002 /* MacMetalOSDDraw.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MacMetalOSDDraw.cpp; sourceTree = "<group>"; };
+		A7E510000000000000000001 /* LuaJITApi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LuaJITApi.cpp; sourceTree = "<group>"; };
+		A7E510000000000000000002 /* LuaJITApi.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LuaJITApi.h; sourceTree = "<group>"; };
+		A7E510000000000000000003 /* LuaJITApiSymbols.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LuaJITApiSymbols.h; sourceTree = "<group>"; };
 		A7E500000000000000000003 /* MacMetalOSDFontData.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MacMetalOSDFontData.cpp; sourceTree = "<group>"; };
 		A7E500000000000000000004 /* MacMetalOSDRenderer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MacMetalOSDRenderer.h; sourceTree = "<group>"; };
 		A7E500000000000000000005 /* MacMetalOSDRenderer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MacMetalOSDRenderer.mm; sourceTree = "<group>"; };
@@ -6258,6 +6272,9 @@
 				AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */,
 				ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */,
 				ABD104121346652500AF11D1 /* cocoa_core.mm */,
+				A7E510000000000000000001 /* LuaJITApi.cpp */,
+				A7E510000000000000000002 /* LuaJITApi.h */,
+				A7E510000000000000000003 /* LuaJITApiSymbols.h */,
 				AB58F32C1364F44B0074C376 /* cocoa_file.mm */,
 				ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */,
 				AB3A656016CC5438001F5D4A /* cocoa_GPU.mm */,
@@ -6844,7 +6861,6 @@
 		AB96EE531F990E4700B7AA67 /* ../../lua */ = {
 			isa = PBXGroup;
 			children = (
-				AB96EE541F990E4700B7AA67 /* lapi.c */,
 				AB96EE561F990E4700B7AA67 /* lauxlib.c */,
 				AB96EE581F990E4700B7AA67 /* lbaselib.c */,
 				AB96EE591F990E4700B7AA67 /* lcode.c */,
@@ -10260,6 +10276,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E500000000000000000007 /* MacMetalOSDDraw.cpp in Sources */,
+				A7E51000000000000040 /* LuaJITApi.cpp in Sources */,
 				A7E500000000000000000008 /* MacMetalOSDFontData.cpp in Sources */,
 				A7E500000000000000000009 /* MacMetalOSDRenderer.mm in Sources */,
 				A7E50000000000000000000A /* MacMetalOSDShaders.metal in Sources */,
@@ -10475,6 +10492,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E50000000000000000000B /* MacMetalOSDDraw.cpp in Sources */,
+				A7E51000000000000041 /* LuaJITApi.cpp in Sources */,
 				A7E50000000000000000000C /* MacMetalOSDFontData.cpp in Sources */,
 				A7E50000000000000000000D /* MacMetalOSDRenderer.mm in Sources */,
 				A7E50000000000000000000E /* MacMetalOSDShaders.metal in Sources */,
@@ -10691,6 +10709,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E50000000000000000000F /* MacMetalOSDDraw.cpp in Sources */,
+				A7E51000000000000042 /* LuaJITApi.cpp in Sources */,
 				A7E500000000000000000010 /* MacMetalOSDFontData.cpp in Sources */,
 				A7E500000000000000000011 /* MacMetalOSDRenderer.mm in Sources */,
 				A7E500000000000000000012 /* MacMetalOSDShaders.metal in Sources */,
@@ -10906,6 +10925,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E500000000000000000013 /* MacMetalOSDDraw.cpp in Sources */,
+				A7E51000000000000043 /* LuaJITApi.cpp in Sources */,
 				A7E500000000000000000014 /* MacMetalOSDFontData.cpp in Sources */,
 				AB36C79F27F2C8AE00C763C8 /* ftlcdfil.c in Sources */,
 				AB36C7A027F2C8AE00C763C8 /* AAFilter.cpp in Sources */,
@@ -11145,6 +11165,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E500000000000000000015 /* MacMetalOSDDraw.cpp in Sources */,
+				A7E51000000000000044 /* LuaJITApi.cpp in Sources */,
 				A7E500000000000000000016 /* MacMetalOSDFontData.cpp in Sources */,
 				A7E500000000000000000017 /* MacMetalOSDRenderer.mm in Sources */,
 				A7E500000000000000000018 /* MacMetalOSDShaders.metal in Sources */,
@@ -11361,6 +11382,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E500000000000000000019 /* MacMetalOSDDraw.cpp in Sources */,
+				A7E51000000000000045 /* LuaJITApi.cpp in Sources */,
 				A7E50000000000000000001A /* MacMetalOSDFontData.cpp in Sources */,
 				A7E50000000000000000001B /* MacMetalOSDRenderer.mm in Sources */,
 				A7E50000000000000000001C /* MacMetalOSDShaders.metal in Sources */,
@@ -11605,6 +11627,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E50000000000000000001D /* MacMetalOSDDraw.cpp in Sources */,
+				A7E51000000000000046 /* LuaJITApi.cpp in Sources */,
 				A7E50000000000000000001E /* MacMetalOSDFontData.cpp in Sources */,
 				A7E50000000000000000001F /* MacMetalOSDRenderer.mm in Sources */,
 				A7E500000000000000000020 /* MacMetalOSDShaders.metal in Sources */,
@@ -11850,6 +11873,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E500000000000000000021 /* MacMetalOSDDraw.cpp in Sources */,
+				A7E51000000000000047 /* LuaJITApi.cpp in Sources */,
 				A7E500000000000000000022 /* MacMetalOSDFontData.cpp in Sources */,
 				A7E500000000000000000023 /* MacMetalOSDRenderer.mm in Sources */,
 				A7E500000000000000000024 /* MacMetalOSDShaders.metal in Sources */,
@@ -12094,6 +12118,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E500000000000000000025 /* MacMetalOSDDraw.cpp in Sources */,
+				A7E51000000000000048 /* LuaJITApi.cpp in Sources */,
 				A7E500000000000000000026 /* MacMetalOSDFontData.cpp in Sources */,
 				A7E500000000000000000027 /* MacMetalOSDRenderer.mm in Sources */,
 				A7E500000000000000000028 /* MacMetalOSDShaders.metal in Sources */,
@@ -12339,6 +12364,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E500000000000000000029 /* MacMetalOSDDraw.cpp in Sources */,
+				A7E51000000000000049 /* LuaJITApi.cpp in Sources */,
 				A7E50000000000000000002A /* MacMetalOSDFontData.cpp in Sources */,
 				AB000DD31CCC6B3B00413F02 /* file_path.c in Sources */,
 				AB455DFD2E8E624A009DEF2B /* ClientGraphicsControl.cpp in Sources */,
@@ -12521,6 +12547,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E50000000000000000002B /* MacMetalOSDDraw.cpp in Sources */,
+				A7E5100000000000004A /* LuaJITApi.cpp in Sources */,
 				A7E50000000000000000002C /* MacMetalOSDFontData.cpp in Sources */,
 				A7E50000000000000000002D /* MacMetalOSDRenderer.mm in Sources */,
 				A7E50000000000000000002E /* MacMetalOSDShaders.metal in Sources */,
@@ -12765,6 +12792,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7E50000000000000000002F /* MacMetalOSDDraw.cpp in Sources */,
+				A7E5100000000000004B /* LuaJITApi.cpp in Sources */,
 				A7E500000000000000000030 /* MacMetalOSDFontData.cpp in Sources */,
 				A7E500000000000000000031 /* MacMetalOSDRenderer.mm in Sources */,
 				A7E500000000000000000032 /* MacMetalOSDShaders.metal in Sources */,
@@ -13662,7 +13690,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					../../lua/,
+					../windows/lua/include/,
 					freetype/include/,
 					"../../libretro-common/include/",
 				);
@@ -13725,7 +13753,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					../../lua/,
+					../windows/lua/include/,
 					freetype/include/,
 					"../../libretro-common/include/",
 				);

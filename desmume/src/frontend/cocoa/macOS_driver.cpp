@@ -26,6 +26,7 @@
 #ifdef HAVE_LUA
 #include "lua-engine.h"
 #include "MacLuaScriptConsole.h"
+#include "MacLuaFrontend.h"
 #endif
 #ifdef DESMUME_COCOA_METAL_OSD
 #include "userinterface/MacMetalOSDDraw.h"
@@ -152,6 +153,20 @@ void macOS_driver::SetDisplayOutputManager(ClientDisplayViewOutputManager *displ
 }
 
 extern "C" void macOS_PumpEvents();
+
+void macOS_driver::USR_InfoMessage(const char *message)
+{
+	// Windows shows these through OSDCLASS (osd->addLine).  Cocoa has no
+	// OSDCLASS, so hand the text to the Lua frontend, which keeps it around
+	// long enough for the frame loop to paint it into the Metal OSD.
+	if (message == NULL)
+		return;
+
+	LOG("%s\n", message);
+#ifdef HAVE_LUA
+	MacLua_ShowOsdMessage(message);
+#endif
+}
 
 BaseDriver::eStepMainLoopResult macOS_driver::EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore)
 {

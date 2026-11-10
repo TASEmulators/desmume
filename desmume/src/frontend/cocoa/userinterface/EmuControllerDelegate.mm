@@ -41,6 +41,7 @@
 
 #ifdef HAVE_LUA
 #import "../MacLuaScriptConsole.h"
+#import "../MacLuaFrontend.h"
 #endif
 
 #if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
@@ -1106,6 +1107,13 @@
 {
 #ifdef HAVE_LUA
 	lua_script_close_all();
+#endif
+}
+
+- (IBAction) showLuaAbout:(id)sender
+{
+#ifdef HAVE_LUA
+	MacLua_ShowAboutDialog();
 #endif
 }
 

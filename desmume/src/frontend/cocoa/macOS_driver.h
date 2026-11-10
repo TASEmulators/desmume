@@ -66,6 +66,8 @@ public:
 	virtual bool AVI_IsRecording();
 	virtual bool WAV_IsRecording();
 	
+	virtual void USR_InfoMessage(const char *message);
+
 	virtual eStepMainLoopResult EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore);
 	virtual void EMU_DebugIdleEnter();
 	virtual void EMU_DebugIdleUpdate();

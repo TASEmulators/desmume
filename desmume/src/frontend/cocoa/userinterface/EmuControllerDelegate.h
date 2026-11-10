@@ -269,6 +269,7 @@ class AudioSampleBlockGenerator;
 - (IBAction) generateFirmwareMACAddress:(id)sender;
 - (IBAction) addLuaScript:(id)sender;
 - (IBAction) closeAllLuaScripts:(id)sender;
+- (IBAction) showLuaAbout:(id)sender;
 
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender;
 - (IBAction) writeDefaultsEmulationSettings:(id)sender;

@@ -59,6 +59,7 @@
 
 - (void)showWindow;
 - (void)onPathChanged;
+- (void)runQueuedFile;
 - (void)appendOutputMainThread:(NSString *)text;
 - (void)onScriptStarted;
 - (void)onScriptStopped;
@@ -222,7 +223,14 @@ static intptr_t g_next_uid = 1;
 
 - (void)onBrowseClicked:(id)sender {
 	NSOpenPanel *openPanel = [NSOpenPanel openPanel];
+	// setAllowedFileTypes: is deprecated in favour of -allowedContentTypes, but
+	// that needs UTType, which is macOS 11+ and would mean linking
+	// UniformTypeIdentifiers for a single filter.  The deployment target still
+	// reaches back to 10.x, so keep the old selector and scope the diagnostic.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 	[openPanel setAllowedFileTypes:[NSArray arrayWithObjects:@"lua", nil]];
+#pragma clang diagnostic pop
 	
 	if (!self.filename.empty()) {
 		NSString *dir = [[NSString stringWithUTF8String:self.filename.c_str()] stringByDeletingLastPathComponent];
@@ -254,7 +262,7 @@ static intptr_t g_next_uid = 1;
 	}
 	
 	if (exists) {
-		[[NSWorkspace sharedWorkspace] openFile:path];
+		[[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:path]];
 	}
 	
 	if (created) {
@@ -272,6 +280,16 @@ static intptr_t g_next_uid = 1;
 	if (driver != NULL) {
 		((macOS_driver *)driver)->QueueScript(self.uid, self.filename.c_str());
 	}
+}
+
+// Used by MacLua_ConsoleRunFile(): show the path the script was launched with
+// and then go through the normal Run path.
+- (void)runQueuedFile {
+	if (self.filename.empty()) {
+		return;
+	}
+	[pathField setStringValue:[NSString stringWithUTF8String:self.filename.c_str()]];
+	[self onRunClicked:nil];
 }
 
 - (void)onStopClicked:(id)sender {
@@ -429,6 +447,37 @@ void lua_script_open_console(void) {
 	OpenLuaContext(uid, lua_print_cb, lua_onstart_cb, lua_onstop_cb);
 	
 	[controller showWindow];
+}
+
+// emu.openscript() entry point: open a console for this file and start it.
+// Returns an error string the engine can raise, or NULL on success.
+extern "C" const char *MacLua_ConsoleRunFile(const char *path)
+{
+	if (path == NULL || path[0] == '\0')
+		return "emu.openscript: no filename given";
+
+	if (!g_consoles) {
+		g_consoles = [[NSMutableDictionary alloc] init];
+	}
+
+	LuaConsoleWindowController *controller = [[LuaConsoleWindowController alloc] init];
+	intptr_t uid = g_next_uid++;
+	controller.uid = uid;
+
+	[g_consoles setObject:controller forKey:[NSNumber numberWithInteger:uid]];
+
+	OpenLuaContext(uid, lua_print_cb, lua_onstart_cb, lua_onstop_cb);
+
+	controller.filename = std::string(path);
+	[controller showWindow];
+	// Kick it off through the normal run path so the file watcher, the path
+	// field and the stop button all behave exactly as if the user had pressed
+	// Run after picking the file by hand.
+	[controller performSelectorOnMainThread:@selector(runQueuedFile)
+								 withObject:nil
+							  waitUntilDone:NO];
+
+	return NULL;
 }
 
 void lua_script_close_all(void) {

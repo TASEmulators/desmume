@@ -46,54 +46,15 @@
 #include "userinterface/MacMetalOSDDraw.h"
 #endif
 
-// Cocoa still amalgamates the vendored Lua 5.1.5 sources into this one
-// translation unit.  lua-engine.cpp no longer reads lua_State internals, so
-// this remains a supported configuration; the Windows frontend has moved to
-// LuaJIT 2.1.  LuaJIT cannot be amalgamated (it contains assembler), so
-// migrating this port means deleting the includes below, removing the lapi.c
-// file reference from the Xcode project, and linking a LuaJIT library.
+// Cocoa used to amalgamate the vendored Lua 5.1.5 sources into this translation
+// unit.  It no longer does: the Lua entry points now come from a LuaJIT dylib
+// that is dlopen()ed at runtime, exactly like the Windows build's lua51.dll
+// delay-load.  See LuaJITApi.cpp for the loader and LuaJITApiSymbols.h for the
+// resolved function table.  Nothing is linked against LuaJIT at build time, so
+// the emulator still starts (with scripting disabled) when it is missing.
 #ifdef HAVE_LUA
-#define LUA_CORE
-#define loslib_c
-#define liolib_c
-#define lstrlib_c
-#define lbaselib_c
-
-extern "C" {
-#include "lua/lapi.c"
-#include "lua/lauxlib.c"
-#include "lua/lbaselib.c"
-#include "lua/lcode.c"
-#include "lua/ldblib.c"
-#include "lua/ldebug.c"
-#include "lua/ldo.c"
-#include "lua/ldump.c"
-#include "lua/lfunc.c"
-#include "lua/lgc.c"
-#include "lua/linit.c"
-#include "lua/liolib.c"
-#include "lua/llex.c"
-#include "lua/lmathlib.c"
-#include "lua/lmem.c"
-#include "lua/loadlib.c"
-#include "lua/lobject.c"
-#include "lua/lopcodes.c"
-#include "lua/loslib.c"
-#include "lua/lparser.c"
-#include "lua/lstate.c"
-#include "lua/lstring.c"
-#include "lua/lstrlib.c"
-#include "lua/ltable.c"
-#include "lua/ltablib.c"
-#include "lua/ltm.c"
-#include "lua/lundump.c"
-#include "lua/lvm.c"
-#include "lua/lzio.c"
-}
-
-#undef tostring
-
 #include "MacLuaScriptConsole.mm"
+#include "MacLuaFrontend.mm"
 #include "../../lua-engine.cpp"
 #endif
 
@@ -1279,6 +1240,16 @@ static void* RunCoreThread(void *arg)
 		lua_script_present_graphics_buffer();
 #endif
 #ifdef DESMUME_COCOA_METAL_OSD
+#ifdef HAVE_LUA
+		// emu.message() (and any driver info message) has no OSDCLASS to live
+		// in on this port, so paint the pending one into the Metal OSD frame
+		// here, on top of whatever the script drew this frame.
+		{
+			char osdMessage[512];
+			if (MacLua_GetActiveOsdMessage(osdMessage, (int)sizeof(osdMessage)))
+				MacMetalOSD_AddFixedText(0, 8, osdMessage);
+		}
+#endif
 		MacMetalOSD_PresentBack();
 #endif
 		pthread_rwlock_unlock(&param->rwlockCoreExecute);

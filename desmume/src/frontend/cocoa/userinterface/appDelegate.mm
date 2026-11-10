@@ -441,8 +441,13 @@
 		NSMenuItem *closeAllItem = [[NSMenuItem alloc] initWithTitle:@"Close All Script Windows" action:@selector(closeAllLuaScripts:) keyEquivalent:@""];
 		[closeAllItem setTarget:emuControl];
 		
+		NSMenuItem *aboutItem = [[NSMenuItem alloc] initWithTitle:@"About Lua Scripting..." action:@selector(showLuaAbout:) keyEquivalent:@""];
+		[aboutItem setTarget:emuControl];
+		
 		[luaSubmenu addItem:newWindowItem];
 		[luaSubmenu addItem:closeAllItem];
+		[luaSubmenu addItem:[NSMenuItem separatorItem]];
+		[luaSubmenu addItem:aboutItem];
 		[luaScriptingItem setSubmenu:luaSubmenu];
 		
 		[toolsMenu addItem:luaScriptingItem];

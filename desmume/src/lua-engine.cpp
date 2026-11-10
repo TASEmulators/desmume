@@ -56,6 +56,13 @@
 #define OSD_HUD_TARGET  aggDraw.hud
 #endif
 
+// Popups, script launching, menus, input state and game controllers are all
+// frontend work.  Windows implements them inline below against HWND/HMENU/
+// joyGetPosEx; cocoa gets the same operations through this C API.
+#if defined(DESMUME_COCOA)
+#include "frontend/cocoa/MacLuaFrontend.h"
+#endif
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -102,12 +109,45 @@ extern "C" {
 	#include "lualib.h"
 };
 
+// Cocoa has no import library and does not ship LuaJIT, so the entry points
+// above are resolved from a dlopen()ed dylib instead (see LuaJITApi.cpp).  The
+// header turns each lua* name into a lookup in that table, which is the
+// equivalent of the Windows build's DelayLoadDLLs=lua51.dll.  It must come
+// after the declarations above - it rewrites the very names they introduce.
+#ifdef DESMUME_LUA_DYNAMIC
+	#include "frontend/cocoa/LuaJITApi.h"
+	#include "frontend/cocoa/LuaJITApiSymbols.h"
+#endif
+
 // Lua 5.1's lua_number2int() is an internal luaconf.h macro and LuaJIT does
 // not provide it.  Both engines use a double lua_Number here and the macro
 // rounds to nearest, so lround() reproduces the same result portably.
 static inline int LuaNumberToInt(lua_Number value)
 {
 	return (int)std::lround((double)value);
+}
+
+// Creates a state, or returns NULL and fills reason with a one-line
+// explanation.  On the statically linked platforms this can only fail for lack
+// of memory; on the dlopen()ed ones it also covers "the LuaJIT library was not
+// found", which is by far the most likely reason scripting does nothing.
+static lua_State* LuaEngineNewState(char* reason, size_t reasonSize)
+{
+#ifdef DESMUME_LUA_DYNAMIC
+	if (!LuaJIT_LoadLibrary())
+	{
+		snprintf(reason, reasonSize, "LuaJIT could not be loaded: %s", LuaJIT_LoadError());
+		return NULL;
+	}
+#else
+	(void)reason;
+	(void)reasonSize;
+#endif
+
+	lua_State* L = luaL_newstate();
+	if (L == NULL)
+		snprintf(reason, reasonSize, "Could not create a Lua state (out of memory?).");
+	return L;
 }
 
 enum SpeedMode
@@ -298,7 +338,7 @@ static void CalculateMemHookRegions(LuaMemHookType hookType);
 static int memory_registerHook(lua_State* L, LuaMemHookType hookType, int defaultSize)
 {
 	// get first argument: address
-	unsigned int addr = luaL_checkinteger(L,1);
+	unsigned int addr = (unsigned int)luaL_checkinteger(L,1);
 	//if((addr & ~0xFFFFFF) == ~0xFFFFFF)
 	//	addr &= 0xFFFFFF;
 
@@ -307,7 +347,7 @@ static int memory_registerHook(lua_State* L, LuaMemHookType hookType, int defaul
 	int funcIdx = 2;
 	if(lua_isnumber(L,2))
 	{
-		size = luaL_checkinteger(L,2);
+		size = (int)luaL_checkinteger(L,2);
 		if(size < 0)
 		{
 			size = -size;
@@ -356,7 +396,11 @@ static int memory_registerHook(lua_State* L, LuaMemHookType hookType, int defaul
 
 LuaMemHookType MatchHookTypeToCPU(lua_State* L, LuaMemHookType hookType)
 {
+	// Neither of these is read any more: CPU selection is stubbed out and the
+	// switch that used them is commented out below.  Keep them so the intended
+	// 68k wiring stays visible, but mark them used.
 	int cpuID = 0;
+	(void)cpuID;
 
 	int cpunameIndex = 0;
 	if(lua_type(L,2) == LUA_TSTRING)
@@ -367,6 +411,7 @@ LuaMemHookType MatchHookTypeToCPU(lua_State* L, LuaMemHookType hookType)
 	if(cpunameIndex)
 	{
 		const char* cpuName = lua_tostring(L, cpunameIndex);
+		(void)cpuName; // only the commented-out match below would read it
 //		if(!stricmp(cpuName, "sub") || !stricmp(cpuName, "s68k"))
 //			cpuID = 1;
 		lua_remove(L, cpunameIndex);
@@ -497,7 +542,7 @@ DEFINE_LUA_FUNCTION(state_registerload, "func[,loadkey]")
 
 DEFINE_LUA_FUNCTION(input_registerhotkey, "keynum,func")
 {
-	int hotkeyNumber = luaL_checkinteger(L,1);
+	int hotkeyNumber = (int)luaL_checkinteger(L,1);
 	if(hotkeyNumber < 1 || hotkeyNumber > 16)
 	{
 		luaL_error(L, "input.registerhotkey(n,func) requires 1 <= n <= 16, but got n = %d.", hotkeyNumber);
@@ -548,9 +593,9 @@ static int doPopup(lua_State* L, const char* deftype, const char* deficon)
 	assert(iicon >= 0 && iicon <= 3);
 	if(!(iicon >= 0 && iicon <= 3)) iicon = 0;
 
-	static const char * const titles [] = {"Notice", "Question", "Warning", "Error"};
 	const char* answer = "ok";
 #if defined(WIN32_FRONTEND)
+	static const char * const titles [] = {"Notice", "Question", "Warning", "Error"};
 	static const int etypes [] = {MB_OK, MB_YESNO, MB_YESNOCANCEL, MB_OKCANCEL, MB_ABORTRETRYIGNORE};
 	static const int eicons [] = {MB_ICONINFORMATION, MB_ICONQUESTION, MB_ICONWARNING, MB_ICONERROR};
 //	DialogsOpen++;
@@ -574,6 +619,10 @@ static int doPopup(lua_State* L, const char* deftype, const char* deficon)
 		case IDYES: answer = "yes"; break;
 		case IDNO: answer = "no"; break;
 	}
+#elif defined(DESMUME_COCOA)
+	// NSAlert, on the main thread, with the same button set and order as the
+	// Win32 MessageBox so scripts that switch on the answer behave identically.
+	answer = MacLua_ShowPopup(str, type, icon);
 #else
 	// NYI (assume first answer for now)
 	switch(itype)
@@ -756,7 +805,7 @@ DEFINE_LUA_FUNCTION(emu_persistglobalvariables, "variabletable")
 			// keep track of the variable name for later
 			const char* varName = lua_tostring(L, varNameIndex);
 			info.persistVars.push_back(varName);
-			unsigned int varNameCRC = crc32(0, (const unsigned char*)varName, strlen(varName));
+			unsigned int varNameCRC = (unsigned int)crc32(0, (const unsigned char*)varName, (uInt)strlen(varName));
 			info.newDefaultData.SaveRecordPartial(uid, varNameCRC, defaultIndex);
 
 			// load the previous default value for this variable if it exists.
@@ -833,7 +882,7 @@ void DeferFunctionCall(lua_State* L, const char* idstring)
 	// put the list into a global array
 	lua_getfield(L, LUA_REGISTRYINDEX, idstring);
 	lua_insert(L, 1);
-	int curSize = lua_objlen(L, 1);
+	int curSize = (int)lua_objlen(L, 1);
 	lua_rawseti(L, 1, curSize+1);
 
 	// clean the stack
@@ -845,7 +894,7 @@ static const char* refStashString = "refstash";
 void CallDeferredFunctions(lua_State* L, const char* idstring)
 {
 	lua_getfield(L, LUA_REGISTRYINDEX, idstring);
-	int numCalls = lua_objlen(L, -1);
+	int numCalls = (int)lua_objlen(L, -1);
 	if(numCalls > 0)
 	{
 		// save and pop any extra things that were on the stack
@@ -869,7 +918,7 @@ void CallDeferredFunctions(lua_State* L, const char* idstring)
 		for(int i = 1; i <= numCalls; i++)
 		{
 			lua_rawgeti(L, 1, i);  // get the function+arguments list
-			int listSize = lua_objlen(L, 2);
+			int listSize = (int)lua_objlen(L, 2);
 
 			// push the arguments and the function
 			for(int j = 1; j <= listSize; j++)
@@ -958,8 +1007,6 @@ static void toCStringConverter(lua_State* L, int i, char*& ptr, int& remaining)
 	if(remaining <= 0)
 		return;
 
-	const char* str = ptr; // for debugging
-
 	// if there is a __tostring metamethod then call it
 	int usedMeta = luaL_callmeta(L, i, "__tostring");
 	if(usedMeta)
@@ -1027,7 +1074,7 @@ defcase:default: APPENDPRINT "%s:%p",luaL_typename(L,i),lua_topointer(L,i) END b
 			std::vector<const void*>::const_iterator foundCycleIter = std::find(s_tableAddressStack.begin(), s_tableAddressStack.end(), lua_topointer(L,i));
 			if(foundCycleIter != s_tableAddressStack.end())
 			{
-				int parentNum = s_tableAddressStack.end() - foundCycleIter;
+				int parentNum = (int)(s_tableAddressStack.end() - foundCycleIter);
 				if(parentNum > 1)
 					APPENDPRINT "%s:parent^%d",luaL_typename(L,i),parentNum END
 				else
@@ -1063,18 +1110,22 @@ defcase:default: APPENDPRINT "%s:%p",luaL_typename(L,i),lua_topointer(L,i) END b
 						bool keyIsString = (lua_type(L, keyIndex) == LUA_TSTRING);
 						bool invalidLuaIdentifier = (!keyIsString || !isalphaorunderscore(*lua_tostring(L, keyIndex)));
 						if(invalidLuaIdentifier)
+						{
 							if(keyIsString)
 								APPENDPRINT "['" END
 							else
 								APPENDPRINT "[" END
+						}
 
 						toCStringConverter(L, keyIndex, ptr, remaining); // key
 
 						if(invalidLuaIdentifier)
+						{
 							if(keyIsString)
 								APPENDPRINT "']=" END
 							else
 								APPENDPRINT "]=" END
+						}
 						else
 							APPENDPRINT "=" END
 					}
@@ -1234,7 +1285,7 @@ DEFINE_LUA_FUNCTION(copytable, "origtable")
 		return 1;
 	}
 	
-	lua_createtable(L, lua_objlen(L,1), 0);
+	lua_createtable(L, (int)lua_objlen(L,1), 0);
 	int copyIndex = lua_gettop(L);
 
 	lua_pushnil(L); // first key
@@ -1446,7 +1497,7 @@ bool luabitop_validate(lua_State *L) // originally named as luaopen_bit
 
 DEFINE_LUA_FUNCTION(bitshift, "num,shift")
 {
-	int shift = luaL_checkinteger(L,2);
+	int shift = (int)luaL_checkinteger(L,2);
 	if (shift < 0) {
 		lua_pushinteger(L, -shift);
 		lua_replace(L, 2);
@@ -1461,7 +1512,7 @@ DEFINE_LUA_FUNCTION(bitbit, "whichbit")
 	int rv = 0;
 	int numArgs = lua_gettop(L);
 	for(int i = 1; i <= numArgs; i++) {
-		int where = luaL_checkinteger(L,i);
+		int where = (int)luaL_checkinteger(L,i);
 		if (where >= 0 && where < 32)
 			rv |= (1 << where);
 	}
@@ -1608,9 +1659,17 @@ void printfToOutput(const char* fmt, ...)
 {
 	va_list list;
 	va_start(list, fmt);
+	// vscprintf() only measures; it does not consume list (the POSIX fallback
+	// above works on a va_copy, and _vscprintf never advances the cursor), so
+	// the same list can be formatted afterwards.
 	int len = vscprintf(fmt, list);
-	char* str = new char[len+1];
-	vsprintf(str, fmt, list);
+	if(len < 0)
+	{
+		va_end(list);
+		return;
+	}
+	char* str = new char[(size_t)len + 1];
+	vsnprintf(str, (size_t)len + 1, fmt, list);
 	va_end(list);
 	LuaContextInfo& info = GetCurrentInfo();
 	if(info.print)
@@ -1823,7 +1882,6 @@ DEFINE_LUA_FUNCTION(emu_frameadvance, "")
 	if(FailVerifyAtFrameBoundary(L, "emu.frameadvance", 0,1))
 		return emu_wait(L);
 
-	intptr_t uid = luaStateToUIDMap[L];
 	LuaContextInfo& info = GetCurrentInfo();
 
 	if(!info.ranFrameAdvance)
@@ -1865,7 +1923,6 @@ DEFINE_LUA_FUNCTION(emu_pause, "")
 
 DEFINE_LUA_FUNCTION(emu_unpause, "")
 {
-	LuaContextInfo& info = GetCurrentInfo();
 	driver->EMU_PauseEmulation(false);
 	return 0;
 }
@@ -1881,7 +1938,7 @@ DEFINE_LUA_FUNCTION(emu_redraw, "")
 
 DEFINE_LUA_FUNCTION(memory_readbyte, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	unsigned char value = (unsigned char)(_MMU_read08<ARMCPU_ARM9>(address) & 0xFF);
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1889,7 +1946,7 @@ DEFINE_LUA_FUNCTION(memory_readbyte, "address")
 }
 DEFINE_LUA_FUNCTION(memory_readbytesigned, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	signed char value = (signed char)(_MMU_read08<ARMCPU_ARM9>(address) & 0xFF);
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1897,7 +1954,7 @@ DEFINE_LUA_FUNCTION(memory_readbytesigned, "address")
 }
 DEFINE_LUA_FUNCTION(vram_readword, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	u16 value = T1ReadWord(MMU.ARM9_LCD,address);
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1905,7 +1962,7 @@ DEFINE_LUA_FUNCTION(vram_readword, "address")
 }
 DEFINE_LUA_FUNCTION(memory_readword, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	unsigned short value = (unsigned short)(_MMU_read16<ARMCPU_ARM9>(address) & 0xFFFF);
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1913,7 +1970,7 @@ DEFINE_LUA_FUNCTION(memory_readword, "address")
 }
 DEFINE_LUA_FUNCTION(memory_readwordsigned, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	signed short value = (signed short)(_MMU_read16<ARMCPU_ARM9>(address) & 0xFFFF);
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1921,7 +1978,7 @@ DEFINE_LUA_FUNCTION(memory_readwordsigned, "address")
 }
 DEFINE_LUA_FUNCTION(memory_readdword, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	unsigned long value = (unsigned long)(_MMU_read32<ARMCPU_ARM9>(address));
 	lua_settop(L,0);
 	lua_pushnumber(L, value); // can't use pushinteger in this case (out of range)
@@ -1929,7 +1986,7 @@ DEFINE_LUA_FUNCTION(memory_readdword, "address")
 }
 DEFINE_LUA_FUNCTION(memory_readdwordsigned, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	signed long value = (signed long)(_MMU_read32<ARMCPU_ARM9>(address));
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1938,37 +1995,37 @@ DEFINE_LUA_FUNCTION(memory_readdwordsigned, "address")
 
 DEFINE_LUA_FUNCTION(memory_writebyte, "address,value")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	unsigned char value = (unsigned char)(luaL_checkinteger(L,2) & 0xFF);
 	_MMU_write08<ARMCPU_ARM9>(address, value);
 	return 0;
 }
 DEFINE_LUA_FUNCTION(memory_writeword, "address,value")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	unsigned short value = (unsigned short)(luaL_checkinteger(L,2) & 0xFFFF);
 	_MMU_write16<ARMCPU_ARM9>(address, value);
 	return 0;
 }
 DEFINE_LUA_FUNCTION(vram_writeword, "address,value")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	u16 value = (u16)(luaL_checkinteger(L,2) & 0xFFFF);
 	T1WriteWord(MMU.ARM9_LCD,address,value);
 	return 0;
 }
 DEFINE_LUA_FUNCTION(memory_writedword, "address,value")
 {
-	int address = luaL_checkinteger(L,1);
-	unsigned long value = (unsigned long)(luaL_checkinteger(L,2));
+	int address = (int)luaL_checkinteger(L,1);
+	u32 value = (u32)luaL_checkinteger(L,2);
 	_MMU_write32<ARMCPU_ARM9>(address, value);
 	return 0;
 }
 
 DEFINE_LUA_FUNCTION(memory_readbyterange, "address,length")
 {
-	int address = luaL_checkinteger(L,1);
-	int length = luaL_checkinteger(L,2);
+	int address = (int)luaL_checkinteger(L,1);
+	int length = (int)luaL_checkinteger(L,2);
 
 	if(length < 0)
 	{
@@ -1996,7 +2053,7 @@ DEFINE_LUA_FUNCTION(memory_readbyterange, "address,length")
 
 DEFINE_LUA_FUNCTION(memory_isvalid, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	lua_settop(L,0);
 	lua_pushboolean(L, IsHardwareAddressValid(address));
 	return 1;
@@ -2076,7 +2133,7 @@ DEFINE_LUA_FUNCTION(memory_getregister, "cpu_dot_registername_string")
 	for(int cpu = 0; cpu < sizeof(cpuToRegisterMaps)/sizeof(*cpuToRegisterMaps); cpu++)
 	{
 		cpuToRegisterMap ctrm = cpuToRegisterMaps[cpu];
-		int cpuNameLen = strlen(ctrm.cpuName);
+		int cpuNameLen = (int)strlen(ctrm.cpuName);
 		if(!strnicmp(qualifiedRegisterName, ctrm.cpuName, cpuNameLen))
 		{
 			qualifiedRegisterName += cpuNameLen;
@@ -2109,7 +2166,7 @@ DEFINE_LUA_FUNCTION(memory_setregister, "cpu_dot_registername_string,value")
 	for(int cpu = 0; cpu < sizeof(cpuToRegisterMaps)/sizeof(*cpuToRegisterMaps); cpu++)
 	{
 		cpuToRegisterMap ctrm = cpuToRegisterMaps[cpu];
-		int cpuNameLen = strlen(ctrm.cpuName);
+		int cpuNameLen = (int)strlen(ctrm.cpuName);
 		if(!strnicmp(qualifiedRegisterName, ctrm.cpuName, cpuNameLen))
 		{
 			qualifiedRegisterName += cpuNameLen;
@@ -2122,7 +2179,7 @@ DEFINE_LUA_FUNCTION(memory_setregister, "cpu_dot_registername_string,value")
 					{ default:
 					case 1: *(unsigned char*)rpm.pointer = (unsigned char)(value & 0xFF); break;
 					case 2: *(u16*)rpm.pointer = (u16)(value & 0xFFFF); break;
-					case 4: *(u32*)rpm.pointer = value; break;
+					case 4: *(u32*)rpm.pointer = (u32)value; break;
 					}
 					return 0;
 				}
@@ -2179,7 +2236,7 @@ DEFINE_LUA_FUNCTION(state_save, "location[,option]")
 		case LUA_TNUMBER: // numbered save file
 		default:
 		{
-			int stateNumber = luaL_checkinteger(L,1);
+			int stateNumber = (int)luaL_checkinteger(L,1);
 			savestate_slot(stateNumber);
 		}	return 0;
 		case LUA_TUSERDATA: // in-memory save slot
@@ -2232,7 +2289,7 @@ DEFINE_LUA_FUNCTION(state_load, "location[,option]")
 			//LuaContextInfo& info = GetCurrentInfo();
 			//if(info.rerecordCountingDisabled)
 			//	SkipNextRerecordIncrement = true;
-			int stateNumber = luaL_checkinteger(L,1);
+			int stateNumber = (int)luaL_checkinteger(L,1);
 			loadstate_slot(stateNumber);
 		}	return 0;
 		case LUA_TUSERDATA: // in-memory save slot
@@ -2342,7 +2399,7 @@ public:
 					{
 						const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 						char temp [256];
-						sprintf(temp, " " /*"mismatch at "*/ "byte %d(0x%X at %p): %d(0x%X) != %d(0x%X)\n", i, i, dst, *src,*src, *dst,*dst);
+						snprintf(temp, sizeof(temp), " " /*"mismatch at "*/ "byte %d(0x%X at %p): %d(0x%X) != %d(0x%X)\n", i, i, dst, *src,*src, *dst,*dst);
 
 						if(ptr == dispInfo.masterNativeBuffer16 || ptr == dispInfo.masterCustomBuffer || ptr == CurrentRenderer->GetFramebuffer32()) // ignore screen-only differences since frame skipping can cause them and it's probably ok
 							break;
@@ -2590,7 +2647,7 @@ inline int getcolor_unmodified(lua_State *L, int idx, int defaultColor)
 	{
 		case LUA_TNUMBER:
 		{
-			return lua_tointeger(L,idx);
+			return (int)lua_tointeger(L,idx);
 		}	break;
 		case LUA_TSTRING:
 		{
@@ -2599,7 +2656,7 @@ inline int getcolor_unmodified(lua_State *L, int idx, int defaultColor)
 			{
 				int color;
 				sscanf(str+1, "%X", &color);
-				int len = strlen(str+1);
+				int len = (int)strlen(str+1);
 				int missing = std::max(0, 8-len);
 				color <<= missing << 2;
 				if(missing >= 2) color |= 0xFF;
@@ -2619,13 +2676,12 @@ inline int getcolor_unmodified(lua_State *L, int idx, int defaultColor)
 			lua_pushnil(L); // first key
 			int keyIndex = lua_gettop(L);
 			int valueIndex = keyIndex + 1;
-			bool first = true;
 			while(lua_next(L, idx))
 			{
 				bool keyIsString = (lua_type(L, keyIndex) == LUA_TSTRING);
 				bool keyIsNumber = (lua_type(L, keyIndex) == LUA_TNUMBER);
-				int key = keyIsString ? tolower(*lua_tostring(L, keyIndex)) : (keyIsNumber ? lua_tointeger(L, keyIndex) : 0);
-				int value = lua_tointeger(L, valueIndex);
+				int key = (int)(keyIsString ? tolower(*lua_tostring(L, keyIndex)) : (keyIsNumber ? lua_tointeger(L, keyIndex) : 0));
+				int value = (int)lua_tointeger(L, valueIndex);
 				if(value < 0) value = 0;
 				if(value > 255) value = 255;
 				switch(key)
@@ -3098,7 +3154,7 @@ static int strlinelen(const char* string)
 		s++;
 	if(*s)
 		s++;
-	return s - string;
+	return (int)(s - string);
 }
 
 static void LuaDisplayString (const char *str, int x, int y, u32 color, u32 outlineColor)
@@ -3108,7 +3164,7 @@ static void LuaDisplayString (const char *str, int x, int y, u32 color, u32 outl
 
 #if 1
 	//if(rotate == 0)
-		PutTextInternal<1,1,0,0>(str, strlen(str), x, y, color, outlineColor);
+		PutTextInternal<1,1,0,0>(str, (int)strlen(str), x, y, color, outlineColor);
 	//else if(rotate == 90)
 	//	PutTextInternal<0,0,1,-1>(str, strlen(str), x, y, color, outlineColor);
 	//else if
@@ -3156,8 +3212,8 @@ static void LuaDisplayString (const char *str, int x, int y, u32 color, u32 outl
 
 DEFINE_LUA_FUNCTION(gui_text, "x,y,str[,color=\"white\"[,outline=\"black\"]]")
 {
-	int x = luaL_checkinteger(L,1); // have to check for errors before deferring
-	int y = luaL_checkinteger(L,2);
+	int x = (int)(luaL_checkinteger(L,1)); // have to check for errors before deferring
+	int y = (int)luaL_checkinteger(L,2);
 
 	if(DeferGUIFuncIfNeeded(L))
 		return 0; // we have to wait until later to call this function because we haven't emulated the next frame yet
@@ -3181,10 +3237,10 @@ DEFINE_LUA_FUNCTION(gui_text, "x,y,str[,color=\"white\"[,outline=\"black\"]]")
 
 DEFINE_LUA_FUNCTION(gui_box, "x1,y1,x2,y2[,fill[,outline]]")
 {
-	int x1 = luaL_checkinteger(L,1); // have to check for errors before deferring
-	int y1 = luaL_checkinteger(L,2);
-	int x2 = luaL_checkinteger(L,3);
-	int y2 = luaL_checkinteger(L,4);
+	int x1 = (int)(luaL_checkinteger(L,1)); // have to check for errors before deferring
+	int y1 = (int)luaL_checkinteger(L,2);
+	int x2 = (int)luaL_checkinteger(L,3);
+	int y2 = (int)luaL_checkinteger(L,4);
 
 	if(DeferGUIFuncIfNeeded(L))
 		return 0;
@@ -3258,8 +3314,8 @@ DEFINE_LUA_FUNCTION(gui_box, "x1,y1,x2,y2[,fill[,outline]]")
 //   or it can be a preset color like 'red', 'orange', 'blue', 'white', etc.
 DEFINE_LUA_FUNCTION(gui_pixel, "x,y[,color=\"white\"]")
 {
-	int x = luaL_checkinteger(L,1); // have to check for errors before deferring
-	int y = luaL_checkinteger(L,2);
+	int x = (int)(luaL_checkinteger(L,1)); // have to check for errors before deferring
+	int y = (int)luaL_checkinteger(L,2);
 
 	if(DeferGUIFuncIfNeeded(L))
 		return 0;
@@ -3279,8 +3335,8 @@ DEFINE_LUA_FUNCTION(gui_getpixel, "x,y")
 {
 	prepare_reading();
 
-	int x = luaL_checkinteger(L,1);
-	int y = luaL_checkinteger(L,2);
+	int x = (int)luaL_checkinteger(L,1);
+	int y = (int)luaL_checkinteger(L,2);
 
 	u32 color = gui_adjust_coord_and_getpixel(x,y);
 
@@ -3296,10 +3352,10 @@ DEFINE_LUA_FUNCTION(gui_getpixel, "x,y")
 }
 DEFINE_LUA_FUNCTION(gui_line, "x1,y1,x2,y2[,color=\"white\"[,skipfirst=false]]")
 {
-	int x1 = luaL_checkinteger(L,1); // have to check for errors before deferring
-	int y1 = luaL_checkinteger(L,2);
-	int x2 = luaL_checkinteger(L,3);
-	int y2 = luaL_checkinteger(L,4);
+	int x1 = (int)(luaL_checkinteger(L,1)); // have to check for errors before deferring
+	int y1 = (int)luaL_checkinteger(L,2);
+	int x2 = (int)luaL_checkinteger(L,3);
+	int y2 = (int)luaL_checkinteger(L,4);
 
 	if(DeferGUIFuncIfNeeded(L))
 		return 0;
@@ -3362,14 +3418,36 @@ DEFINE_LUA_FUNCTION(gui_settransparency, "transparency_4_to_0")
 // gui.setlayermask(int main, int sub)
 // enables or disables display layers for each GPU according to the bitfields provided
 // e.g. 31 (11111) shows all layers; 0 (00000) hides all layers; 16 (10000) shows only the object layer (layer 4)
-// this function is only supported by the windows frontend.
 DEFINE_LUA_FUNCTION(gui_setlayermask, "main,sub")
 {
+	// The layer enable state lives in CommonSettings.dispLayers and is applied
+	// by GPUEngineBase::ApplySettings() on the next frame, so this works on
+	// every frontend.  Only the menu-bar checkmarks are Windows-specific.
+	lua_Integer mainMask = luaL_checkint(L, 1);
+	lua_Integer subMask = luaL_checkint(L, 2);
+
+	for (int core = 0; core < 2; core++)
+	{
+		GPUEngineBase *gpu = (core == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain()
+														: (GPUEngineBase *)GPU->GetEngineSub();
+		const int mask = (core == 0) ? (int)mainMask : (int)subMask;
+		for (size_t layer = 0; layer < 5; layer++)
+		{
+			const bool newLayerState = ((mask >> layer) & 0x01) != 0;
+			if (newLayerState != CommonSettings.dispLayers[core][layer])
+			{
+				gpu->SetLayerEnableState(layer, newLayerState);
 #if defined(WIN32_FRONTEND)
-	lua_Integer main = luaL_checkint(L, 1);
-	lua_Integer sub = luaL_checkint(L, 2);
-	SetLayerMasks(main, sub);
+				static const UINT ctlids[2][5] = {
+					{IDM_MBG0, IDM_MBG1, IDM_MBG2, IDM_MBG3, IDM_MOBJ},
+					{IDM_SBG0, IDM_SBG1, IDM_SBG2, IDM_SBG3, IDM_SOBJ},
+				};
+				MainWindow->checkMenu(ctlids[core][layer], newLayerState);
 #endif
+			}
+		}
+	}
+
 	return 0;
 }
 
@@ -3383,7 +3461,7 @@ DEFINE_LUA_FUNCTION(gui_gdscreenshot, "[whichScreen='both']")
 	if(lua_isboolean(L, 1))
 		selectedScreen = lua_toboolean(L, 1) ? 1 : -1;
 	else if(lua_isnumber(L, 1))
-		selectedScreen = lua_tointeger(L, 1);
+		selectedScreen = (int)lua_tointeger(L, 1);
 	else if(lua_isstring(L, 1))
 	{
 		const char* str = lua_tostring(L, 1);
@@ -3447,9 +3525,9 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[dx=0,dy=0,]gdimage[,sx=0,sy=0,width,height]
 	int index = 1;
 	if(lua_type(L,index) == LUA_TNUMBER)
 	{
-		xStartDst = lua_tointeger(L,index++);
+		xStartDst = (int)lua_tointeger(L,index++);
 		if(lua_type(L,index) == LUA_TNUMBER)
-			yStartDst = lua_tointeger(L,index++);
+			yStartDst = (int)lua_tointeger(L,index++);
 	}
 
 	luaL_checktype(L,index,LUA_TSTRING); // have to check for errors before deferring
@@ -3461,10 +3539,10 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[dx=0,dy=0,]gdimage[,sx=0,sy=0,width,height]
 
 	const bool defSrcRect = ((numArgs - index + 1) < 2);
 	if (!defSrcRect) {
-		xStartSrc = luaL_checkinteger(L, index++);
-		yStartSrc = luaL_checkinteger(L, index++);
-		width = luaL_checkinteger(L, index++);
-		height = luaL_checkinteger(L, index++);
+		xStartSrc = (int)luaL_checkinteger(L, index++);
+		yStartSrc = (int)luaL_checkinteger(L, index++);
+		width = (int)luaL_checkinteger(L, index++);
+		height = (int)luaL_checkinteger(L, index++);
 	}
 
 	LuaContextInfo& info = GetCurrentInfo();
@@ -3511,10 +3589,12 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[dx=0,dy=0,]gdimage[,sx=0,sy=0,width,height]
 		colorsTotal = *ptr++ << 8;
 		colorsTotal |= *ptr++;
 	}
+	(void)colorsTotal; // only advances ptr; the value itself is not used
 	int transparent = *ptr++ << 24;
 	transparent |= *ptr++ << 16;
 	transparent |= *ptr++ << 8;
 	transparent |= *ptr++;
+	(void)transparent; // likewise
 	struct { int r, g, b, a; } pal[256];
 	if (!trueColor) for (int i = 0; i < 256; i++) {
 		pal[i].r = *ptr++;
@@ -3603,6 +3683,15 @@ DEFINE_LUA_FUNCTION(emu_openscript, "filename")
 	const char* errorMsg = OpenLuaScript(filename, curScriptDir, true);
 	if(errorMsg)
 		luaL_error(L, errorMsg);
+#elif defined(DESMUME_COCOA)
+	// Each script gets its own console window, so "subservient" is implicit:
+	// the new script runs in its own state and stopping it does not touch the
+	// caller.  Relative paths resolve next to the calling script first.
+	const char* filename = lua_isstring(L,1) ? lua_tostring(L,1) : NULL;
+	char curScriptDir[1024]; GetCurrentScriptDir(curScriptDir, 1024);
+	const char* errorMsg = MacLua_OpenScript(filename, curScriptDir);
+	if(errorMsg)
+		luaL_error(L, errorMsg);
 #endif
     return 0;
 }
@@ -3620,6 +3709,8 @@ static bool IsLuaMenuItem(PlatformMenuItem menuItem)
 {
 #if defined(WIN32_FRONTEND)
 	return (menuItem >= IDC_LUAMENU_RESERVE_START && menuItem <= IDC_LUAMENU_RESERVE_END);
+#elif defined(DESMUME_COCOA)
+	return MacLua_MenuIsOwnedID((int)menuItem);
 #else
 	return false;
 #endif
@@ -3642,6 +3733,13 @@ static bool SearchFreeMenuItem(PlatformMenu menu, PlatformMenuItem& menuItem)
 		}
 	}
 	return false;
+#elif defined(DESMUME_COCOA)
+	// Ids come from the frontend's own pool; there is no menu to interrogate.
+	const int allocated = MacLua_MenuAllocID();
+	if (allocated < 0)
+		return false;
+	menuItem = (PlatformMenuItem)allocated;
+	return true;
 #else
 	return false;
 #endif
@@ -3700,6 +3798,32 @@ static PlatformMenu AddSubMenu(PlatformMenu topMenu, PlatformMenu menu, const ch
 	}
 	info.menuData.subMenuData.push_back(LuaSubMenuData(menu, mii.hSubMenu, subMenuId));
 	return mii.hSubMenu;
+#elif defined(DESMUME_COCOA)
+	// Reuse an existing menu with this name, otherwise add one at the end of
+	// the app's menu bar.
+	LuaContextInfo& info = GetCurrentInfo();
+	int existingId = 0;
+	PlatformMenu existing = (PlatformMenu)MacLua_MenuFindSubmenu(menu, menuName, &existingId);
+	if (existing != NULL)
+	{
+		if (IsLuaMenuItem((PlatformMenuItem)existingId))
+			info.menuData.subMenuData.push_back(LuaSubMenuData(menu, existing, (PlatformMenuItem)existingId));
+		return existing;
+	}
+
+	PlatformMenuItem subMenuId;
+	if (!SearchFreeMenuItem(topMenu, subMenuId))
+		return NULL;
+
+	PlatformMenu subMenu = (PlatformMenu)MacLua_MenuAddSubmenu(menu, menuName, (int)subMenuId);
+	if (subMenu == NULL)
+	{
+		MacLua_MenuFreeID((int)subMenuId);
+		return NULL;
+	}
+
+	info.menuData.subMenuData.push_back(LuaSubMenuData(menu, subMenu, subMenuId));
+	return subMenu;
 #else
 	return 0;
 #endif
@@ -3707,14 +3831,14 @@ static PlatformMenu AddSubMenu(PlatformMenu topMenu, PlatformMenu menu, const ch
 
 bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 {
-#if defined(WIN32_FRONTEND)
+#if defined(WIN32_FRONTEND) || defined(DESMUME_COCOA)
 	LuaContextInfo& info = GetCurrentInfo();
 	lua_State* L = info.L;
 	luaL_checktype(L, -1, LUA_TTABLE);
 	luaL_checkstack(L, 6, "");
 
 	// for index = 1, #menuEntries
-	unsigned int count = lua_objlen(L, -1);
+	unsigned int count = (unsigned int)lua_objlen(L, -1);
 	for (unsigned int index = 1; index <= count; index++)
 	{
 		// switch(type(menuEntries[index]))
@@ -3728,6 +3852,7 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 				return false;
 			}
 
+#if defined(WIN32_FRONTEND)
 			MENUITEMINFO mii;
 			ZeroMemory(&mii, sizeof(MENUITEMINFO));
 			mii.cbSize = sizeof(MENUITEMINFO);
@@ -3739,6 +3864,13 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 				luaL_error(L, "menu item addition failed");
 				return false;
 			}
+#else
+			if (!MacLua_MenuAddSeparator(menu, (int)menuItem))
+			{
+				luaL_error(L, "menu item addition failed");
+				return false;
+			}
+#endif
 			info.menuData.menuItemMap.insert(map<PlatformMenuItem, PlatformMenu>::value_type(menuItem, menu));
 			lua_pop(L, 1);
 		}
@@ -3758,6 +3890,7 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 					return false;
 				}
 
+#if defined(WIN32_FRONTEND)
 				MENUITEMINFO mii;
 				ZeroMemory(&mii, sizeof(MENUITEMINFO));
 				mii.cbSize = sizeof(MENUITEMINFO);
@@ -3769,17 +3902,24 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 					luaL_error(L, "menu item addition failed");
 					return false;
 				}
+#else
+				if (!MacLua_MenuAddItem(menu, (int)menuItem, menuName))
+				{
+					luaL_error(L, "menu item addition failed");
+					return false;
+				}
+#endif
 				info.menuData.menuItemMap.insert(map<PlatformMenuItem, PlatformMenu>::value_type(menuItem, menu));
 
 				lua_getfield(L, LUA_REGISTRYINDEX, menuCallbackIDString);
 				lua_insert(L, -2);
-				lua_rawseti(L, -2, menuItem);
+				lua_rawseti(L, -2, (int)menuItem);
 
 				lua_pop(L, 3);
 			}
 			else if (lua_istable(L, -1))
 			{
-				HMENU subMenu = AddSubMenu(topMenu, menu, menuName);
+				PlatformMenu subMenu = AddSubMenu(topMenu, menu, menuName);
 				if (subMenu == NULL)
 				{
 					luaL_error(L, "menu item addition failed");
@@ -3811,7 +3951,7 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 
 DEFINE_LUA_FUNCTION(emu_addmenu, "menuName, menuEntries")
 {
-#if defined(WIN32_FRONTEND)
+#if defined(WIN32_FRONTEND) || defined(DESMUME_COCOA)
 	int nargs = lua_gettop(L);
 	if (nargs > 1 && !lua_isnil(L, 1))
 	{
@@ -3819,12 +3959,20 @@ DEFINE_LUA_FUNCTION(emu_addmenu, "menuName, menuEntries")
 		luaL_checktype(L, 2, LUA_TTABLE);
 		lua_settop(L, 2); // drop redundant args
 
+#if defined(WIN32_FRONTEND)
 		HMENU menu = mainMenu;
-		HMENU subMenu = AddSubMenu(menu, menu, menuName);
+#else
+		// Cocoa: a new top-level menu in the menu bar, reused if a menu with
+		// the same name is already there.
+		PlatformMenu menu = (PlatformMenu)MacLua_MenuRoot();
+#endif
+		PlatformMenu subMenu = AddSubMenu(menu, menu, menuName);
 		if (subMenu != NULL)
 		{
 			AddMenuEntries(menu, subMenu);
+#if defined(WIN32_FRONTEND)
 			DrawMenuBar(MainWindow->getHWnd());
+#endif
 		}
 		else
 		{
@@ -3926,6 +4074,78 @@ DEFINE_LUA_FUNCTION(emu_setmenuiteminfo, "menuItem, infoTable")
 		lua_pop(L, 1);
 		it++;
 	}
+#elif defined(DESMUME_COCOA)
+	// Same contract as the Win32 version: find the item whose registered
+	// callback is the function in argument 1, then apply name/enabled/checked.
+	// The three fields are parsed up front because the table is read at fixed
+	// stack slots instead of inside the item loop.
+	bool hasEnabled = false, enableValue = false;
+	bool hasChecked = false, checkedValue = false;
+	const char* newName = NULL;
+
+	lua_getfield(L, 2, "enabled");
+	if (lua_isboolean(L, -1))
+	{
+		hasEnabled = true;
+		enableValue = lua_toboolean(L, -1) != 0;
+	}
+	else if (!lua_isnil(L, -1))
+	{
+		luaL_where(L, 0);
+		luaL_error(L, "%s bad argument \"enabled\" (boolean expected, got %s)",
+			luaL_optstring(L, -1, ""), luaL_typename(L, -2));
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, 2, "checked");
+	if (lua_isboolean(L, -1))
+	{
+		hasChecked = true;
+		checkedValue = lua_toboolean(L, -1) != 0;
+	}
+	else if (!lua_isnil(L, -1))
+	{
+		luaL_where(L, 0);
+		luaL_error(L, "%s bad argument \"checked\" (boolean expected, got %s)",
+			luaL_optstring(L, -1, ""), luaL_typename(L, -2));
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, 2, "name");
+	if (lua_isstring(L, -1))
+	{
+		newName = lua_tostring(L, -1);
+	}
+	else if (!lua_isnil(L, -1))
+	{
+		luaL_where(L, 0);
+		luaL_error(L, "%s bad argument \"name\" (string expected, got %s)",
+			luaL_optstring(L, -1, ""), luaL_typename(L, -2));
+	}
+	lua_pop(L, 1);
+
+	LuaContextInfo& info = GetCurrentInfo();
+	map<PlatformMenuItem, PlatformMenu>::iterator it = info.menuData.menuItemMap.begin();
+	while(it != info.menuData.menuItemMap.end())
+	{
+		PlatformMenu menu = (*it).second;
+		PlatformMenuItem menuItem = (*it).first;
+		lua_getfield(L, LUA_REGISTRYINDEX, menuCallbackIDString);
+		lua_rawgeti(L, -1, (int)menuItem);
+		const bool matches = (lua_rawequal(L, 1, -1) != 0);
+		lua_pop(L, 2);
+		if (matches)
+		{
+			if (hasEnabled)
+				MacLua_MenuSetEnabled(menu, (int)menuItem, enableValue);
+			if (hasChecked)
+				MacLua_MenuSetChecked(menu, (int)menuItem, checkedValue);
+			if (newName != NULL)
+				MacLua_MenuSetTitle(menu, (int)menuItem, newName);
+			break;
+		}
+		it++;
+	}
 #endif
 	return 0;
 }
@@ -3947,7 +4167,7 @@ DEFINE_LUA_FUNCTION(emu_set3dtransform, "mode, matrix")
 	extern int freelookMode;
 	extern s32 freelookMatrix[16];
 
-	int mode = luaL_checkinteger(L,1);
+	int mode = (int)luaL_checkinteger(L,1);
 	freelookMode = mode;
 	if(mode == 2 || mode == 3)
 	{
@@ -4031,7 +4251,7 @@ DEFINE_LUA_FUNCTION(movie_rerecordcount, "")
 }
 DEFINE_LUA_FUNCTION(movie_setrerecordcount, "")
 {
-	currMovieData.rerecordCount = luaL_checkinteger(L, 1);
+	currMovieData.rerecordCount = (int)luaL_checkinteger(L, 1);
 	return 0;
 }
 DEFINE_LUA_FUNCTION(emu_rerecordcounting, "[enabled]")
@@ -4315,6 +4535,27 @@ DEFINE_LUA_FUNCTION(input_getcurrentinputstatus, "")
 	}
 
 	worry(L,10);
+#elif defined(DESMUME_COCOA)
+	// Keyboard and mouse come from the frontend, which polls the same global
+	// event state Windows reads with GetAsyncKeyState().
+	MacLuaInputStatus status;
+	MacLua_GetInputStatus(&status);
+
+	for (int i = 0; i < status.keyCount; i++)
+	{
+		lua_pushboolean(L, true);
+		lua_setfield(L, -2, status.keyNames[i]);
+	}
+
+	if (status.mouseValid)
+	{
+		lua_pushinteger(L, status.mouseX);
+		lua_setfield(L, -2, "xmouse");
+		lua_pushinteger(L, status.mouseY);
+		lua_setfield(L, -2, "ymouse");
+	}
+
+	worry(L,10);
 #else
 	// NYI (well, return an empty table)
 #endif
@@ -4433,7 +4674,7 @@ static int star(lua_State *L) {
 	r1 = luaL_checknumber(L,3);
 	r2 = luaL_checknumber(L,4);
 	startAngle = luaL_checknumber(L,5);
-	numRays = luaL_checkinteger(L,6);
+	numRays = (int)luaL_checkinteger(L,6);
 
 	OSD_HUD_TARGET->star(cx, cy, r1, r2, startAngle, numRays);
 
@@ -4529,10 +4770,10 @@ static void getColorForAgg(lua_State *L, int&r,int&g,int&b,int&a)
 	}
 	else
 	{
-		r = luaL_optinteger(L,1,255);
-		g = luaL_optinteger(L,2,255);
-		b = luaL_optinteger(L,3,255);
-		a = luaL_optinteger(L,4,255);
+		r = (int)luaL_optinteger(L,1,255);
+		g = (int)luaL_optinteger(L,2,255);
+		b = (int)luaL_optinteger(L,3,255);
+		a = (int)luaL_optinteger(L,4,255);
 	}
 }
 
@@ -4647,8 +4888,8 @@ static int text(lua_State *L) {
 	int x, y;
 	const char *choice;
 
-	x = luaL_checkinteger(L, 1);
-	y = luaL_checkinteger(L, 2);
+	x = (int)luaL_checkinteger(L, 1);
+	y = (int)luaL_checkinteger(L, 2);
 	choice = luaL_checkstring(L,3);
 
 	OSD_HUD_TARGET->renderTextDropshadowed(x,y,choice);
@@ -4684,8 +4925,8 @@ static const struct luaL_Reg aggcustom [] =
 //
 static int gui_osdtext(lua_State *L)
 {
-	int x = luaL_checkinteger(L,1); // have to check for errors before deferring
-	int y = luaL_checkinteger(L,2);
+	int x = (int)(luaL_checkinteger(L,1)); // have to check for errors before deferring
+	int y = (int)luaL_checkinteger(L,2);
 
 	if(DeferGUIFuncIfNeeded(L))
 		return 0; // we have to wait until later to call this function because we haven't emulated the next frame yet
@@ -4755,12 +4996,12 @@ DEFINE_LUA_FUNCTION(stylus_write, "table")
 
 	lua_getfield(L, index, "x");
 	if (!lua_isnil(L,-1))
-		touch.touchX = toTouchValue(lua_tointeger(L, -1), 256);
+		touch.touchX = toTouchValue((int)lua_tointeger(L, -1), 256);
 	lua_pop(L, 1);
 
 	lua_getfield(L, index, "y");
 	if (!lua_isnil(L,-1))
-		touch.touchY = toTouchValue(lua_tointeger(L, -1), 192);
+		touch.touchY = toTouchValue((int)lua_tointeger(L, -1), 192);
 	lua_pop(L, 1);
 
 	lua_getfield(L, index, "touch");
@@ -4883,8 +5124,57 @@ DEFINE_LUA_FUNCTION(controller_get, "[joystickID = 0 [,returnDiagonals = false]]
 	}
 
 	return 1; // return the table
+#elif defined(DESMUME_COCOA)
+	unsigned int i_joystickID = 0;
+	bool f_returnDiagonals = false;
+	switch (lua_gettop(L))
+	{
+		case 1:
+			i_joystickID = (unsigned int)lua_tonumber(L,1);
+			break;
+		case 2:
+			i_joystickID = (unsigned int)lua_tonumber(L,1);
+			if (lua_isboolean(L,2))
+				f_returnDiagonals = lua_toboolean(L,2) != 0;
+			break;
+	}
+
+	lua_newtable(L);
+
+	MacLuaControllerStatus status;
+	if (!MacLua_GetControllerStatus(i_joystickID, f_returnDiagonals, &status))
+		return 1; // no such pad: empty table, same as the Windows version
+
+	static const char* const dpadNames[4] = {"up", "right", "down", "left"};
+	for (int i = 0; i < 4; i++)
+	{
+		lua_pushboolean(L, status.dpad[i]);
+		lua_setfield(L, -2, dpadNames[i]);
+	}
+
+	// Button keys are "1".."n", matching s_buttonNames[] on Windows.
+	for (int i = 1; i <= status.buttonCount; i++)
+	{
+		char name[8];
+		snprintf(name, sizeof(name), "%d", i);
+		lua_pushboolean(L, status.buttons[i-1]);
+		lua_setfield(L, -2, name);
+	}
+
+	static const char* const axisNames[6] = {"x", "y", "z", "r", "u", "v"};
+	for (int i = 0; i < status.axisCount && i < 6; i++)
+	{
+		lua_pushnumber(L, status.axes[i]);
+		lua_setfield(L, -2, axisNames[i]);
+	}
+
+	return 1;
 #else
-    return 0;
+	// No joystick backend on this frontend.  Return an empty table rather than
+	// nothing, so `controller.get().x` is a nil index instead of an error on a
+	// nil value, matching what Windows and macOS do for a missing pad.
+	lua_newtable(L);
+	return 1;
 #endif
 }
 static const struct luaL_Reg controllerlib [] = {
@@ -5483,7 +5773,29 @@ void RunLuaScriptFile(intptr_t uid, const char* filenameCStr)
 	{
 		std::string filename = info.nextFilename;
 
-		lua_State* L = lua_open();
+		char reason[512];
+		lua_State* L = LuaEngineNewState(reason, sizeof(reason));
+		if (L == NULL)
+		{
+			// Nothing to run on.  Report through the console rather than
+			// leaving the window sitting there with an empty script list.
+			info.started = false;
+			info.running = false;
+			if(info.print)
+			{
+				info.print(uid, reason);
+				info.print(uid, "\r\n");
+#ifdef DESMUME_LUA_DYNAMIC
+				info.print(uid, "Install LuaJIT (\"brew install luajit\"), or set "
+					"DESMUME_LUAJIT_DYLIB to a libluajit-5.1.dylib.\r\n");
+#endif
+			}
+			else
+			{
+				fprintf(stderr, "%s\n", reason);
+			}
+			return;
+		}
 #ifndef USE_INFO_STACK
 		luaStateToContextMap[L] = &info;
 #endif
@@ -5628,7 +5940,7 @@ void RequestAbortLuaScript(intptr_t uid, const char* message)
 
 void SetSaveKey(LuaContextInfo& info, const char* key)
 {
-	info.dataSaveKey = crc32(0, (const unsigned char*)key, strlen(key));
+	info.dataSaveKey = (unsigned int)crc32(0, (const unsigned char*)key, (uInt)strlen(key));
 
 	if(!info.dataSaveLoadKeySet)
 	{
@@ -5638,7 +5950,7 @@ void SetSaveKey(LuaContextInfo& info, const char* key)
 }
 void SetLoadKey(LuaContextInfo& info, const char* key)
 {
-	info.dataLoadKey = crc32(0, (const unsigned char*)key, strlen(key));
+	info.dataLoadKey = (unsigned int)crc32(0, (const unsigned char*)key, (uInt)strlen(key));
 
 	if(!info.dataSaveLoadKeySet)
 	{
@@ -5716,13 +6028,12 @@ void CallExitFunction(intptr_t uid)
 			// gather the final value of the variables we're supposed to persist
 			LuaSaveData newExitData;
 			{
-				int numPersistVars = info.persistVars.size();
+				int numPersistVars = (int)info.persistVars.size();
 				for(int i = 0; i < numPersistVars; i++)
 				{
 					const char* varName = info.persistVars[i].c_str();
 					lua_getfield(L, LUA_GLOBALSINDEX, varName);
-					int type = lua_type(L,-1);
-					unsigned int varNameCRC = crc32(0, (const unsigned char*)varName, strlen(varName));
+					unsigned int varNameCRC = (unsigned int)crc32(0, (const unsigned char*)varName, (uInt)strlen(varName));
 					newExitData.SaveRecordPartial(uid, varNameCRC, -1);
 					lua_pop(L,1);
 				}
@@ -5838,6 +6149,33 @@ void StopLuaScript(intptr_t uid)
 			}
 			info.menuData.subMenuData.clear();
 			DrawMenuBar(MainWindow->getHWnd());
+#elif defined(DESMUME_COCOA)
+			// remove items
+			map<PlatformMenuItem, PlatformMenu>::iterator it = info.menuData.menuItemMap.begin();
+			while(it != info.menuData.menuItemMap.end())
+			{
+				MacLua_MenuRemoveItem((*it).second, (int)(*it).first);
+				MacLua_MenuFreeID((int)(*it).first);
+				it++;
+			}
+			info.menuData.menuItemMap.clear();
+
+			// remove submenus, deepest first, but only if the script left them
+			// empty - another script may have added to the same menu.
+			vector<LuaSubMenuData>::reverse_iterator rit = info.menuData.subMenuData.rbegin();
+			while(rit != info.menuData.subMenuData.rend())
+			{
+				PlatformMenu menu = (*rit).menu;
+				PlatformMenuItem menuItem = (*rit).menuItem;
+				PlatformMenu subMenu = (*rit).subMenu;
+				if (MacLua_MenuIsEmpty(subMenu))
+				{
+					MacLua_MenuRemoveItem(menu, (int)menuItem);
+					MacLua_MenuFreeID((int)menuItem);
+				}
+				rit++;
+			}
+			info.menuData.subMenuData.clear();
 #endif
 		}
 		RefreshScriptStartedStatus();
@@ -5879,7 +6217,7 @@ static void CalculateMemHookRegions(LuaMemHookType hookType)
 				{
 					if(lua_isfunction(L, -1))
 					{
-						unsigned int addr = lua_tointeger(L, -2);
+						unsigned int addr = (unsigned int)lua_tointeger(L, -2);
 						hookedBytes.push_back(addr);
 					}
 					lua_pop(L, 1);
@@ -5965,7 +6303,7 @@ void CallRegisteredLuaMenuHandlers(PlatformMenuItem menuItem)
 #endif
 			int top = lua_gettop(L);
 			lua_getfield(L, LUA_REGISTRYINDEX, menuCallbackIDString);
-			lua_rawgeti(L, -1, menuItem);
+			lua_rawgeti(L, -1, (int)menuItem);
 			if (lua_isfunction(L, -1))
 			{
 				bool wasRunning = info.running;
@@ -6242,7 +6580,7 @@ void PushBinaryItem(T item, std::vector<unsigned char>& output)
 	for(int i = sizeof(T); i; i--)
 		output.push_back(*buf++);
 #else
-	int vecsize = output.size();
+	int vecsize = (int)output.size();
 	for(int i = sizeof(T); i; i--)
 		output.insert(output.begin() + vecsize, *buf++);
 #endif
@@ -6321,7 +6659,7 @@ static void LuaStackToBinaryConverter(lua_State* L, int i, std::vector<unsigned 
 				if(info.print)
 				{
 					char errmsg [1024];
-					sprintf(errmsg, "values of type \"%s\" are not allowed to be returned from registered save functions.\r\n", luaL_typename(L,i));
+					snprintf(errmsg, sizeof(errmsg), "values of type \"%s\" are not allowed to be returned from registered save functions.\r\n", luaL_typename(L,i));
 					info.print(luaStateToUIDMap[L], errmsg);
 				}
 				else
@@ -6389,7 +6727,7 @@ static void LuaStackToBinaryConverter(lua_State* L, int i, std::vector<unsigned 
 			// then a Lua value per array entry, then a (key,value) pair of Lua values per hashed entry
 			// note that the structure of table references are not faithfully serialized (yet)
 		{
-			int outputTypeIndex = output.size() - 1;
+			int outputTypeIndex = (int)(output.size() - 1);
 			int arraySize = 0;
 			int hashSize = 0;
 
@@ -6400,7 +6738,7 @@ static void LuaStackToBinaryConverter(lua_State* L, int i, std::vector<unsigned 
 
 				bool wasnil = false;
 				int nilcount = 0;
-				arraySize = lua_objlen(L, i);
+				arraySize = (int)lua_objlen(L, i);
 				int arrayValIndex = lua_gettop(L) + 1;
 				for(int j = 1; j <= arraySize; j++)
 				{
@@ -6493,9 +6831,9 @@ void BinaryToLuaStackConverter(lua_State* L, const unsigned char*& data, unsigne
 				{
 					char errmsg [1024];
 					if(type <= 10 && type != LUA_TTABLE)
-						sprintf(errmsg, "values of type \"%s\" are not allowed to be loaded into registered load functions. The save state's Lua save data file might be corrupted.\r\n", lua_typename(L,type));
+						snprintf(errmsg, sizeof(errmsg), "values of type \"%s\" are not allowed to be loaded into registered load functions. The save state's Lua save data file might be corrupted.\r\n", lua_typename(L,type));
 					else
-						sprintf(errmsg, "The save state's Lua save data file seems to be corrupted.\r\n");
+						snprintf(errmsg, sizeof(errmsg), "The save state's Lua save data file seems to be corrupted.\r\n");
 					info.print(luaStateToUIDMap[L], errmsg);
 				}
 				else
@@ -6515,7 +6853,7 @@ void BinaryToLuaStackConverter(lua_State* L, const unsigned char*& data, unsigne
 			break;
 		case LUA_TSTRING:
 			lua_pushstring(L, (const char*)data);
-			AdvanceByteStream(data, remaining, strlen((const char*)data) + 1);
+			AdvanceByteStream(data, remaining, (int)(strlen((const char*)data) + 1));
 			break;
 		case LUA_TNUMBER:
 			lua_pushnumber(L, AdvanceByteStream<double>(data, remaining));
@@ -6614,7 +6952,7 @@ unsigned char* LuaStackToBinary(lua_State* L, unsigned int& size)
 
 	unsigned char* rv = new unsigned char [output.size()];
 	memcpy(rv, &output.front(), output.size());
-	size = output.size();
+	size = (int)output.size();
 	return rv;
 }
 
@@ -6710,7 +7048,7 @@ void LuaSaveData::SaveRecordPartial(intptr_t uid, unsigned int key, int idx)
 
 		unsigned char* rv = new unsigned char [output.size()];
 		memcpy(rv, &output.front(), output.size());
-		cur->size = output.size();
+		cur->size = (int)output.size();
 		cur->data = rv;
 	}
 
@@ -6928,10 +7266,14 @@ bool GetLuaEngineInfo(LuaEngineInfo* out)
 	*out = blank;
 	strncpy(out->headers, LUA_RELEASE, sizeof(out->headers) - 1);
 
-	lua_State* L = luaL_newstate();
+	char reason[512];
+	lua_State* L = LuaEngineNewState(reason, sizeof(reason));
 	if(!L)
 	{
-		strncpy(out->version, "lua51.dll did not start", sizeof(out->version) - 1);
+		// "did not start" used to hardcode lua51.dll, which is nonsense on the
+		// platforms that do not have one; LuaEngineNewState() knows better.
+		strncpy(out->version, "Lua engine did not start", sizeof(out->version) - 1);
+		strncpy(out->jit, reason, sizeof(out->jit) - 1);
 		return false;
 	}
 	luaL_openlibs(L);

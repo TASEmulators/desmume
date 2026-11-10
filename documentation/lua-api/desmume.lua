@@ -270,6 +270,9 @@ function gui.opacity(alpha) end
 function gui.transparency(transparency) end
 
 --- Shows a modal message box.
+---
+--- A real native dialog on Windows (MessageBox) and macOS (NSAlert); the Linux
+--- front ends synthesise an answer from the button type instead.
 ---@param message string
 ---@param type? string "ok", "yesno", "yesnocancel", "okcancel" or "abortretryignore"; defaults to "ok"
 ---@param icon? string "message", "question", "warning" or "error"; defaults to "message"
@@ -284,9 +287,17 @@ function gui.popup(message, type, icon) end
 ---@return integer a 0-255
 function gui.parsecolor(color) end
 
---- Chooses which screens the canvas is drawn on.
----@param main boolean draw on the upper screen
----@param sub boolean draw on the touch screen
+--- Chooses which screens the canvas is drawn on, by enabling or disabling the
+--- DS background and object layers.  This changes the emulated display itself,
+--- not just the canvas, so it is visible in the emulator window too.
+---
+--- The layers are a bitmask: bit 0-3 are BG0-BG3, bit 4 is the OBJ layer.  Pass
+--- `0x1F` for everything on and `0x00` for everything off.
+---
+--- Works on every front end.  On Windows the matching View menu checkmarks are
+--- updated as well.
+---@param main integer bitmask for the main (upper) engine
+---@param sub integer bitmask for the sub (touch) engine
 function gui.setlayermask(main, sub) end
 
 --- Captures the canvas as a GD-format image string.
@@ -454,6 +465,10 @@ function emu.redraw() end
 function emu.reset() end
 
 --- Shows a message in the front end's status area.
+---
+--- Windows puts it in the status bar.  macOS draws it in the OSD over the game
+--- screen for about three seconds, because the Cocoa front end has no status
+--- bar.
 ---@param str string
 function emu.message(str) end
 
@@ -514,22 +529,41 @@ function emu.registerexit(func) end
 function emu.persistglobalvariables(variabletable) end
 
 --- Runs another script file in place of the current one.
+---
+--- A relative path is resolved against the directory of the calling script
+--- before anything else, so a script can open its neighbours by bare name.
+---
+--- The new script does not share the caller's Lua state: on Windows it replaces
+--- the running script, and on macOS it gets its own script console window, so
+--- stopping it leaves the caller running.
 ---@param filename string
 function emu.openscript(filename) end
 
---- Appends a menu to the front end's menu bar.  Windows only; a no-op on macOS
---- and Linux.
+--- Appends a menu to the front end's menu bar.
+---
+--- Windows adds it to the main window's menu bar; macOS appends it to
+--- `NSApp.mainMenu`, so it shows up as a new top-level menu next to the built-in
+--- ones.  Linux has no scripting menu hook, so this is a no-op there.
+---
+--- A flat map creates a menu of clickable items.  An array of tables builds one
+--- submenu per entry; see the TASVideos documentation for the nested form.  Up
+--- to 512 items can exist at once, which is well past anything hand-written.
 ---@param menuName string
 ---@param menuEntries table<string, fun():nil>|table[] map of label to callback, or an array of nested tables
 function emu.addmenu(menuName, menuEntries) end
 
---- Changes the properties of a menu item created by `emu.addmenu()`.  Windows
---- only; a no-op on macOS and Linux.
+--- Changes the properties of a menu item created by `emu.addmenu()`.
+---
+--- Windows and macOS both honour `checked` and `enabled`; Linux does nothing.
 ---@param menuItem fun():nil the callback that identifies the item
 ---@param infoTable table<string, any> for example `{ checked = true, enabled = false }`
 function emu.setmenuiteminfo(menuItem, infoTable) end
 
---- Registers a function called once the menu has been built.  Windows only.
+--- Registers a function called once the menu has been built.
+---
+--- Runs on Windows and macOS.  The handler is called after `emu.addmenu()` has
+--- populated the menu bar, which is when it is safe to call
+--- `emu.setmenuiteminfo()` on the items.
 ---@param func? fun():nil
 function emu.registermenustart(func) end
 
@@ -946,11 +980,17 @@ function movie.getreadonly() end
 --- Physical keyboard and mouse input as seen by the front end.
 input = {}
 
---- Returns the pressed keys as a table of `keyName = true`.
+--- Returns the pressed keys as a table of `keyName = true`, plus `xmouse` and
+--- `ymouse` for the pointer position.
 ---
---- Only the Windows front end fills this in; on macOS and Linux the table is
---- empty.
----@return table<string, boolean>
+--- Filled in on Windows (`GetAsyncKeyState`) and macOS (`CGEventSource` state).
+--- The Linux front ends have no equivalent and return an empty table.
+---
+--- `xmouse`/`ymouse` are in touch-screen pixels: 0-255 by 0-191 over the touch
+--- screen, so they can be passed straight to `stylus.set()`.  Over the upper
+--- screen `ymouse` is negative and `xmouse` is still 0-255, which is what
+--- Windows reports too.
+---@return table<string, boolean|integer>
 function input.get() end
 
 --- Registers a callback for a hotkey.
@@ -959,6 +999,9 @@ function input.get() end
 function input.registerhotkey(keynum, func) end
 
 --- Shows a question box and returns the answer.
+---
+--- A real native dialog on Windows and macOS; the Linux front ends synthesise
+--- an answer from the button type.
 ---@param message string
 ---@param type? string defaults to "yesno"
 ---@param icon? string defaults to "question"
@@ -966,7 +1009,7 @@ function input.registerhotkey(keynum, func) end
 function input.popup(message, type, icon) end
 
 --- Alias of `input.get()`.
----@return table<string, boolean>
+---@return table<string, boolean|integer>
 function input.read() end
 
 -- ===========================================================================
@@ -975,14 +1018,22 @@ function input.read() end
 
 --- Raw controller state from the host, independent of the emulated pad.
 ---
---- Only the Windows front end reads a real joystick; elsewhere
---- `controller.get()` returns an empty table.
+--- Windows reads it through the legacy joystick API (`joyGetPosEx`), macOS
+--- through `IOHIDManager`, so on macOS the pad must be visible to the HID
+--- subsystem - a controller that only shows up as a game controller
+--- (GCController) is not enumerated here.  Linux has no backend and always
+--- returns an empty table.
 controller = {}
 
 --- Returns the axis and button state of a joystick.
+---
+--- The table has `up`, `right`, `down` and `left` booleans for the hat switch,
+--- `"1"`..`"n"` booleans for the buttons, and up to six axes `x`, `y`, `z`, `r`,
+--- `u`, `v` scaled to -1.0..1.0.  Keys the device does not have are absent
+--- rather than zero.  A pad index that does not exist yields an empty table.
 ---@param joystickID? integer 0-15, defaults to 0 (the preferred device)
----@param returnDiagonals? boolean include diagonal D-pad states, defaults to false
----@return table<string, number|boolean> for example `h`, `v`, `x`, `y`, `z`, `r`, `u`, `pov`, `button1`
+---@param returnDiagonals? boolean report both directions of a diagonal, defaults to false
+---@return table<string, number|boolean> for example `up`, `x`, `"1"`
 function controller.get(joystickID, returnDiagonals) end
 
 --- Alias of `controller.get()`.

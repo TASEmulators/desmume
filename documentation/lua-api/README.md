@@ -23,13 +23,31 @@ The same `lua-engine.cpp` is built against three different engines, so pick
 | Front end | Engine | `runtime.version` |
 | --- | --- | --- |
 | Windows (MSVC) | LuaJIT 2.1 (`lua51.dll`, Lua 5.1 ABI) | `LuaJIT` |
-| macOS (Cocoa) | vendored Lua 5.1.5, compiled into the app | `Lua 5.1` |
+| macOS (Cocoa) | LuaJIT 2.1 (`libluajit-5.1.dylib`, Lua 5.1 ABI) | `LuaJIT` |
 | Linux/BSD (GTK, CLI) | `luajit` if `configure` found it, otherwise `lua5.1`, otherwise `lua` | `LuaJIT` (usually) |
 
-Lua 5.2+ syntax is not available on any of them; `goto` works only under
-LuaJIT. Trace compilation is off by default even under LuaJIT
-(`LUAENGINE_ENABLE_JIT`), because a JIT-compiled loop never calls the debug hook
-that the engine uses to keep a runaway script stoppable.
+All three use LuaJIT with the Lua 5.1 ABI unless your distribution's `configure`
+fell back to plain `lua5.1`. Lua 5.2+ syntax is not available on any of them;
+`goto` works only under LuaJIT. Trace compilation is off by default even under
+LuaJIT (`LUAENGINE_ENABLE_JIT`), because a JIT-compiled loop never calls the
+debug hook that the engine uses to keep a runaway script stoppable.
+
+Windows and macOS both resolve LuaJIT at run time rather than link it: Windows
+through `DelayLoadDLLs=lua51.dll` in `desmume.props`, macOS through `dlopen()`
+in `frontend/cocoa/LuaJITApi.cpp`. Neither ships Lua inside the executable, so a
+missing dylib/DLL costs you scripting, not the emulator - the console reports
+the loader error and suggests `brew install luajit` (macOS) or reinstalling the
+`lua51.dll` that came with the build (Windows). On macOS you can point the
+loader at a specific copy with `DESMUME_LUAJIT_DYLIB=/path/to/libluajit-5.1.dylib`;
+otherwise it looks in the app bundle's `Contents/Frameworks`, then the Homebrew
+and MacPorts library directories.
+
+To find out which engine a given build actually picked up, use **Tools > Lua
+Scripting > About Lua Scripting...** on macOS, or the **About...** button in the
+Lua Script window on Windows. Both report the running engine, the architecture
+it was built for, the trace-JIT policy and the headers the binary was compiled
+against; macOS also shows the dylib the entry points were resolved from. That is
+usually faster than reading `runtime.version` back out of a failing script.
 
 ## Installation
 
@@ -114,10 +132,12 @@ this build actually does.
 | `memory.readbyterange` | string | array table, `t[1]` is the byte at `address`; a negative `length` starts at `address + length` |
 | `joypad.get()` | pad number optional | controller index is optional and read from the argument list, so both `joypad.get()` and `joypad.get(0)` work |
 | `emu.speedmode` | absent in VBA | `normal` / `nothrottle` / `turbo` / `maximum`, wired into frame skipping |
-| `input.get()` | keyboard/mouse state | only the Windows front end fills it in; elsewhere it returns an empty table |
-| `emu.addmenu`, `emu.setmenuiteminfo`, `emu.registermenustart` | menu API | Windows only; no-ops elsewhere |
+| `input.get()` | keyboard/mouse state | filled in on Windows and macOS; the Linux front ends have no equivalent and return an empty table |
+| `emu.addmenu`, `emu.setmenuiteminfo`, `emu.registermenustart` | menu API | works on Windows and macOS (the items land in a `Lua` menu); no-ops on Linux |
 | `savestate.verify` | release builds | only registered when `PUBLIC_RELEASE` is undefined, which includes the macOS debug builds |
-| `gui.popup` / `input.popup` | native dialog | outside Windows the answer is guessed from the button type, not from a real dialog |
+| `gui.popup` / `input.popup` | native dialog | a real dialog on Windows and macOS (NSAlert); the Linux front ends guess the answer from the button type |
+| `controller.get()` | raw joystick | read through XInput on Windows and IOHIDManager on macOS; no-op on Linux |
+| `emu.message` | status area | Windows status bar; macOS draws it in the OSD for about three seconds |
 
 ## Maintenance
 

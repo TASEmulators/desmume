@@ -28,6 +28,10 @@
 #define HAVE_LUA
 #define LUA_USE_POSIX
 #define LUA_USE_DLOPEN
+// Cocoa has no LuaJIT import library: the entry points are resolved from a
+// dlopen()ed libluajit-5.1.dylib at runtime, the way Windows delay-loads
+// lua51.dll.  See LuaJITApi.cpp / LuaJITApiSymbols.h.
+#define DESMUME_LUA_DYNAMIC
 #endif
 
 #define FT2_BUILD_LIBRARY
