@@ -671,7 +671,6 @@ BEGIN
     LTEXT           "Output Console",IDC_STATIC,7,51,51,8
     LTEXT           "Script File",IDC_STATIC,7,7,32,8
     PUSHBUTTON      "Edit",IDC_BUTTON_LUAEDIT,58,31,46,16
-    PUSHBUTTON      "About...",IDC_BUTTON_LUAABOUT,106,31,48,16
     CONTROL         "stdout",IDC_USE_STDOUT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,226,49,37,10
 END
 
@@ -1936,6 +1935,7 @@ BEGIN
         BEGIN
             MENUITEM "New Lua Script Window...",    IDC_NEW_LUA_SCRIPT
             MENUITEM "Close All Script Windows",    IDC_CLOSE_LUA_SCRIPTS
+            MENUITEM "About Lua Scripting...",      IDC_LUA_ABOUT
         END
     END
     POPUP "&Help"

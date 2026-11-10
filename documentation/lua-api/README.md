@@ -43,11 +43,11 @@ otherwise it looks in the app bundle's `Contents/Frameworks`, then the Homebrew
 and MacPorts library directories.
 
 To find out which engine a given build actually picked up, use **Tools > Lua
-Scripting > About Lua Scripting...** on macOS, or the **About...** button in the
-Lua Script window on Windows. Both report the running engine, the architecture
-it was built for, the trace-JIT policy and the headers the binary was compiled
-against; macOS also shows the dylib the entry points were resolved from. That is
-usually faster than reading `runtime.version` back out of a failing script.
+Scripting > About Lua Scripting...** on either platform. It reports the running
+engine, the architecture it was built for, the trace-JIT policy and the headers
+the binary was compiled against; it also shows the dylib/DLL the entry points
+were resolved from. That is usually faster than reading `runtime.version` back
+out of a failing script.
 
 Two things in that dialog are easy to misread. `Headers` names the headers the
 binary was compiled against - for the MSVC and Cocoa builds that is the in-tree

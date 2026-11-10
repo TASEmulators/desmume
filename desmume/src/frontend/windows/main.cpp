@@ -387,6 +387,7 @@ extern bool allowBackgroundInput;
 
 std::vector<HWND> LuaScriptHWnds;
 LRESULT CALLBACK LuaScriptProc(HWND, UINT, WPARAM, LPARAM);
+void LuaConsole_ShowEngineInfo(HWND hWndOwner);
 
 bool autoLoadLua;
 #define MAX_RECENT_SCRIPTS 15 // must match value in luaconsole.cpp (belongs in a header, but I didn't want to create one just for this)
@@ -5826,6 +5827,9 @@ DOKEYDOWN:
 		case IDC_CLOSE_LUA_SCRIPTS:
 			for(int i=(int)LuaScriptHWnds.size()-1; i>=0; i--)
 				SendMessage(LuaScriptHWnds[i], WM_CLOSE, 0,0);
+			break;
+		case IDC_LUA_ABOUT:
+			LuaConsole_ShowEngineInfo(MainWindow->getHWnd());
 			break;
 	
 

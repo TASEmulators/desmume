@@ -488,6 +488,58 @@ static void GetLuaDllFileVersion(const char* path, char* out, size_t outSize)
 	FreeLibrary(ver);
 }
 
+// Shows which Lua engine is actually in use.  This used to be the About button
+// of the script window; the same information now hangs off the Tools > Lua
+// Scripting submenu, so it has to work with no script window open.
+void LuaConsole_ShowEngineInfo(HWND hWndOwner)
+{
+	// MSVC builds delay-load lua51.dll.  Asking Lua anything before the DLL is
+	// present would raise a delay-load exception, so use the same guard (and
+	// the same error message) as Run/Stop.
+	if(!DemandLua())
+		return;
+
+	LuaEngineInfo info;
+	if(!GetLuaEngineInfo(&info))
+	{
+		MessageBoxA(hWndOwner, "The Lua engine could not be started.",
+			"About Lua Scripting", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	// luaL_newstate() above loaded the DLL through the delay-load import
+	// table.  Keep the extra reference: unloading it would leave already
+	// resolved imports pointing at a freed module.
+	HMODULE mod = GetModuleHandleA("lua51.dll");
+	if(!mod)
+		mod = LoadLibraryA("lua51.dll");
+
+	char dllPath[MAX_PATH] = "";
+	if(mod)
+		GetModuleFileNameA(mod, dllPath, MAX_PATH);
+
+	char fileVersion[128] = "";
+	GetLuaDllFileVersion(dllPath, fileVersion, sizeof(fileVersion));
+
+	char text[2048];
+	int n = snprintf(text, sizeof(text),
+		"DeSmuME Lua Scripting\r\n\r\n"
+		"Engine     : %s\r\n"
+		"Platform   : %s\r\n"
+		"Trace JIT  : %s\r\n"
+		"Headers    : %s\r\n"
+		"Lua DLL    : %s\r\n",
+		info.version,
+		info.platform[0] ? info.platform : "n/a (not LuaJIT)",
+		info.jit,
+		info.headers,
+		dllPath[0] ? dllPath : "(not loaded as a DLL)");
+	if(fileVersion[0] && n > 0 && (size_t)n < sizeof(text))
+		snprintf(text + n, sizeof(text) - n, "File ver   : %s\r\n", fileVersion);
+
+	MessageBoxA(hWndOwner, text, "About Lua Scripting", MB_OK | MB_ICONINFORMATION);
+}
+
 LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	RECT r;
@@ -746,60 +798,6 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					PrintToWindowConsole((intptr_t)hDlg, "user clicked stop button\r\n");
 					SetActiveWindow(MainWindow->getHWnd());
 					if(DemandLua()) StopLuaScript((intptr_t)hDlg);
-				}	break;
-				case IDC_BUTTON_LUAABOUT:
-				{
-					// MSVC builds delay-load lua51.dll.  Asking Lua anything before
-					// the DLL is present would raise a delay-load exception, so use
-					// the same guard (and the same error message) as Run/Stop.
-					if(!DemandLua())
-						break;
-
-					LuaEngineInfo info;
-					if(!GetLuaEngineInfo(&info))
-					{
-						MessageBoxA(hDlg, "The Lua engine could not be started.",
-							"About Lua Scripting", MB_OK | MB_ICONERROR);
-						break;
-					}
-
-					// luaL_newstate() above loaded the DLL through the delay-load
-					// import table.  Keep the extra reference: unloading it would
-					// leave already-resolved imports pointing at a freed module.
-					HMODULE mod = GetModuleHandleA("lua51.dll");
-					if(!mod)
-						mod = LoadLibraryA("lua51.dll");
-
-					char dllPath[MAX_PATH] = "";
-					if(mod)
-						GetModuleFileNameA(mod, dllPath, MAX_PATH);
-
-					char fileVersion[128] = "";
-					GetLuaDllFileVersion(dllPath, fileVersion, sizeof(fileVersion));
-
-					char text[2048];
-					int n = snprintf(text, sizeof(text),
-						"DeSmuME Lua Scripting\r\n\r\n"
-						"Engine     : %s\r\n"
-						"Platform   : %s\r\n"
-						"Trace JIT  : %s\r\n"
-						"Headers    : %s\r\n"
-						"Lua DLL    : %s\r\n",
-						info.version,
-						info.platform[0] ? info.platform : "n/a (not LuaJIT)",
-						info.jit,
-						info.headers,
-						dllPath[0] ? dllPath : "(not loaded as a DLL)");
-					if(fileVersion[0] && n > 0 && (size_t)n < sizeof(text))
-						snprintf(text + n, sizeof(text) - n, "File ver   : %s\r\n", fileVersion);
-
-					MessageBoxA(hDlg, text, "About Lua Scripting", MB_OK | MB_ICONINFORMATION);
-
-					// Echo a one-line summary into the Output Console too, so the
-					// version can be copied along with the rest of the script output.
-					char line[512];
-					snprintf(line, sizeof(line), "Lua engine: %s\r\n", info.version);
-					PrintToWindowConsole((intptr_t)hDlg, line);
 				}	break;
 				case IDC_NOTIFY_SUBSERVIENT:
 				{
