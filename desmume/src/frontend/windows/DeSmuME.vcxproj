@@ -256,6 +256,7 @@
     <ClCompile Include="..\modules\osd\agg\aggdraw.cpp" />
     <ClCompile Include="..\modules\osd\agg\agg_osd.cpp" />
     <ClCompile Include="..\modules\osd\agg\native_draw.cpp" />
+    <ClCompile Include="..\modules\osd\wgpu\wgpu_draw.cpp" />
     <ClCompile Include="AboutBox.cpp" />
     <ClCompile Include="aviout.cpp" />
     <ClCompile Include="cheatsWin.cpp" />
@@ -463,6 +464,7 @@
     <ClInclude Include="..\modules\osd\agg\aggdraw.h" />
     <ClInclude Include="..\modules\osd\agg\agg_osd.h" />
     <ClInclude Include="..\modules\osd\agg\native_draw.h" />
+    <ClInclude Include="..\modules\osd\wgpu\wgpu_draw.h" />
     <ClInclude Include="osd_fonts\osd_fonts.h" />
     <ClInclude Include="..\..\movie.h" />
     <ClInclude Include="..\..\NDSSystem.h" />
@@ -691,6 +693,8 @@
   <ItemGroup>
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\modules\osd\agg\agg2d.inl" />
+    <None Include="..\modules\osd\wgpu\hud_shapes.wgsl" />
+    <None Include="..\modules\osd\wgpu\hud_text.wgsl" />
     <None Include="..\thumb_tabdef.inc" />
     <None Include="..\shared\upscalers\libretro\*.wgsl" />
     <None Include="..\..\utils\AsmJit\COPYING.txt" />

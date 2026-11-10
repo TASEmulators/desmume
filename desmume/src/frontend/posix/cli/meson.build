@@ -13,6 +13,8 @@ includes = include_directories(
   '../../../../src',
   '../../../../src/libretro-common/include',
   '../../../../src/frontend',
+  '../../../../src/frontend/windows/agg/include',
+  '../../../../src/frontend/windows/agg/font_freetype',
 )
 
 executable('desmume-cli',

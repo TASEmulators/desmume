@@ -71,10 +71,18 @@ public:
 	//   gapRect    : screen gap rectangle in client coordinates (may be empty)
 	//   rotation   : 0/90/180/270
 	//   gapColor   : Windows COLORREF (0x00BBGGRR)
+	//   overlay    : optional HUD layer blended over the screens; NULL draws none
 	// Returns false when the frame was dropped (surface lost/outdated).
 	bool present(const u32* pixels, int width, int height,
 				 const RECT* srcRects, const RECT* dstRects,
-				 const RECT* gapRect, int rotation, u32 gapColor);
+				 const RECT* gapRect, int rotation, u32 gapColor,
+				 const WGPUPresentOverlay* overlay = NULL);
+
+	// Objects owned by the presentation layer, as void*. The GPU OSD builds
+	// its renderer on the same device and queue. NULL until begin() succeeds.
+	void* instance();
+	void* device();
+	void* queue();
 
 	bool active;
 

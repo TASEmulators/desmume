@@ -718,6 +718,11 @@ extern AggDraw_Desmume aggDraw;
 void Agg_init();
 void Agg_setCustomSize(int w, int h);
 
+// Points the OSD/HUD drawing at another AggDrawTarget. The WebGPU display path
+// installs a WGPUOSDAggTarget here; NULL restores the target Agg_init() chose.
+// The rest of the OSD (fonts, layout, Lua) keeps using aggDraw.hud unchanged.
+void Agg_setHudTarget(AggDrawTarget *target);
+
 struct font_type
 {
 	const agg::int8u* font;

@@ -41,6 +41,29 @@ struct WGPUPresentRect
 	int bottom;
 };
 
+// An optional second layer drawn over the two screens, used by the frontends to
+// put the OSD/HUD on the GPU instead of compositing it into the frame on the
+// CPU. The layer is BGRA8888, top-down, and covers the whole frame: each
+// screen's quad samples the part of it that lies under that screen's source
+// rectangle.
+//
+// It can be supplied either as CPU pixels (the stage-1 path, still used as a
+// fallback) or as an already-rendered GPU texture. When `textureView` is
+// non-NULL the pixels are ignored and the view is sampled instead; the view
+// must be a 2D BGRA8Unorm texture view that stays alive for the call.
+struct WGPUPresentOverlay
+{
+	const uint32_t *pixels;
+	int width;
+	int height;
+	int strideBytes;          // >= width * 4; negative strides are not supported
+	bool premultiplied;       // true: RGB is already multiplied by alpha
+
+	// WGPUTextureView carried as void*. Optional; takes precedence over
+	// `pixels` when set.
+	const void *textureView;
+};
+
 // ---------------------------------------------------------------------------
 // GPU filters
 // ---------------------------------------------------------------------------
@@ -168,14 +191,23 @@ public:
 	//   gapRect  : screen gap rectangle in client coordinates (may be empty)
 	//   rotation : 0/90/180/270
 	//   gapColor : 0x00BBGGRR, i.e. red in the low byte
+	//   overlay  : optional HUD layer blended over the screens; NULL draws none
 	// Returns false when the frame was dropped (surface lost or outdated).
 	bool present(const uint32_t *pixels, int width, int height,
 				 const WGPUPresentRect *srcRects,
 				 const WGPUPresentRect *dstRects,
 				 const WGPUPresentRect *gapRect,
-				 int rotation, uint32_t gapColor);
+				 int rotation, uint32_t gapColor,
+				 const WGPUPresentOverlay *overlay = NULL);
 
 	bool isReady() const;
+
+	// The objects begin() created, as void* so webgpu.h stays out of frontend
+	// headers. They are valid between a successful begin() and the next kill();
+	// the GPU OSD uses them to build its own pipelines on the same device.
+	void *instance() const;
+	void *device() const;
+	void *queue() const;
 
 private:
 	struct Impl;

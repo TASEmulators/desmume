@@ -166,6 +166,19 @@
 			<!-- WebGPU renderer. wgpu-native binaries are only shipped for x64. -->
 			<PreprocessorDefinitions Condition="'$(Platform)' == 'x64'">ENABLE_WGPU=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
+			<!-- Stage 1 OSD migration: blend the HUD as a second GPU texture on
+			     the WebGPU display method instead of compositing it into the
+			     frame on the CPU. Opt-in until it has been validated on real
+			     hardware: pass /p:UseGpuHudOverlay=true to msbuild. -->
+			<PreprocessorDefinitions Condition="'$(Platform)' == 'x64' AND '$(UseGpuHudOverlay)' == 'true'">DESMUME_GPU_HUD_OVERLAY=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+			<!-- Stage 2/4 OSD migration: WGPUOSDAggTarget records the primitives
+			     agg_osd.cpp and Lua use and rasterizes them with a WGSL SDF
+			     pipeline. Stage 4 wires it into the WebGPU HUD path when this
+			     and UseGpuHudOverlay are both enabled. Pass
+			     /p:UseWgpuOsd=true /p:UseGpuHudOverlay=true. -->
+			<PreprocessorDefinitions Condition="'$(Platform)' == 'x64' AND '$(UseWgpuOsd)' == 'true'">DESMUME_WGPU_OSD=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
 		</ClCompile>
 
 		<Link>

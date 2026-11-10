@@ -29,6 +29,17 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "../modules/osd/agg/native_draw.h"
 #endif
 
+// Stage 4 of the OSD migration needs both halves: the GPU recorder target
+// (DESMUME_WGPU_OSD) and the WebGPU overlay presentation path
+// (DESMUME_GPU_HUD_OVERLAY). Without the latter the rendered HUD would have no
+// way to reach the screen.
+#if defined(DESMUME_WGPU_OSD) && defined(DESMUME_GPU_HUD_OVERLAY)
+#define DESMUME_WGPU_HUD_STAGE4 1
+#include <vector>
+
+#include "../modules/osd/wgpu/wgpu_draw.h"
+#endif
+
 
 
 DDRAW ddraw;
@@ -599,7 +610,81 @@ static void DD_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight)
 	}
 }
 
-static void WGPU_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight)
+#if defined(DESMUME_WGPU_HUD_STAGE4)
+// Stage 4: the HUD is recorded by WGPUOSDAggTarget and sampled straight from its
+// texture by WGPUPresent, so no CPU buffer is uploaded per frame.
+//
+// The target is created once and reused. Fonts come from fonts_list[], the same
+// table lookupFont() serves, so INI font names and Lua keep working.
+static WGPUOSDAggTarget *WGPU_HudTarget()
+{
+	static WGPUOSDAggTarget *target = NULL;
+
+	if (target == NULL)
+	{
+		target = new WGPUOSDAggTarget(GPU_FRAMEBUFFER_NATIVE_WIDTH,
+		                              GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+	}
+
+	return target;
+}
+
+static bool WGPU_HudBegin(WGPUOSDAggTarget *target)
+{
+	static bool fontsRegistered = false;
+	static int lastFontIndex = -1;
+
+	if (target == NULL)
+	{
+		return false;
+	}
+
+	if (!fontsRegistered)
+	{
+		// setFonts() must run before the first beginGPU() so the atlas is
+		// built with every font the OSD can select.
+		std::vector<WGPUOSDFont> fonts;
+		fonts.reserve((size_t)font_Nums);
+
+		for (int i = 0; i < font_Nums; i++)
+		{
+			WGPUOSDFont font;
+			font.name = fonts_list[i].name;
+			font.data = fonts_list[i].font;
+			font.size = 0;
+			fonts.push_back(font);
+		}
+
+		target->setFonts(fonts.empty() ? NULL : &fonts[0], (int)fonts.size());
+		fontsRegistered = true;
+	}
+
+	// The menu applies the HUD font to the default target, which is not the one
+	// installed here. Follow the same INI setting and apply it on change.
+	int fontIndex = GetPrivateProfileInt("Display", "HUD Font", font_Nums - 1, IniName);
+
+	if ((fontIndex < 0) || (fontIndex >= font_Nums))
+	{
+		fontIndex = font_Nums - 1;
+	}
+
+	if (fontIndex != lastFontIndex)
+	{
+		target->setFont(fonts_list[fontIndex].name);
+		lastFontIndex = fontIndex;
+	}
+
+	return target->beginGPU(wgpudisplay.instance(), wgpudisplay.device(), wgpudisplay.queue());
+}
+
+static bool WGPU_HudRender(WGPUOSDAggTarget *target)
+{
+	return (target != NULL) && target->render();
+}
+#endif
+
+static void WGPU_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight,
+                           const WGPUPresentOverlay* overlay)
 {
 	HWND hwnd = MainWindow->getHWnd();
 
@@ -658,7 +743,7 @@ static void WGPU_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight)
 
 	wgpudisplay.present(srcFramebuffer, videoWidth, videoHeight,
 	                    srcRects, dstRects, &GapRect, video.rotation,
-	                    (u32)ScreenGapColor);
+	                    (u32)ScreenGapColor, overlay);
 }
 
 void displayThread(void *arg)
@@ -748,6 +833,11 @@ void DoDisplay()
 	);
 
 	bool useSecondaryVideoBuffer = false;
+	const WGPUPresentOverlay *overlayPtr = NULL;
+#if defined(DESMUME_GPU_HUD_OVERLAY)
+	WGPUPresentOverlay overlay;
+	memset(&overlay, 0, sizeof(overlay));
+#endif
 
 	if (displayPostponeType && !displayNoPostponeNext && (displayPostponeType < 0 || timeGetTime() < displayPostponeUntil))
 		return;
@@ -789,6 +879,30 @@ void DoDisplay()
 		useSecondaryVideoBuffer = true;
 	}
 
+#if defined(DESMUME_WGPU_HUD_STAGE4)
+	// Stage 4: record the HUD with the GPU OSD target instead of rasterizing it
+	// into a CPU buffer. Lua is included: the target records agg.* primitives and
+	// bitmap text, and gui.* pixels are uploaded as the target's fallback layer,
+	// so scripts draw on the WGPU backend too.
+	bool useGpuHud = false;
+	WGPUOSDAggTarget *hudTarget = NULL;
+
+	if (needsHUDDrawing && isRunningWGPU && !CommonSettings.single_core())
+	{
+		hudTarget = WGPU_HudTarget();
+
+		// WGPU_DoDisplay() calls begin() again; it is idempotent. Calling it
+		// here is what makes the device available before the HUD is recorded.
+		if ( (hudTarget != NULL) &&
+		     wgpudisplay.begin(MainWindow->getHWnd(), displayWGPUBackend) &&
+		     WGPU_HudBegin(hudTarget) )
+		{
+			useGpuHud = true;
+			Agg_setHudTarget(hudTarget);
+		}
+	}
+#endif
+
 	aggDraw.hud->clear();
 
 	if (needsHUDDrawing)
@@ -809,10 +923,77 @@ void DoDisplay()
 		// draw hud
 		DoDisplay_DrawHud();
 
-		// DirectDraw doesn't support alpha blending, so we must scale and overlay the HUD ourselves.
-		// The WebGPU path uploads a single opaque BGRA texture, so it composites the HUD on the
-		// CPU in the same way rather than adding a second blended pipeline.
-		if (isRunningDirectDraw || isRunningWGPU)
+#if defined(DESMUME_WGPU_HUD_STAGE4)
+		if (useGpuHud)
+		{
+			useGpuHud = WGPU_HudRender(hudTarget);
+
+			// Restore before any CPU fallback reads aggDraw.hud. If rendering
+			// failed, the default AGG buffer never received this frame's HUD,
+			// so redraw it there instead of compositing a stale frame.
+			Agg_setHudTarget(NULL);
+
+			if (!useGpuHud)
+			{
+				aggDraw.hud->clear();
+				DoDisplay_DrawHud();
+			}
+		}
+#endif
+
+		// DirectDraw has no second blended layer, so the HUD is scaled and
+		// composited on the CPU. The WebGPU path does that on the GPU when
+		// DESMUME_GPU_HUD_OVERLAY is enabled; otherwise, or when the HUD buffer
+		// is unavailable, it uses the same CPU composite.
+		bool cpuHudComposite = isRunningDirectDraw;
+
+		if (isRunningWGPU)
+		{
+#if defined(DESMUME_GPU_HUD_OVERLAY)
+			bool haveGpuHud = false;
+
+#if defined(DESMUME_WGPU_HUD_STAGE4)
+			if (useGpuHud)
+			{
+				const void *view = hudTarget->textureView();
+
+				if (view != NULL)
+				{
+					overlay.textureView = view;
+					overlay.width = hudTarget->targetWidth();
+					overlay.height = hudTarget->targetHeight();
+					overlay.premultiplied = true;
+					overlayPtr = &overlay;
+					haveGpuHud = true;
+				}
+			}
+#endif
+
+			if (!haveGpuHud)
+			{
+				const u8 *hudPixels = (const u8 *)aggDraw.hud->buf().buf();
+				const int hudWidth = (int)aggDraw.hud->buf().width();
+				const int hudHeight = (int)aggDraw.hud->buf().height();
+				const int hudStride = (int)aggDraw.hud->buf().stride_abs();
+
+				if ( (aggDraw.hud != aggDraw.screen) &&
+					 (hudPixels != NULL) && (hudWidth > 0) && (hudHeight > 0) &&
+					 (hudStride >= hudWidth * 4) )
+				{
+					overlay.pixels = (const uint32_t *)hudPixels;
+					overlay.width = hudWidth;
+					overlay.height = hudHeight;
+					overlay.strideBytes = hudStride;
+					overlay.premultiplied = true;
+					overlayPtr = &overlay;
+				}
+			}
+#else
+			cpuHudComposite = true;
+#endif
+		}
+
+		if (cpuHudComposite)
 		{
 #ifdef DESMUME_NATIVE_DRAW
 			// Straight-alpha CPU composite.  This replaces Agg2D::transformImage,
@@ -850,7 +1031,7 @@ void DoDisplay()
 		gldisplay.kill();
 
 		u32* srcFramebuffer = (needsVideoFiltering) ? (u32*)video.filteredbuffer : (u32*)video.buffer;
-		WGPU_DoDisplay(srcFramebuffer, video.width, video.height);
+		WGPU_DoDisplay(srcFramebuffer, video.width, video.height, overlayPtr);
 	}
 	else
 	{

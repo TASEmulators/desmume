@@ -2703,6 +2703,17 @@ static LuaGUIData curGuiData;
 static void prepare_drawing()
 {
 	curGuiData = GetCurrentInfo().guiData;
+
+#ifdef HAVE_LIBAGG
+	// Follow whichever target the frontend installed. The WebGPU display path
+	// swaps aggDraw.hud for the frame, so gui.* pixels land in the buffer that is
+	// actually presented instead of the default AGG HUD buffer.
+	if ((aggDraw.hud != NULL) && (aggDraw.hud->buf().buf() != NULL))
+	{
+		curGuiData.data = (u32*)aggDraw.hud->buf().buf();
+		curGuiData.stridePix = aggDraw.hud->buf().stride_abs() / 4;
+	}
+#endif
 }
 static void prepare_reading()
 {

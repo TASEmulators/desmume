@@ -134,9 +134,25 @@ bool WGPUDISPLAY::upscalerCompiled()
 	return _present.upscalerCompiled();
 }
 
+void* WGPUDISPLAY::instance()
+{
+	return _present.instance();
+}
+
+void* WGPUDISPLAY::device()
+{
+	return _present.device();
+}
+
+void* WGPUDISPLAY::queue()
+{
+	return _present.queue();
+}
+
 bool WGPUDISPLAY::present(const u32 *pixels, int width, int height,
 						  const RECT *srcRects, const RECT *dstRects,
-						  const RECT *gapRect, int rotation, u32 gapColor)
+						  const RECT *gapRect, int rotation, u32 gapColor,
+						  const WGPUPresentOverlay *overlay)
 {
 	if ( (_window == NULL) || !_present.isReady() )
 	{
@@ -155,7 +171,7 @@ bool WGPUDISPLAY::present(const u32 *pixels, int width, int height,
 		gapPtr = &gap;
 	}
 
-	return _present.present(pixels, width, height, src, dst, gapPtr, rotation, (uint32_t)gapColor);
+	return _present.present(pixels, width, height, src, dst, gapPtr, rotation, (uint32_t)gapColor, overlay);
 }
 
 #else
@@ -184,8 +200,12 @@ void WGPUDISPLAY::setUpscaler(int upscaler) { _upscalerPending = upscaler; }
 int WGPUDISPLAY::upscaler() { return _upscalerPending; }
 bool WGPUDISPLAY::upscalerCompiled() { return false; }
 
+void* WGPUDISPLAY::instance() { return NULL; }
+void* WGPUDISPLAY::device() { return NULL; }
+void* WGPUDISPLAY::queue() { return NULL; }
+
 bool WGPUDISPLAY::present(const u32*, int, int, const RECT*, const RECT*,
-						  const RECT*, int, u32)
+						  const RECT*, int, u32, const WGPUPresentOverlay*)
 {
 	return false;
 }

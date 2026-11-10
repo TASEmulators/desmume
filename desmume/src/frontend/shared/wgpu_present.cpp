@@ -42,7 +42,8 @@ bool WGPUPresent::isUpscaler(int upscaler) { return upscaler == WGPUPresentUpsca
 bool WGPUPresent::isReady() const { return false; }
 
 bool WGPUPresent::present(const uint32_t *, int, int, const WGPUPresentRect *,
-						  const WGPUPresentRect *, const WGPUPresentRect *, int, uint32_t)
+						  const WGPUPresentRect *, const WGPUPresentRect *, int, uint32_t,
+						  const WGPUPresentOverlay *)
 {
 	return false;
 }
@@ -55,6 +56,7 @@ bool WGPUPresent::present(const uint32_t *, int, int, const WGPUPresentRect *,
 #include <chrono>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include "webgpu.h"
 // wgpu-native extensions (WGPUInstanceExtras) used to pin the instance backend.
@@ -104,6 +106,14 @@ fn fsMain(input: VSOut) -> @location(0) vec4f
 {
 	let tex = textureSample(srcTex, srcSamp, input.uv);
 	return vec4f(tex.rgb * input.color.rgb, 1.0);
+}
+
+// The HUD overlay keeps the alpha it was uploaded with; the pipeline's blend
+// state decides whether the RGB is premultiplied or straight.
+@fragment
+fn fsOverlay(input: VSOut) -> @location(0) vec4f
+{
+	return textureSample(srcTex, srcSamp, input.uv);
 }
 )WGSL";
 
@@ -351,6 +361,20 @@ struct WGPUPresent::Impl
 	uint32_t videoHeight;
 	bool videoFilter;
 
+	// Optional HUD layer. The texture is created lazily the first time a frame
+	// carries an overlay; the two pipelines differ only in whether the source
+	// colour is treated as premultiplied.
+	WGPUTexture overlayTex;
+	WGPUTextureView overlayView;
+	WGPUBindGroup overlayBindGroup;
+	WGPURenderPipeline overlayPipelinePremultiplied;
+	WGPURenderPipeline overlayPipelineStraight;
+	uint32_t overlayWidth;
+	uint32_t overlayHeight;
+	uint64_t overlayHash;
+	bool overlayHashValid;
+	std::vector<uint8_t> overlayStaging;
+
 	WGPUBuffer vertexBuffer;
 	uint64_t vertexBufferSize;
 
@@ -435,6 +459,15 @@ struct WGPUPresent::Impl
 		videoWidth(0),
 		videoHeight(0),
 		videoFilter(false),
+		overlayTex(NULL),
+		overlayView(NULL),
+		overlayBindGroup(NULL),
+		overlayPipelinePremultiplied(NULL),
+		overlayPipelineStraight(NULL),
+		overlayWidth(0),
+		overlayHeight(0),
+		overlayHash(0),
+		overlayHashValid(false),
 		vertexBuffer(NULL),
 		vertexBufferSize(0),
 		shaderSource(NULL),
@@ -459,6 +492,12 @@ struct WGPUPresent::Impl
 	bool ConfigureSurface(uint32_t w, uint32_t h);
 	bool EnsureVideoTexture(uint32_t w, uint32_t h, bool useFilter);
 	bool CreateBindGroup(WGPUTextureView view, WGPUSampler sampler, WGPUBindGroup *out);
+	bool EnsureOverlayTexture(uint32_t w, uint32_t h);
+	bool UpdateOverlay(const WGPUPresentOverlay &overlay);
+	// Builds a bind group for a caller-owned overlay texture view. The bind
+	// group is released after the frame is submitted; the texture stays owned
+	// by the caller.
+	bool CreateOverlayBindGroup(const void *textureView, WGPUBindGroup *out);
 
 	bool CreateUpscalerResources();
 	bool CreateUpscalerPipeline(WGPUShaderModule module, int index);
@@ -749,6 +788,47 @@ bool WGPUPresent::Impl::CreatePipeline()
 		return false;
 	}
 
+	// The HUD overlay is the same geometry and vertex stage, but its fragment
+	// stage keeps the texture's alpha and blends it over the finished screens.
+	// Two pipelines cover the two upload conventions; a device that refuses
+	// them simply presents without the overlay.
+	WGPUBlendComponent overlayAlphaBlend = WGPU_BLEND_COMPONENT_INIT;
+	overlayAlphaBlend.operation = WGPUBlendOperation_Add;
+	overlayAlphaBlend.srcFactor = WGPUBlendFactor_One;
+	overlayAlphaBlend.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+
+	WGPUBlendState overlayPremultipliedBlend = WGPU_BLEND_STATE_INIT;
+	overlayPremultipliedBlend.color = overlayAlphaBlend;
+	overlayPremultipliedBlend.alpha = overlayAlphaBlend;
+
+	WGPUBlendState overlayStraightBlend = WGPU_BLEND_STATE_INIT;
+	overlayStraightBlend.color.operation = WGPUBlendOperation_Add;
+	overlayStraightBlend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+	overlayStraightBlend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+	overlayStraightBlend.alpha = overlayAlphaBlend;
+
+	WGPUColorTargetState overlayColorTarget = WGPU_COLOR_TARGET_STATE_INIT;
+	overlayColorTarget.format = this->format;
+	overlayColorTarget.writeMask = WGPUColorWriteMask_All;
+
+	WGPUFragmentState overlayFragmentState = fragmentState;
+	overlayFragmentState.entryPoint = Lit("fsOverlay");
+	overlayFragmentState.targets = &overlayColorTarget;
+
+	WGPURenderPipelineDescriptor overlayPipelineDesc = pipelineDesc;
+	overlayPipelineDesc.fragment = &overlayFragmentState;
+
+	overlayColorTarget.blend = &overlayPremultipliedBlend;
+	this->overlayPipelinePremultiplied = wgpuDeviceCreateRenderPipeline(this->device, &overlayPipelineDesc);
+
+	overlayColorTarget.blend = &overlayStraightBlend;
+	this->overlayPipelineStraight = wgpuDeviceCreateRenderPipeline(this->device, &overlayPipelineDesc);
+
+	if ( (this->overlayPipelinePremultiplied == NULL) || (this->overlayPipelineStraight == NULL) )
+	{
+		printf("WGPU present: HUD overlay pipeline creation failed; frames will be presented without it\n");
+	}
+
 	// The GPU filter chains need layouts of their own. A device that cannot
 	// make them leaves the filters unavailable: PrepareUpscaler() gives up on
 	// a NULL layout long before it asks for a shader, and the plain blit is
@@ -782,7 +862,7 @@ bool WGPUPresent::Impl::CreateBindGroup(WGPUTextureView view, WGPUSampler sample
 
 bool WGPUPresent::Impl::CreateBuffers()
 {
-	this->vertexBufferSize = 18 * sizeof(Vertex);
+	this->vertexBufferSize = 30 * sizeof(Vertex);
 
 	WGPUBufferDescriptor bufferDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
 	bufferDesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
@@ -932,6 +1012,170 @@ bool WGPUPresent::Impl::EnsureVideoTexture(uint32_t w, uint32_t h, bool useFilte
 	this->videoHeight = h;
 
 	return this->CreateBindGroup(this->videoView, this->videoFilter ? this->samplerLinear : this->samplerNearest, &this->videoBindGroup);
+}
+
+bool WGPUPresent::Impl::EnsureOverlayTexture(uint32_t w, uint32_t h)
+{
+	if ( (w == 0) || (h == 0) )
+	{
+		return false;
+	}
+
+	if ( (this->overlayTex != NULL) && (this->overlayWidth == w) && (this->overlayHeight == h) )
+	{
+		return true;
+	}
+
+	if (this->overlayBindGroup != NULL)
+	{
+		wgpuBindGroupRelease(this->overlayBindGroup);
+		this->overlayBindGroup = NULL;
+	}
+
+	if (this->overlayView != NULL)
+	{
+		wgpuTextureViewRelease(this->overlayView);
+		this->overlayView = NULL;
+	}
+
+	if (this->overlayTex != NULL)
+	{
+		wgpuTextureRelease(this->overlayTex);
+		this->overlayTex = NULL;
+	}
+
+	WGPUTextureDescriptor textureDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
+	textureDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
+	textureDesc.dimension = WGPUTextureDimension_2D;
+	textureDesc.size.width = w;
+	textureDesc.size.height = h;
+	textureDesc.size.depthOrArrayLayers = 1;
+	textureDesc.format = WGPUTextureFormat_BGRA8Unorm;
+	textureDesc.mipLevelCount = 1;
+	textureDesc.sampleCount = 1;
+
+	this->overlayTex = wgpuDeviceCreateTexture(this->device, &textureDesc);
+
+	if (this->overlayTex == NULL)
+	{
+		return false;
+	}
+
+	this->overlayView = wgpuTextureCreateView(this->overlayTex, NULL);
+
+	if (this->overlayView == NULL)
+	{
+		wgpuTextureRelease(this->overlayTex);
+		this->overlayTex = NULL;
+		return false;
+	}
+
+	if (!this->CreateBindGroup(this->overlayView, this->samplerNearest, &this->overlayBindGroup))
+	{
+		wgpuTextureViewRelease(this->overlayView);
+		this->overlayView = NULL;
+		wgpuTextureRelease(this->overlayTex);
+		this->overlayTex = NULL;
+		return false;
+	}
+
+	this->overlayWidth = w;
+	this->overlayHeight = h;
+	// A new texture has no contents yet, even if the pixels did not change.
+	this->overlayHashValid = false;
+
+	return true;
+}
+
+bool WGPUPresent::Impl::UpdateOverlay(const WGPUPresentOverlay &overlay)
+{
+	if ( (overlay.pixels == NULL) || (overlay.width <= 0) || (overlay.height <= 0) )
+	{
+		return false;
+	}
+
+	const size_t rowBytes = (size_t)overlay.width * 4;
+
+	if ( (overlay.strideBytes <= 0) || ((size_t)overlay.strideBytes < rowBytes) )
+	{
+		return false;
+	}
+
+	if (!this->EnsureOverlayTexture((uint32_t)overlay.width, (uint32_t)overlay.height))
+	{
+		return false;
+	}
+
+	const unsigned char *src = (const unsigned char *)overlay.pixels;
+
+	// Hash only the pixels, not the row padding, so a stride change alone does
+	// not force an upload.
+	uint64_t hash = 1469598103934665603ULL;
+
+	for (int y = 0; y < overlay.height; y++)
+	{
+		const unsigned char *row = src + (size_t)y * (size_t)overlay.strideBytes;
+
+		for (size_t x = 0; x < rowBytes; x++)
+		{
+			hash ^= (uint64_t)row[x];
+			hash *= 1099511628211ULL;
+		}
+	}
+
+	if (this->overlayHashValid && (hash == this->overlayHash))
+	{
+		return true;
+	}
+
+	// writeTexture wants 256-byte aligned rows. The 256x384 HUD is naturally
+	// aligned; anything else is copied into a padded staging buffer.
+	const uint32_t pitch = (uint32_t)((rowBytes + 255) & ~(size_t)255);
+	const void *data = src;
+
+	if ((uint32_t)overlay.strideBytes != pitch)
+	{
+		this->overlayStaging.resize((size_t)pitch * (size_t)overlay.height);
+
+		for (int y = 0; y < overlay.height; y++)
+		{
+			memcpy(this->overlayStaging.data() + (size_t)y * (size_t)pitch,
+				   src + (size_t)y * (size_t)overlay.strideBytes, rowBytes);
+		}
+
+		data = this->overlayStaging.data();
+	}
+
+	WGPUTexelCopyTextureInfo copyDest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+	copyDest.texture = this->overlayTex;
+
+	WGPUTexelCopyBufferLayout copyLayout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
+	copyLayout.bytesPerRow = pitch;
+	copyLayout.rowsPerImage = (uint32_t)overlay.height;
+
+	WGPUExtent3D copySize = WGPU_EXTENT_3D_INIT;
+	copySize.width = (uint32_t)overlay.width;
+	copySize.height = (uint32_t)overlay.height;
+	copySize.depthOrArrayLayers = 1;
+
+	wgpuQueueWriteTexture(this->queue, &copyDest, data, (size_t)pitch * (size_t)overlay.height, &copyLayout, &copySize);
+
+	this->overlayHash = hash;
+	this->overlayHashValid = true;
+
+	return true;
+}
+
+bool WGPUPresent::Impl::CreateOverlayBindGroup(const void *textureView, WGPUBindGroup *out)
+{
+	*out = NULL;
+
+	if (textureView == NULL)
+	{
+		return false;
+	}
+
+	return this->CreateBindGroup((WGPUTextureView)textureView, this->samplerNearest, out);
 }
 
 // ---------------------------------------------------------------------------
@@ -1461,6 +1705,18 @@ void WGPUPresent::Impl::Destroy()
 	if (this->upscalerBindGroupLayout != NULL) { wgpuBindGroupLayoutRelease(this->upscalerBindGroupLayout); this->upscalerBindGroupLayout = NULL; }
 	this->upscalerFailed = false;
 
+	if (this->overlayBindGroup != NULL) { wgpuBindGroupRelease(this->overlayBindGroup); this->overlayBindGroup = NULL; }
+	if (this->overlayView != NULL) { wgpuTextureViewRelease(this->overlayView); this->overlayView = NULL; }
+	if (this->overlayTex != NULL) { wgpuTextureRelease(this->overlayTex); this->overlayTex = NULL; }
+	this->overlayWidth = 0;
+	this->overlayHeight = 0;
+	this->overlayHash = 0;
+	this->overlayHashValid = false;
+	this->overlayStaging.clear();
+
+	if (this->overlayPipelinePremultiplied != NULL) { wgpuRenderPipelineRelease(this->overlayPipelinePremultiplied); this->overlayPipelinePremultiplied = NULL; }
+	if (this->overlayPipelineStraight != NULL) { wgpuRenderPipelineRelease(this->overlayPipelineStraight); this->overlayPipelineStraight = NULL; }
+
 	if (this->videoBindGroup != NULL) { wgpuBindGroupRelease(this->videoBindGroup); this->videoBindGroup = NULL; }
 	if (this->videoView != NULL) { wgpuTextureViewRelease(this->videoView); this->videoView = NULL; }
 	if (this->videoTex != NULL) { wgpuTextureRelease(this->videoTex); this->videoTex = NULL; }
@@ -1689,11 +1945,27 @@ bool WGPUPresent::isReady() const
 	return (_impl != NULL) && _impl->ready;
 }
 
+void *WGPUPresent::instance() const
+{
+	return (_impl != NULL) ? (void *)_impl->instance : NULL;
+}
+
+void *WGPUPresent::device() const
+{
+	return (_impl != NULL) ? (void *)_impl->device : NULL;
+}
+
+void *WGPUPresent::queue() const
+{
+	return (_impl != NULL) ? (void *)_impl->queue : NULL;
+}
+
 bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 						  const WGPUPresentRect *srcRects,
 						  const WGPUPresentRect *dstRects,
 						  const WGPUPresentRect *gapRect,
-						  int rotation, uint32_t gapColor)
+						  int rotation, uint32_t gapColor,
+						  const WGPUPresentOverlay *overlay)
 {
 	if ( (_impl == NULL) || !_impl->ready || (pixels == NULL) ||
 		 (width <= 0) || (height <= 0) ||
@@ -1775,6 +2047,36 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 
 	wgpuQueueWriteTexture(d.queue, &uploadDest, pixels, (size_t)width * (size_t)height * 4, &uploadLayout, &uploadSize);
 
+	// The HUD overlay is uploaded before the command encoder is made. The hash
+	// keeps a static HUD from costing an upload every frame. A caller that
+	// already has the HUD in a GPU texture passes its view instead; the bind
+	// group then lives for this frame only.
+	bool drawOverlay = false;
+	WGPURenderPipeline overlayPipeline = NULL;
+	WGPUBindGroup overlayGroup = NULL;
+	bool overlayGroupOwned = false;
+
+	if (overlay != NULL)
+	{
+		overlayPipeline = overlay->premultiplied
+			? d.overlayPipelinePremultiplied
+			: d.overlayPipelineStraight;
+
+		if (overlayPipeline != NULL)
+		{
+			if (overlay->textureView != NULL)
+			{
+				drawOverlay = d.CreateOverlayBindGroup(overlay->textureView, &overlayGroup);
+				overlayGroupOwned = drawOverlay;
+			}
+			else
+			{
+				drawOverlay = d.UpdateOverlay(*overlay);
+				overlayGroup = d.overlayBindGroup;
+			}
+		}
+	}
+
 	// The GPU filter, when one is selected, is set up before the quads are
 	// built: which texture a screen's quad samples decides the uv its vertices
 	// carry. Each screen has a chain of its own over its own copy of its half of
@@ -1811,9 +2113,16 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 	// Build the quads. Positions are converted straight to NDC here because the
 	// window size is known; UVs are permuted exactly like the OpenGL path so
 	// that screen rotation matches.
-	Vertex vertices[18];
+	Vertex vertices[30];
 	int vertexCount = 0;
 	int screenVertexStart[2] = { 0, 0 };
+	// Per screen: where its HUD quad starts (-1 when it has none) and the uvs
+	// of that quad. The HUD is a second texture over the whole frame, so its
+	// uvs are always the frame-relative ones, even when the screen's own quad
+	// samples a filter texture that holds only that screen.
+	int hudVertexStart[2] = { -1, -1 };
+	float hudUs[2][4];
+	float hudVs[2][4];
 
 	const float halfW = (float)windowWidth;
 	const float halfH = (float)windowHeight;
@@ -1923,6 +2232,28 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 		screenVertexStart[i] = vertexCount;
 
 		pushQuad(xs, ys, us, vs, 1.0f, 1.0f, 1.0f);
+
+		if ( drawOverlay && (dstRight > dstLeft) && (dstBottom > dstTop) )
+		{
+			// The HUD covers the whole frame; this screen shows the part of it
+			// under the screen's own source rectangle. Rotate those uvs with the
+			// same offsets the screen quad used.
+			const float hu1 = (float)s.left   / (float)width;
+			const float hu2 = (float)s.right  / (float)width;
+			const float hv1 = (float)s.top    / (float)height;
+			const float hv2 = (float)s.bottom / (float)height;
+			const float hu[4] = { hu1, hu2, hu2, hu1 };
+			const float hv[4] = { hv1, hv1, hv2, hv2 };
+
+			for (int corner = 0; corner < 4; corner++)
+			{
+				hudUs[i][corner] = hu[(ofs + corner) % 4];
+				hudVs[i][corner] = hv[(ofs + corner) % 4];
+			}
+
+			hudVertexStart[i] = vertexCount;
+			pushQuad(xs, ys, hudUs[i], hudVs[i], 1.0f, 1.0f, 1.0f);
+		}
 	}
 
 	wgpuQueueWriteBuffer(d.queue, d.vertexBuffer, 0, vertices, (size_t)vertexCount * sizeof(Vertex));
@@ -1982,6 +2313,20 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 		wgpuRenderPassEncoderDraw(pass, 6, 1, (uint32_t)screenVertexStart[i], 0);
 	}
 
+	if (drawOverlay)
+	{
+		wgpuRenderPassEncoderSetPipeline(pass, overlayPipeline);
+		wgpuRenderPassEncoderSetBindGroup(pass, 0, overlayGroup, 0, NULL);
+
+		for (int i = 0; i < 2; i++)
+		{
+			if (hudVertexStart[i] >= 0)
+			{
+				wgpuRenderPassEncoderDraw(pass, 6, 1, (uint32_t)hudVertexStart[i], 0);
+			}
+		}
+	}
+
 	wgpuRenderPassEncoderEnd(pass);
 
 	WGPUCommandBufferDescriptor commandBufferDesc = WGPU_COMMAND_BUFFER_DESCRIPTOR_INIT;
@@ -1990,6 +2335,11 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 	wgpuQueueSubmit(d.queue, 1, &commandBuffer);
 
 	wgpuCommandBufferRelease(commandBuffer);
+
+	if (overlayGroupOwned)
+	{
+		wgpuBindGroupRelease(overlayGroup);
+	}
 	wgpuRenderPassEncoderRelease(pass);
 	wgpuCommandEncoderRelease(encoder);
 

@@ -19,6 +19,9 @@
     <Filter Include="frontend\modules\osd\agg">
       <UniqueIdentifier>{7f9106f6-6228-4333-bc30-f3aa42054661}</UniqueIdentifier>
     </Filter>
+    <Filter Include="frontend\modules\osd\wgpu">
+      <UniqueIdentifier>{2b0c5f4e-6d31-4a97-8f5e-41c9a7d6e2b3}</UniqueIdentifier>
+    </Filter>
     <Filter Include="gdbstub">
       <UniqueIdentifier>{cfb7bfbc-4470-4691-a3c2-b86c388e6a52}</UniqueIdentifier>
     </Filter>
@@ -885,6 +888,9 @@
     <ClCompile Include="..\modules\osd\agg\native_draw.cpp">
       <Filter>frontend\modules\osd\agg</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\osd\wgpu\wgpu_draw.cpp">
+      <Filter>frontend\modules\osd\wgpu</Filter>
+    </ClCompile>
     <ClCompile Include="mic-win.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -1647,6 +1653,9 @@
     <ClInclude Include="..\modules\osd\agg\native_draw.h">
       <Filter>frontend\modules\osd\agg</Filter>
     </ClInclude>
+    <ClInclude Include="..\modules\osd\wgpu\wgpu_draw.h">
+      <Filter>frontend\modules\osd\wgpu</Filter>
+    </ClInclude>
     <ClInclude Include="osd_fonts\osd_fonts.h">
       <Filter>frontend\Windows\resources</Filter>
     </ClInclude>
@@ -1806,6 +1815,12 @@
     </None>
     <None Include="..\modules\osd\agg\agg2d.inl">
       <Filter>frontend\modules\osd\agg</Filter>
+    </None>
+    <None Include="..\modules\osd\wgpu\hud_shapes.wgsl">
+      <Filter>frontend\modules\osd\wgpu</Filter>
+    </None>
+    <None Include="..\modules\osd\wgpu\hud_text.wgsl">
+      <Filter>frontend\modules\osd\wgpu</Filter>
     </None>
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\thumb_tabdef.inc" />

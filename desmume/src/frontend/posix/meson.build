@@ -23,11 +23,19 @@ dep_gles = dependency('glesv2', required: false)
 dep_openal = dependency('openal', required: get_option('openal'))
 dep_alsa = dependency('alsa', required: false)
 dep_soundtouch = dependency('soundtouch', required: false)
-dep_agg = dependency('libagg', required: false)
+# AGG is compiled from the bundled Windows sources below. Distributions have
+# dropped libagg (Fedora no longer ships it), and this is the exact AGG version
+# the OSD was written against. freetype2 is only used for vector fonts.
+dep_freetype = dependency('freetype2', required: false)
 dep_fontconfig = dependency('fontconfig', required: false)
 dep_egl = dependency('egl', required: false)
 dep_wayland = dependency('wayland-client')
 dep_x11 = dependency('x11')
+
+# ELF hosts where the linker provides __start_/__stop_ symbols for a
+# C-identifier section. macOS/Mach-O is deliberately excluded.
+osd_elf_font_systems = ['android', 'dragonfly', 'freebsd', 'gnu', 'linux',
+                        'netbsd', 'openbsd', 'solaris']
 
 # Lua stays off here.  Enabling it needs -DHAVE_LUA propagated into the core
 # sources (autotools has the same gap) as well as a dependency.  lua-engine.cpp
@@ -91,9 +99,42 @@ includes = include_directories(
   '../../../src',
   '../../../src/libretro-common/include',
   '../../../src/frontend',
+  '../windows/agg/include',
+  '../windows/agg/font_freetype',
 )
 
-libdesmume_src = [
+# The bundled AGG rasterizer, built from the same sources the Windows project
+# uses. This is the software OSD renderer; the WebGPU OSD replaces only the
+# drawing backend and keeps the same AggDrawTarget interface.
+agg_sources = files(
+  '../windows/agg/src/agg_arc.cpp',
+  '../windows/agg/src/agg_arrowhead.cpp',
+  '../windows/agg/src/agg_bezier_arc.cpp',
+  '../windows/agg/src/agg_bspline.cpp',
+  '../windows/agg/src/agg_curves.cpp',
+  '../windows/agg/src/agg_embedded_raster_fonts.cpp',
+  '../windows/agg/src/agg_gsv_text.cpp',
+  '../windows/agg/src/agg_image_filters.cpp',
+  '../windows/agg/src/agg_line_aa_basics.cpp',
+  '../windows/agg/src/agg_line_profile_aa.cpp',
+  '../windows/agg/src/agg_rounded_rect.cpp',
+  '../windows/agg/src/agg_sqrt_tables.cpp',
+  '../windows/agg/src/agg_trans_affine.cpp',
+  '../windows/agg/src/agg_trans_double_path.cpp',
+  '../windows/agg/src/agg_trans_single_path.cpp',
+  '../windows/agg/src/agg_trans_warp_magnifier.cpp',
+  '../windows/agg/src/agg_vcgen_bspline.cpp',
+  '../windows/agg/src/agg_vcgen_contour.cpp',
+  '../windows/agg/src/agg_vcgen_dash.cpp',
+  '../windows/agg/src/agg_vcgen_markers_term.cpp',
+  '../windows/agg/src/agg_vcgen_smooth_poly1.cpp',
+  '../windows/agg/src/agg_vcgen_stroke.cpp',
+  '../windows/agg/src/agg_vpgen_clip_polygon.cpp',
+  '../windows/agg/src/agg_vpgen_clip_polyline.cpp',
+  '../windows/agg/src/agg_vpgen_segmentator.cpp',
+)
+
+libdesmume_src = agg_sources + [
   '../../armcpu.cpp',
   '../../arm_instructions.cpp',
   '../../bios.cpp',
@@ -289,18 +330,85 @@ if dep_soundtouch.found()
   ]
 endif
 
-if dep_agg.found()
-  dependencies += dep_agg
-  add_global_arguments('-DHAVE_LIBAGG', language: ['c', 'cpp'])
+# OSD: AggDraw over the bundled AGG rasterizer. HAVE_LIBAGG gates the OSD in
+# the core and all frontends, so it is unconditional now that AGG is compiled
+# in rather than looked up with pkg-config.
+add_global_arguments('-DHAVE_LIBAGG', language: ['c', 'cpp'])
+libdesmume_src += [
+  '../modules/osd/agg/aggdraw.cpp',
+  '../modules/osd/agg/agg_osd.cpp',
+  '../modules/osd/wgpu/wgpu_draw.cpp',
+]
+# Stage 2 of the WebGPU OSD migration: WGPUOSDAggTarget records the
+# primitives agg_osd.cpp uses instead of rasterizing them with AGG.
+add_global_arguments('-DDESMUME_WGPU_OSD', language: ['c', 'cpp'])
+
+# Vector fonts need FreeType; the GTK frontends also use fontconfig to find a
+# font file, so only advertise AGG2D_USE_VECTORFONTS when both are present.
+if dep_freetype.found()
+  dependencies += dep_freetype
+  libdesmume_src += [
+    '../windows/agg/font_freetype/agg_font_freetype.cpp',
+  ]
   if dep_fontconfig.found()
     dependencies += dep_fontconfig
     add_global_arguments('-DAGG2D_USE_VECTORFONTS', language: ['c', 'cpp'])
-    add_global_link_arguments('-laggfontfreetype', language: ['c', 'cpp'])
   endif
+endif
+
+if get_option('osd-elf-fonts') and osd_elf_font_systems.contains(host_machine.system())
+  python3 = import('python').find_installation('python3')
+  osd_font_bins = files(
+    '../windows/osd_fonts/fonts/gse4x6.bin',
+    '../windows/osd_fonts/fonts/gse4x8.bin',
+    '../windows/osd_fonts/fonts/gse5x7.bin',
+    '../windows/osd_fonts/fonts/gse5x9.bin',
+    '../windows/osd_fonts/fonts/gse6x9.bin',
+    '../windows/osd_fonts/fonts/gse6x12.bin',
+    '../windows/osd_fonts/fonts/gse7x11.bin',
+    '../windows/osd_fonts/fonts/gse7x11_bold.bin',
+    '../windows/osd_fonts/fonts/gse7x15.bin',
+    '../windows/osd_fonts/fonts/gse7x15_bold.bin',
+    '../windows/osd_fonts/fonts/gse8x16.bin',
+    '../windows/osd_fonts/fonts/gse8x16_bold.bin',
+    '../windows/osd_fonts/fonts/mcs11_prop.bin',
+    '../windows/osd_fonts/fonts/mcs11_prop_condensed.bin',
+    '../windows/osd_fonts/fonts/mcs12_prop.bin',
+    '../windows/osd_fonts/fonts/mcs13_prop.bin',
+    '../windows/osd_fonts/fonts/mcs5x10_mono.bin',
+    '../windows/osd_fonts/fonts/mcs5x11_mono.bin',
+    '../windows/osd_fonts/fonts/mcs6x10_mono.bin',
+    '../windows/osd_fonts/fonts/mcs6x11_mono.bin',
+    '../windows/osd_fonts/fonts/mcs7x12_mono_high.bin',
+    '../windows/osd_fonts/fonts/mcs7x12_mono_low.bin',
+    '../windows/osd_fonts/fonts/verdana12.bin',
+    '../windows/osd_fonts/fonts/verdana12_bold.bin',
+    '../windows/osd_fonts/fonts/verdana13.bin',
+    '../windows/osd_fonts/fonts/verdana13_bold.bin',
+    '../windows/osd_fonts/fonts/verdana14.bin',
+    '../windows/osd_fonts/fonts/verdana14_bold.bin',
+    '../windows/osd_fonts/fonts/verdana16.bin',
+    '../windows/osd_fonts/fonts/verdana16_bold.bin',
+    '../windows/osd_fonts/fonts/verdana17.bin',
+    '../windows/osd_fonts/fonts/verdana17_bold.bin',
+    '../windows/osd_fonts/fonts/verdana18.bin',
+    '../windows/osd_fonts/fonts/verdana18_bold.bin',
+  )
+  osd_fonts_section = custom_target('osd-fonts-section',
+    output: 'osd_fonts_section.S',
+    command: [
+      python3,
+      files('../windows/osd_fonts/generate_elf_font_section.py'),
+      '@OUTPUT@',
+    ],
+    depend_files: osd_font_bins,
+    build_by_default: true,
+  )
   libdesmume_src += [
-    '../modules/osd/agg/aggdraw.cpp',
-    '../modules/osd/agg/agg_osd.cpp',
+    '../modules/osd/agg/osd_fonts_section.cpp',
+    osd_fonts_section,
   ]
+  add_global_arguments('-DDESMUME_ELF_FONTS', language: ['c', 'cpp'])
 endif
 
 # TODO: fix Lua on non-Windows (needs HAVE_LUA defined for the core sources;

@@ -33,6 +33,10 @@ THE SOFTWARE.
 #include "native_draw.h"
 #endif
 
+#if defined(DESMUME_ELF_FONTS) && !defined(DESMUME_NATIVE_DRAW)
+#include "osd_fonts_section.h"
+#endif
+
 #include "agg_renderer_base.h"
 #include "agg_renderer_primitives.h"
 #include "agg_renderer_scanline.h"
@@ -175,6 +179,9 @@ static AggDrawTarget* targets[] = {
 #endif
 };
 
+// What Agg_init() installed in aggDraw.hud, restored by Agg_setHudTarget(NULL).
+static AggDrawTarget* defaultHudTarget = NULL;
+
 void Agg_init()
 {
 #ifdef DESMUME_NATIVE_DRAW
@@ -183,6 +190,20 @@ void Agg_init()
 	// keep the public fonts_list[]/font_table contract unchanged.
 	for(u32 i=0;i<font_Nums;i++)
 		fonts_list[i].font = NativeDraw_FontData(fonts_list[i].name);
+#endif
+#if defined(DESMUME_ELF_FONTS) && !defined(DESMUME_NATIVE_DRAW)
+	// POSIX/ELF: the same font payloads are linked into the executable in the
+	// custom desmume_osd_fonts section. Prefer those pointers while keeping
+	// fonts_list[]/lookupFont() and the AGG arrays as a fallback.
+	if (OSDEmbeddedFonts_Init())
+	{
+		for (int i = 0; i < font_Nums; i++)
+		{
+			const OSDEmbeddedFont *font = OSDEmbeddedFonts_Find(fonts_list[i].name);
+			if (font)
+				fonts_list[i].font = (const agg::int8u *)font->data;
+		}
+	}
 #endif
 	Agg_init_fonts();
 	switch(aggDraw.screenBytesPerPixel)
@@ -207,6 +228,9 @@ void Agg_init()
 		aggDraw.hud = aggDraw.screen;
 	#endif
 
+	// Remember what a later Agg_setHudTarget(NULL) must restore.
+	defaultHudTarget = aggDraw.hud;
+
 	aggDraw.hud->setFont("verdana18_bold");
 }
 
@@ -220,14 +244,29 @@ void AggDraw_Desmume::setTarget(AggTarget newTarget)
 	target = targets[newTarget];
 }
 
+void Agg_setHudTarget(AggDrawTarget *target)
+{
+	aggDraw.hud = (target != NULL) ? target : defaultHudTarget;
+}
+
 void Agg_setCustomSize(int w, int h)
 {
 	hudBuffer.resize(w*h);
 	luaBuffer.resize(w*h);
 	if(aggDraw.screen)
 		aggDraw.screen->setDrawTargetDims(0, w, h, w*aggDraw.screenBytesPerPixel);
-	if(aggDraw.hud)
-		aggDraw.hud->setDrawTargetDims((u8*)hudBuffer.data(), w, h, w*4);
+	// targets[1] is the AGG HUD buffer, whether or not aggDraw.hud currently
+	// points at it: the WebGPU path temporarily installs its own target. Only
+	// the AGG target is resized here, so the GPU target keeps its dimensions.
+	// In single-core mode aggDraw.hud aliases the screen target; keep resizing
+	// that one exactly as before.
+	if (aggDraw.hud == aggDraw.screen)
+	{
+		if(aggDraw.hud)
+			aggDraw.hud->setDrawTargetDims((u8*)hudBuffer.data(), w, h, w*4);
+	}
+	else if(targets[1])
+		targets[1]->setDrawTargetDims((u8*)hudBuffer.data(), w, h, w*4);
 	if(aggDraw.lua)
 		aggDraw.lua->setDrawTargetDims((u8*)luaBuffer.data(), w, h, w*4);
 }
