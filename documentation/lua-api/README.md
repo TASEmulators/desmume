@@ -176,10 +176,18 @@ confirm it reports `param-type-mismatch`. A `---@meta` file does not take part i
 diagnostics itself, so "no warnings in this file" is not evidence that the
 annotations are right.
 
-## Example
+## Examples
 
 `examples/osd-shapes.lua` draws every `agg.*` primitive plus text in the fonts
 that the OSD carries, animates them, and prints the frame counter. It is the
 smoke test for the OSD drawing path: run it from the Lua Script dialog and the
 upper screen should show a moving test pattern, with a second one on the touch
 screen.
+
+`examples/api-smoke.lua` covers the frontend-facing functions instead: dialogs,
+menus, host input, layer masks and the status message.
+
+`examples/macro.lua` is a port of vba-rr-modernized's `macro.lua`: hold a
+trigger key and the emulator replays a button sequence, release it and the pad
+is handed straight back. It is the reference for driving the pad from a script
+(`joypad.set()` inside an `emu.registerbefore()` callback).
