@@ -102,20 +102,21 @@ local function drawPrimitives()
 	agg.lineWidth(1)
 	agg.star(168, 65, 8, 18, 0, 5)
 
-	-- half circle drawn as an arc
+	-- half circle drawn as an arc.  Keep it inside the frame: the stroke makes
+	-- the recorded path a couple of pixels wider than rx suggests.
 	agg.noFill()
 	agg.lineColor(COL_MAGENTA)
 	agg.lineWidth(2)
-	agg.arc(218, 65, 20, 16, 0, PI)
+	agg.arc(212, 65, 17, 16, 0, PI)
 
-	-- captions
+	-- captions, centred under the shape each one names
 	agg.lineColor(COL_DIM)
-	agg.text(10, 88, "rect")
-	agg.text(50, 88, "rrect")
-	agg.text(89, 88, "ell")
-	agg.text(112, 88, "tri")
-	agg.text(161, 88, "star")
-	agg.text(206, 88, "arc")
+	agg.text(9, 88, "rect")
+	agg.text(48, 88, "rrect")
+	agg.text(86, 88, "ell")
+	agg.text(118, 88, "tri")
+	agg.text(155, 88, "star")
+	agg.text(202, 88, "arc")
 end
 
 -- Shapes whose parameters change every frame.
@@ -154,7 +155,7 @@ end
 local function drawPaintStateWidget()
 	agg.setFont("gse5x7")
 	agg.lineColor(COL_DIM)
-	agg.text(8, 148, "paint state")
+	agg.text(8, 143, "paint state")
 
 	agg.noFill()
 	agg.lineColor(COL_WHITE)
