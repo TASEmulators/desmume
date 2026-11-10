@@ -82,3 +82,7 @@ xcuserdata/
 /config.log
 /.project
 .DS_Store
+
+## Local assistant/IDE scratch state
+/.workbuddy
+/.workbuddy-ai

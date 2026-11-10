@@ -27,6 +27,9 @@
 #include "lua-engine.h"
 #include "MacLuaScriptConsole.h"
 #endif
+#ifdef DESMUME_COCOA_METAL_OSD
+#include "userinterface/MacMetalOSDDraw.h"
+#endif
 
 
 macOS_driver::macOS_driver()
@@ -173,6 +176,9 @@ BaseDriver::eStepMainLoopResult macOS_driver::EMU_StepMainLoop(bool allowSleep, 
 			inputHandler->ApplyInputs();
 		}
 
+#ifdef DESMUME_COCOA_METAL_OSD
+		MacMetalOSD_ClearBack();
+#endif
 #ifdef HAVE_LUA
 		lua_script_clear_graphics_buffer();
 		NDS_beginProcessingInput();
@@ -190,6 +196,9 @@ BaseDriver::eStepMainLoopResult macOS_driver::EMU_StepMainLoop(bool allowSleep, 
 		// then publish the completed overlay frame to the renderer.
 		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
 		lua_script_present_graphics_buffer();
+#endif
+#ifdef DESMUME_COCOA_METAL_OSD
+		MacMetalOSD_PresentBack();
 #endif
 	}
 

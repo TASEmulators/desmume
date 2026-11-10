@@ -987,6 +987,9 @@
 	texLuaOverlay[1] = nil;
 	isLuaOverlayTexCreated = NO;
 #endif
+#ifdef DESMUME_COCOA_METAL_OSD
+	osdRenderer = nil;
+#endif
 	drawableFormat = MTLPixelFormatRGBA8Unorm;
 	
 	_texDisplaySrcDeposterize[NDSDisplayID_Main][0]  = nil;
@@ -1092,6 +1095,10 @@
 	}
 #endif
 	[self setTexHUDCharMap:nil];
+#ifdef DESMUME_COCOA_METAL_OSD
+	[osdRenderer release];
+	osdRenderer = nil;
+#endif
 	
 	for (size_t i = 0; i < RENDER_BUFFER_COUNT; i++)
 	{
@@ -1396,6 +1403,14 @@
 
 	luaOverlayPipeline = [[[[self sharedData] device] newRenderPipelineStateWithDescriptor:luaPipelineDesc error:nil] retain];
 	[luaPipelineDesc release];
+#endif
+
+#ifdef DESMUME_COCOA_METAL_OSD
+	// GPU OSD: SDF shapes + bitmap glyphs rendered into a 256x384 premultiplied
+	// texture, composited over the two screens in -renderForCommandBuffer:.
+	[osdRenderer release];
+	osdRenderer = [[MacMetalOSDRenderer alloc] initWithDevice:[[self sharedData] device]
+	                                                  library:[[self sharedData] defaultLibrary]];
 #endif
 	
 	// Set up processing textures.
@@ -2167,6 +2182,14 @@
 						doYFlip:(BOOL)willFlip
 					   doSwapRB:(BOOL)willSwapRB
 {
+#ifdef DESMUME_COCOA_METAL_OSD
+	// Encode the offscreen OSD pass first: Metal serializes encoders within one
+	// command buffer, so the HUD texture is complete before the main pass
+	// samples it.  This covers drawables, screenshots and video capture alike.
+	BOOL willDrawMetalOSD = ((osdRenderer != nil) && [osdRenderer isReady]) ?
+	                        [osdRenderer renderIntoCommandBuffer:cb] : NO;
+#endif
+
 	// Generate the command encoder.
 	id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_outputRenderPassDesc];
 	
@@ -2359,6 +2382,86 @@
 				
 			default:
 				break;
+		}
+	}
+#endif
+
+#ifdef DESMUME_COCOA_METAL_OSD
+	// Composite the GPU OSD (agg.* shapes and text) over the emulated screens,
+	// using exactly the same screen quads and projection as the Lua overlay.
+	// The upper half of the 256x384 HUD texture belongs to the main screen and
+	// the lower half to the touch screen.
+	if (willDrawMetalOSD)
+	{
+		id<MTLTexture> osdTexture = [osdRenderer hudTexture];
+		const MTLPixelFormat attachmentFormat = [[[self colorAttachment0Desc] texture] pixelFormat];
+		id<MTLRenderPipelineState> osdPipeline = [osdRenderer overlayPipelineForFormat:attachmentFormat];
+
+		if ((osdTexture != nil) && (osdPipeline != nil))
+		{
+			[rce setRenderPipelineState:osdPipeline];
+			[rce setVertexBytes:_vtxPositionBuffer length:sizeof(_vtxPositionBuffer) atIndex:0];
+			[rce setVertexBytes:[osdRenderer overlayTexCoords] length:(sizeof(float) * 32) atIndex:1];
+			[rce setVertexBytes:&_cdvPropertiesBuffer length:sizeof(_cdvPropertiesBuffer) atIndex:2];
+			[rce setVertexBytes:&doYFlip length:sizeof(uint8_t) atIndex:3];
+			[rce setFragmentTexture:osdTexture atIndex:0];
+
+			switch (cdp->GetPresenterProperties().mode)
+			{
+				case ClientDisplayMode_Main:
+				{
+					if ((texDisplay.main != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main))
+					{
+						[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+					}
+					break;
+				}
+
+				case ClientDisplayMode_Touch:
+				{
+					if ((texDisplay.touch != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
+					{
+						[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+					}
+					break;
+				}
+
+				case ClientDisplayMode_Dual:
+				{
+					const NDSDisplayID majorDisplayID = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
+					const size_t majorDisplayVtx = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
+
+					switch (cdp->GetPresenterProperties().layout)
+					{
+						case ClientDisplayLayout_Hybrid_2_1:
+						case ClientDisplayLayout_Hybrid_16_9:
+						case ClientDisplayLayout_Hybrid_16_10:
+						{
+							if ((texDisplay.tex[majorDisplayID] != nil) && cdp->IsSelectedDisplayEnabled(majorDisplayID))
+							{
+								[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:majorDisplayVtx vertexCount:4];
+							}
+							break;
+						}
+
+						default:
+							break;
+					}
+
+					if ((texDisplay.main != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main))
+					{
+						[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+					}
+					if ((texDisplay.touch != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
+					{
+						[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+					}
+					break;
+				}
+
+				default:
+					break;
+			}
 		}
 	}
 #endif

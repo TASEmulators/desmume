@@ -48,6 +48,9 @@
 	
 	#if !defined(METAL_DISABLE_FOR_BUILD_TARGET) && defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
 		#define ENABLE_APPLE_METAL
+		// Metal OSD: the AGG-free shape/glyph recorder lives in
+		// userinterface/MacMetalOSDDraw.cpp and is driven by the core frame loop.
+		#define DESMUME_COCOA_METAL_OSD
 	#endif
 #endif
 

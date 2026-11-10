@@ -33,6 +33,7 @@
 #import "../cocoa_GPU.h"
 #import "../cocoa_util.h"
 #include "../ClientDisplayView.h"
+#import "MacMetalOSDRenderer.h"
 
 #ifdef BOOL
 #undef BOOL
@@ -197,6 +198,9 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLRenderPipelineState> luaOverlayPipeline;
 	id<MTLTexture> texLuaOverlay[2];
 	BOOL isLuaOverlayTexCreated;
+#endif
+#ifdef DESMUME_COCOA_METAL_OSD
+	MacMetalOSDRenderer *osdRenderer;
 #endif
 	MTLPixelFormat drawableFormat;
 	

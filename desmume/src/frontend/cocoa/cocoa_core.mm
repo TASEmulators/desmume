@@ -42,6 +42,10 @@
 #include "../../wifi.h"
 #undef BOOL
 
+#ifdef DESMUME_COCOA_METAL_OSD
+#include "userinterface/MacMetalOSDDraw.h"
+#endif
+
 // Cocoa still amalgamates the vendored Lua 5.1.5 sources into this one
 // translation unit.  lua-engine.cpp no longer reads lua_State internals, so
 // this remains a supported configuration; the Windows frontend has moved to
@@ -1255,6 +1259,9 @@ static void* RunCoreThread(void *arg)
 #endif
 		cheatManager->ApplyToMaster();
 		cheatManager->ApplyPendingInternalCheatWrites();
+#ifdef DESMUME_COCOA_METAL_OSD
+		MacMetalOSD_ClearBack();
+#endif
 #ifdef HAVE_LUA
 		lua_script_clear_graphics_buffer();
 		NDS_beginProcessingInput();
@@ -1270,6 +1277,9 @@ static void* RunCoreThread(void *arg)
 		// completed overlay frame to the renderer.
 		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
 		lua_script_present_graphics_buffer();
+#endif
+#ifdef DESMUME_COCOA_METAL_OSD
+		MacMetalOSD_PresentBack();
 #endif
 		pthread_rwlock_unlock(&param->rwlockCoreExecute);
 		

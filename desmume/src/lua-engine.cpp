@@ -46,6 +46,16 @@
 #include "frontend/modules/osd/agg/agg_osd.h"
 #endif
 
+// Cocoa has no libagg.  When the Metal OSD backend is active, the agg.* Lua
+// calls below are recorded by an AGG-free target that feeds the Metal SDF and
+// glyph pipelines instead of a CPU rasterizer.
+#if defined(DESMUME_COCOA_METAL_OSD) && !defined(HAVE_LIBAGG)
+#include "frontend/cocoa/userinterface/MacMetalOSDDraw.h"
+#define OSD_HUD_TARGET  MacMetalOSD_BackTarget()
+#else
+#define OSD_HUD_TARGET  aggDraw.hud
+#endif
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -4329,7 +4339,7 @@ int dontworry(LuaContextInfo& info)
 //agg basic shapes
 //TODO polygon and polyline, maybe the overloads for roundedRect and curve
 
-#ifdef HAVE_LIBAGG
+#if defined(HAVE_LIBAGG) || defined(DESMUME_COCOA_METAL_OSD)
 
 static int line(lua_State *L) {
 
@@ -4339,7 +4349,7 @@ static int line(lua_State *L) {
 	x2 = luaL_checknumber(L,3) + 0.5;
 	y2 = luaL_checknumber(L,4) + 0.5;
 
-	aggDraw.hud->line(x1, y1, x2, y2);
+	OSD_HUD_TARGET->line(x1, y1, x2, y2);
 
 	return 0;
 }
@@ -4354,7 +4364,7 @@ static int triangle(lua_State *L) {
 	x3 = luaL_checknumber(L,5) + 0.5;
 	y3 = luaL_checknumber(L,6) + 0.5;
 
-	aggDraw.hud->triangle(x1, y1, x2, y2, x3, y3);
+	OSD_HUD_TARGET->triangle(x1, y1, x2, y2, x3, y3);
 
 	return 0;
 }
@@ -4367,7 +4377,7 @@ static int rectangle(lua_State *L) {
 	x2 = luaL_checknumber(L,3) + 0.5;
 	y2 = luaL_checknumber(L,4) + 0.5;
 
-	aggDraw.hud->rectangle(x1, y1, x2, y2);
+	OSD_HUD_TARGET->rectangle(x1, y1, x2, y2);
 
 	return 0;
 }
@@ -4381,7 +4391,7 @@ static int roundedRect(lua_State *L) {
 	y2 = luaL_checknumber(L,4) + 0.5;
 	r  = luaL_checknumber(L,5);
 
-	aggDraw.hud->roundedRect(x1, y1, x2, y2, r);
+	OSD_HUD_TARGET->roundedRect(x1, y1, x2, y2, r);
 
 	return 0;
 }
@@ -4394,7 +4404,7 @@ static int ellipse(lua_State *L) {
 	rx = luaL_checknumber(L,3);
 	ry = luaL_checknumber(L,4);
 
-	aggDraw.hud->ellipse(cx, cy, rx, ry);
+	OSD_HUD_TARGET->ellipse(cx, cy, rx, ry);
 
 	return 0;
 }
@@ -4409,7 +4419,7 @@ static int arc(lua_State *L) {
 	start = luaL_checknumber(L,5);
 	sweep = luaL_checknumber(L,6);
 
-	aggDraw.hud->arc(cx, cy,rx, ry, start, sweep);
+	OSD_HUD_TARGET->arc(cx, cy,rx, ry, start, sweep);
 
 	return 0;
 }
@@ -4425,7 +4435,7 @@ static int star(lua_State *L) {
 	startAngle = luaL_checknumber(L,5);
 	numRays = luaL_checkinteger(L,6);
 
-	aggDraw.hud->star(cx, cy, r1, r2, startAngle, numRays);
+	OSD_HUD_TARGET->star(cx, cy, r1, r2, startAngle, numRays);
 
 	return 0;
 }
@@ -4440,7 +4450,7 @@ static int curve(lua_State *L) {
 	x3 = luaL_checknumber(L,5) + 0.5;
 	y3 = luaL_checknumber(L,6) + 0.5;
 
-	aggDraw.hud->curve(x1, y1, x2, y2, x3, y3);
+	OSD_HUD_TARGET->curve(x1, y1, x2, y2, x3, y3);
 
 	return 0;
 }
@@ -4526,21 +4536,21 @@ static void getColorForAgg(lua_State *L, int&r,int&g,int&b,int&a)
 	}
 }
 
-#ifdef HAVE_LIBAGG
+#if defined(HAVE_LIBAGG) || defined(DESMUME_COCOA_METAL_OSD)
 
 static int fillColor(lua_State *L) {
 
 	int r,g,b,a;
 	getColorForAgg(L, r,g,b,a);
 
-	aggDraw.hud->fillColor(r, g, b, a);
+	OSD_HUD_TARGET->fillColor(r, g, b, a);
 
 	return 0;
 }
 
 static int noFill(lua_State *L) {
 
-	aggDraw.hud->noFill();
+	OSD_HUD_TARGET->noFill();
 	return 0;
 }
 
@@ -4549,14 +4559,14 @@ static int lineColor(lua_State *L) {
 	int r,g,b,a;
 	getColorForAgg(L, r,g,b,a);
 
-	aggDraw.hud->lineColor(r, g, b, a);
+	OSD_HUD_TARGET->lineColor(r, g, b, a);
 
 	return 0;
 }
 
 static int noLine(lua_State *L) {
 
-	aggDraw.hud->noLine();
+	OSD_HUD_TARGET->noLine();
 	return 0;
 }
 
@@ -4565,7 +4575,7 @@ static int lineWidth(lua_State *L) {
 	double w;
 	w = luaL_checknumber(L,1);
 
-	aggDraw.hud->lineWidth(w);
+	OSD_HUD_TARGET->lineWidth(w);
 
 	return 0;
 }
@@ -4622,14 +4632,14 @@ static const struct luaL_Reg agggeneralattributes [] =
 	{NULL, NULL}
 };
 
-#ifdef HAVE_LIBAGG
+#if defined(HAVE_LIBAGG) || defined(DESMUME_COCOA_METAL_OSD)
 
 static int setFont(lua_State *L) {
 
 	const char *choice;
 	choice = luaL_checkstring(L,1);
 
-	aggDraw.hud->setFont(choice);
+	OSD_HUD_TARGET->setFont(choice);
 	return 0;
 }
 
@@ -4641,7 +4651,7 @@ static int text(lua_State *L) {
 	y = luaL_checkinteger(L, 2);
 	choice = luaL_checkstring(L,3);
 
-	aggDraw.hud->renderTextDropshadowed(x,y,choice);
+	OSD_HUD_TARGET->renderTextDropshadowed(x,y,choice);
 	return 0;
 }
 
@@ -4685,6 +4695,9 @@ static int gui_osdtext(lua_State *L)
 
 #ifdef HAVE_LIBAGG
 	osd->addFixed(x, y, "%s", msg);
+#elif defined(DESMUME_COCOA_METAL_OSD)
+	// Cocoa has no OSDCLASS; record the text directly into the Metal OSD frame.
+	MacMetalOSD_AddFixedText(x, y, msg);
 #endif
 	
 	return 0;

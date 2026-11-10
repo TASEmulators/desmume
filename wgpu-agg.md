@@ -679,5 +679,73 @@ Lua 是 HUD 的关键消费者：在 macOS 上 AGG 不可用，脚本通过 `agg
 
 ### 17.4 未完成项
 
-- `WGPUOSDAggTarget` 继承 `T_AGG_RGBA`，所以 macOS 当前仍无法编译它。要在无 AGG 的 cocoa 前端启用，需要提供一个不依赖 AGG 的 `AggDrawTarget` 兼容目标；录制器本身已经覆盖 Lua 的绘图操作集（矩形/圆角矩形/椭圆/多边形/线/弧/曲线/星形/文字）。
+- `WGPUOSDAggTarget` 继承 `T_AGG_RGBA`，所以 macOS 当前仍无法编译它。要在无 AGG 的 cocoa 前端启用，需要提供一个不依赖 AGG 的 `AggDrawTarget` 兼容目标；录制器本身已经覆盖 Lua 的绘图操作集（矩形/圆角矩形/椭圆/多边形/线/弧/曲线/星形/文字）。**该缺口已由 §18 的 Metal 后端补齐**（不复用 `AggDrawTarget` 类型，而是提供方法名相同的 AGG-free 录制目标）。
 - Windows 前端与真实 GUI/HUD 像素仍需用户在 Windows 上验证。
+
+
+## 18. Cocoa Metal 后端实现记录（2026-11-10）
+
+把阶段 2/3 的 WGPU OSD 后端转写为 Metal，并接入 cocoa 前端。§8.5 里「macOS 不适用」的结论针对的是 WebGPU 阶段 1；本节是独立的 Metal 实现，走 cocoa 自己的 `MacMetalDisplayView`。
+
+### 18.1 新增文件（`frontend/cocoa/userinterface/`）
+
+| 文件 | 内容 |
+| --- | --- |
+| `MacMetalOSDDraw.h/.cpp` | AGG-free 录制目标 `MacMetalOSDDrawTarget`（方法名与 `AggDrawTarget` 子集一致）+ 双缓冲帧交换。纯 C++，`lua-engine.cpp` 可直接 include |
+| `MacMetalOSDFontData.cpp` | 34 份点阵字体（59,276 字节）编译期 C 数组，名称/顺序与 `fonts_list[]` 一致。Mach-O 没有 §14 的 `__start_/__stop_` 段，故用方案 A |
+| `MacMetalOSDRenderer.h/.mm` | `MacMetalOSDRenderer`：三条离屏管线 + 字形图集 + 256×384 预乘 BGRA8 HUD 纹理 + 合成管线 |
+| `MacMetalOSDShaders.metal` | MSL 版 `hud_shapes.wgsl`（SDF）、`hud_text.wgsl`（字形）、`kTextShader`（CPU 回退层），外加 `osd_overlay_*` 合成着色器 |
+
+MSL 结构体 `OSDShapeInstance`（672 字节）与 C++ `MetalOSDInstance` 用 `static_assert` 锁定；`MetalOSDGlyph` 48 字节、3×`float4` @0/16/32、per-instance。所有离屏管线沿用 WGPU 的 `One / OneMinusSrcAlpha` 预乘契约，采样 Nearest + ClampToEdge。
+
+### 18.2 与 WGPU 版的对应关系
+
+| WGPU | Metal |
+| --- | --- |
+| `WGPUOSDAggTarget : T_AGG_RGBA` | `MacMetalOSDDrawTarget`（无基类、无 AGG 头） |
+| `WGPUOSDRenderer` | `MacMetalOSDRenderer`（ObjC++，持有 MTL 对象） |
+| WGSL `vsShape/fsShape` | `osd_shape_vertex/osd_shape_fragment`（`[[instance_id]]` + device 实例缓冲，SDF 逐行照搬） |
+| WGSL `vsGlyph/fsGlyph` | `osd_glyph_vertex/osd_glyph_fragment`（`MTLVertexDescriptor` per-instance） |
+| 内嵌 `kTextShader` | `osd_blit_vertex/osd_blit_fragment` |
+| `WGPUPresentOverlay::textureView` 合成 | `osd_overlay_*`，在 cocoa 的同一个 `rce` 里、Lua overlay 之后 / FPS HUD 之前贴两张屏幕 quad |
+
+有意的偏差：
+
+- 没有 AGG 回退层，所有 `agg.*` 调用都录制；`roundedRect(rx≠ry)` / 四角不同半径用较小半径近似（WGPU 会退回 AGG）。
+- 字体数据改为编译期数组（§14.5 的 Mach-O 限制）。
+- 目标坐标仍是 256×384 像素、左上原点；合成时把上半张贴主屏、下半张贴触摸屏，UV 用归一化值，位置变换与 `display_output_vertex` 完全一致（cocoa 的顶点缓冲是**中心原点**像素坐标，投影矩阵没有 -1 偏移）。
+- `gui.*` 保持原样：它写的 `blend32()` 是**直通** alpha，而 CPU 回退层是预乘的，两者不能共用一条混合管线。新后端的 CPU 层通过 `pixelBuffer()` 提供，仅在使用时才上传（按 ring slot 分配纹理，避免 in-flight 写冲突）。
+
+### 18.3 接线点
+
+- `DeSmuME_Prefix.pch`：`ENABLE_APPLE_METAL` 时定义 `DESMUME_COCOA_METAL_OSD`。
+- `cocoa_core.mm` / `macOS_driver.cpp`：帧首 `MacMetalOSD_ClearBack()`、帧尾 `MacMetalOSD_PresentBack()`，与 `lua_script_*_graphics_buffer()` 并列。
+- `lua-engine.cpp`：三个 `#ifdef HAVE_LIBAGG` 的 `agg.*` 实现放宽为 `HAVE_LIBAGG || DESMUME_COCOA_METAL_OSD`，用 `OSD_HUD_TARGET` 宏选择 `aggDraw.hud` 或 `MacMetalOSD_BackTarget()`；`gui.osdtext()` 在无 AGG 时转 `MacMetalOSD_AddFixedText()`。
+- `MacMetalDisplayView.h/.mm`：`setup` 创建 renderer、`dealloc` 释放；`renderForCommandBuffer:` 开头先编码离屏 OSD pass（同一 command buffer，覆盖 drawable / 截图 / 录像三条路径），再按显示模式把 HUD 纹理贴到屏幕 quad 上；合成 PSO 按当前 colorAttachment 格式选 BGRA/RGBA 两套。
+- `DeSmuME (Latest).xcodeproj/project.pbxproj`：6 个文件引用 + 44 条 `PBXBuildFile`；纯 C++ 文件进全部 12 个 Sources phase，`.mm`/`.metal` 进 10 个 Metal phase。
+
+### 18.4 验证
+
+- `xcodebuild -target "DeSmuME (macOS App; AppleSilicon -- Latest Xcode)" -configuration Debug`：**BUILD SUCCEEDED**，0 error；`default.metallib` 含 8 个 `osd_*` 函数。
+- 独立 GPU 冒烟测试（`/tmp/metal_osd_probe.mm`，Apple M1 Pro）：8 类图元 + 9 次阴影文字 + CPU 回退层全部录制；MSL 运行时编译通过；两条离屏 pass 与合成 pass 的 command buffer 均 `Completed` 且无 error；空帧正确跳过。
+- 像素回读：50% 红色矩形为 `BGRA(0,0,128,128)`（预乘精确值），未触及区域全透明；点阵字 "WGPUMETAL" 产生 408 个覆盖像素；合成到 BGRA8 目标后 `(50,25) = (38,25,141,255)`，与 `src.rgb + dst.rgb*(1-src.a)` 的理论值一致。
+- `MacMetalOSDRenderer.mm` / `MacMetalOSDDraw.cpp` / `MacMetalOSDShaders.metal` 在 `-Wall -Wextra` 与 `-std=macos-metal1.1` 下干净编译。
+- **真实 Lua 驱动的端到端测试**（`documentation/lua-api/examples/osd-shapes.lua`）：用 LuaJIT 2.1 跑 `gui.register` + `emu.frameadvance` 90 帧，中途抓 3 张 PNG。绘制状态机修好后所有图元（矩形/描边/圆角矩形/椭圆/三角形/星形/弧/贝塞尔曲线/线宽阶梯/滑动条/脉冲圆角矩形）与 34 份字体中的 4 份采样、阴影文字全部出现，坐标正确。
+- 多帧与空帧：帧 0 非透明像素 900，帧 1（含动画）1380，说明双缓冲每帧重录生效；完全不绘制的帧 `drew=0`，command buffer 无 error。
+
+### 18.5 未验证项与边界
+
+- 真实 GUI 窗口（旋转 × 布局 × 滤镜 × Retina 缩放、OpenEmu 路径）未实机验证；截图/录像路径共用同一个 `renderForCommandBuffer:`，理论上会自动覆盖。
+- cocoa 的 FPS/输入 HUD 仍是原有 FreeType 字形图集路径，本次没有改动；`gui.*` 也仍是原 256×384 双缓冲路径。两套 OSD 与现有 HUD 的层序是：NDS 屏幕 → Lua `gui.*` overlay → Metal OSD（agg.* / gui.osdtext）→ FPS HUD。
+- 核心 `BaseDriver::AddLine()` 在 cocoa 上没有调用方，未接入；`OSDCLASS` 仍为空壳。
+- 非默认 blend、仿射变换、裁剪框、矢量字体依旧不支持（与 WGPU 版一致）。
+
+### 18.6 首轮测试暴露的 bug（已修）
+
+Lua 端到端测试第一次跑出来只有矩形、圆角矩形和文字，椭圆/三角/线/星/弧/曲线/半透明全部消失。根因是绘制状态语义与 AGG 不一致：
+
+- **`fillColor()` / `lineColor()` 没有重新打开填充/描边。** `Agg2D` 与 `WGPUOSDAggTarget` 在这两个函数里都会置位 `m_hasFill` / `m_hasStroke`，而 `MacMetalOSDDrawTarget` 只赋值颜色，于是脚本一旦调用过 `noFill()` / `noLine()`，之后即使再设颜色也永远画不出来——恰好 `agg.noFill()` 在「只描边」的画法里很常见。已在两个函数（以及 `fillLinearGradient()` / `lineLinearGradient()`）里补上置位。
+- **`arc()` / `curve()` 未检查描边状态。** 它们是开放路径，只描边不填充，`noLine()` 状态下应直接跳过；原实现会照样塞实例，与 AGG 行为不同。已加 early-return。
+- **`MacMetalOSD_AddFixedText()` 未保存/恢复描边状态**，会污染后续 `agg.*` 调用。已改为存旧值—设置—还原。
+
+修复后同一脚本的非透明像素数从 8647 涨到 16648，`documentation/lua-api/examples/osd-shapes.lua` 里专门留了一个 paint-state 回归小部件：先 `noFill()` 画空心矩形，再 `fillColor()` 画实心矩形，两个都得出现才算过。
