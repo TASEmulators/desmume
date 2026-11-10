@@ -29,10 +29,12 @@
 
 #include <pthread.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <sys/time.h>
 
 #include <IOKit/hid/IOHIDLib.h>
 
@@ -645,6 +647,100 @@ static const KeyNameEntry kKeyNames[] =
 	{ kVK_F17, "F17" }, { kVK_F18, "F18" }, { kVK_F19, "F19" }, { kVK_F20, "F20" },
 };
 
+// input.get() is polled once per frame by most scripts.  Computing the pointer
+// position needs AppKit, but a dispatch_sync() to the main queue on every frame
+// makes the emulation thread wait on the UI thread -- and deadlocks while a menu
+// is being tracked, because NSEventTrackingRunLoopMode does not service the main
+// dispatch queue.  The main thread therefore refreshes a cached value in the
+// background; the core thread only reads it and posts the next refresh.  A
+// result that lags by one frame is fine: mouseLocationOutsideOfEventStream is
+// itself a snapshot of the last mouse event, not a live sample.
+static pthread_mutex_t sPointerLock = PTHREAD_MUTEX_INITIALIZER;
+static int sPointerX = -1;
+static int sPointerY = -1;
+static bool sPointerValid = false;
+static volatile int sPointerRefreshPending = 0;
+
+// Must run on the main thread.
+static void ComputePointerPosition(int *outX, int *outY, bool *outValid)
+{
+	*outX = -1;
+	*outY = -1;
+	*outValid = false;
+
+	NSWindow *window = [NSApp mainWindow];
+	if (window == nil)
+		window = [NSApp keyWindow];
+	if (window == nil)
+		return;
+
+	// Find the view that actually renders the DS screens.
+	NSView *displayView = nil;
+	NSMutableArray *pending = [NSMutableArray arrayWithObject:[window contentView]];
+	while ([pending count] > 0 && displayView == nil)
+	{
+		NSView *view = [pending objectAtIndex:0];
+		[pending removeObjectAtIndex:0];
+		NSString *className = NSStringFromClass([view class]);
+		if ([className rangeOfString:@"DisplayView"].location != NSNotFound)
+		{
+			displayView = view;
+			break;
+		}
+		[pending addObjectsFromArray:[view subviews]];
+	}
+	if (displayView == nil)
+		return;
+
+	const NSPoint inWindow = [window mouseLocationOutsideOfEventStream];
+	const NSPoint local = [displayView convertPoint:inWindow fromView:nil];
+	const NSRect bounds = [displayView bounds];
+	if (bounds.size.width <= 0.0 || bounds.size.height <= 0.0)
+		return;
+	if (!NSMouseInRect(local, bounds, [displayView isFlipped]))
+		return;
+
+	// The HUD is 256x384 with the main screen on top; this matches the
+	// coordinate space agg.* and gui.text() use.
+	double px = (local.x - bounds.origin.x) * 256.0 / bounds.size.width;
+	double py = (local.y - bounds.origin.y) * 384.0 / bounds.size.height;
+	if (![displayView isFlipped])
+		py = 384.0 - py;
+
+	// Windows reports the pointer relative to the touch screen (its
+	// ToDSScreenRelativeCoords(.., 1) subtracts the upper screen's height),
+	// so do the same instead of handing scripts canvas coordinates.
+	// Over the upper screen the result is negative, exactly as on Windows.
+	const int dsX = (int)px;
+	const int dsY = (int)py - 192;
+	*outX = dsX;
+	*outY = dsY;
+	*outValid = (dsX >= 0 && dsX < 256 && dsY >= -192 && dsY < 192);
+}
+
+static void RefreshPointerCache(void)
+{
+	// At most one refresh in flight, so a busy main thread cannot accumulate a
+	// backlog of AppKit work for a script that polls faster than the UI.
+	if (__sync_lock_test_and_set(&sPointerRefreshPending, 1) != 0)
+		return;
+
+	RunOnMainThreadAsync(^{
+		int x = -1;
+		int y = -1;
+		bool valid = false;
+		ComputePointerPosition(&x, &y, &valid);
+
+		pthread_mutex_lock(&sPointerLock);
+		sPointerX = x;
+		sPointerY = y;
+		sPointerValid = valid;
+		pthread_mutex_unlock(&sPointerLock);
+
+		__sync_lock_release(&sPointerRefreshPending);
+	});
+}
+
 void MacLua_GetInputStatus(MacLuaInputStatus *out)
 {
 	if (out == NULL)
@@ -693,65 +789,15 @@ void MacLua_GetInputStatus(MacLuaInputStatus *out)
 		}
 	}
 
-	// Pointer position in DS screen pixels.  Windows works this out from the
-	// client rect and the current scaling; here the same idea is applied to the
-	// display view, which covers the unrotated, unfiltered case exactly.
-	__block int dsX = -1;
-	__block int dsY = -1;
-	__block bool valid = false;
+	// Pointer position is refreshed asynchronously by the main thread; reading
+	// the cached value here costs one mutex, not a round trip to AppKit.
+	pthread_mutex_lock(&sPointerLock);
+	out->mouseValid = sPointerValid;
+	out->mouseX = sPointerValid ? sPointerX : -1;
+	out->mouseY = sPointerValid ? sPointerY : -1;
+	pthread_mutex_unlock(&sPointerLock);
 
-	RunOnMainThreadSync(^{
-		NSWindow *window = [NSApp mainWindow];
-		if (window == nil)
-			window = [NSApp keyWindow];
-		if (window == nil)
-			return;
-
-		// Find the view that actually renders the DS screens.
-		NSView *displayView = nil;
-		NSMutableArray *pending = [NSMutableArray arrayWithObject:[window contentView]];
-		while ([pending count] > 0 && displayView == nil)
-		{
-			NSView *view = [pending objectAtIndex:0];
-			[pending removeObjectAtIndex:0];
-			NSString *className = NSStringFromClass([view class]);
-			if ([className rangeOfString:@"DisplayView"].location != NSNotFound)
-			{
-				displayView = view;
-				break;
-			}
-			[pending addObjectsFromArray:[view subviews]];
-		}
-		if (displayView == nil)
-			return;
-
-		const NSPoint inWindow = [window mouseLocationOutsideOfEventStream];
-		const NSPoint local = [displayView convertPoint:inWindow fromView:nil];
-		const NSRect bounds = [displayView bounds];
-		if (bounds.size.width <= 0.0 || bounds.size.height <= 0.0)
-			return;
-		if (!NSMouseInRect(local, bounds, [displayView isFlipped]))
-			return;
-
-		// The HUD is 256x384 with the main screen on top; this matches the
-		// coordinate space agg.* and gui.text() use.
-		double px = (local.x - bounds.origin.x) * 256.0 / bounds.size.width;
-		double py = (local.y - bounds.origin.y) * 384.0 / bounds.size.height;
-		if (![displayView isFlipped])
-			py = 384.0 - py;
-
-		// Windows reports the pointer relative to the touch screen (its
-		// ToDSScreenRelativeCoords(.., 1) subtracts the upper screen's height),
-		// so do the same instead of handing scripts canvas coordinates.
-		// Over the upper screen the result is negative, exactly as on Windows.
-		dsX = (int)px;
-		dsY = (int)py - 192;
-		valid = (dsX >= 0 && dsX < 256 && dsY >= -192 && dsY < 192);
-	});
-
-	out->mouseValid = valid;
-	out->mouseX = valid ? dsX : -1;
-	out->mouseY = valid ? dsY : -1;
+	RefreshPointerCache();
 }
 
 #pragma mark - Game controllers
@@ -778,9 +824,15 @@ typedef struct
 } PadSnapshot;
 
 static PadSnapshot sPads[kMacLuaMaxPads];
+// Not retained: IOHIDManager owns the device objects for as long as they are
+// matched.  Used only to avoid registering one device twice (the initial
+// enumeration and the matching callback can both report it).
+static IOHIDDeviceRef sPadDevices[kMacLuaMaxPads];
 static IOHIDManagerRef sPadManager = NULL;
 static pthread_mutex_t sPadLock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_once_t sPadOnce = PTHREAD_ONCE_INIT;
+static pthread_cond_t sPadProbeCond = PTHREAD_COND_INITIALIZER;
+static bool sPadManagerReady = false;
 
 // Cookies of the elements we care about, per device.
 typedef struct
@@ -842,6 +894,22 @@ static void PadInputValueCallback(void *context, IOReturn result, void *sender, 
 
 static void PadDeviceMatched(void *context, IOReturn result, void *sender, IOHIDDeviceRef device)
 {
+	if (device == NULL)
+		return;
+
+	// IOHIDManagerCopyDevices() (the initial probe) and the matching callback
+	// can deliver the same device.  Never claim two slots for it.
+	pthread_mutex_lock(&sPadLock);
+	for (int pad = 0; pad < kMacLuaMaxPads; pad++)
+	{
+		if (sPads[pad].connected && sPadDevices[pad] == device)
+		{
+			pthread_mutex_unlock(&sPadLock);
+			return;
+		}
+	}
+	pthread_mutex_unlock(&sPadLock);
+
 	for (int pad = 0; pad < kMacLuaMaxPads; pad++)
 	{
 		pthread_mutex_lock(&sPadLock);
@@ -849,6 +917,7 @@ static void PadDeviceMatched(void *context, IOReturn result, void *sender, IOHID
 		{
 			memset(&sPads[pad], 0, sizeof(sPads[pad]));
 			memset(&sPadElements[pad], 0, sizeof(sPadElements[pad]));
+			sPadDevices[pad] = device;
 			sPads[pad].connected = true;
 			sPads[pad].axisCount = 0;
 			sPads[pad].buttonCount = 0;
@@ -927,6 +996,7 @@ static void PadDeviceRemoved(void *context, IOReturn result, void *sender, IOHID
 		// them all and let the re-match repopulate.  Removing a pad is rare.
 		memset(&sPads[pad], 0, sizeof(sPads[pad]));
 		memset(&sPadElements[pad], 0, sizeof(sPadElements[pad]));
+		sPadDevices[pad] = NULL;
 	}
 	pthread_mutex_unlock(&sPadLock);
 
@@ -938,7 +1008,15 @@ static void *PadThreadMain(void *arg)
 {
 	sPadManager = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
 	if (sPadManager == NULL)
+	{
+		// Do not leave the first controller.get() waiting for a probe that can
+		// never finish.
+		pthread_mutex_lock(&sPadLock);
+		sPadManagerReady = true;
+		pthread_cond_broadcast(&sPadProbeCond);
+		pthread_mutex_unlock(&sPadLock);
 		return NULL;
+	}
 
 	// kIOHIDDeviceUsagePageKey / kIOHIDDeviceUsageKey are C string macros in
 	// IOHIDKeys.h, not CFStringRefs, so they cannot be bridged.  Spell out the
@@ -956,6 +1034,32 @@ static void *PadThreadMain(void *arg)
 	IOHIDManagerRegisterDeviceRemovalCallback(sPadManager, PadDeviceRemoved, NULL);
 	IOHIDManagerScheduleWithRunLoop(sPadManager, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
 	IOHIDManagerOpen(sPadManager, kIOHIDOptionsTypeNone);
+
+	// Matching callbacks are only delivered once the run loop below is spinning.
+	// Seed the snapshot from devices that are already attached so the very first
+	// controller.get() does not have to wait for the loop to wake up.
+	CFSetRef attached = IOHIDManagerCopyDevices(sPadManager);
+	if (attached != NULL)
+	{
+		const CFIndex count = CFSetGetCount(attached);
+		if (count > 0)
+		{
+			IOHIDDeviceRef *devices = (IOHIDDeviceRef *)calloc((size_t)count, sizeof(IOHIDDeviceRef));
+			if (devices != NULL)
+			{
+				CFSetGetValues(attached, (const void **)devices);
+				for (CFIndex i = 0; i < count; i++)
+					PadDeviceMatched(NULL, kIOReturnSuccess, NULL, devices[i]);
+				free(devices);
+			}
+		}
+		CFRelease(attached);
+	}
+
+	pthread_mutex_lock(&sPadLock);
+	sPadManagerReady = true;
+	pthread_cond_broadcast(&sPadProbeCond);
+	pthread_mutex_unlock(&sPadLock);
 
 	// Run until the process exits; there is nothing to tear down gracefully.
 	CFRunLoopRun();
@@ -980,19 +1084,28 @@ bool MacLua_GetControllerStatus(unsigned int padIndex, bool returnDiagonals, Mac
 		return false;
 
 	pthread_once(&sPadOnce, PadStartOnce);
-	// Give the input thread a moment to report the first device the very first
-	// time a script asks, so a pad that is already attached is not missed.
-	for (int attempt = 0; attempt < 20; attempt++)
-	{
-		pthread_mutex_lock(&sPadLock);
-		const bool connected = sPads[padIndex].connected;
-		pthread_mutex_unlock(&sPadLock);
-		if (connected)
-			break;
-		usleep(5000);
-	}
 
 	pthread_mutex_lock(&sPadLock);
+	// One bounded wait, once per process: let the HID thread finish its initial
+	// device enumeration so a pad that was already attached shows up on the
+	// first call.  Nothing after this point may block -- scripts poll
+	// controller.get() every frame, and the old "retry until a pad appears"
+	// loop slept 20 x 5 ms on every call with no pad attached, i.e. 100 ms per
+	// frame, which dropped the emulator to roughly 10 fps.
+	if (!sPadManagerReady)
+	{
+		struct timeval now;
+		gettimeofday(&now, NULL);
+		struct timespec deadline;
+		deadline.tv_sec = now.tv_sec;
+		deadline.tv_nsec = (long)now.tv_usec * 1000L + 100000000L; // +100 ms
+		if (deadline.tv_nsec >= 1000000000L)
+		{
+			deadline.tv_sec += 1;
+			deadline.tv_nsec -= 1000000000L;
+		}
+		pthread_cond_timedwait(&sPadProbeCond, &sPadLock, &deadline);
+	}
 	const PadSnapshot &snapshot = sPads[padIndex];
 	out->connected = snapshot.connected;
 	if (snapshot.connected)
