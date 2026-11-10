@@ -4158,6 +4158,12 @@ DEFINE_LUA_FUNCTION(emu_registermenustart, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_ONINITMENU]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_ONINITMENU]);
+#if defined(DESMUME_COCOA)
+	// The handler only runs when Cocoa tells us a Lua menu is opening, and that
+	// arrives on the main thread.  Ask for one refresh now so the first open
+	// already shows the state this handler sets.
+	MacLua_QueueMenuInit();
+#endif
 	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }

@@ -1234,6 +1234,9 @@ static void* RunCoreThread(void *arg)
 		execControl->FetchOutputPostNDSExec();
 #ifdef HAVE_LUA
 		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+		// Menu clicks arrive on the main thread; run their handlers here, on the
+		// thread that actually owns the Lua states.
+		MacLua_DrainMenuCalls();
 		// Flush GUI draw calls deferred from the script body, then publish the
 		// completed overlay frame to the renderer.
 		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);

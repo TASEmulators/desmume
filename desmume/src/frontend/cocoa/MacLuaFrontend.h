@@ -76,6 +76,18 @@ void MacLua_MenuSetEnabled(void *menu, int itemID, bool enabled);
 void MacLua_MenuSetChecked(void *menu, int itemID, bool checked);
 void MacLua_MenuSetTitle(void *menu, int itemID, const char *title);
 
+// A menu click is delivered on the main thread, but the Lua state that owns the
+// handler belongs to the emulation thread - calling into it from AppKit's thread
+// would touch the same lua_State from two threads.  The click is parked by
+// MacLua_QueueMenuHandler() and run by MacLua_DrainMenuCalls(), which the frame
+// loop calls from the emulation thread.
+void MacLua_QueueMenuHandler(int itemID);
+void MacLua_DrainMenuCalls(void);
+
+// Raises the "a Lua menu is about to be shown" flag, the NSMenuDelegate
+// counterpart of WM_INITMENUPOPUP.  Drained alongside the queued clicks.
+void MacLua_QueueMenuInit(void);
+
 // ---------------------------------------------------------------------------
 // input.getcurrentinputstatus() / input.get()
 //

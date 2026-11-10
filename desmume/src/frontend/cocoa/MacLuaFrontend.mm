@@ -51,6 +51,16 @@ static void RunOnMainThreadSync(dispatch_block_t block)
 	dispatch_sync(dispatch_get_main_queue(), block);
 }
 
+// Fire-and-forget variant.  Menu state changes are usually made from
+// emu.registermenustart(), which runs while AppKit is tracking the open menu in
+// NSEventTrackingRunLoopMode.  The main dispatch queue is not serviced in that
+// mode, so a dispatch_sync() here would freeze the emulation thread until the
+// user closes the menu.  These calls have no result the caller needs.
+static void RunOnMainThreadAsync(dispatch_block_t block)
+{
+	dispatch_async(dispatch_get_main_queue(), block);
+}
+
 #pragma mark - Popups
 
 const char *MacLua_ShowPopup(const char *message, const char *type, const char *icon)
@@ -259,8 +269,8 @@ enum
 
 static bool sMenuItemUsed[kMacLuaMenuItemCount];
 
-// One target shared by every Lua menu item.
-@interface MacLuaMenuTarget : NSObject
+// One target shared by every Lua menu item, and the delegate of the Lua menus.
+@interface MacLuaMenuTarget : NSObject <NSMenuDelegate>
 - (void)menuItemSelected:(id)sender;
 @end
 
@@ -271,9 +281,72 @@ static bool sMenuItemUsed[kMacLuaMenuItemCount];
 	const size_t itemID = (size_t)[item tag];
 	if (itemID == 0)
 		return;
-	CallRegisteredLuaMenuHandlers(itemID);
+	// The handler runs Lua, and the Lua state belongs to the emulation thread.
+	// Park the click instead of calling into it from here.
+	MacLua_QueueMenuHandler((int)itemID);
+}
+
+// The macOS counterpart of WM_INITMENUPOPUP, which is where Windows gives
+// scripts a chance to refresh their items (emu.registermenustart).  Delegates
+// run on the main thread too, so this only raises a flag for whichever frame
+// pump is active (cocoa_core.mm's loop, or macOS_driver.cpp's EMU_StepMainLoop
+// when a script drives frames with emu.frameadvance()).  The menu is therefore
+// painted from whatever the last frame left behind, and picks the new state up
+// on the next open if a script changed it mid-track.
+- (void)menuNeedsUpdate:(NSMenu *)menu
+{
+	MacLua_QueueMenuInit();
 }
 @end
+
+// Menu clicks waiting for the emulation thread.  Small and fixed: a user cannot
+// realistically out-click the frame loop, and dropping the excess is better than
+// blocking AppKit on a mutex the emulator holds.
+enum { kMacLuaPendingMenuMax = 16 };
+static pthread_mutex_t sPendingMenuLock = PTHREAD_MUTEX_INITIALIZER;
+static int sPendingMenuItems[kMacLuaPendingMenuMax];
+static int sPendingMenuCount = 0;
+static bool sMenuInitPending = false;
+
+void MacLua_QueueMenuHandler(int itemID)
+{
+	pthread_mutex_lock(&sPendingMenuLock);
+	if (sPendingMenuCount < kMacLuaPendingMenuMax)
+		sPendingMenuItems[sPendingMenuCount++] = itemID;
+	pthread_mutex_unlock(&sPendingMenuLock);
+}
+
+void MacLua_QueueMenuInit(void)
+{
+	pthread_mutex_lock(&sPendingMenuLock);
+	sMenuInitPending = true;
+	pthread_mutex_unlock(&sPendingMenuLock);
+}
+
+void MacLua_DrainMenuCalls(void)
+{
+	int pending[kMacLuaPendingMenuMax];
+	int count = 0;
+	bool runMenuInit = false;
+
+	pthread_mutex_lock(&sPendingMenuLock);
+	count = sPendingMenuCount;
+	memcpy(pending, sPendingMenuItems, (size_t)count * sizeof(pending[0]));
+	sPendingMenuCount = 0;
+	runMenuInit = sMenuInitPending;
+	sMenuInitPending = false;
+	pthread_mutex_unlock(&sPendingMenuLock);
+
+	// emu.registermenustart() first: its whole job is to set the state that the
+	// click handlers below may then act on.
+	if (runMenuInit)
+		CallRegisteredLuaFunctions(LUACALL_ONINITMENU);
+
+	// Handlers may add or remove menu items (and scripts may stop), so run them
+	// outside the lock and look nothing up in between.
+	for (int i = 0; i < count; i++)
+		CallRegisteredLuaMenuHandlers((PlatformMenuItem)pending[i]);
+}
 
 static MacLuaMenuTarget *sMenuTarget = nil;
 
@@ -415,6 +488,9 @@ void *MacLua_MenuAddSubmenu(void *parentMenu, const char *title, int itemID)
 		item.tag = itemID;
 		NSMenu *submenu = [[NSMenu alloc] initWithTitle:theTitle];
 		[submenu setAutoenablesItems:NO];
+		// Gives scripts the same "menu is about to open" hook Windows has;
+		// see MacLuaMenuTarget -menuNeedsUpdate:.
+		[submenu setDelegate:MenuTarget()];
 		[item setSubmenu:submenu];
 		[parent addItem:item];
 		created = submenu;
@@ -465,7 +541,7 @@ void MacLua_MenuRemoveItem(void *menu, int itemID)
 	if (menu == NULL)
 		return;
 	NSMenu *theMenu = (NSMenu *)menu;
-	RunOnMainThreadSync(^{
+	RunOnMainThreadAsync(^{
 		NSMenuItem *item = FindItem(theMenu, itemID);
 		if (item != nil)
 			[theMenu removeItem:item];
@@ -477,7 +553,7 @@ void MacLua_MenuSetEnabled(void *menu, int itemID, bool enabled)
 	if (menu == NULL)
 		return;
 	NSMenu *theMenu = (NSMenu *)menu;
-	RunOnMainThreadSync(^{
+	RunOnMainThreadAsync(^{
 		NSMenuItem *item = FindItem(theMenu, itemID);
 		if (item != nil)
 			[item setEnabled:enabled ? YES : NO];
@@ -489,7 +565,7 @@ void MacLua_MenuSetChecked(void *menu, int itemID, bool checked)
 	if (menu == NULL)
 		return;
 	NSMenu *theMenu = (NSMenu *)menu;
-	RunOnMainThreadSync(^{
+	RunOnMainThreadAsync(^{
 		NSMenuItem *item = FindItem(theMenu, itemID);
 		if (item != nil)
 			[item setState:checked ? NSControlStateValueOn : NSControlStateValueOff];
@@ -502,7 +578,7 @@ void MacLua_MenuSetTitle(void *menu, int itemID, const char *title)
 		return;
 	NSMenu *theMenu = (NSMenu *)menu;
 	NSString *theTitle = [NSString stringWithUTF8String:title];
-	RunOnMainThreadSync(^{
+	RunOnMainThreadAsync(^{
 		NSMenuItem *item = FindItem(theMenu, itemID);
 		if (item != nil)
 			[item setTitle:theTitle];

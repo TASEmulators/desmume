@@ -235,12 +235,27 @@ BaseDriver::eStepMainLoopResult macOS_driver::EMU_StepMainLoop(bool allowSleep, 
 
 #ifdef HAVE_LUA
 		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+		// When a script drives the emulator with emu.frameadvance(), the core
+		// thread is inside RunLuaScriptFile() and cocoa_core.mm's own loop does
+		// not get to run a frame.  This step loop is the only per-frame hook on
+		// the Lua engine thread in that mode, so menu clicks and the
+		// emu.registermenustart() hook must be drained here too.
+		MacLua_DrainMenuCalls();
 		// Flush GUI draw calls deferred from the script body (gui.drawbox, etc.),
 		// then publish the completed overlay frame to the renderer.
 		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
 		lua_script_present_graphics_buffer();
 #endif
 #ifdef DESMUME_COCOA_METAL_OSD
+#ifdef HAVE_LUA
+		// Same reason as above: emu.message() has to be painted into the frame
+		// the script just drew, not into the one cocoa_core.mm will draw later.
+		{
+			char osdMessage[512];
+			if (MacLua_GetActiveOsdMessage(osdMessage, (int)sizeof(osdMessage)))
+				MacMetalOSD_AddFixedText(0, 8, osdMessage);
+		}
+#endif
 		MacMetalOSD_PresentBack();
 #endif
 	}
