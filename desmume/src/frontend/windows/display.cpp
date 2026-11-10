@@ -37,7 +37,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #define DESMUME_WGPU_HUD_STAGE4 1
 #include <vector>
 
-#include "../modules/osd/wgpu/wgpu_draw.h"
+#include "../modules/osd/wgpu/wgpu_osd_draw.h"
 #endif
 
 
@@ -611,25 +611,25 @@ static void DD_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight)
 }
 
 #if defined(DESMUME_WGPU_HUD_STAGE4)
-// Stage 4: the HUD is recorded by WGPUOSDAggTarget and sampled straight from its
+// Stage 4: the HUD is recorded by WGPUOSDDrawTarget and sampled straight from its
 // texture by WGPUPresent, so no CPU buffer is uploaded per frame.
 //
 // The target is created once and reused. Fonts come from fonts_list[], the same
 // table lookupFont() serves, so INI font names and Lua keep working.
-static WGPUOSDAggTarget *WGPU_HudTarget()
+static WGPUOSDDrawTarget *WGPU_HudTarget()
 {
-	static WGPUOSDAggTarget *target = NULL;
+	static WGPUOSDDrawTarget *target = NULL;
 
 	if (target == NULL)
 	{
-		target = new WGPUOSDAggTarget(GPU_FRAMEBUFFER_NATIVE_WIDTH,
+		target = new WGPUOSDDrawTarget(GPU_FRAMEBUFFER_NATIVE_WIDTH,
 		                              GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 	}
 
 	return target;
 }
 
-static bool WGPU_HudBegin(WGPUOSDAggTarget *target)
+static bool WGPU_HudBegin(WGPUOSDDrawTarget *target)
 {
 	static bool fontsRegistered = false;
 	static int lastFontIndex = -1;
@@ -677,7 +677,7 @@ static bool WGPU_HudBegin(WGPUOSDAggTarget *target)
 	return target->beginGPU(wgpudisplay.instance(), wgpudisplay.device(), wgpudisplay.queue());
 }
 
-static bool WGPU_HudRender(WGPUOSDAggTarget *target)
+static bool WGPU_HudRender(WGPUOSDDrawTarget *target)
 {
 	return (target != NULL) && target->render();
 }
@@ -885,7 +885,7 @@ void DoDisplay()
 	// bitmap text, and gui.* pixels are uploaded as the target's fallback layer,
 	// so scripts draw on the WGPU backend too.
 	bool useGpuHud = false;
-	WGPUOSDAggTarget *hudTarget = NULL;
+	WGPUOSDDrawTarget *hudTarget = NULL;
 
 	if (needsHUDDrawing && isRunningWGPU && !CommonSettings.single_core())
 	{

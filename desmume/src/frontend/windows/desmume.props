@@ -172,11 +172,12 @@
 			     hardware: pass /p:UseGpuHudOverlay=true to msbuild. -->
 			<PreprocessorDefinitions Condition="'$(Platform)' == 'x64' AND '$(UseGpuHudOverlay)' == 'true'">DESMUME_GPU_HUD_OVERLAY=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
-			<!-- Stage 2/4 OSD migration: WGPUOSDAggTarget records the primitives
+			<!-- Stage 2/4 OSD migration: WGPUOSDDrawTarget records the primitives
 			     agg_osd.cpp and Lua use and rasterizes them with a WGSL SDF
 			     pipeline. Stage 4 wires it into the WebGPU HUD path when this
 			     and UseGpuHudOverlay are both enabled. Pass
-			     /p:UseWgpuOsd=true /p:UseGpuHudOverlay=true. -->
+			     /p:UseWgpuOsd=true /p:UseGpuHudOverlay=true.
+			     The recorder needs no libagg (wgpu-agg.md 20). -->
 			<PreprocessorDefinitions Condition="'$(Platform)' == 'x64' AND '$(UseWgpuOsd)' == 'true'">DESMUME_WGPU_OSD=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 		</ClCompile>
@@ -192,8 +193,12 @@
 			     source instead: dinput8.lib ships c_dfDIJoystick2 itself, and
 			     dxerr8_compat.cpp provides the dxerr8 entry points. -->
 			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;zlib-vc8-x64.lib;wgpu_native.lib;%(AdditionalDependencies)</AdditionalDependencies>
-			<!-- libagg is only needed by the legacy AGG backend.  DESMUME_NATIVE_DRAW
-			     draws with GDI+ and takes its bitmap fonts from RCDATA resources. -->
+			<!-- libagg is only needed by the legacy AGG backend (UseNativeOsd=false).
+			     DESMUME_NATIVE_DRAW draws with GDI+ and takes its bitmap fonts from
+			     RCDATA; the WebGPU OSD recorder (wgpu_osd_draw.cpp) implements the
+			     AggDrawTarget interface without instantiating Agg2D, so neither
+			     wgpu_draw.obj nor wgpu_osd_draw.obj has undefined agg::* symbols.
+			     See wgpu-agg.md 20. -->
 			<AdditionalDependencies Condition="'$(Platform)' == 'x64' AND '$(UseNativeOsd)' == 'false'">agg-2.5-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- deps config for Win32 -->

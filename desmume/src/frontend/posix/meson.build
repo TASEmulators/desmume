@@ -338,9 +338,12 @@ libdesmume_src += [
   '../modules/osd/agg/aggdraw.cpp',
   '../modules/osd/agg/agg_osd.cpp',
   '../modules/osd/wgpu/wgpu_draw.cpp',
+  '../modules/osd/wgpu/wgpu_osd_draw.cpp',
 ]
-# Stage 2 of the WebGPU OSD migration: WGPUOSDAggTarget records the
-# primitives agg_osd.cpp uses instead of rasterizing them with AGG.
+# Stage 2 of the WebGPU OSD migration: WGPUOSDDrawTarget records the
+# primitives agg_osd.cpp uses instead of rasterizing them with AGG.  The
+# recorder implements the AggDrawTarget interface without instantiating Agg2D,
+# so both object files are free of undefined agg::* symbols (wgpu-agg.md 20).
 add_global_arguments('-DDESMUME_WGPU_OSD', language: ['c', 'cpp'])
 
 # Vector fonts need FreeType; the GTK frontends also use fontconfig to find a

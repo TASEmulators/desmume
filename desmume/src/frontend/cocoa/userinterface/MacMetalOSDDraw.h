@@ -21,11 +21,12 @@
 // ---------------------------------------------------------------------------
 // Metal port of the WebGPU OSD backend (frontend/modules/osd/wgpu/wgpu_draw.*).
 //
-// The WGPU version's WGPUOSDAggTarget inherits T_AGG_RGBA, which cocoa does not
-// compile (no HAVE_LIBAGG, no osd/agg).  This header therefore provides an
-// AGG-free recorder with the same method names and the same recording semantics
-// that agg_osd.cpp / lua-engine.cpp use.  It is plain C++ so that lua-engine.cpp
-// (compiled as C++, not Objective-C++) can include it.
+// The WebGPU recorder (wgpu_osd_draw.h) derives from the abstract AggDrawTarget
+// interface, which cocoa does not compile (no HAVE_LIBAGG, no osd/agg).  This
+// header therefore provides an interface-free recorder with the same method
+// names and the same recording semantics that agg_osd.cpp / lua-engine.cpp use.
+// It is plain C++ so that lua-engine.cpp (compiled as C++, not Objective-C++)
+// can include it.
 //
 // The recorder only stores primitives; MacMetalOSDRenderer turns them into SDF
 // instances, glyph quads and a CPU fallback texture on a 256x384 premultiplied
@@ -140,7 +141,7 @@ struct MetalOSDColor
 		: r(r_), g(g_), b(b_), a(a_) {}
 };
 
-// AGG-free equivalent of WGPUOSDAggTarget.  Method names intentionally match
+// AGG-free equivalent of WGPUOSDDrawTarget.  Method names intentionally match
 // the AggDrawTarget subset used by agg_osd.cpp and Lua's agg.* table.
 class MacMetalOSDDrawTarget
 {

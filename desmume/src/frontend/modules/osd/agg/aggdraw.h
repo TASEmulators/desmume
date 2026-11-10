@@ -719,7 +719,7 @@ void Agg_init();
 void Agg_setCustomSize(int w, int h);
 
 // Points the OSD/HUD drawing at another AggDrawTarget. The WebGPU display path
-// installs a WGPUOSDAggTarget here; NULL restores the target Agg_init() chose.
+// installs a WGPUOSDDrawTarget here; NULL restores the target Agg_init() chose.
 // The rest of the OSD (fonts, layout, Lua) keeps using aggDraw.hud unchanged.
 void Agg_setHudTarget(AggDrawTarget *target);
 

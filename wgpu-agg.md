@@ -749,3 +749,107 @@ Lua 端到端测试第一次跑出来只有矩形、圆角矩形和文字，椭�
 - **`MacMetalOSD_AddFixedText()` 未保存/恢复描边状态**，会污染后续 `agg.*` 调用。已改为存旧值—设置—还原。
 
 修复后同一脚本的非透明像素数从 8647 涨到 16648，`documentation/lua-api/examples/osd-shapes.lua` 里专门留了一个 paint-state 回归小部件：先 `noFill()` 画空心矩形，再 `fillColor()` 画实心矩形，两个都得出现才算过。
+
+
+## 19. Windows 链接修复：无条件链接 libagg（2026-11-10）
+
+### 19.1 现象
+
+Windows x64 默认配置（`UseNativeOsd` 未指定，即 GDI+ 后端）链接时 `wgpu_draw.obj` 报 32 条 `LNK2001`，全是 `agg::*` 符号：`curve4_inc` / `curve3_inc` / `curve3_div` / `curve4_div`、`rounded_rect`、`vcgen_stroke`、`trans_affine`、`image_filter_lut`、`bezier_arc` / `arc` / `bezier_arc_svg`，以及 `gse4x6` / `g_elder_bit_table` / `g_sqrt_table`。
+
+### 19.2 根因
+
+- §12.4 决定 `wgpu_draw.cpp` **无条件**参与编译（保持持续编译检查），且 `WGPUOSDAggTarget : public T_AGG_RGBA`（`wgpu_draw.h:193`）。基类 `Agg2D` 的内联构造函数与回退路径会把 `agg::*` 引用写进 `wgpu_draw.obj`。
+- 路线 1 落地时 `frontend/windows/desmume.props` 把 `agg-2.5*.lib` 收窄为**仅** `UseNativeOsd=false` 才链接，注释写的是「libagg is only needed by the legacy AGG backend」。这对 `aggdraw.cpp` 成立（`DESMUME_NATIVE_DRAW` 下改用 `NativeDrawTarget`，且 `AGG_FONT(x)` 展开为 `NULL`，`aggdraw.cpp:79`），但对 `wgpu_draw.obj` 不成立。
+- 两者叠加：默认构建和 `/p:UseWgpuOsd=true /p:UseGpuHudOverlay=true`（阶段 4）都会缺 AGG 符号；Win32 同样受影响。这是链接配置遗漏，不是运行时或像素问题，录像/截图/输出行为不受影响。
+
+### 19.3 修复
+
+`frontend/windows/desmume.props`：把 x64 的 `agg-2.5-x64.lib`、Win32 的 `agg-2.5.lib` 改为**无条件**链接，并更新注释说明两个消费者（legacy AGG 后端 + 始终编译的 `wgpu_draw.cpp`）。这与 §16 中 POSIX「无条件静态编译仓库内 AGG 源码」是同一个结论：只要 `WGPUOSDAggTarget` 还以 AGG 为基类，AGG 就是这个构建的一部分。
+
+- 未改 `AggDrawTarget`、`agg_osd.cpp`、`lua-engine.cpp`，未改任何开关默认值；`UseNativeOsd=false` 原本就链接该库，现在只保留一份链接行，不会重复。
+- `frontend/interface/windows/desmume.props` 本来就无条件链接 AGG，无需改动。
+
+### 19.4 静态复核
+
+- 报错涉及的全部 `agg::` 符号名在 `agg/agg-2.5-x64.lib` 中命中（31 组前缀、0 缺失）；`agg-2.5.lib` 也含 `gse4x6` / `g_sqrt_table`。两份库的修饰名分别对应 x64 与 Win32。
+- 库的 `/DEFAULTLIB` 指令只有 `uuid.lib`，没有 `LIBCMT` / `MSVCRT`，不会与工程的 `/MD` 运行时冲突。
+- `desmume.props` XML 解析通过，两条链接行分别带 x64 / Win32 条件。
+
+### 19.5 仍待用户执行 / 备选方案
+
+本机不做 Windows 完整构建；请用原命令重新 `msbuild` 确认 0 error。若坚持「默认 exe 完全不含 AGG」的目标，备选方案是在 `UseWgpuOsd != true` 时把 `wgpu_draw.cpp` 设为 `ExcludedFromBuild`，并把库链接条件改为 `UseNativeOsd=false || UseWgpuOsd=true`；代价是默认构建不再编译检查该文件，与 §12.4 的取舍冲突，本次未采用。
+
+> **本节已被 §20 取代**：§20 把 WGPU 录制器改造成 AGG-free 后，`agg-2.5*.lib` 已改回仅 `UseNativeOsd=false` 时链接。§19 的无条件链接不再需要。
+
+
+## 20. WGPU 原生 2D 后端：AGG-free 录制器（2026-11-10）
+
+按「⑤ 想让 WGPU 也原生」实现：把 §18 的 Metal AGG-free 录制器反向移植到 WGPU 侧，让 `wgpu_draw.obj` 不再引用 `agg::*`，并撤销 §19 的无条件 libagg 链接。Windows GUI 与像素验证仍由用户执行。
+
+### 20.1 设计决策：继承抽象接口，但不实例化 AGG
+
+⑤ 建议「不复用 `AggDrawTarget` 类型」，那是 cocoa 的约束（cocoa 不编译 `osd/agg`，没有这个类型）。Windows 不同：`display.cpp` 阶段 4 通过 `Agg_setHudTarget(AggDrawTarget*)` 安装目标，`agg_osd.cpp` 与 `lua-engine.cpp` 经 `aggDraw.hud`（同样是 `AggDrawTarget*`）调用它。若做成完全独立的类，就得改业务层。
+
+因此 `WGPUOSDDrawTarget : public AggDrawTarget`，但**只继承纯虚接口**，不实例化 `Agg2DBase` / `AggDrawTargetImplementation<T>` / `T_AGG_RGBA`。接口签名里的 `AggColor`(`agg::rgba8`)、`RectD`(`rect_d`)、`Affine`(`trans_affine`)、`Transformations`、各枚举与 `agg::rendering_buffer` 全是 header-only POD，不产生 libagg 符号。探针（20.4）证明这条路径成立。
+
+### 20.2 新增 / 改造文件
+
+| 文件 | 动作 |
+| --- | --- |
+| `frontend/modules/osd/wgpu/wgpu_osd_draw.h/.cpp` | **新增** `WGPUOSDDrawTarget`（替代 `WGPUOSDAggTarget`）。POD 颜色 `WGPUOSDColor`、自有 256×384 预乘 BGRA8 CPU 层、名字→字体表、复用 `WGPUOSDRenderer`。实现 `AggDrawTarget` 全部纯虚：约 30 个走录制，其余为 no-op / 默认状态 |
+| `frontend/modules/osd/wgpu/wgpu_draw.h/.cpp` | **改造**：删掉 `#include ../agg/aggdraw.h` 与整个 `WGPUOSDAggTarget`（约 549 行），只剩 POD 结构、`WGPUOSDRenderer` 与 WGSL。两种配置下都 AGG-free |
+| `frontend/windows/display.cpp` | 阶段 4 改 include `wgpu_osd_draw.h`，类型名 `WGPUOSDAggTarget` → `WGPUOSDDrawTarget`。`beginGPU/setFonts/render/textureView/targetWidth/targetHeight` 接口不变，`Agg_setHudTarget()` 接线不变 |
+| `frontend/windows/desmume.props` | **撤销 §19 的无条件链接**：`agg-2.5-x64.lib` / `agg-2.5.lib` 改回仅 `UseNativeOsd=false`。注释说明两个 WGPU obj 已无 `agg::*` 符号 |
+| `DeSmuME.vcxproj(.filters)` | 新增 `wgpu_osd_draw.cpp/.h` 两个项，归入 `frontend\modules\osd\wgpu` 过滤器 |
+| `frontend/posix/meson.build` | `libdesmume_src` 加入 `wgpu_osd_draw.cpp` |
+| `aggdraw.h` / `wgpu_draw.cpp` / Metal 注释 | 同步目标名，避免文档与代码不一致 |
+
+没有改 `agg_osd.cpp`、`lua-engine.cpp`、`Agg_setHudTarget()` 的签名，也没有改 `WGPUOSDRenderer`（⑤ 预判正确：它的接口本来就是 `void*` + POD）。
+
+### 20.3 相对旧录制器的行为变化
+
+| 项 | 旧 `WGPUOSDAggTarget` | 新 `WGPUOSDDrawTarget` |
+| --- | --- | --- |
+| 基类 | `T_AGG_RGBA`（Agg2D CPU 光栅器） | 抽象 `AggDrawTarget`，无 CPU 光栅器 |
+| 非单位仿射 / 非 `BlendAlpha` / clip / radial gradient / 路径命令 / 图像变换 | 回退 AGG | no-op / 默认状态；`agg_osd.cpp` 与 Lua `agg.*` 不调用 |
+| `roundedRect(rx≠ry)`、四角不同半径 | 回退 AGG | 取较小半径近似，与 §18 Metal 一致 |
+| 8 参数 `curve()`（三次贝塞尔） | 回退 AGG | 16 段开放折线，走 `sdPolyline` |
+| 未注册字体 / 空串文字 | 回退 AGG 位图字 | 直接跳过（用 `hasFont()` 判断） |
+| 字体查找 | `AggDrawTarget::lookupFont()` | `setFonts()` 注册的名字表；名称/顺序仍来自 `fonts_list[]`，兼容旧 INI 与 Lua |
+| `clearAll` / `clearClipBox` | AGG 清屏 | 写自有 CPU 层（预乘 BGRA8） |
+| `renderTextDropshadowed` | 继承基类默认实现 | 覆盖，保存/恢复完整描边状态（含渐变端点），规避 §18.6 的 paint-state bug |
+| CPU 层上传 | 整屏每帧上传 | 不变（§13.3 的收尾优化仍未做） |
+
+`gui.*` 仍通过 `buf()` 直接写 CPU 层，`prepare_drawing()` 的 `aggDraw.hud->buf().buf()` / `stride_abs()` 契约不变。
+
+### 20.4 可复现的静态验证
+
+本机工具链 `C:\msys64\clang64\bin\g++`（clang 前端）+ `nm`，不需要安装任何东西。
+
+1. **接口探针**：只 `#include "aggdraw.h"` 并引用 `AggDrawTarget*`，编译出的 obj 用 `nm -uC` 查 `agg::` / `Agg2D` → 0 命中。证明继承抽象接口不拉 libagg 符号。
+2. **两种配置编译**：`g++ -std=c++11 -Wall -Wextra -c` 编译 `wgpu_draw.cpp` 与 `wgpu_osd_draw.cpp`，分别带 `-DENABLE_WGPU` 与不带 → 4/4 0 error；每个 obj 的 `agg::*` 未定义符号均为 **0**。（include 路径：`modules/osd/wgpu`、`modules/osd/agg`、`windows/agg/include`、`windows/agg/examples`、`windows/agg/font_freetype`、`3rdparty/wgpu`。）
+3. **无 libagg 链接 + 运行**：`tools/osd_link_test/main.cpp`（已入库，可重跑）实例化 `WGPUOSDDrawTarget(256,384)`，经 `AggDrawTarget*` 安装并调用 `clear/fillColor/rectangle/renderText`、检查 `buf().buf()`，再调用 `pixelBuffer()`、矩形/圆角矩形/椭圆/线/弧/星形/曲线/三角形/`renderTextDropshadowed`、`hasContent()`、`pixelStrideBytes()`。命令行**不含任何 AGG 库**，在仓库根目录直接跑：
+
+   ```
+   g++ -std=c++11 -Wno-deprecated-register \
+       -Idesmume/src/frontend/modules/osd/wgpu \
+       -Idesmume/src/frontend/modules/osd/agg \
+       -Idesmume/src/frontend/windows/agg/include \
+       -Idesmume/src/frontend/windows/agg/examples \
+       -Idesmume/src/frontend/windows/agg/font_freetype \
+       tools/osd_link_test/main.cpp \
+       desmume/src/frontend/modules/osd/wgpu/wgpu_osd_draw.cpp \
+       desmume/src/frontend/modules/osd/wgpu/wgpu_draw.cpp \
+       -o tools/osd_link_test/osd_link_test
+   ```
+
+   结果 `BUILD OK`、`exit=0`。若哪天录制器又拉回 `agg::*`，这一步会在链接期直接失败。
+4. **接口完整性**：`aggdraw.h` 的 `AGG2D_USE_VECTORFONTS` 分支只有 2 个额外纯虚（`:414` 的 `setVectorFont`、`:436` 的 `renderVectorFontText`），新头用 `#ifdef` 条件覆盖。首次编译曾因 `cubicCurveTo/Rel` 实际是 6/4 参数重载而报「abstract class」，已修正。
+5. `DeSmuME.vcxproj`、`DeSmuME.vcxproj.filters`、`desmume.props` 三个 XML 均解析通过。
+
+### 20.5 结论与遗留
+
+§2.1 的「去 libagg」目标在 Windows 默认构建与阶段 4 构建上都真正落地：`UseNativeOsd=false`（legacy AGG 后端）是唯一还需要 `agg-2.5*.lib` 的配置。§19 只是链接层的临时兜底，已被本节替代。§12.4 的「`wgpu_draw.cpp` 始终参与编译、持续被编译检查」保持不变（现在它更干净：纯渲染器）。§18.2 的对比表描述的是当时状态；WGPU 侧现在同样 AGG-free，区别只剩「Windows 版仍继承抽象接口以复用 `aggDraw.hud` 接线」。
+
+**未验证**：Windows 完整 `msbuild` 全链接、GUI 实机（旋转 × 布局 × 滤镜）、WGPU 离屏像素 golden、POSIX 完整 meson 构建（本机无 freetype/fontconfig，`AGG2D_USE_VECTORFONTS` 分支只做了静态核对）。这些由用户在各自平台执行。本机也没有重跑 §12.5 / §13.5 / §17.3 的 WGPU 离屏对拍——旧 `WGPUOSDAggTarget` 已移除，对拍脚本需要改为实例化 `WGPUOSDDrawTarget`；渲染管线本身（`WGPUOSDRenderer` + WGSL）未改动，理论上结果不变，但仍建议实跑一次。

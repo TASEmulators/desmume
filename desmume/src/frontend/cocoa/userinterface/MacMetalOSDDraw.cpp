@@ -83,7 +83,7 @@ uint32_t *MacMetalOSDDrawTarget::pixelBuffer()
 
 uint32_t MacMetalOSDDrawTarget::PackColor(MetalOSDColor c) const
 {
-	// Mirrors WGPUOSDAggTarget::PackColor: masterAlpha affects alpha only.
+	// Mirrors WGPUOSDDrawTarget::PackColor: masterAlpha affects alpha only.
 	double alpha = (double)c.a * m_masterAlpha;
 	if (alpha < 0.0)   alpha = 0.0;
 	if (alpha > 255.0) alpha = 255.0;
@@ -94,7 +94,7 @@ uint32_t MacMetalOSDDrawTarget::PackColor(MetalOSDColor c) const
 
 void MacMetalOSDDrawTarget::fillColor(MetalOSDColor c)
 {
-	// Agg2D (and WGPUOSDAggTarget) re-enable the fill here, so a script that
+	// Agg2D (and WGPUOSDDrawTarget) re-enable the fill here, so a script that
 	// called noFill() earlier starts filling again as soon as it sets a color.
 	m_hasFill = true;
 	m_fill0 = m_fill1 = c;

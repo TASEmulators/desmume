@@ -21,19 +21,22 @@
 #include <stdint.h>
 #include <vector>
 
-#include "../agg/aggdraw.h"
+// This header is deliberately AGG-free.  It only describes the POD recording
+// format and the renderer; the AggDrawTarget-compatible recorder lives in
+// wgpu_osd_draw.h.  Keeping libagg out of this translation unit is what lets
+// the Windows default build link without agg-2.5*.lib (see wgpu-agg.md 20).
 
 // ---------------------------------------------------------------------------
 // Stage 2 of the WebGPU OSD migration: draw the primitives agg_osd.cpp uses
 // with signed-distance-field shaders instead of AGG's CPU rasterizer.
 //
-// Stage 3 adds bitmap text: the AGG raster fonts are packed into an R8 coverage
-// atlas and each character becomes one quad, so the normal HUD text no longer
-// touches the CPU buffer. Vector fonts, fallback primitives and anything else
-// outside the stage-2/3 scope still go through AGG into the target's CPU
-// buffer, which is composited on top at render() time.
+// Stage 3 adds bitmap text: the AGG raster font blobs are packed into an R8
+// coverage atlas and each character becomes one quad, so the normal HUD text
+// no longer touches the CPU buffer. The CPU layer now only carries Lua's
+// gui.* pixels, which are composited on top at render() time.
 //
-// WGPUOSDAggTarget is an AggDrawTarget, so the existing OSD code keeps calling
+// WGPUOSDDrawTarget (wgpu_osd_draw.h) implements the AggDrawTarget interface
+// without instantiating Agg2D, so the existing OSD code keeps calling
 // fillColor()/rectangle()/renderText() exactly as before.
 //
 // WGPUOSDRenderer owns the pipelines and the target texture. It never creates a
@@ -43,26 +46,18 @@
 //
 // Known stage-2/3 limitations, all outside what agg_osd.cpp currently does:
 //   - linear gradients only, with the default profile
-//   - no affine transformations (non-identity transforms fall back to AGG)
-//   - no blend modes other than BlendAlpha (they fall back to AGG)
-//   - clip boxes are not applied to recorded shapes or text
-//   - fallback primitives are rasterized by AGG into the text layer, so they
-//     are always composited after every recorded shape and glyph.
-//     agg_osd.cpp has no fallback primitives; a caller that mixes them must
-//     keep the z-order in mind.
-//   - vector fonts stay on AGG (AGG2D_USE_VECTORFONTS is off in this build)
-//   - bitmap text needs setFonts() to be registered; unregistered fonts fall
-//     back to AGG. Text uses the current lineColor and ignores masterAlpha,
-//     exactly like Agg2D::renderText.
+//   - affine transformations, clip boxes and non-BlendAlpha blend modes are
+//     ignored (the recorder has no CPU rasterizer to fall back to)
+//   - the gui.* CPU layer is always composited after every shape and glyph,
+//     so mixing agg.* and gui.* cannot preserve strict z-order
+//   - bitmap text needs setFonts() to be registered; an unknown font keeps
+//     the previous one. Text uses the current lineColor and ignores
+//     masterAlpha, exactly like Agg2D::renderText.
 //   - with partial-alpha text colors the GPU writes correct premultiplied
-//     pixels, while AGG's bitmap-text span writes straight color and leaves a
-//     1/255 alpha haze around glyphs. OSD text is always opaque, so this does
-//     not change the current HUD; it is an intentional fix of an AGG quirk.
-//   - Lua's gui.* drawing uses primitives, transforms and clips beyond this
-//     scope; keep it on the AGG target until it is migrated separately.
+//     pixels (see wgpu-agg.md 13.3 for the AGG quirk this intentionally fixes)
 // ---------------------------------------------------------------------------
 
-// Shapes recorded by WGPUOSDAggTarget. `type` is one of WGPUOSDShapeType.
+// Shapes recorded by WGPUOSDDrawTarget. `type` is one of WGPUOSDShapeType.
 enum WGPUOSDShapeType
 {
 	WGPUOSDShape_Rectangle = 0,
@@ -190,101 +185,7 @@ const char *WGPUOSDShapeShaderSource();
 // Same contract for the bitmap-text pipeline and hud_text.wgsl.
 const char *WGPUOSDTextShaderSource();
 
-class WGPUOSDAggTarget : public T_AGG_RGBA
-{
-public:
-	WGPUOSDAggTarget(int width, int height);
-	~WGPUOSDAggTarget();
-
-	bool beginGPU(void *instance, void *device, void *queue);
-	bool setFonts(const WGPUOSDFont *fonts, int count);
-	bool render();
-	bool readPixels(uint8_t *dst, int dstStrideBytes);
-	void *textureView() const;
-
-	int targetWidth() const;
-	int targetHeight() const;
-
-	// AggDrawTarget
-	void clear();
-	void setDrawTargetDims(agg::int8u *buf, int width, int height, int stride);
-
-	void fillColor(AggColor c);
-	void fillColor(unsigned r, unsigned g, unsigned b, unsigned a = 255);
-	void noFill();
-
-	void lineColor(AggColor c);
-	void lineColor(unsigned r, unsigned g, unsigned b, unsigned a = 255);
-	void noLine();
-
-	void lineWidth(double w);
-
-	void fillLinearGradient(double x1, double y1, double x2, double y2, AggColor c1, AggColor c2, double profile = 1.0);
-	void lineLinearGradient(double x1, double y1, double x2, double y2, AggColor c1, AggColor c2, double profile = 1.0);
-
-	void masterAlpha(double a);
-
-	// Bitmap text: recorded on the GPU when the active font is registered.
-	// Vector fonts and non-recordable state fall back to AGG.
-	void setFont(const std::string &name);
-	void renderText(double dstX, double dstY, const std::string &str);
-
-	void line(double x1, double y1, double x2, double y2);
-	void triangle(double x1, double y1, double x2, double y2, double x3, double y3);
-	void rectangle(double x1, double y1, double x2, double y2);
-	void roundedRect(double x1, double y1, double x2, double y2, double r);
-	void roundedRect(double x1, double y1, double x2, double y2, double rx, double ry);
-	void roundedRect(double x1, double y1, double x2, double y2, double rxBottom, double ryBottom, double rxTop, double ryTop);
-	void ellipse(double cx, double cy, double rx, double ry);
-	void arc(double cx, double cy, double rx, double ry, double start, double sweep);
-	void star(double cx, double cy, double r1, double r2, double startAngle, int numRays);
-	void curve(double x1, double y1, double x2, double y2, double x3, double y3);
-	void polygon(double *xy, int numPoints);
-
-private:
-	typedef T_AGG_RGBA BASE;
-
-	static agg::int8u *AllocatePixels(int width, int height);
-
-	WGPUOSDAggTarget(int width, int height, agg::int8u *pixels);
-
-	bool CanRecordShapes();
-	void RecordShape(uint32_t type, double x0, double y0, double x1, double y1, double radius);
-	void RecordPolygon(const WGPUOSDPoint *points, int count);
-	void RecordPolyline(const WGPUOSDPoint *points, int count);
-	void RecordText(double dstX, double dstY, const std::string &str);
-	uint32_t PackColor(AggColor c) const;
-
-	agg::int8u *m_ownedPixels;
-	agg::int8u *m_pixels;
-	int m_width;
-	int m_height;
-	int m_stride;
-
-	bool m_hasFill;
-	bool m_hasStroke;
-	bool m_fillGradient;
-	bool m_lineGradient;
-	AggColor m_fill0;
-	AggColor m_fill1;
-	AggColor m_line0;
-	AggColor m_line1;
-	double m_gradientX0, m_gradientY0, m_gradientX1, m_gradientY1;
-	double m_lineGradientX0, m_lineGradientY0, m_lineGradientX1, m_lineGradientY1;
-	double m_strokeWidth;
-	double m_masterAlpha;
-
-	const agg::int8u *m_fontData;
-
-	std::vector<WGPUOSDShape> m_shapes;
-	std::vector<WGPUOSDPoint> m_points;
-	std::vector<WGPUOSDTextRun> m_textRuns;
-	std::vector<char> m_textBytes;
-
-	WGPUOSDRenderer m_renderer;
-
-	WGPUOSDAggTarget(const WGPUOSDAggTarget &);
-	WGPUOSDAggTarget &operator=(const WGPUOSDAggTarget &);
-};
+// The AggDrawTarget-compatible recorder is declared in wgpu_osd_draw.h.
+// It consumes the structs above and is the only piece that needs aggdraw.h.
 
 #endif // _WGPU_DRAW_H_

@@ -257,6 +257,7 @@
     <ClCompile Include="..\modules\osd\agg\agg_osd.cpp" />
     <ClCompile Include="..\modules\osd\agg\native_draw.cpp" />
     <ClCompile Include="..\modules\osd\wgpu\wgpu_draw.cpp" />
+    <ClCompile Include="..\modules\osd\wgpu\wgpu_osd_draw.cpp" />
     <ClCompile Include="AboutBox.cpp" />
     <ClCompile Include="aviout.cpp" />
     <ClCompile Include="cheatsWin.cpp" />
@@ -465,6 +466,7 @@
     <ClInclude Include="..\modules\osd\agg\agg_osd.h" />
     <ClInclude Include="..\modules\osd\agg\native_draw.h" />
     <ClInclude Include="..\modules\osd\wgpu\wgpu_draw.h" />
+    <ClInclude Include="..\modules\osd\wgpu\wgpu_osd_draw.h" />
     <ClInclude Include="osd_fonts\osd_fonts.h" />
     <ClInclude Include="..\..\movie.h" />
     <ClInclude Include="..\..\NDSSystem.h" />

@@ -891,6 +891,9 @@
     <ClCompile Include="..\modules\osd\wgpu\wgpu_draw.cpp">
       <Filter>frontend\modules\osd\wgpu</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\osd\wgpu\wgpu_osd_draw.cpp">
+      <Filter>frontend\modules\osd\wgpu</Filter>
+    </ClCompile>
     <ClCompile Include="mic-win.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -1654,6 +1657,9 @@
       <Filter>frontend\modules\osd\agg</Filter>
     </ClInclude>
     <ClInclude Include="..\modules\osd\wgpu\wgpu_draw.h">
+      <Filter>frontend\modules\osd\wgpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\osd\wgpu\wgpu_osd_draw.h">
       <Filter>frontend\modules\osd\wgpu</Filter>
     </ClInclude>
     <ClInclude Include="osd_fonts\osd_fonts.h">
