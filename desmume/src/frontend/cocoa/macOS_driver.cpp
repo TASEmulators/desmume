@@ -168,6 +168,12 @@ void macOS_driver::USR_InfoMessage(const char *message)
 #endif
 }
 
+// Frame pacing for Lua-driven frames (emu.frameadvance()).  Only the core
+// thread reaches here, so these need no lock.  See the comment in
+// EMU_StepMainLoop() for why this is an accumulating absolute deadline.
+static double sLuaFrameDeadline = 0.0;
+static double sLuaFrameDuration = 0.0;
+
 BaseDriver::eStepMainLoopResult macOS_driver::EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore)
 {
 	if (this->__execControl == NULL)
@@ -178,6 +184,28 @@ BaseDriver::eStepMainLoopResult macOS_driver::EMU_StepMainLoop(bool allowSleep, 
 	// We are already on the core thread, and the core thread already holds the write lock
 	// on rwlockCoreExecute and the mutex lock on mutexThreadExecute.
 	// Therefore, we must NOT lock them again here.
+
+	// allowSleep means "apply the speed limiter to this frame" (see
+	// StepEmulationAtSpeed() and Windows' StepRunLoop_Throttle()).  The outer
+	// RunCoreThread loop in cocoa_core.mm paces itself with
+	// WaitUntilAbsoluteTime(startTime + frameTime * executionWaitBias), but it
+	// is blocked in RunLuaScriptFile() while a script drives frames, so this
+	// step loop is the only throttle that runs.
+	//
+	// The old implementation slept a fixed 16666 us AFTER doing the frame's
+	// work, making the period (emulation work + 16.666 ms); a long usleep also
+	// overshoots by ~3 ms on macOS, so even an empty script dropped from 60 to
+	// ~45 FPS.  GetFrameTime() is in mach_absolute_time units, honours the
+	// speed setting, and is 0.0 when the speed limiter is disabled.
+	const double frameStartTime = this->__execControl->GetCurrentAbsoluteTime();
+	double frameDuration = allowSleep ? this->__execControl->GetFrameTime() : 0.0;
+	if (allowSleep && frameDuration <= 0.0 && this->__execControl->GetEnableSpeedLimiterApplied())
+	{
+		// Settings are normally applied by the outer loop, which is blocked
+		// while a script runs.  Don't fall back to an unthrottled loop if the
+		// cached frame time happens to be missing.
+		frameDuration = this->__execControl->CalculateFrameAbsoluteTime(1.0);
+	}
 
 	if (!disableCore)
 	{
@@ -233,12 +261,40 @@ BaseDriver::eStepMainLoopResult macOS_driver::EMU_StepMainLoop(bool allowSleep, 
 		pthread_mutex_unlock(this->__mutexThreadExecute);
 	}
 
-	if (allowSleep)
+	if (frameDuration > 0.0 && !disableCore)
 	{
-		usleep(16666);
+		// Keep an ideal absolute schedule instead of waiting "one frame from
+		// now": if the timer wakes us late, the next deadline is unchanged and
+		// the following wait is automatically shorter.  That compensates for
+		// the timer's systematic overshoot without the 64-frame feedback loop
+		// the outer core thread uses.
+		const double now = this->__execControl->GetCurrentAbsoluteTime();
+		if (sLuaFrameDeadline == 0.0 ||
+			sLuaFrameDuration != frameDuration ||
+			sLuaFrameDeadline < now - frameDuration ||
+			sLuaFrameDeadline > now + frameDuration)
+		{
+			// First frame, a speed change, or a long stall (script paused,
+			// debugger, UI event): re-anchor on this frame's start.
+			sLuaFrameDeadline = frameStartTime + frameDuration;
+			sLuaFrameDuration = frameDuration;
+		}
+		else
+		{
+			sLuaFrameDeadline += frameDuration;
+		}
+
+		if (now < sLuaFrameDeadline)
+		{
+			this->__execControl->WaitUntilAbsoluteTime(sLuaFrameDeadline);
+		}
 	}
 	else
 	{
+		// Fast-forward / emu.wait(): don't throttle, but still yield so the
+		// display views can take the read lock we just released.
+		sLuaFrameDeadline = 0.0;
+		sLuaFrameDuration = 0.0;
 		usleep(1);
 	}
 
