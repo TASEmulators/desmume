@@ -11,7 +11,7 @@ project('desmume',
 )
 
 dep_glib2 = dependency('glib-2.0')
-dep_sdl = dependency('sdl2')
+dep_sdl = dependency('sdl3')
 dep_pcap = dependency('pcap')
 dep_zlib = dependency('zlib')
 dep_threads = dependency('threads')
@@ -203,7 +203,7 @@ elif get_option('opengl')
   endif
 endif
 
-# Microphone capture uses SDL2, which this target already depends on.
+# Microphone capture uses SDL3, which this target already depends on.
 libdesmume_src += [
   '../posix/shared/mic_sdl.cpp',
 ]

@@ -28,7 +28,7 @@
 #include <gtk/gtk.h>
 #include <gio/gapplication.h>
 #include <gdk/gdkkeysyms.h>
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <X11/Xlib.h>
 #include <vector>
 #include <set>
@@ -3738,11 +3738,11 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 static int ConvertSDLVolumeToSPU(int sdl_volume)
 {
 	int tmp = sdl_volume * 100;
-	if (tmp % SDL_MIX_MAXVOLUME == 0)
+	if (tmp % SNDSDL_MAX_VOLUME == 0)
 	{
-		return tmp/SDL_MIX_MAXVOLUME;
+		return tmp/SNDSDL_MAX_VOLUME;
 	}
-	return (tmp/SDL_MIX_MAXVOLUME)+1;
+	return (tmp/SNDSDL_MAX_VOLUME)+1;
 }
 
 static void CallbackSetAudioVolume(GtkWidget *scale, gpointer data)
@@ -4902,8 +4902,10 @@ static void OnMainWindowDestroy(GtkWidget *widget, gpointer user_data)
 
 gboolean EmuLoop(gpointer data)
 {
-    static Uint32 fps_SecStart, next_fps_SecStart, fps_FrameCount, skipped_frames;
-    static unsigned next_frame_time;
+    /* SDL3's SDL_GetTicks() returns Uint64 milliseconds. */
+    static Uint64 fps_SecStart, next_fps_SecStart;
+    static Uint32 fps_FrameCount, skipped_frames;
+    static Uint64 next_frame_time;
     static int frame_mod3;
     unsigned int i;
     gchar Title[50];
@@ -5035,9 +5037,9 @@ gboolean EmuLoop(gpointer data)
                 next_frame_time += (frame_mod3 == 0) ? 16 : 17;
             }
         }
-        unsigned this_tick = SDL_GetTicks();
+        Uint64 this_tick = SDL_GetTicks();
         if (this_tick < next_frame_time) {
-            unsigned timeleft = next_frame_time - this_tick;
+            Uint64 timeleft = next_frame_time - this_tick;
             usleep((timeleft - 1) * 1000);
             while (SDL_GetTicks() < next_frame_time);
             this_tick = SDL_GetTicks();
@@ -5585,7 +5587,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
      * Perhaps it needs a "window" to catch events...? */
     SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,"1");
-    if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO|SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER) == -1) {
+    if(!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_JOYSTICK|SDL_INIT_GAMEPAD)) {
         g_printerr("Error trying to initialize SDL: %s\n",
                     SDL_GetError());
         // TODO: return a non-zero exit status.
@@ -5611,9 +5613,11 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     /* Init the hud / osd stuff */
 #ifdef HAVE_LIBAGG
-	SDL_DisplayMode cur_mode;
-	if(!SDL_GetCurrentDisplayMode(0, &cur_mode))
-		aggDraw.screenBytesPerPixel = SDL_BYTESPERPIXEL(cur_mode.format);
+	/* SDL3 returns a const pointer and takes a display ID rather than
+	   filling in a caller-provided struct. */
+	const SDL_DisplayMode *cur_mode = SDL_GetCurrentDisplayMode(SDL_GetPrimaryDisplay());
+	if(cur_mode != NULL)
+		aggDraw.screenBytesPerPixel = SDL_BYTESPERPIXEL(cur_mode->format);
 	
     Desmume_InitOnce();
     Hud.reset();

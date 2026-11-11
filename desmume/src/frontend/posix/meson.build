@@ -14,7 +14,7 @@ fs = import('fs')
 cxx = meson.get_compiler('cpp')
 
 dep_glib2 = dependency('glib-2.0')
-dep_sdl = dependency('sdl2')
+dep_sdl = dependency('sdl3')
 dep_pcap = dependency('pcap')
 dep_zlib = dependency('zlib')
 dep_threads = dependency('threads')
@@ -311,7 +311,7 @@ elif get_option('egl')
   endif
 endif
 
-# SDL2 is a hard dependency, so microphone capture is always available
+# SDL3 is a hard dependency, so microphone capture is always available
 # through SDL (no ALSA/OpenAL conditionals or optional dependencies).
 libdesmume_src += [
   'shared/mic_sdl.cpp',

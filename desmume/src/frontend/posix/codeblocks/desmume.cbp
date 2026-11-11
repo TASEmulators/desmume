@@ -114,7 +114,7 @@
 					<Add library="/usr/lib/aarch64-linux-gnu/libz.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libpcap.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libagg.a" />
-					<Add library="/usr/lib/aarch64-linux-gnu/libSDL2.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libSDL3.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libGLESv2.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libEGL.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libfontconfig.so" />
@@ -156,7 +156,7 @@
 					<Add library="/usr/lib/aarch64-linux-gnu/libz.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libpcap.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libagg.a" />
-					<Add library="/usr/lib/aarch64-linux-gnu/libSDL2.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libSDL3.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libGLESv2.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libEGL.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libfontconfig.so" />
@@ -197,7 +197,7 @@
 					<Add library="/usr/lib/aarch64-linux-gnu/libz.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libpcap.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libagg.a" />
-					<Add library="/usr/lib/aarch64-linux-gnu/libSDL2.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libSDL3.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libfontconfig.so" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libaggfontfreetype.a" />
 					<Add library="/usr/lib/aarch64-linux-gnu/libfreetype.so" />
@@ -214,7 +214,7 @@
 			<Add option="-DAGG2D_USE_VECTORFONTS" />
 			<Add directory="/usr/include" />
 			<Add directory="/usr/include/agg2" />
-			<Add directory="/usr/include/SDL2" />
+			<Add directory="/usr/include/SDL3" />
 			<Add directory="../../../libretro-common/include" />
 			<Add directory="../../../metaspu/SoundTouch" />
 			<Add directory="../../../frontend" />
@@ -226,7 +226,7 @@
 			<Add library="/usr/lib/x86_64-linux-gnu/libz.so" />
 			<Add library="/usr/lib/x86_64-linux-gnu/libpcap.so" />
 			<Add library="/usr/lib/x86_64-linux-gnu/libagg.a" />
-			<Add library="/usr/lib/x86_64-linux-gnu/libSDL2.so" />
+			<Add library="/usr/lib/x86_64-linux-gnu/libSDL3.so" />
 			<Add library="/usr/lib/x86_64-linux-gnu/libfontconfig.so" />
 			<Add library="/usr/lib/x86_64-linux-gnu/libaggfontfreetype.a" />
 			<Add library="/usr/lib/x86_64-linux-gnu/libfreetype.so" />

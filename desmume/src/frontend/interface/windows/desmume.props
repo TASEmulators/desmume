@@ -91,7 +91,7 @@
 
 		<ClCompile>
 
-			<AdditionalIncludeDirectories>.;..\..;..\..\..;..\..\windows;.\SDL\include;glib-2.20.1\build;..\..\windows\zlib128;..\..\windows\zziplib;..\..\windows\winpcap;userconfig;..\..\windows\agg\include;..\..\windows\agg\examples;..\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\..;..\..\..;..\..\windows;.\SDL3\include;glib-2.20.1\build;..\..\windows\zlib128;..\..\windows\zziplib;..\..\windows\winpcap;userconfig;..\..\windows\agg\include;..\..\windows\agg\examples;..\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 			
 			<!-- We are building the interface -->
 			<PreprocessorDefinitions>TARGET_INTERFACE;WIN_EXPORT</PreprocessorDefinitions>
@@ -166,18 +166,18 @@
 			<ProgramDatabaseFile>$(IntDir)TargetName.pdb</ProgramDatabaseFile>
 
 			<!-- deps config for x64 -->
-			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">..\..\windows\zlib128;..\..\windows\agg;.libs;.libs\x64;.\SDL\lib\x64</AdditionalLibraryDirectories>
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">..\..\windows\zlib128;..\..\windows\agg;.libs;.libs\x64;.\SDL3\lib\x64</AdditionalLibraryDirectories>
 			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">zlib-vc8-x64.lib;agg-2.5-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- deps config for Win32 -->
-			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">..\..\windows\zlib128;..\..\windows\agg;.libs;.libs\win32;.\SDL\lib\x86</AdditionalLibraryDirectories>
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">..\..\windows\zlib128;..\..\windows\agg;.libs;.libs\win32;.\SDL3\lib\x86</AdditionalLibraryDirectories>
 			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">zlib-vc8-Win32.lib;agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- special deps config for newer VS -->
 			<AdditionalDependencies Label="Configuration" Condition="'$(NDS_VSVER)' &gt;= '14'">legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- general deps config -->
-			<AdditionalDependencies>SDL2main.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies>SDL3.lib;%(AdditionalDependencies)</AdditionalDependencies>
 			<!-- (and windows libs) -->
 			<AdditionalDependencies>vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
 

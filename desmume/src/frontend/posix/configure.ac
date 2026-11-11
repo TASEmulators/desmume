@@ -84,16 +84,10 @@ if test "x$wgpu" = "xyes" ; then
 fi
 AM_CONDITIONAL([ENABLE_WGPU], [test "x$have_wgpu" = "xyes"])
 
-dnl - Check for SDL2
-AC_PATH_PROGS(SDLCONFIG, [sdl2-config])
-if test ! "x$SDLCONFIG" = "x" ; then
-  SDL_CFLAGS=`$SDLCONFIG --cflags`
-  SDL_LIBS=`$SDLCONFIG --libs`
-  AC_SUBST(SDL_CFLAGS)
-  AC_SUBST(SDL_LIBS)
-else
-  AC_MSG_ERROR([sdl is required to build desmume])
-fi
+dnl - Check for SDL3.  SDL3 ships no sdl3-config tool, so pkg-config is the
+dnl   supported way to get SDL_CFLAGS / SDL_LIBS.  The variable names are
+dnl   unchanged so the Makefile.am files need no edits.
+PKG_CHECK_MODULES(SDL, [sdl3])
 
 dnl - if --enable-opengl is used, check for it
 AC_ARG_ENABLE([opengl],
@@ -194,7 +188,7 @@ AC_ARG_ENABLE([hud],
               [AC_HELP_STRING([--enable-hud], [Enable HUD rendering, requires libagg])],
               [libagg=yes])
 
-dnl - Microphone capture uses SDL2 (shared/mic_sdl.cpp), which this frontend
+dnl - Microphone capture uses SDL3 (shared/mic_sdl.cpp), which this frontend
 dnl   already requires for sound output and input.  No ALSA/OpenAL detection.
 
 dnl - Check for GLib / gthread (used by the core and the CLI frontend)
@@ -283,7 +277,7 @@ case $host in
     UI_DIR="windows"
     ;;
   *darwin*)
-    dnl - OpenGL is a system framework; microphone capture now goes through SDL2.
+    dnl - OpenGL is a system framework; microphone capture now goes through SDL3.
     LIBS="$LIBS -framework OpenGL"
     dnl - extra hackery needed for X includes
     AC_PATH_XTRA

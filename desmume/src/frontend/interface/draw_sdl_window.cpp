@@ -19,7 +19,7 @@
 
 // This entire file is basically a copy of the Posix CLI rendering / input processing.
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include "interface.h"
 #include "../../NDSSystem.h"
 #include "../../GPU.h"
@@ -32,9 +32,15 @@
 #endif
 
 // SDL drawing & input processing
-static SDL_Window *window;
-static SDL_Renderer *renderer;
-static int sdl_videoFlags;
+static SDL_Window *window = NULL;
+static SDL_Renderer *renderer = NULL;
+/* SDL3 window flags (Uint64 bitmask).  The old code held SDL 1.2 video
+   flags (SDL_OPENGL / SDL_SWSURFACE / SDL_RESIZABLE) here, which never
+   belonged in SDL_CreateWindow(). */
+static SDL_WindowFlags sdl_videoFlags = 0;
+#ifdef INCLUDE_OPENGL_2D
+static SDL_GLContext gl_context = NULL;
+#endif
 struct ctrls_event_config ctrls_cfg;
 static float nds_screen_size_ratio = 1.0f;
 bool opengl_2d = true;
@@ -44,20 +50,20 @@ GLuint sdl_ogl_screen_texture[2];
 // TODO: Make configurable instead.
 const u32 cli_kb_cfg[NB_KEYS] =
         {
-                SDLK_x,         // A
-                SDLK_z,         // B
+                SDLK_X,         // A
+                SDLK_Z,         // B
                 SDLK_RSHIFT,    // select
                 SDLK_RETURN,    // start
                 SDLK_RIGHT,     // Right
                 SDLK_LEFT,      // Left
                 SDLK_UP,        // Up
                 SDLK_DOWN,      // Down
-                SDLK_w,         // R
-                SDLK_q,         // L
-                SDLK_s,         // X
-                SDLK_a,         // Y
-                SDLK_p,         // DEBUG
-                SDLK_o,         // BOOST
+                SDLK_W,         // R
+                SDLK_Q,         // L
+                SDLK_S,         // X
+                SDLK_A,         // Y
+                SDLK_P,         // DEBUG
+                SDLK_O,         // BOOST
                 SDLK_BACKSPACE, // Lid
         };
 
@@ -75,13 +81,19 @@ static void sdl_draw_no_opengl()
     ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Main],  pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
     ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Touch], pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
 
-    SDL_Surface *rawImage = SDL_CreateRGBSurfaceFrom(displayInfo.masterNativeBuffer16, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, 16, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16), 0x001F, 0x03E0, 0x7C00, 0);
+    /* SDL3 replaced SDL_CreateRGBSurfaceFrom() with SDL_CreateSurfaceFrom(),
+       which takes an SDL_PixelFormat enum rather than four channel masks. */
+    const SDL_PixelFormat format = SDL_GetPixelFormatForMasks(16, 0x001F, 0x03E0, 0x7C00, 0);
+    SDL_Surface *rawImage = SDL_CreateSurfaceFrom(
+        GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2,
+        format, displayInfo.masterNativeBuffer16,
+        GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
     if (rawImage == NULL) return;
 
 	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, rawImage);
-	SDL_FreeSurface(rawImage);
+	SDL_DestroySurface(rawImage);
 	rawImage = NULL;
-	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderTexture(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);
 	SDL_DestroyTexture(texture);
 }
@@ -91,7 +103,7 @@ static void sdl_draw_with_opengl(GLuint *screen_texture)
 {
     desmume_draw_opengl(sdl_ogl_screen_texture);
     /* Flush the drawing to the screen */
-    SDL_GL_SwapBuffers();
+    SDL_GL_SwapWindow(window);
 }
 
 /* initialization openGL function */
@@ -206,16 +218,12 @@ EXPORTED int desmume_draw_window_init(BOOL auto_pause, BOOL use_opengl_if_possib
 
 #ifdef INCLUDE_OPENGL_2D
     if (opengl_2d) {
-        /* the flags to pass to SDL_SetVideoMode */
-        sdl_videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
-        sdl_videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
-
+        sdl_videoFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 
         /* Sets up OpenGL double buffering */
         SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
-		window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 192 * 2,
-								   sdl_videoFlags );
+		window = SDL_CreateWindow( "Desmume SDL", 256, 192 * 2, sdl_videoFlags );
 
 		/* Verify there is a window */
 		if ( !window ) {
@@ -223,26 +231,46 @@ EXPORTED int desmume_draw_window_init(BOOL auto_pause, BOOL use_opengl_if_possib
 		  exit( -1);
 		}
 
-
-        /* initialize OpenGL */
-        if (!initGL(sdl_ogl_screen_texture)) {
+        /* SDL 1.2 made SDL_SetVideoMode() create the GL context implicitly.
+           SDL3 requires an explicit context before any gl* call. */
+        gl_context = SDL_GL_CreateContext(window);
+        if (gl_context == NULL) {
+          fprintf( stderr, "OpenGL context creation failed: %s\n", SDL_GetError( ) );
+          SDL_DestroyWindow(window);
+          window = NULL;
+          opengl_2d = 0;
+        }
+        else if (!SDL_GL_MakeCurrent(window, gl_context)) {
+          fprintf( stderr, "OpenGL context activation failed: %s\n", SDL_GetError( ) );
+          SDL_GL_DestroyContext(gl_context);
+          gl_context = NULL;
+          SDL_DestroyWindow(window);
+          window = NULL;
+          opengl_2d = 0;
+        }
+        else if (!initGL(sdl_ogl_screen_texture)) {
           fprintf(stderr, "Failed to init GL, fall back to software render\n");
-
+          SDL_GL_MakeCurrent(NULL, NULL);
+          SDL_GL_DestroyContext(gl_context);
+          gl_context = NULL;
+          SDL_DestroyWindow(window);
+          window = NULL;
           opengl_2d = 0;
         }
     }
 
     if (!opengl_2d) {
 #endif
-		sdl_videoFlags |= SDL_SWSURFACE;
-		window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 384, sdl_videoFlags );
+        /* SDL3 dropped SDL_SWSURFACE; the SDL renderer owns its own buffers. */
+        sdl_videoFlags = 0;
+		window = SDL_CreateWindow( "Desmume SDL", 256, 384, sdl_videoFlags );
 
 		if ( !window ) {
 			fprintf( stderr, "Window creation failed: %s\n", SDL_GetError( ) );
 			exit( -1);
 		}
 
-		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+		renderer = SDL_CreateRenderer(window, NULL);
 #ifdef INCLUDE_OPENGL_2D
     }
 
@@ -260,6 +288,8 @@ EXPORTED int desmume_draw_window_init(BOOL auto_pause, BOOL use_opengl_if_possib
     ctrls_cfg.focused = 1;
     ctrls_cfg.fake_mic = 0;
     ctrls_cfg.keypad = 0;
+    /* process_ctrls_event() needs this for the Alt+Enter fullscreen toggle. */
+    ctrls_cfg.window = window;
 #ifdef INCLUDE_OPENGL_2D
     ctrls_cfg.screen_texture = sdl_ogl_screen_texture;
 #else
@@ -278,8 +308,8 @@ EXPORTED void desmume_draw_window_input()
 
     /* Look for queued events and update keypad status */
     /* IMPORTANT: Reenable joystick events if needed. */
-    if(SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE)
-        SDL_JoystickEventState(SDL_ENABLE);
+    if(!SDL_JoystickEventsEnabled())
+        SDL_SetJoystickEventsEnabled(true);
 
     /* There's an event waiting to be processed? */
     while ( !ctrls_cfg.sdl_quit &&
@@ -318,5 +348,20 @@ EXPORTED BOOL desmume_draw_window_has_quit()
 
 EXPORTED void desmume_draw_window_free()
 {
+#ifdef INCLUDE_OPENGL_2D
+    if (gl_context != NULL) {
+        SDL_GL_MakeCurrent(NULL, NULL);
+        SDL_GL_DestroyContext(gl_context);
+        gl_context = NULL;
+    }
+#endif
+    if (renderer != NULL) {
+        SDL_DestroyRenderer(renderer);
+        renderer = NULL;
+    }
+    if (window != NULL) {
+        SDL_DestroyWindow(window);
+        window = NULL;
+    }
     SDL_Quit();
 }

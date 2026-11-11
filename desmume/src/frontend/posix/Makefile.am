@@ -236,7 +236,7 @@ libdesmume_a_SOURCES += \
 endif
 endif
 
-# SDL2 is a hard dependency of the POSIX frontends, so microphone capture
+# SDL3 is a hard dependency of the POSIX frontends, so microphone capture
 # is always available through SDL (no ALSA/OpenAL conditionals).
 libdesmume_a_SOURCES += shared/mic_sdl.cpp
 
