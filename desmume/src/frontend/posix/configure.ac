@@ -236,23 +236,24 @@ AC_SUBST(GTHREAD_LIBS)
 
 AC_PATH_PROG(UPDATEDESKTOP, [update-desktop-database])
 
-# lua-engine.cpp only uses Lua's public 5.1 C API now, so any engine exposing
-# that ABI works.  Prefer LuaJIT 2.1 (what the Windows frontend ships), then
-# fall back to the distro's Lua 5.1 .pc names.  The old code ran two
-# unconditional PKG_CHECK_MODULES calls, which let the second one clobber
-# LUA_CFLAGS/LUA_LIBS (and HAVE_LUA) from the first - see mysql bug #29945.
-PKG_CHECK_MODULES([LUA], [luajit >= 2.1], [HAVE_LUA=yes], [HAVE_LUA=no])
-if test "x$HAVE_LUA" = "xno" ; then
-  PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1], [HAVE_LUA=yes], [HAVE_LUA=no])
-fi
-if test "x$HAVE_LUA" = "xno" ; then
-  PKG_CHECK_MODULES([LUA], [lua >= 5.1], [HAVE_LUA=yes], [HAVE_LUA=no])
-fi
-AS_IF([test "x$HAVE_LUA" = "xno"], [LUA_CFLAGS=; LUA_LIBS=])
+# Lua scripting is loaded with dlopen() at runtime, exactly like the macOS
+# frontend.  No Lua development package is required: lua-engine.cpp compiles
+# against the vendored LuaJIT headers (which describe the Lua 5.1 ABI), and
+# either LuaJIT or a Lua 5.1 shared library is opened when a script starts.
+# Keeping the frontends enabled even when no library is installed lets the
+# script console explain why scripting is unavailable.
+HAVE_LUA=yes
+AC_DEFINE([HAVE_LUA], [1], [Lua scripting support])
+AC_DEFINE([DESMUME_LUA_DYNAMIC], [1], [Resolve Lua from a shared library at runtime])
+LUA_CFLAGS=
+LUA_LIBS=
 AC_SUBST(LUA_CFLAGS)
 AC_SUBST(LUA_LIBS)
-dnl -- force lua disabled
-AM_CONDITIONAL([HAVE_LUA], [test "${HAVE_LUA}x" = "yes"])
+AM_CONDITIONAL([HAVE_LUA], [true])
+
+# dlopen() lives in libdl on older glibc and in libc on most other systems.
+AC_SEARCH_LIBS([dlopen], [dl], [],
+               [AC_MSG_ERROR([dlopen() is required for Lua scripting])])
 
 if test ! "x$HAVE_OPENAL" = "xyes" ; then
   PKG_CHECK_MODULES(ALSA, alsa >= 1.0, HAVE_ALSA=yes, HAVE_ALSA=no)

@@ -254,8 +254,8 @@ if HAVE_LIBAGG
 libdesmume_a_SOURCES += ../../frontend/modules/osd/agg/aggdraw.cpp ../../frontend/modules/osd/agg/aggdraw.h ../../frontend/modules/osd/agg/agg_osd.cpp
 endif
 if HAVE_LUA
-AM_CPPFLAGS += $(LUA_CFLAGS)
-libdesmume_a_SOURCES += ../../lua-engine.cpp
+AM_CPPFLAGS += -I$(top_srcdir)/../windows/lua/include
+libdesmume_a_SOURCES += ../../lua-engine.cpp ../cocoa/LuaJITApi.cpp
 endif
 if HAVE_GDB_STUB
 libdesmume_a_SOURCES += ../../gdbstub/gdbstub.cpp

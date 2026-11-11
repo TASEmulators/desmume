@@ -31,6 +31,9 @@
 #include <SDL.h>
 #include <X11/Xlib.h>
 #include <vector>
+#include <set>
+#include <map>
+#include <string>
 
 #if defined(GDK_WINDOWING_X11)
 #include <gdk/gdkx.h>
@@ -84,6 +87,11 @@
 #ifdef GDB_STUB
 	#include "armcpu.h"
 	#include "gdbstub.h"
+#endif
+
+#ifdef HAVE_LUA
+	#include "tools/luaScriptConsole.h"
+	#include "lua-engine.h"
 #endif
 
 #if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
@@ -252,6 +260,12 @@ static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void *);
 #endif
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 
+#ifdef HAVE_LUA
+static void AddLuaScript(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void CloseAllLuaScripts(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ShowAboutLuaScripting(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+#endif
+
 static const GActionEntry app_entries[] = {
     // File
     { "open",          OpenNdsDialog },
@@ -324,7 +338,12 @@ static const GActionEntry app_entries[] = {
     { "editjoyctrls",        Edit_Joystick_Controls },
 
     // Tools
-    // Populated in desmume_gtk_menu_tools().
+    // dTool entries are populated dynamically in desmume_gtk_menu_tools().
+#ifdef HAVE_LUA
+    { "addluascript",        AddLuaScript },
+    { "closealluascripts",   CloseAllLuaScripts },
+    { "aboutluascripting",   ShowAboutLuaScripting },
+#endif
 
     // Help
     { "about",         About },
@@ -678,6 +697,120 @@ struct nds_screen_t {
 struct nds_screen_t nds_screen;
 
 static guint regMainLoop = 0;
+
+#ifdef HAVE_LUA
+static void AddLuaScript(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    lua_script_open_console(GTK_WINDOW(pWindow));
+}
+static void CloseAllLuaScripts(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    lua_script_close_all();
+}
+static void ShowAboutLuaScripting(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    lua_script_show_about(GTK_WINDOW(pWindow));
+}
+
+// gui.popup() / input.popup().  Runs on the GTK main thread because scripts do;
+// the returned strings match the Windows MessageBox mapping exactly.
+static const char* GtkLua_ShowPopup(const char* message, const char* type, const char* icon)
+{
+    GtkMessageType messageType = GTK_MESSAGE_INFO;
+    if (icon && g_ascii_strcasecmp(icon, "question") == 0)
+        messageType = GTK_MESSAGE_QUESTION;
+    else if (icon && g_ascii_strcasecmp(icon, "warning") == 0)
+        messageType = GTK_MESSAGE_WARNING;
+    else if (icon && g_ascii_strcasecmp(icon, "error") == 0)
+        messageType = GTK_MESSAGE_ERROR;
+
+    GtkWidget *dialog = gtk_message_dialog_new(
+        GTK_WINDOW(pWindow),
+        (GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+        messageType, GTK_BUTTONS_NONE, "%s", message ? message : "");
+
+    // GTK has no stock Abort/Retry/Ignore response ids.
+    enum { RESPONSE_ABORT = 1, RESPONSE_RETRY, RESPONSE_IGNORE };
+
+    if (!type || g_ascii_strcasecmp(type, "ok") == 0)
+    {
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_OK", GTK_RESPONSE_OK);
+    }
+    else if (g_ascii_strcasecmp(type, "yesno") == 0)
+    {
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_No", GTK_RESPONSE_NO);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Yes", GTK_RESPONSE_YES);
+    }
+    else if (g_ascii_strcasecmp(type, "yesnocancel") == 0)
+    {
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Cancel", GTK_RESPONSE_CANCEL);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_No", GTK_RESPONSE_NO);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Yes", GTK_RESPONSE_YES);
+    }
+    else if (g_ascii_strcasecmp(type, "okcancel") == 0)
+    {
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Cancel", GTK_RESPONSE_CANCEL);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_OK", GTK_RESPONSE_OK);
+    }
+    else // abortretryignore
+    {
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Ignore", RESPONSE_IGNORE);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Retry", RESPONSE_RETRY);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Abort", RESPONSE_ABORT);
+    }
+
+    const char* answer = "ok";
+    switch (gtk_dialog_run(GTK_DIALOG(dialog)))
+    {
+        case GTK_RESPONSE_YES: answer = "yes"; break;
+        case GTK_RESPONSE_NO: answer = "no"; break;
+        case GTK_RESPONSE_CANCEL: answer = "cancel"; break;
+        case RESPONSE_ABORT: answer = "abort"; break;
+        case RESPONSE_RETRY: answer = "retry"; break;
+        case RESPONSE_IGNORE: answer = "ignore"; break;
+        default: break;
+    }
+    gtk_widget_destroy(dialog);
+    return answer;
+}
+
+// emu.openscript().  A new console window is the POSIX equivalent of the
+// Windows dialog.  The script is started on the next idle, the way Windows
+// posts IDC_BUTTON_LUARUN, so emu.openscript() returns before the new script
+// runs (pcall(emu.openscript, ...) in the examples depends on that).
+static char sLuaOpenScriptError[1200];
+
+static const char* GtkLua_OpenScript(const char* filename, const char* extraDirToCheck)
+{
+    if (!filename || filename[0] == '\0')
+        return "emu.openscript: no filename given";
+
+    std::string path = filename;
+    if (path[0] != '/' && extraDirToCheck && extraDirToCheck[0])
+    {
+        // GetCurrentScriptDir() only appends a separator when the script path
+        // contained one; do not glue a bare filename onto another filename.
+        const size_t n = strlen(extraDirToCheck);
+        const char last = extraDirToCheck[n - 1];
+        if (last == '/' || last == '\\')
+        {
+            std::string candidate = std::string(extraDirToCheck) + path;
+            if (g_file_test(candidate.c_str(), G_FILE_TEST_IS_REGULAR))
+                path = candidate;
+        }
+    }
+
+    if (!g_file_test(path.c_str(), G_FILE_TEST_IS_REGULAR))
+    {
+        snprintf(sLuaOpenScriptError, sizeof(sLuaOpenScriptError),
+                 "emu.openscript: file not found: %s", path.c_str());
+        return sLuaOpenScriptError;
+    }
+
+    lua_script_open_console_with_file(GTK_WINDOW(pWindow), path.c_str());
+    return NULL;
+}
+#endif
 
 static inline void UpdateStatusBar (const char *message)
 {
@@ -2071,8 +2204,67 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	return TRUE;
 }
 
-static void RedrawScreen()
+// Set when a frame has been converted into the video source buffer and is
+// waiting for the Lua GUI callback and the built-in HUD before presentation.
+static bool sFramePresentPending = false;
+
+// Attach the AGG HUD/Lua draw target to the frame in the video source buffer
+// and keep the OSD scale in sync with the current framebuffer size.
+//
+// This runs as soon as a frame lands in the source buffer, before the Lua GUI
+// callback, so that agg.*/gui.* drawing ends up in the buffer that
+// PresentFrame() filters and displays.  The built-in HUD is deliberately not
+// drawn here: the Lua callback runs first and PresentFrame() overlays the HUD
+// afterwards, matching the Windows frontend's compositing order.
+static void PrepareHudTarget()
 {
+#ifdef HAVE_LIBAGG
+	// RedrawScreen() can run during UI setup before the first Agg_init(); the
+	// target only exists once the OSD has been initialised.
+	if (aggDraw.hud == NULL)
+		return;
+
+	const int w = (int)video->GetSrcWidth();
+	const int h = (int)video->GetSrcHeight();
+	const double oldGpuScaleFactor = osd->scale;
+	const double newGpuScaleFactor = ( ((double)w / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) + ((double)h / (double)(GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0)) ) / 2.0;
+
+	if ( ((newGpuScaleFactor + 0.001) < oldGpuScaleFactor) || ((newGpuScaleFactor - 0.001) > oldGpuScaleFactor) )
+	{
+#ifdef AGG2D_USE_VECTORFONTS
+		if (vectorFontFile.size() > 0)
+		{
+			aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * newGpuScaleFactor, true);
+			osd->useVectorFonts = (newGpuScaleFactor >= 1.1f);
+		}
+		else
+		{
+			osd->useVectorFonts = false;
+		}
+#endif // AGG2D_USE_VECTORFONTS
+
+		Agg_setCustomSize(w, h);
+		osd->scale = newGpuScaleFactor;
+		Hud.rescale(oldGpuScaleFactor, newGpuScaleFactor);
+		HudSaveLayout();
+	}
+
+	// Always re-attach, even when every built-in HUD element is disabled:
+	// Lua scripts draw through aggDraw.hud unconditionally, and the source
+	// buffer is the frame that is about to be presented.
+	aggDraw.hud->setDrawTargetDims( (u8 *)video->GetSrcBufferPtr(), w, h, w * sizeof(u32) );
+#endif // HAVE_LIBAGG
+}
+
+// Overlay the built-in HUD, run the video filter (source -> destination) and
+// ask GTK to repaint.  Called after the Lua GUI callback for a freshly
+// converted frame, or directly by RedrawScreen() for non-frame redraws.
+static void PresentFrame()
+{
+	if (!sFramePresentPending)
+		return;
+	sFramePresentPending = false;
+
 	gtk3gpuEvent->VideoFetchLock();
 	
 #ifdef HAVE_LIBAGG
@@ -2089,32 +2281,6 @@ static void RedrawScreen()
 	
 	if (needsHUDDisplay)
 	{
-		const int w = (int)video->GetSrcWidth();
-		const int h = (int)video->GetSrcHeight();
-		const double oldGpuScaleFactor = osd->scale;
-		const double newGpuScaleFactor = ( ((double)w / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) + ((double)h / (double)(GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0)) ) / 2.0;
-		
-		if ( ((newGpuScaleFactor + 0.001) < oldGpuScaleFactor) || ((newGpuScaleFactor - 0.001) > oldGpuScaleFactor) )
-		{
-#ifdef AGG2D_USE_VECTORFONTS
-			if (vectorFontFile.size() > 0)
-			{
-				aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * newGpuScaleFactor, true);
-				osd->useVectorFonts = (newGpuScaleFactor >= 1.1f);
-			}
-			else
-			{
-				osd->useVectorFonts = false;
-			}
-#endif // AGG2D_USE_VECTORFONTS
-			
-			Agg_setCustomSize(w, h);
-			osd->scale = newGpuScaleFactor;
-			Hud.rescale(oldGpuScaleFactor, newGpuScaleFactor);
-			HudSaveLayout();
-			aggDraw.hud->setDrawTargetDims( (u8 *)video->GetSrcBufferPtr(), w, h, w * sizeof(u32) );
-		}
-		
 		osd->update();
 		DrawHUD();
 		osd->clear();
@@ -2125,6 +2291,16 @@ static void RedrawScreen()
 	gtk3gpuEvent->VideoFetchUnlock();
 	
 	gtk_widget_queue_draw(pDrawingArea);
+}
+
+static void RedrawScreen()
+{
+	PrepareHudTarget();
+	// RedrawScreen() is also used outside a frame (menu actions, resize,
+	// pause), where no DidFrameEnd() ran.  Force a present so those paths
+	// still refresh the window.
+	sFramePresentPending = true;
+	PresentFrame();
 }
 
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
@@ -2380,8 +2556,836 @@ static void MenuSave(GSimpleAction *action, GVariant *parameter, gpointer user_d
     savegame(g_variant_get_uint32(parameter));
 }
 
+#ifdef HAVE_LUA
+// ---------------------------------------------------------------------------
+// input.get() / controller.get() (M2)
+//
+// GTK delivers key events to the toplevel while it has focus, so we track them
+// here instead of polling the X server: this mirrors the Windows
+// GetKeyboardState() foreground path and works on both X11 and Wayland.
+// Mouse position and buttons are queried live from the pointer device, and the
+// cairo matrices the display path already maintains convert window coordinates
+// to NDS screen pixels (including rotation, swap and hybrid layouts).
+// ---------------------------------------------------------------------------
+static std::set<guint> sLuaPressedKeys;
+
+// Writes the input.get() name for a GDK keyval into buf.  The vocabulary is
+// the same as the Windows s_keyToName[] table: uppercase letters, "leftclick",
+// "space", "numpad0", ...
+static bool GtkLua_KeyName(guint keyval, char* buf, size_t size)
+{
+    if (keyval >= GDK_KEY_a && keyval <= GDK_KEY_z)
+    {
+        snprintf(buf, size, "%c", (int)('A' + (keyval - GDK_KEY_a)));
+        return true;
+    }
+    if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9)
+    {
+        snprintf(buf, size, "%c", (int)('0' + (keyval - GDK_KEY_0)));
+        return true;
+    }
+    // Ctrl+letter can arrive as a control character instead of the keyval.
+    if (keyval >= 0x01 && keyval <= 0x1A)
+    {
+        snprintf(buf, size, "%c", (int)('A' + (keyval - 0x01)));
+        return true;
+    }
+    if (keyval >= GDK_KEY_KP_0 && keyval <= GDK_KEY_KP_9)
+    {
+        snprintf(buf, size, "numpad%c", (int)('0' + (keyval - GDK_KEY_KP_0)));
+        return true;
+    }
+    if (keyval >= GDK_KEY_F1 && keyval <= GDK_KEY_F24)
+    {
+        snprintf(buf, size, "F%d", (int)(keyval - GDK_KEY_F1) + 1);
+        return true;
+    }
+
+    const char* name = NULL;
+    switch (keyval)
+    {
+        case GDK_KEY_BackSpace: name = "backspace"; break;
+        case GDK_KEY_Tab: case GDK_KEY_ISO_Left_Tab: name = "tab"; break;
+        case GDK_KEY_Return: case GDK_KEY_KP_Enter: name = "enter"; break;
+        case GDK_KEY_Shift_L: case GDK_KEY_Shift_R: name = "shift"; break;
+        case GDK_KEY_Control_L: case GDK_KEY_Control_R: name = "control"; break;
+        case GDK_KEY_Alt_L: case GDK_KEY_Alt_R: name = "alt"; break;
+        case GDK_KEY_Pause: case GDK_KEY_Break: name = "pause"; break;
+        case GDK_KEY_Caps_Lock: name = "capslock"; break;
+        case GDK_KEY_Escape: name = "escape"; break;
+        case GDK_KEY_space: name = "space"; break;
+        case GDK_KEY_Page_Up: case GDK_KEY_KP_Page_Up: name = "pageup"; break;
+        case GDK_KEY_Page_Down: case GDK_KEY_KP_Page_Down: name = "pagedown"; break;
+        case GDK_KEY_End: case GDK_KEY_KP_End: name = "end"; break;
+        case GDK_KEY_Home: case GDK_KEY_KP_Home: name = "home"; break;
+        case GDK_KEY_Left: case GDK_KEY_KP_Left: name = "left"; break;
+        case GDK_KEY_Up: case GDK_KEY_KP_Up: name = "up"; break;
+        case GDK_KEY_Right: case GDK_KEY_KP_Right: name = "right"; break;
+        case GDK_KEY_Down: case GDK_KEY_KP_Down: name = "down"; break;
+        case GDK_KEY_Insert: case GDK_KEY_KP_Insert: name = "insert"; break;
+        case GDK_KEY_Delete: case GDK_KEY_KP_Delete: name = "delete"; break;
+        case GDK_KEY_KP_Multiply: name = "numpad*"; break;
+        case GDK_KEY_KP_Add: name = "numpad+"; break;
+        case GDK_KEY_KP_Subtract: name = "numpad-"; break;
+        case GDK_KEY_KP_Decimal: name = "numpad."; break;
+        case GDK_KEY_KP_Divide: name = "numpad/"; break;
+        case GDK_KEY_Num_Lock: name = "numlock"; break;
+        case GDK_KEY_Scroll_Lock: name = "scrolllock"; break;
+        case GDK_KEY_semicolon: name = "semicolon"; break;
+        case GDK_KEY_plus: case GDK_KEY_equal: name = "plus"; break;
+        case GDK_KEY_comma: name = "comma"; break;
+        case GDK_KEY_minus: name = "minus"; break;
+        case GDK_KEY_period: name = "period"; break;
+        case GDK_KEY_slash: name = "slash"; break;
+        case GDK_KEY_grave: case GDK_KEY_asciitilde: name = "tilde"; break;
+        case GDK_KEY_bracketleft: case GDK_KEY_braceleft: name = "leftbracket"; break;
+        case GDK_KEY_backslash: case GDK_KEY_bar: name = "backslash"; break;
+        case GDK_KEY_bracketright: case GDK_KEY_braceright: name = "rightbracket"; break;
+        case GDK_KEY_apostrophe: case GDK_KEY_quotedbl: name = "quote"; break;
+        default: break;
+    }
+
+    if (name == NULL)
+        return false;
+    snprintf(buf, size, "%s", name);
+    return true;
+}
+
+// Convert a drawing-area position to touch-screen-relative NDS pixels.
+// Returns false when the point is outside both screens.
+static bool GtkLua_PointerToScreen(gint wx, gint wy, int* outX, int* outY)
+{
+    if (!draw_params.valid)
+        return false;
+
+    const bool hybrid = ((nds_screen.orientation == ORIENT_HYBRID_EQUAL) ||
+                         (nds_screen.orientation == ORIENT_HYBRID_VERTICAL)) &&
+                        (draw_params.hybridBigScreenScale > 0.0);
+    double devX, devY;
+
+    // Main (upper) screen.  Windows reports it as negative y, relative to the
+    // touch screen.
+    if (nds_screen.orientation != ORIENT_SINGLE || !nds_screen.swap)
+    {
+        devX = wx; devY = wy;
+        cairo_matrix_transform_point(&nds_screen.topscreen_matrix, &devX, &devY);
+        if (devX >= 0 && devX < 256 && devY >= 0 && devY < 192)
+        {
+            *outX = (int)devX;
+            *outY = (int)devY - 192;
+            return true;
+        }
+    }
+    if (hybrid && !nds_screen.swap)
+    {
+        devX = wx; devY = wy;
+        cairo_matrix_transform_point(&nds_screen.topscreen_matrix_hybrid, &devX, &devY);
+        if (devX >= 0 && devX < 256 && devY >= 0 && devY < 192)
+        {
+            *outX = (int)devX;
+            *outY = (int)devY - 192;
+            return true;
+        }
+    }
+
+    // Touch (lower) screen.
+    if (nds_screen.orientation != ORIENT_SINGLE || nds_screen.swap)
+    {
+        devX = wx; devY = wy;
+        cairo_matrix_transform_point(&nds_screen.touch_matrix, &devX, &devY);
+        if (devX >= 0 && devX < 256 && devY >= 0 && devY < 192)
+        {
+            *outX = (int)devX;
+            *outY = (int)devY;
+            return true;
+        }
+    }
+    if (hybrid && nds_screen.swap)
+    {
+        devX = wx; devY = wy;
+        cairo_matrix_transform_point(&nds_screen.touch_matrix_hybrid, &devX, &devY);
+        if (devX >= 0 && devX < 256 && devY >= 0 && devY < 192)
+        {
+            *outX = (int)devX;
+            *outY = (int)devY;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool GtkLua_GetInputStatus(LuaInputStatus* out)
+{
+    if (out == NULL)
+        return false;
+    memset(out, 0, sizeof(*out));
+
+    GdkWindow* window = (pDrawingArea != NULL) ? gtk_widget_get_window(pDrawingArea) : NULL;
+    GdkDevice* pointer = NULL;
+    GdkDisplay* display = gdk_display_get_default();
+    if (display != NULL)
+    {
+        GdkSeat* seat = gdk_display_get_default_seat(display);
+        if (seat != NULL)
+            pointer = gdk_seat_get_pointer(seat);
+    }
+
+    gint wx = 0, wy = 0;
+    GdkModifierType mask = (GdkModifierType)0;
+    if (window != NULL && pointer != NULL)
+        gdk_window_get_device_position(window, pointer, &wx, &wy, &mask);
+
+    // Mouse buttons share the keyboard namespace on Windows.
+    if (mask & GDK_BUTTON1_MASK)
+        snprintf(out->keyNames[out->keyCount++], LUA_INPUT_KEY_NAME_SIZE, "leftclick");
+    if (mask & GDK_BUTTON3_MASK)
+        snprintf(out->keyNames[out->keyCount++], LUA_INPUT_KEY_NAME_SIZE, "rightclick");
+    if (mask & GDK_BUTTON2_MASK)
+        snprintf(out->keyNames[out->keyCount++], LUA_INPUT_KEY_NAME_SIZE, "middleclick");
+
+    for (std::set<guint>::const_iterator it = sLuaPressedKeys.begin();
+         it != sLuaPressedKeys.end() && out->keyCount < LUA_INPUT_MAX_KEYS; ++it)
+    {
+        char name[LUA_INPUT_KEY_NAME_SIZE];
+        if (!GtkLua_KeyName(*it, name, sizeof(name)))
+            continue;
+
+        bool duplicate = false;
+        for (int i = 0; i < out->keyCount; i++)
+        {
+            if (strcmp(out->keyNames[i], name) == 0)
+            {
+                duplicate = true;
+                break;
+            }
+        }
+        if (!duplicate)
+            snprintf(out->keyNames[out->keyCount++], LUA_INPUT_KEY_NAME_SIZE, "%s", name);
+    }
+
+    if (window != NULL && pointer != NULL && GtkLua_PointerToScreen(wx, wy, &out->mouseX, &out->mouseY))
+        out->mouseValid = true;
+
+    return true;
+}
+
+static bool GtkLua_GetControllerStatus(unsigned int joystickID, bool returnDiagonals, LuaControllerStatus* out)
+{
+    if (out == NULL)
+        return false;
+    memset(out, 0, sizeof(*out));
+
+    struct joystick_raw_state raw;
+    if (!get_joystick_raw_state(joystickID, &raw))
+        return false;
+
+    // SDL hat bits -> the four Windows dpad directions.  Like the Windows
+    // JOY_RETURNPOV code, a diagonal reports nothing unless the script asked
+    // for diagonals.
+    if (raw.hasHat && raw.hat >= 0)
+    {
+        const int count = ((raw.hat & SDL_HAT_UP) ? 1 : 0) +
+                          ((raw.hat & SDL_HAT_RIGHT) ? 1 : 0) +
+                          ((raw.hat & SDL_HAT_DOWN) ? 1 : 0) +
+                          ((raw.hat & SDL_HAT_LEFT) ? 1 : 0);
+        if (count == 1 || returnDiagonals)
+        {
+            out->dpad[0] = (raw.hat & SDL_HAT_UP) != 0;
+            out->dpad[1] = (raw.hat & SDL_HAT_RIGHT) != 0;
+            out->dpad[2] = (raw.hat & SDL_HAT_DOWN) != 0;
+            out->dpad[3] = (raw.hat & SDL_HAT_LEFT) != 0;
+        }
+    }
+
+    out->buttonCount = raw.buttonCount;
+    for (int i = 0; i < raw.buttonCount; i++)
+        out->buttons[i] = raw.buttons[i];
+
+    out->axisCount = raw.axisCount;
+    for (int i = 0; i < raw.axisCount; i++)
+        out->axes[i] = raw.axes[i];
+
+    return true;
+}
+
+static gboolean LuaWindowFocusOut(GtkWidget *widget, GdkEventFocus *event, gpointer data)
+{
+    // GTK does not deliver key releases to an unfocused window; drop the cache
+    // so a script does not see a key as held forever.
+    sLuaPressedKeys.clear();
+    return FALSE;
+}
+#endif // HAVE_LUA
+
+#ifdef HAVE_LUA
+// ---------------------------------------------------------------------------
+// emu.addmenu() / emu.setmenuiteminfo() / emu.registermenustart().
+//
+// GTK3 has no imperative menu API, so the script's menu tree is kept here and
+// rendered into GMenu models.  Each leaf item gets its own stateful GAction:
+// a shared action could not carry per-item enabled/checked state.  GMenu has no
+// separator item, so a separator starts a new section; GtkMenuTracker draws the
+// section boundary as a separator.
+//
+// Everything runs on the GTK main thread, which is also the emulation/Lua
+// thread, so no locking is needed.  Clicks are still queued and drained at a
+// frame boundary: the action callback can fire from LuaPumpEvents() while a
+// script is executing, and re-entering that lua_State is not safe.
+// ---------------------------------------------------------------------------
+enum
+{
+    GTK_LUA_MENU_ITEM_FIRST = 40000,
+    GTK_LUA_MENU_ITEM_COUNT = 512
+};
+
+struct GtkLuaMenu;
+
+struct GtkLuaMenuEntry
+{
+    int id;
+    std::string title;
+    bool separator;
+    bool checkable; // became a toggle item once checked=true was requested
+    bool checked;
+    GtkLuaMenu* submenu;
+};
+
+struct GtkLuaAction
+{
+    GSimpleAction* action;
+    bool stateful;
+};
+
+struct GtkLuaMenu
+{
+    int id;
+    std::string title;
+    bool topLevel;
+    bool appended;
+    GMenu* model;
+    std::vector<GtkLuaMenuEntry> entries;
+};
+
+static GtkLuaMenu sLuaMenuRoot;
+static std::map<int, GtkLuaMenu*> sLuaMenus;
+static std::map<int, GtkLuaMenu*> sLuaEntryParent;
+static std::map<int, GtkLuaAction> sLuaActions;
+static bool sLuaMenuItemUsed[GTK_LUA_MENU_ITEM_COUNT];
+static GMenu* sLuaAppMenubar = NULL;
+static bool sLuaMenuInitPending = false;
+static bool sLuaMenuTimerStarted = false;
+static std::vector<int> sLuaPendingMenuClicks;
+
+static void GtkLua_DrainMenuCalls();
+static void GtkLua_RebuildAll();
+static void GtkLua_MenuItemActivated(GSimpleAction* action, GVariant* parameter, gpointer user_data);
+
+// GMenu labels use '_' for mnemonics; the Windows/macOS Lua API treats the
+// title as literal text, so escape it.
+static std::string GtkLua_EscapeLabel(const std::string& text)
+{
+    std::string out;
+    out.reserve(text.size() + 8);
+    for (size_t i = 0; i < text.size(); i++)
+    {
+        if (text[i] == '_')
+            out += "__";
+        else
+            out += text[i];
+    }
+    return out;
+}
+
+static GtkLuaMenuEntry* GtkLua_FindEntry(GtkLuaMenu* menu, int id)
+{
+    if (menu == NULL)
+        return NULL;
+    for (size_t i = 0; i < menu->entries.size(); i++)
+    {
+        if (menu->entries[i].id == id)
+            return &menu->entries[i];
+    }
+    return NULL;
+}
+
+static GSimpleAction* GtkLua_EnsureAction(int id, bool checkable, bool checked)
+{
+    std::map<int, GtkLuaAction>::iterator it = sLuaActions.find(id);
+    if (it != sLuaActions.end() && it->second.stateful == checkable)
+    {
+        if (checkable)
+            g_simple_action_set_state(it->second.action, g_variant_new_boolean(checked ? TRUE : FALSE));
+        return it->second.action;
+    }
+    if (pApp == NULL)
+        return NULL;
+
+    char name[32];
+    snprintf(name, sizeof(name), "lua%d", id);
+
+    if (it != sLuaActions.end())
+    {
+        // The item changed between a plain item and a toggle item; GtkMenuTracker
+        // picks the widget type (GtkMenuItem vs GtkCheckMenuItem) from the action,
+        // so replace it instead of keeping a checkbox on every Lua item.
+        g_action_map_remove_action(G_ACTION_MAP(pApp), name);
+        sLuaActions.erase(it);
+    }
+
+    GSimpleAction* action = checkable
+        ? g_simple_action_new_stateful(name, NULL, g_variant_new_boolean(checked ? TRUE : FALSE))
+        : g_simple_action_new(name, NULL);
+    g_signal_connect(action, "activate", G_CALLBACK(GtkLua_MenuItemActivated),
+                     GINT_TO_POINTER(id));
+    // The action map takes its own reference; we only need the borrowed
+    // pointer for set_enabled/set_state until the item is freed.
+    g_action_map_add_action(G_ACTION_MAP(pApp), G_ACTION(action));
+    g_object_unref(action);
+
+    GtkLuaAction entry;
+    entry.action = action;
+    entry.stateful = checkable;
+    sLuaActions[id] = entry;
+    return action;
+}
+
+static void GtkLua_MenuItemActivated(GSimpleAction* action, GVariant* parameter, gpointer user_data)
+{
+    sLuaPendingMenuClicks.push_back(GPOINTER_TO_INT(user_data));
+    if (!AnyLuaRunning())
+        GtkLua_DrainMenuCalls();
+}
+
+static void GtkLua_ClearModel(GMenu* model)
+{
+    while (g_menu_model_get_n_items(G_MENU_MODEL(model)) > 0)
+        g_menu_remove(model, 0);
+}
+
+static void GtkLua_RebuildMenu(GtkLuaMenu* menu)
+{
+    if (menu == NULL || menu->model == NULL)
+        return;
+
+    GtkLua_ClearModel(menu->model);
+
+    GMenu* section = g_menu_new();
+    bool sectionHasItems = false;
+
+    for (size_t i = 0; i < menu->entries.size(); i++)
+    {
+        GtkLuaMenuEntry& entry = menu->entries[i];
+
+        if (entry.separator)
+        {
+            // A section boundary is how GtkMenuTracker represents a separator.
+            if (sectionHasItems)
+            {
+                g_menu_append_section(menu->model, NULL, G_MENU_MODEL(section));
+                g_object_unref(section);
+                section = g_menu_new();
+                sectionHasItems = false;
+            }
+            continue;
+        }
+
+        std::string label = GtkLua_EscapeLabel(entry.title);
+        GMenuItem* item = g_menu_item_new(label.c_str(), NULL);
+        if (entry.submenu != NULL)
+        {
+            if (entry.submenu->model == NULL)
+                entry.submenu->model = g_menu_new();
+            g_menu_item_set_submenu(item, G_MENU_MODEL(entry.submenu->model));
+        }
+        else if (GtkLua_EnsureAction(entry.id, entry.checkable, entry.checked) != NULL)
+        {
+            char actionName[32];
+            snprintf(actionName, sizeof(actionName), "app.lua%d", entry.id);
+            g_menu_item_set_action_and_target_value(item, actionName, NULL);
+        }
+
+        g_menu_append_item(section, item);
+        g_object_unref(item);
+        sectionHasItems = true;
+    }
+
+    if (sectionHasItems)
+        g_menu_append_section(menu->model, NULL, G_MENU_MODEL(section));
+    g_object_unref(section);
+}
+
+static void GtkLua_RemoveTopLevelFromBar(GtkLuaMenu* menu)
+{
+    if (sLuaAppMenubar == NULL || menu == NULL || menu->model == NULL)
+        return;
+
+    const int count = (int)g_menu_model_get_n_items(G_MENU_MODEL(sLuaAppMenubar));
+    for (int i = count - 1; i >= 0; i--)
+    {
+        GMenuModel* link = g_menu_model_get_item_link(
+            G_MENU_MODEL(sLuaAppMenubar), i, G_MENU_LINK_SUBMENU);
+        const bool match = (link == G_MENU_MODEL(menu->model));
+        if (link != NULL)
+            g_object_unref(link);
+        if (match)
+        {
+            g_menu_remove(sLuaAppMenubar, i);
+            break;
+        }
+    }
+    menu->appended = false;
+}
+
+static void GtkLua_DestroyMenu(GtkLuaMenu* menu)
+{
+    if (menu == NULL)
+        return;
+
+    for (size_t i = 0; i < menu->entries.size(); i++)
+        GtkLua_DestroyMenu(menu->entries[i].submenu);
+    menu->entries.clear();
+
+    if (menu->topLevel)
+        GtkLua_RemoveTopLevelFromBar(menu);
+    if (menu->model != NULL)
+    {
+        g_object_unref(menu->model);
+        menu->model = NULL;
+    }
+    if (menu->id != 0)
+        sLuaMenus.erase(menu->id);
+    delete menu;
+}
+
+static void GtkLua_RebuildAll()
+{
+    // Rebuild every model first.  A parent references its child's GMenu object,
+    // which stays the same across rebuilds, so order does not matter.
+    for (std::map<int, GtkLuaMenu*>::iterator it = sLuaMenus.begin();
+         it != sLuaMenus.end(); ++it)
+    {
+        GtkLua_RebuildMenu(it->second);
+    }
+
+    if (sLuaAppMenubar == NULL)
+        return;
+
+    // Add top-level menus that are not in the bar yet, in tree order.  Menus
+    // already in the bar keep their position while their model updates.
+    for (size_t i = 0; i < sLuaMenuRoot.entries.size(); i++)
+    {
+        GtkLuaMenu* menu = sLuaMenuRoot.entries[i].submenu;
+        if (menu == NULL || menu->appended)
+            continue;
+        std::string label = GtkLua_EscapeLabel(menu->title);
+        g_menu_append_submenu(sLuaAppMenubar, label.c_str(), G_MENU_MODEL(menu->model));
+        menu->appended = true;
+    }
+}
+
+static int GtkLua_AllocItemID()
+{
+    for (int i = 0; i < GTK_LUA_MENU_ITEM_COUNT; i++)
+    {
+        if (!sLuaMenuItemUsed[i])
+        {
+            sLuaMenuItemUsed[i] = true;
+            return GTK_LUA_MENU_ITEM_FIRST + i;
+        }
+    }
+    return -1;
+}
+
+static void GtkLua_FreeItemID(int itemID)
+{
+    const int index = itemID - GTK_LUA_MENU_ITEM_FIRST;
+    if (index >= 0 && index < GTK_LUA_MENU_ITEM_COUNT)
+        sLuaMenuItemUsed[index] = false;
+
+    std::map<int, GtkLuaAction>::iterator it = sLuaActions.find(itemID);
+    if (it != sLuaActions.end())
+    {
+        if (pApp != NULL)
+        {
+            char name[32];
+            snprintf(name, sizeof(name), "lua%d", itemID);
+            g_action_map_remove_action(G_ACTION_MAP(pApp), name);
+        }
+        sLuaActions.erase(it);
+    }
+    sLuaEntryParent.erase(itemID);
+}
+
+static bool GtkLua_IsOwnedItemID(int itemID)
+{
+    const int index = itemID - GTK_LUA_MENU_ITEM_FIRST;
+    return index >= 0 && index < GTK_LUA_MENU_ITEM_COUNT && sLuaMenuItemUsed[index];
+}
+
+static LuaMenuHandle GtkLua_RootMenu()
+{
+    return &sLuaMenuRoot;
+}
+
+static LuaMenuHandle GtkLua_FindSubmenu(LuaMenuHandle handle, const char* title, int* outItemID)
+{
+    if (handle == NULL || title == NULL)
+        return NULL;
+
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    for (size_t i = 0; i < menu->entries.size(); i++)
+    {
+        GtkLuaMenuEntry& entry = menu->entries[i];
+        if (entry.submenu != NULL && entry.title == title)
+        {
+            if (outItemID != NULL)
+                *outItemID = entry.id;
+            return entry.submenu;
+        }
+    }
+    return NULL;
+}
+
+static LuaMenuHandle GtkLua_AddSubmenu(LuaMenuHandle parentHandle, const char* title, int itemID)
+{
+    if (parentHandle == NULL || title == NULL)
+        return NULL;
+
+    GtkLuaMenu* parent = static_cast<GtkLuaMenu*>(parentHandle);
+    GtkLuaMenu* menu = new GtkLuaMenu();
+    menu->id = itemID;
+    menu->title = title;
+    menu->topLevel = (parent == &sLuaMenuRoot);
+    menu->appended = false;
+    menu->model = g_menu_new();
+
+    GtkLuaMenuEntry entry;
+    entry.id = itemID;
+    entry.title = title;
+    entry.separator = false;
+    entry.checkable = false;
+    entry.checked = false;
+    entry.submenu = menu;
+    parent->entries.push_back(entry);
+
+    sLuaMenus[itemID] = menu;
+    sLuaEntryParent[itemID] = parent;
+    GtkLua_RebuildAll();
+    return menu;
+}
+
+static bool GtkLua_AddItem(LuaMenuHandle handle, int itemID, const char* title)
+{
+    if (handle == NULL || title == NULL)
+        return false;
+
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    GtkLuaMenuEntry entry;
+    entry.id = itemID;
+    entry.title = title;
+    entry.separator = false;
+    entry.checkable = false;
+    entry.checked = false;
+    entry.submenu = NULL;
+    menu->entries.push_back(entry);
+    sLuaEntryParent[itemID] = menu;
+    GtkLua_RebuildAll();
+    return true;
+}
+
+static bool GtkLua_AddSeparator(LuaMenuHandle handle, int itemID)
+{
+    if (handle == NULL)
+        return false;
+
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    GtkLuaMenuEntry entry;
+    entry.id = itemID;
+    entry.separator = true;
+    entry.checkable = false;
+    entry.checked = false;
+    entry.submenu = NULL;
+    menu->entries.push_back(entry);
+    sLuaEntryParent[itemID] = menu;
+    GtkLua_RebuildAll();
+    return true;
+}
+
+static void GtkLua_RemoveItem(LuaMenuHandle handle, int itemID)
+{
+    if (handle == NULL)
+        return;
+
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    for (size_t i = 0; i < menu->entries.size(); i++)
+    {
+        if (menu->entries[i].id != itemID)
+            continue;
+
+        GtkLuaMenu* child = menu->entries[i].submenu;
+        menu->entries.erase(menu->entries.begin() + i);
+        sLuaEntryParent.erase(itemID);
+        if (child != NULL)
+            GtkLua_DestroyMenu(child);
+        GtkLua_RebuildAll();
+        return;
+    }
+}
+
+static bool GtkLua_IsMenuEmpty(LuaMenuHandle handle)
+{
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    return menu == NULL || menu->entries.empty();
+}
+
+static void GtkLua_SetEnabled(LuaMenuHandle handle, int itemID, bool enabled)
+{
+    (void)handle;
+    std::map<int, GtkLuaAction>::iterator it = sLuaActions.find(itemID);
+    if (it != sLuaActions.end())
+        g_simple_action_set_enabled(it->second.action, enabled ? TRUE : FALSE);
+}
+
+static void GtkLua_SetChecked(LuaMenuHandle handle, int itemID, bool checked)
+{
+    (void)handle;
+
+    GtkLuaMenuEntry* entry = NULL;
+    std::map<int, GtkLuaMenu*>::iterator pit = sLuaEntryParent.find(itemID);
+    if (pit != sLuaEntryParent.end())
+        entry = GtkLua_FindEntry(pit->second, itemID);
+
+    if (entry == NULL)
+        return;
+
+    entry->checked = checked;
+
+    // The first explicit "checked" field turns the item into a toggle item,
+    // even when the value is false: the script has declared that this entry
+    // participates in check state, and doing it on the first refresh (rather
+    // than the first true value) keeps later refreshes from rebuilding the
+    // model while the menu is open.
+    if (!entry->checkable)
+    {
+        entry->checkable = true;
+        GtkLua_RebuildAll();
+        return;
+    }
+
+    std::map<int, GtkLuaAction>::iterator it = sLuaActions.find(itemID);
+    if (it != sLuaActions.end())
+        g_simple_action_set_state(it->second.action, g_variant_new_boolean(checked ? TRUE : FALSE));
+}
+
+static void GtkLua_SetTitle(LuaMenuHandle handle, int itemID, const char* title)
+{
+    if (title == NULL)
+        return;
+
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    GtkLuaMenuEntry* entry = GtkLua_FindEntry(menu, itemID);
+    if (entry == NULL)
+    {
+        // The handle can be stale if another script owns the same submenu;
+        // fall back to the parent recorded when the item was created.
+        std::map<int, GtkLuaMenu*>::iterator it = sLuaEntryParent.find(itemID);
+        if (it != sLuaEntryParent.end())
+            entry = GtkLua_FindEntry(it->second, itemID);
+    }
+    if (entry != NULL)
+    {
+        if (entry->title == title)
+            return;
+        entry->title = title;
+        GtkLua_RebuildAll();
+    }
+}
+
+static void GtkLua_QueueMenuInit()
+{
+    sLuaMenuInitPending = true;
+}
+
+static void GtkLua_DrainMenuCalls()
+{
+    // Snapshot first: a handler can queue more clicks or stop scripts.
+    std::vector<int> pending;
+    pending.swap(sLuaPendingMenuClicks);
+
+    if (sLuaMenuInitPending)
+    {
+        sLuaMenuInitPending = false;
+        // Do not rebuild the models here: setmenuiteminfo() updates the
+        // per-item actions in place, and rebuilding while the menu is open
+        // would drop the hover highlight and close an open submenu.  The tree
+        // hooks (add/remove/title) rebuild themselves when they change the
+        // model.
+        CallRegisteredLuaFunctions(LUACALL_ONINITMENU);
+    }
+
+    for (size_t i = 0; i < pending.size(); i++)
+        CallRegisteredLuaMenuHandlers((PlatformMenuItem)pending[i]);
+}
+
+// GMenuModel has no "about to show" signal, so refresh the menu state on a
+// short timer (the closest GTK equivalent of WM_INITMENUPOPUP) and before the
+// next frame when a script is running.  Only marks the request when Lua is
+// executing; the frame loop then runs it at a safe point.
+static gboolean GtkLua_MenuRefreshTimer(gpointer data)
+{
+    (void)data;
+    if (sLuaMenuRoot.entries.empty() && sLuaPendingMenuClicks.empty())
+        return G_SOURCE_CONTINUE;
+
+    sLuaMenuInitPending = true;
+    if (!AnyLuaRunning())
+        GtkLua_DrainMenuCalls();
+    return G_SOURCE_CONTINUE;
+}
+
+static void GtkLua_SetAppMenubar(GMenu* menubar)
+{
+    if (sLuaAppMenubar != NULL)
+        g_object_unref(sLuaAppMenubar);
+    sLuaAppMenubar = menubar;
+    if (sLuaAppMenubar != NULL)
+        g_object_ref(sLuaAppMenubar);
+
+    if (!sLuaMenuTimerStarted)
+    {
+        sLuaMenuTimerStarted = true;
+        g_timeout_add(250, GtkLua_MenuRefreshTimer, NULL);
+    }
+
+    GtkLua_RebuildAll();
+}
+
+static const LuaMenuHooks sGtkLuaMenuHooks = {
+    GtkLua_AllocItemID,
+    GtkLua_FreeItemID,
+    GtkLua_IsOwnedItemID,
+    GtkLua_RootMenu,
+    GtkLua_FindSubmenu,
+    GtkLua_AddSubmenu,
+    GtkLua_AddItem,
+    GtkLua_AddSeparator,
+    GtkLua_RemoveItem,
+    GtkLua_IsMenuEmpty,
+    GtkLua_SetEnabled,
+    GtkLua_SetChecked,
+    GtkLua_SetTitle,
+    GtkLua_QueueMenuInit
+};
+#endif // HAVE_LUA
+
 static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
+#ifdef HAVE_LUA
+  // Record every key, not just the ones bound to a DS button: input.get()
+  // reports raw keyboard state.
+  sLuaPressedKeys.insert(e->keyval);
+#endif
   guint mask;
   mask = gtk_accelerator_get_default_mod_mask ();
   if( (e->state & mask) == 0){
@@ -2403,6 +3407,9 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
+#ifdef HAVE_LUA
+  sLuaPressedKeys.erase(e->keyval);
+#endif
   u16 Key = lookup_key(e->keyval);
   RM_KEY( keys_latch, Key );
   return 1;
@@ -3424,6 +4431,66 @@ static inline void _updateDTools()
 
 /////////////////////////////// MAIN EMULATOR LOOP ///////////////////////////////
 
+// False while a core frame is executing.  Declared outside HAVE_LUA because
+// EMU_IsAtFrameBoundary() is always part of GtkDriver.
+static bool sLuaInFrame = false;
+
+#ifdef HAVE_LUA
+// One emulated frame for the Lua-driven path (emu.frameadvance() and friends).
+// Mirrors the body of EmuLoop() without its FPS/frameskip bookkeeping: while a
+// script drives emulation, the script owns the frame cadence.
+static void EmuStepFrame()
+{
+    if(!in_joy_config_mode)
+        process_joystick_events(&keys_latch);
+    update_keypad(keys_latch);
+    if(touchpad.down) {
+        NDS_setTouchPos(touchpad.x * 256, touchpad.y * 192);
+        touchpad.down = 2;
+    }
+    if(touchpad.click) {
+        NDS_releaseTouch();
+        touchpad.click = 0;
+    }
+
+    NDS_beginProcessingInput();
+    CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+    NDS_endProcessingInput();
+
+    sLuaInFrame = true;
+    desmume_cycle();
+    sLuaInFrame = false;
+
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+    // Menu clicks and emu.registermenustart() refresh requests are drained on
+    // the Lua/emulation thread at a frame boundary, as on macOS.
+    GtkLua_DrainMenuCalls();
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+
+    // Composite the Lua overlay and the built-in HUD into the frame now that
+    // the script has had its chance to draw.
+    PresentFrame();
+}
+
+// Pumps pending GTK events while a script blocks the main loop.  Throttled so
+// a fast-forward loop does not repaint thousands of times per second, but
+// often enough that Stop and window close stay responsive.
+static gint64 sLuaLastEventPump = 0;
+
+static void LuaPumpEvents(bool force)
+{
+    const gint64 now = g_get_monotonic_time();
+    if (!force && now - sLuaLastEventPump < 16000)
+        return;
+    sLuaLastEventPump = now;
+
+    // Bounded so a source that keeps re-queueing itself cannot livelock the
+    // frame.  EmuLoop is removed for the duration, so it is not one of them.
+    for (int i = 0; i < 256 && gtk_events_pending(); i++)
+        gtk_main_iteration_do(FALSE);
+}
+#endif
+
 class GtkDriver : public BaseDriver
 {
 public:
@@ -3435,8 +4502,34 @@ public:
             gtk_main_iteration();
     }
 
+    // emu.frameadvance() asks for a repaint before its first frame so GUI
+    // drawing from the script body is visible.
+    virtual void USR_RefreshScreen()
+    {
+        RedrawScreen();
+    }
+
+    virtual void EMU_PauseEmulation(bool pause)
+    {
+        if(pause)
+            desmume_pause();
+        else
+            desmume_resume();
+    }
+
 	// HUD uses this to show pause state
 	virtual bool EMU_IsEmulationPaused() { return !desmume_running(); }
+
+	virtual bool EMU_HasEmulationStarted() { return gameInfo.fROM != NULL; }
+
+	// False while a core frame is executing, so emu.frameadvance() called from
+	// a before/after-emulation callback falls back to emu.wait() instead of
+	// recursively stepping the core.
+	virtual bool EMU_IsAtFrameBoundary() { return !sLuaInFrame; }
+
+#ifdef HAVE_LUA
+	virtual eStepMainLoopResult EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore);
+#endif
 
 	virtual bool AVI_IsRecording()
 	{
@@ -3448,14 +4541,42 @@ public:
 	}
 };
 
-static void DoQuit(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+static bool sQuitRequested = false;
+
+// Shared by File > Quit and by the window manager closing the main window.
+// Script consoles are independent toplevels (not GtkApplication windows), so
+// they have to be closed explicitly or they keep the process alive.
+static void QuitApplication()
 {
     emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
     if (regMainLoop) {
         g_source_remove(regMainLoop);
         regMainLoop = 0;
     }
-    gtk_window_close(GTK_WINDOW(pWindow));
+#ifdef HAVE_LUA
+    lua_script_close_all();
+#endif
+    if (pApp != NULL)
+        g_application_quit(G_APPLICATION(pApp));
+}
+
+static void DoQuit(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    if (sQuitRequested)
+        return;
+    sQuitRequested = true;
+
+    QuitApplication();
+    if (pWindow != NULL)
+        gtk_window_close(GTK_WINDOW(pWindow));
+}
+
+static void OnMainWindowDestroy(GtkWidget *widget, gpointer user_data)
+{
+    if (sQuitRequested)
+        return;
+    sQuitRequested = true;
+    QuitApplication();
 }
 
 
@@ -3543,7 +4664,25 @@ gboolean EmuLoop(gpointer data)
         touchpad.click = 0;
     }
 
+#ifdef HAVE_LUA
+    NDS_beginProcessingInput();
+    CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+    NDS_endProcessingInput();
+#endif
+
     desmume_cycle();    /* Emule ! */
+
+#ifdef HAVE_LUA
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+    // See EmuStepFrame(): menu handlers run at a frame boundary, never from
+    // the GTK action callback.
+    GtkLua_DrainMenuCalls();
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+#endif
+
+    // The Lua GUI callback (if any) has drawn into the source buffer; overlay
+    // the built-in HUD, filter, and present the finished frame.
+    PresentFrame();
 
     _updateDTools();
 
@@ -3614,6 +4753,90 @@ gboolean EmuLoop(gpointer data)
 
     return TRUE;
 }
+
+#ifdef HAVE_LUA
+BaseDriver::eStepMainLoopResult GtkDriver::EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore)
+{
+    // The script runs synchronously on the GTK main thread.  Take the idle
+    // source that normally drives emulation out of the loop; otherwise pumping
+    // events below would run a second frame on top of this one.  It is put back
+    // before returning, so normal emulation resumes as soon as the script ends.
+    const bool hadMainLoop = (regMainLoop != 0);
+    if (hadMainLoop)
+    {
+        g_source_remove(regMainLoop);
+        regMainLoop = 0;
+    }
+
+    // Paused: keep the UI alive so Run/Stop still work, and let StepEmulation()
+    // call us again.  This is the same contract as Windows' StepRunLoop_Paused.
+    if (!desmume_running() && allowPause)
+    {
+        LuaPumpEvents(true);
+        g_usleep(10000);
+        if (hadMainLoop && regMainLoop == 0 && desmume_running())
+            regMainLoop = g_idle_add_full(EMULOOP_PRIO, &EmuLoop, pWindow, NULL);
+        return ESTEP_CALL_AGAIN;
+    }
+
+    if (!disableCore && gameInfo.fROM != NULL)
+    {
+        // frameSkip only suppresses rendering; the core still executes exactly
+        // one frame per call, matching Windows' StepRunLoop_Throttle().
+        static int sLuaSkipCounter = 0;
+        const int skipRate = (frameSkip < 0) ? (int)Frameskip : frameSkip;
+        if (skipRate > 0)
+        {
+            if (sLuaSkipCounter > 0)
+            {
+                NDS_SkipNextFrame();
+                sLuaSkipCounter--;
+            }
+            else
+            {
+                sLuaSkipCounter = skipRate;
+            }
+        }
+        else
+        {
+            sLuaSkipCounter = 0;
+        }
+
+        EmuStepFrame();
+    }
+
+    if (!disableUser)
+        _updateDTools();
+
+    // Pace only when the script asked for normal speed.  Pump events while
+    // waiting so Stop and repainting keep working even during the sleep.
+    static gint64 sLuaNextFrame = 0;
+    const bool throttle = allowSleep && config.fpslimiter && !(keys_latch & KEYMASK_(KEY_BOOST - 1));
+    if (throttle && !disableCore)
+    {
+        const gint64 now = g_get_monotonic_time();
+        if (sLuaNextFrame == 0 || sLuaNextFrame < now - 100000)
+            sLuaNextFrame = now;
+        sLuaNextFrame += 16667;
+
+        while (g_get_monotonic_time() < sLuaNextFrame)
+        {
+            LuaPumpEvents(false);
+            g_usleep(1000);
+        }
+    }
+    else
+    {
+        sLuaNextFrame = 0;
+        LuaPumpEvents(false);
+    }
+
+    if (hadMainLoop)
+        regMainLoop = g_idle_add_full(EMULOOP_PRIO, &EmuLoop, pWindow, NULL);
+
+    return ESTEP_DONE;
+}
+#endif
 
 GMenuModel *savestates_menu;
 GMenuModel *loadstates_menu;
@@ -3962,6 +5185,16 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     driver = new GtkDriver();
 
+#ifdef HAVE_LUA
+    // Give the engine the UI hooks that need a real frontend.  Without these,
+    // gui.popup() returns a fixed answer and emu.openscript() does nothing.
+    SetLuaPopupHandler(GtkLua_ShowPopup);
+    SetLuaOpenScriptHandler(GtkLua_OpenScript);
+    SetLuaInputStatusHandler(GtkLua_GetInputStatus);
+    SetLuaGetControllerStatusHandler(GtkLua_GetControllerStatus);
+    SetLuaMenuHooks(&sGtkLuaMenuHooks);
+#endif
+
     SDL_TimerID limiter_timer = 0;
 
     /* use any language set on the command line */
@@ -4154,9 +5387,12 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(pWindow));
 
-    g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(DoQuit), NULL);
+    g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(OnMainWindowDestroy), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
+#ifdef HAVE_LUA
+    g_signal_connect(G_OBJECT(pWindow), "focus-out-event", G_CALLBACK(LuaWindowFocusOut), NULL);
+#endif
 
     /* Update audio toggle status */
     if (my_config->disable_sound || !config.audio_enabled) {
@@ -4505,6 +5741,10 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_object_unref(builder);
 
     pApp = GTK_APPLICATION(app);
+
+    // The app menubar is alive now (the application holds it after
+    // gtk_application_set_menubar).  Top-level Lua menus are appended here.
+    GtkLua_SetAppMenubar(G_MENU(menubar));
 
     GtkRecentManager *manager = gtk_recent_manager_get_default();
     GList *items = gtk_recent_manager_get_items(manager);
@@ -5005,7 +6245,12 @@ void Gtk3GPUEventHandler::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo 
 	
 	slock_unlock(this->_mutexFramebufferPage[this->_latestBufferIndex]);
 	
-	RedrawScreen();
+	// The frame is now in the source buffer.  Attach the HUD/Lua target and
+	// mark the frame pending; the caller presents it after the Lua GUI
+	// callback has drawn, so Lua pixels reach the filtered destination buffer
+	// that the display actually reads.
+	PrepareHudTarget();
+	sFramePresentPending = true;
 }
 
 void Gtk3GPUEventHandler::DidApplyGPUSettingsBegin()

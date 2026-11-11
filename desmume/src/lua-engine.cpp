@@ -126,11 +126,12 @@ extern "C" {
 #endif
 };
 
-// Cocoa has no import library and does not ship LuaJIT, so the entry points
-// above are resolved from a dlopen()ed dylib instead (see LuaJITApi.cpp).  The
-// header turns each lua* name into a lookup in that table, which is the
-// equivalent of the Windows build's DelayLoadDLLs=lua51.dll.  It must come
-// after the declarations above - it rewrites the very names they introduce.
+// Cocoa and the POSIX frontends have no import library and do not ship
+// LuaJIT, so the entry points above are resolved from a dlopen()ed shared
+// library instead (see LuaJITApi.cpp).  The header turns each lua* name into a
+// lookup in that table, which is the equivalent of the Windows build's
+// DelayLoadDLLs=lua51.dll.  It must come after the declarations above - it
+// rewrites the very names they introduce.
 #ifdef DESMUME_LUA_DYNAMIC
 	#include "frontend/cocoa/LuaJITApi.h"
 	#include "frontend/cocoa/LuaJITApiSymbols.h"
@@ -153,7 +154,7 @@ static lua_State* LuaEngineNewState(char* reason, size_t reasonSize)
 #ifdef DESMUME_LUA_DYNAMIC
 	if (!LuaJIT_LoadLibrary())
 	{
-		snprintf(reason, reasonSize, "LuaJIT could not be loaded: %s", LuaJIT_LoadError());
+		snprintf(reason, reasonSize, "The Lua engine could not be loaded: %s", LuaJIT_LoadError());
 		return NULL;
 	}
 #else
@@ -624,6 +625,37 @@ DEFINE_LUA_FUNCTION(input_registerhotkey, "keynum,func")
 	}
 }
 
+static LuaPopupHandler sPopupHandler = NULL;
+static LuaOpenScriptHandler sOpenScriptHandler = NULL;
+static LuaGetInputStatusHandler sInputStatusHandler = NULL;
+static LuaGetControllerStatusHandler sControllerStatusHandler = NULL;
+static const LuaMenuHooks* sMenuHooks = NULL;
+
+void SetLuaPopupHandler(LuaPopupHandler handler)
+{
+	sPopupHandler = handler;
+}
+
+void SetLuaOpenScriptHandler(LuaOpenScriptHandler handler)
+{
+	sOpenScriptHandler = handler;
+}
+
+void SetLuaInputStatusHandler(LuaGetInputStatusHandler handler)
+{
+	sInputStatusHandler = handler;
+}
+
+void SetLuaGetControllerStatusHandler(LuaGetControllerStatusHandler handler)
+{
+	sControllerStatusHandler = handler;
+}
+
+void SetLuaMenuHooks(const LuaMenuHooks* hooks)
+{
+	sMenuHooks = hooks;
+}
+
 static int doPopup(lua_State* L, const char* deftype, const char* deficon)
 {
 	const char* str = toCString(L,1);
@@ -686,12 +718,23 @@ static int doPopup(lua_State* L, const char* deftype, const char* deficon)
 	// Win32 MessageBox so scripts that switch on the answer behave identically.
 	answer = MacLua_ShowPopup(str, type, icon);
 #else
-	// NYI (assume first answer for now)
-	switch(itype)
+	if (sPopupHandler)
 	{
-		case 0: case 3: answer = "ok"; break;
-		case 1: case 2: answer = "yes"; break;
-		case 4: answer = "abort"; break;
+		// The frontend runs this on its UI thread and returns a static answer
+		// string, so it stays valid until the next popup.
+		answer = sPopupHandler(str, type, icon);
+		if (answer == NULL)
+			answer = "ok";
+	}
+	else
+	{
+		// NYI (assume first answer for now)
+		switch(itype)
+		{
+			case 0: case 3: answer = "ok"; break;
+			case 1: case 2: answer = "yes"; break;
+			case 4: answer = "abort"; break;
+		}
 	}
 #endif
 
@@ -3765,6 +3808,15 @@ DEFINE_LUA_FUNCTION(emu_openscript, "filename")
 	const char* errorMsg = MacLua_OpenScript(filename, curScriptDir);
 	if(errorMsg)
 		luaL_error(L, errorMsg);
+#else
+	if (sOpenScriptHandler)
+	{
+		const char* filename = lua_isstring(L,1) ? lua_tostring(L,1) : NULL;
+		char curScriptDir[1024]; GetCurrentScriptDir(curScriptDir, 1024);
+		const char* errorMsg = sOpenScriptHandler(filename, curScriptDir);
+		if (errorMsg)
+			luaL_error(L, "%s", errorMsg);
+	}
 #endif
     return 0;
 }
@@ -3785,7 +3837,8 @@ static bool IsLuaMenuItem(PlatformMenuItem menuItem)
 #elif defined(DESMUME_COCOA)
 	return MacLua_MenuIsOwnedID((int)menuItem);
 #else
-	return false;
+	return sMenuHooks != NULL && sMenuHooks->isOwnedItemID != NULL &&
+		sMenuHooks->isOwnedItemID((int)menuItem);
 #endif
 }
 
@@ -3814,7 +3867,13 @@ static bool SearchFreeMenuItem(PlatformMenu menu, PlatformMenuItem& menuItem)
 	menuItem = (PlatformMenuItem)allocated;
 	return true;
 #else
-	return false;
+	if (sMenuHooks == NULL || sMenuHooks->allocItemID == NULL)
+		return false;
+	const int allocated = sMenuHooks->allocItemID();
+	if (allocated < 0)
+		return false;
+	menuItem = (PlatformMenuItem)allocated;
+	return true;
 #endif
 }
 
@@ -3898,13 +3957,78 @@ static PlatformMenu AddSubMenu(PlatformMenu topMenu, PlatformMenu menu, const ch
 	info.menuData.subMenuData.push_back(LuaSubMenuData(menu, subMenu, subMenuId));
 	return subMenu;
 #else
-	return 0;
+	// GTK3 (and any other frontend that installs menu hooks).  Reuse a Lua menu
+	// with this name in the same parent, otherwise add one at the end.
+	if (sMenuHooks == NULL || sMenuHooks->findSubmenu == NULL ||
+		sMenuHooks->addSubmenu == NULL || sMenuHooks->freeItemID == NULL)
+	{
+		return NULL;
+	}
+
+	LuaContextInfo& info = GetCurrentInfo();
+	int existingId = 0;
+	PlatformMenu existing = (PlatformMenu)sMenuHooks->findSubmenu(menu, menuName, &existingId);
+	if (existing != NULL)
+	{
+		if (IsLuaMenuItem((PlatformMenuItem)existingId))
+			info.menuData.subMenuData.push_back(LuaSubMenuData(menu, existing, (PlatformMenuItem)existingId));
+		return existing;
+	}
+
+	PlatformMenuItem subMenuId;
+	if (!SearchFreeMenuItem(topMenu, subMenuId))
+		return NULL;
+
+	PlatformMenu subMenu = (PlatformMenu)sMenuHooks->addSubmenu(menu, menuName, (int)subMenuId);
+	if (subMenu == NULL)
+	{
+		sMenuHooks->freeItemID((int)subMenuId);
+		return NULL;
+	}
+
+	info.menuData.subMenuData.push_back(LuaSubMenuData(menu, subMenu, subMenuId));
+	return subMenu;
+#endif
+}
+
+static bool PlatformAddMenuSeparator(PlatformMenu menu, PlatformMenuItem menuItem)
+{
+#if defined(WIN32_FRONTEND)
+	MENUITEMINFO mii;
+	ZeroMemory(&mii, sizeof(MENUITEMINFO));
+	mii.cbSize = sizeof(MENUITEMINFO);
+	mii.fMask = MIIM_ID | MIIM_FTYPE;
+	mii.wID = menuItem;
+	mii.fType = MFT_SEPARATOR;
+	return InsertMenuItem(menu, menuItem, FALSE, &mii) != 0;
+#elif defined(DESMUME_COCOA)
+	return MacLua_MenuAddSeparator(menu, (int)menuItem);
+#else
+	return sMenuHooks != NULL && sMenuHooks->addSeparator != NULL &&
+		sMenuHooks->addSeparator(menu, (int)menuItem);
+#endif
+}
+
+static bool PlatformAddMenuItem(PlatformMenu menu, PlatformMenuItem menuItem, const char* menuName)
+{
+#if defined(WIN32_FRONTEND)
+	MENUITEMINFO mii;
+	ZeroMemory(&mii, sizeof(MENUITEMINFO));
+	mii.cbSize = sizeof(MENUITEMINFO);
+	mii.fMask = MIIM_ID | MIIM_STRING;
+	mii.wID = menuItem;
+	mii.dwTypeData = (char*) menuName;
+	return InsertMenuItem(menu, menuItem, FALSE, &mii) != 0;
+#elif defined(DESMUME_COCOA)
+	return MacLua_MenuAddItem(menu, (int)menuItem, menuName);
+#else
+	return sMenuHooks != NULL && sMenuHooks->addItem != NULL &&
+		sMenuHooks->addItem(menu, (int)menuItem, menuName);
 #endif
 }
 
 bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 {
-#if defined(WIN32_FRONTEND) || defined(DESMUME_COCOA)
 	LuaContextInfo& info = GetCurrentInfo();
 	lua_State* L = info.L;
 	luaL_checktype(L, -1, LUA_TTABLE);
@@ -3925,25 +4049,11 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 				return false;
 			}
 
-#if defined(WIN32_FRONTEND)
-			MENUITEMINFO mii;
-			ZeroMemory(&mii, sizeof(MENUITEMINFO));
-			mii.cbSize = sizeof(MENUITEMINFO);
-			mii.fMask = MIIM_ID | MIIM_FTYPE;
-			mii.wID = menuItem;
-			mii.fType = MFT_SEPARATOR;
-			if (!InsertMenuItem(menu, menuItem, FALSE, &mii))
+			if (!PlatformAddMenuSeparator(menu, menuItem))
 			{
 				luaL_error(L, "menu item addition failed");
 				return false;
 			}
-#else
-			if (!MacLua_MenuAddSeparator(menu, (int)menuItem))
-			{
-				luaL_error(L, "menu item addition failed");
-				return false;
-			}
-#endif
 			info.menuData.menuItemMap.insert(map<PlatformMenuItem, PlatformMenu>::value_type(menuItem, menu));
 			lua_pop(L, 1);
 		}
@@ -3963,25 +4073,11 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 					return false;
 				}
 
-#if defined(WIN32_FRONTEND)
-				MENUITEMINFO mii;
-				ZeroMemory(&mii, sizeof(MENUITEMINFO));
-				mii.cbSize = sizeof(MENUITEMINFO);
-				mii.fMask = MIIM_ID | MIIM_STRING;
-				mii.wID = menuItem;
-				mii.dwTypeData = (char*) menuName;
-				if (!InsertMenuItem(menu, menuItem, FALSE, &mii))
+				if (!PlatformAddMenuItem(menu, menuItem, menuName))
 				{
 					luaL_error(L, "menu item addition failed");
 					return false;
 				}
-#else
-				if (!MacLua_MenuAddItem(menu, (int)menuItem, menuName))
-				{
-					luaL_error(L, "menu item addition failed");
-					return false;
-				}
-#endif
 				info.menuData.menuItemMap.insert(map<PlatformMenuItem, PlatformMenu>::value_type(menuItem, menu));
 
 				lua_getfield(L, LUA_REGISTRYINDEX, menuCallbackIDString);
@@ -4017,14 +4113,10 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 		}
 	}
 	return true;
-#else
-	return false;
-#endif
 }
 
 DEFINE_LUA_FUNCTION(emu_addmenu, "menuName, menuEntries")
 {
-#if defined(WIN32_FRONTEND) || defined(DESMUME_COCOA)
 	int nargs = lua_gettop(L);
 	if (nargs > 1 && !lua_isnil(L, 1))
 	{
@@ -4034,10 +4126,16 @@ DEFINE_LUA_FUNCTION(emu_addmenu, "menuName, menuEntries")
 
 #if defined(WIN32_FRONTEND)
 		HMENU menu = mainMenu;
-#else
+#elif defined(DESMUME_COCOA)
 		// Cocoa: a new top-level menu in the menu bar, reused if a menu with
 		// the same name is already there.
 		PlatformMenu menu = (PlatformMenu)MacLua_MenuRoot();
+#else
+		// GTK3: the app menubar, exposed through the frontend hooks.  Without
+		// hooks (CLI, GTK2) the whole API stays a no-op.
+		if (sMenuHooks == NULL || sMenuHooks->rootMenu == NULL)
+			return 0;
+		PlatformMenu menu = (PlatformMenu)sMenuHooks->rootMenu();
 #endif
 		PlatformMenu subMenu = AddSubMenu(menu, menu, menuName);
 		if (subMenu != NULL)
@@ -4060,8 +4158,37 @@ DEFINE_LUA_FUNCTION(emu_addmenu, "menuName, menuEntries")
 		//lua_settop(L, index); // drop redundant args
 		//AddMenuEntries(menu, menu);
 	}
-#endif
 	return 0;
+}
+
+static void PlatformMenuSetEnabled(PlatformMenu menu, PlatformMenuItem menuItem, bool enabled)
+{
+#if defined(DESMUME_COCOA)
+	MacLua_MenuSetEnabled(menu, (int)menuItem, enabled);
+#else
+	if (sMenuHooks != NULL && sMenuHooks->setEnabled != NULL)
+		sMenuHooks->setEnabled(menu, (int)menuItem, enabled);
+#endif
+}
+
+static void PlatformMenuSetChecked(PlatformMenu menu, PlatformMenuItem menuItem, bool checked)
+{
+#if defined(DESMUME_COCOA)
+	MacLua_MenuSetChecked(menu, (int)menuItem, checked);
+#else
+	if (sMenuHooks != NULL && sMenuHooks->setChecked != NULL)
+		sMenuHooks->setChecked(menu, (int)menuItem, checked);
+#endif
+}
+
+static void PlatformMenuSetTitle(PlatformMenu menu, PlatformMenuItem menuItem, const char* title)
+{
+#if defined(DESMUME_COCOA)
+	MacLua_MenuSetTitle(menu, (int)menuItem, title);
+#else
+	if (sMenuHooks != NULL && sMenuHooks->setTitle != NULL)
+		sMenuHooks->setTitle(menu, (int)menuItem, title);
+#endif
 }
 
 DEFINE_LUA_FUNCTION(emu_setmenuiteminfo, "menuItem, infoTable")
@@ -4147,7 +4274,7 @@ DEFINE_LUA_FUNCTION(emu_setmenuiteminfo, "menuItem, infoTable")
 		lua_pop(L, 1);
 		it++;
 	}
-#elif defined(DESMUME_COCOA)
+#else
 	// Same contract as the Win32 version: find the item whose registered
 	// callback is the function in argument 1, then apply name/enabled/checked.
 	// The three fields are parsed up front because the table is read at fixed
@@ -4210,11 +4337,11 @@ DEFINE_LUA_FUNCTION(emu_setmenuiteminfo, "menuItem, infoTable")
 		if (matches)
 		{
 			if (hasEnabled)
-				MacLua_MenuSetEnabled(menu, (int)menuItem, enableValue);
+				PlatformMenuSetEnabled(menu, menuItem, enableValue);
 			if (hasChecked)
-				MacLua_MenuSetChecked(menu, (int)menuItem, checkedValue);
+				PlatformMenuSetChecked(menu, menuItem, checkedValue);
 			if (newName != NULL)
-				MacLua_MenuSetTitle(menu, (int)menuItem, newName);
+				PlatformMenuSetTitle(menu, menuItem, newName);
 			break;
 		}
 		it++;
@@ -4236,6 +4363,12 @@ DEFINE_LUA_FUNCTION(emu_registermenustart, "func")
 	// arrives on the main thread.  Ask for one refresh now so the first open
 	// already shows the state this handler sets.
 	MacLua_QueueMenuInit();
+#elif !defined(WIN32_FRONTEND)
+	// GTK3 has no "menu about to show" signal on a GMenuModel.  The frontend
+	// runs the handler on a short timer and before the next frame instead; ask
+	// for one run now so the first open already sees the right state.
+	if (sMenuHooks != NULL && sMenuHooks->queueMenuInit != NULL)
+		sMenuHooks->queueMenuInit();
 #endif
 	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
@@ -4636,7 +4769,29 @@ DEFINE_LUA_FUNCTION(input_getcurrentinputstatus, "")
 
 	worry(L,10);
 #else
-	// NYI (well, return an empty table)
+	// POSIX frontends install a handler; without one this stays an empty
+	// table (the CLI and the retired GTK2 frontend).
+	if (sInputStatusHandler != NULL)
+	{
+		LuaInputStatus status;
+		if (sInputStatusHandler(&status))
+		{
+			const int keyCount = (status.keyCount > LUA_INPUT_MAX_KEYS) ? LUA_INPUT_MAX_KEYS : status.keyCount;
+			for (int i = 0; i < keyCount; i++)
+			{
+				lua_pushboolean(L, true);
+				lua_setfield(L, -2, status.keyNames[i]);
+			}
+
+			if (status.mouseValid)
+			{
+				lua_pushinteger(L, status.mouseX);
+				lua_setfield(L, -2, "xmouse");
+				lua_pushinteger(L, status.mouseY);
+				lua_setfield(L, -2, "ymouse");
+			}
+		}
+	}
 #endif
 
 	return 1;
@@ -5249,10 +5404,56 @@ DEFINE_LUA_FUNCTION(controller_get, "[joystickID = 0 [,returnDiagonals = false]]
 
 	return 1;
 #else
-	// No joystick backend on this frontend.  Return an empty table rather than
-	// nothing, so `controller.get().x` is a nil index instead of an error on a
+	// POSIX frontends install a handler; without one this stays an empty
+	// table, so `controller.get().x` is a nil index instead of an error on a
 	// nil value, matching what Windows and macOS do for a missing pad.
+	unsigned int i_joystickID = 0;
+	bool f_returnDiagonals = false;
+	switch (lua_gettop(L))
+	{
+		case 1:
+			i_joystickID = (unsigned int)lua_tonumber(L,1);
+			break;
+		case 2:
+			i_joystickID = (unsigned int)lua_tonumber(L,1);
+			if (lua_isboolean(L,2))
+				f_returnDiagonals = lua_toboolean(L,2) != 0;
+			break;
+	}
+
 	lua_newtable(L);
+
+	if (sControllerStatusHandler != NULL)
+	{
+		LuaControllerStatus status;
+		if (sControllerStatusHandler(i_joystickID, f_returnDiagonals, &status))
+		{
+			static const char* const dpadNames[4] = {"up", "right", "down", "left"};
+			for (int i = 0; i < 4; i++)
+			{
+				lua_pushboolean(L, status.dpad[i]);
+				lua_setfield(L, -2, dpadNames[i]);
+			}
+
+			// Button keys are "1".."n", matching s_buttonNames[] on Windows.
+			const int buttonCount = (status.buttonCount > LUA_CONTROLLER_MAX_BUTTONS) ? LUA_CONTROLLER_MAX_BUTTONS : status.buttonCount;
+			for (int i = 1; i <= buttonCount; i++)
+			{
+				char name[8];
+				snprintf(name, sizeof(name), "%d", i);
+				lua_pushboolean(L, status.buttons[i-1]);
+				lua_setfield(L, -2, name);
+			}
+
+			static const char* const axisNames[6] = {"x", "y", "z", "r", "u", "v"};
+			for (int i = 0; i < status.axisCount && i < 6; i++)
+			{
+				lua_pushnumber(L, status.axes[i]);
+				lua_setfield(L, -2, axisNames[i]);
+			}
+		}
+	}
+
 	return 1;
 #endif
 }
@@ -5886,8 +6087,13 @@ void RunLuaScriptFile(intptr_t uid, const char* filenameCStr)
 				info.print(uid, reason);
 				info.print(uid, "\r\n");
 #ifdef DESMUME_LUA_DYNAMIC
+#ifdef __APPLE__
 				info.print(uid, "Install LuaJIT (\"brew install luajit\"), or set "
 					"DESMUME_LUAJIT_DYLIB to a libluajit-5.1.dylib.\r\n");
+#else
+				info.print(uid, "Install LuaJIT or Lua 5.1, or set "
+					"DESMUME_LUAJIT_DYLIB to a libluajit-5.1.so.\r\n");
+#endif
 #endif
 			}
 			else
@@ -6304,6 +6510,42 @@ void StopLuaScript(intptr_t uid)
 				rit++;
 			}
 			info.menuData.subMenuData.clear();
+#else
+			// GTK3 and any other frontend that installed menu hooks.
+			if (sMenuHooks != NULL)
+			{
+				// remove items
+				map<PlatformMenuItem, PlatformMenu>::iterator it = info.menuData.menuItemMap.begin();
+				while(it != info.menuData.menuItemMap.end())
+				{
+					if (sMenuHooks->removeItem != NULL)
+						sMenuHooks->removeItem((*it).second, (int)(*it).first);
+					if (sMenuHooks->freeItemID != NULL)
+						sMenuHooks->freeItemID((int)(*it).first);
+					it++;
+				}
+				info.menuData.menuItemMap.clear();
+
+				// remove submenus, deepest first, but only if the script left them
+				// empty - another script may have added to the same menu.
+				vector<LuaSubMenuData>::reverse_iterator rit = info.menuData.subMenuData.rbegin();
+				while(rit != info.menuData.subMenuData.rend())
+				{
+					PlatformMenu menu = (*rit).menu;
+					PlatformMenuItem menuItem = (*rit).menuItem;
+					PlatformMenu subMenu = (*rit).subMenu;
+					bool empty = (sMenuHooks->isMenuEmpty != NULL) ? sMenuHooks->isMenuEmpty(subMenu) : true;
+					if (empty)
+					{
+						if (sMenuHooks->removeItem != NULL)
+							sMenuHooks->removeItem(menu, (int)menuItem);
+						if (sMenuHooks->freeItemID != NULL)
+							sMenuHooks->freeItemID((int)menuItem);
+					}
+					rit++;
+				}
+				info.menuData.subMenuData.clear();
+			}
 #endif
 		}
 		RefreshScriptStartedStatus();
@@ -6566,6 +6808,20 @@ bool AnyLuaActive()
 	{
 		LuaContextInfo& info = *iter->second;
 		if(info.started)
+			return true;
+		++iter;
+	}
+	return false;
+}
+
+bool AnyLuaRunning()
+{
+	std::map<intptr_t, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	while(iter != end)
+	{
+		LuaContextInfo& info = *iter->second;
+		if(info.running)
 			return true;
 		++iter;
 	}
@@ -7565,5 +7821,25 @@ bool GetLuaEngineInfo(LuaEngineInfo* out)
 		strncpy(out->jit, "n/a (not LuaJIT)", sizeof(out->jit) - 1);
 
 	return true;
+}
+
+void GetLuaEngineLibraryPath(char* out, size_t outSize)
+{
+	if(!out || outSize == 0)
+		return;
+	out[0] = '\0';
+
+#if defined(DESMUME_LUA_DYNAMIC)
+	// Idempotent: GetLuaEngineInfo() has usually loaded it already, and the
+	// path is still useful when the load failed.
+	if(LuaJIT_LoadLibrary() && LuaJIT_IsLoaded())
+		snprintf(out, outSize, "%s", LuaJIT_LibraryPath());
+#elif defined(WIN32_FRONTEND)
+	HMODULE mod = GetModuleHandleA("lua51.dll");
+	if(mod)
+		GetModuleFileNameA(mod, out, (DWORD)outSize);
+#else
+	snprintf(out, outSize, "(linked at build time)");
+#endif
 }
 

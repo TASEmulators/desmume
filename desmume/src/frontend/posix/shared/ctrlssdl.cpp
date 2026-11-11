@@ -794,6 +794,53 @@ int get_number_of_joysticks()
   return n;
 }
 
+bool get_joystick_raw_state(unsigned int index, struct joystick_raw_state* out)
+{
+  if(out == NULL || index >= MAX_JOYSTICKS)
+    return false;
+
+  JoystickInfo &info = open_joysticks[index];
+  if(info.id < 0)
+    return false;
+
+  SDL_Joystick *joy = info.isController
+    ? SDL_GameControllerGetJoystick(info.handle.gcont)
+    : info.handle.joy;
+  if(joy == NULL)
+    return false;
+
+  memset(out, 0, sizeof(*out));
+  out->hat = -1;
+
+  /* Refresh the cached axis/button values.  process_joystick_events() already
+   * polls events every frame, but controller.get() may be called from a script
+   * that has not advanced the core yet. */
+  SDL_JoystickUpdate();
+
+  out->hasHat = SDL_JoystickNumHats(joy) > 0;
+  if(out->hasHat)
+    out->hat = SDL_JoystickGetHat(joy, 0);
+
+  int nbuttons = SDL_JoystickNumButtons(joy);
+  if(nbuttons > JOYSTICK_MAX_BUTTONS)
+    nbuttons = JOYSTICK_MAX_BUTTONS;
+  out->buttonCount = nbuttons;
+  for(int i=0; i<nbuttons; ++i)
+    out->buttons[i] = SDL_JoystickGetButton(joy, i) != 0;
+
+  int naxes = SDL_JoystickNumAxes(joy);
+  if(naxes > JOYSTICK_MAX_AXES)
+    naxes = JOYSTICK_MAX_AXES;
+  out->axisCount = naxes;
+  for(int i=0; i<naxes; ++i)
+  {
+    const Sint16 v = SDL_JoystickGetAxis(joy, i);
+    out->axes[i] = (v < 0) ? (v / 32768.0) : (v / 32767.0);
+  }
+
+  return true;
+}
+
 static u16 shift_pressed;
 
 void

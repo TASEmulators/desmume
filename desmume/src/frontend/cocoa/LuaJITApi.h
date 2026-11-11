@@ -24,23 +24,25 @@
 extern "C" {
 #endif
 
-// Runtime loader for LuaJIT, the macOS counterpart of the Windows build's
-// lua51.lib + DelayLoadDLLs=lua51.dll.
+// Runtime loader for the Lua engine, used by the macOS and POSIX frontends and
+// the analogue of the Windows build's lua51.lib + DelayLoadDLLs=lua51.dll.
 //
 // Nothing here mentions lua_State or any other Lua type on purpose: this
 // header is safe to include from frontend code that does not want the Lua
 // entry points macro-substituted (see LuaJITApiSymbols.h for those).  The
-// dylib is dlopen()ed on demand and every symbol lua-engine.cpp needs is
+// library is dlopen()ed on demand and every symbol lua-engine.cpp needs is
 // resolved by name; if any of that fails the emulator keeps running with
 // scripting disabled instead of failing to launch.
 //
 // Search order:
-//   1. $DESMUME_LUAJIT_DYLIB, if set (a full path, or a bare library name)
-//   2. <bundle>/Contents/Frameworks/libluajit-5.1.dylib  (bundled copy)
-//   3. the usual package manager locations (Homebrew, /usr/local, MacPorts)
-//   4. a bare "libluajit-5.1.dylib", letting dyld's search paths decide
+//   1. $DESMUME_LUAJIT_DYLIB (or $DESMUME_LUA_DYLIB), if set
+//   2. macOS: <bundle>/Contents/Frameworks, Homebrew/MacPorts locations
+//      Linux: the executable directory and the usual /usr/lib, /lib paths
+//   3. a bare library name, letting the dynamic loader's search paths decide
 //
-// LoadLibrary() is idempotent and thread safe.
+// LuaJIT is preferred.  If it is not installed, the same loader falls back to
+// a Lua 5.1 shared library; newer Lua versions are rejected because they no
+// longer export the Lua 5.1 C API used by lua-engine.cpp.
 
 // Loads and resolves everything.  Returns true if the library is ready to be
 // called into; on failure LuaJIT_LoadError() explains what went wrong.

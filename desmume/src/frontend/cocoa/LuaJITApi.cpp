@@ -25,8 +25,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
+#ifdef __APPLE__
 #include <mach-o/dyld.h>
+#endif
 
 #include <string>
 #include <vector>
@@ -43,18 +46,37 @@ static std::string sLoadedPath;
 static std::string sLastError;
 static pthread_once_t sLoadOnce = PTHREAD_ONCE_INIT;
 
-// Candidate dylib file names.  Homebrew ships libluajit-5.1.dylib, some builds
-// only provide the unversioned libluajit.dylib, and LuaJIT's own Makefile
-// installs libluajit-5.1.2.dylib.
+// Candidate library file names.  Homebrew ships libluajit-5.1.dylib and Linux
+// distributions ship libluajit-5.1.so.2; some builds only provide the
+// unversioned names.  The Lua 5.1 entries are the documented fallback: the
+// symbol list below only contains the Lua 5.1 C API, so a newer liblua fails
+// to resolve (luaL_register and lua_objlen are gone) and is skipped.
+#ifdef __APPLE__
 static const char * const kLibraryNames[] =
 {
 	"libluajit-5.1.dylib",
 	"libluajit.dylib",
 	"libluajit-5.1.2.dylib",
+	"liblua5.1.dylib",
+	"liblua.dylib",
 };
+#else
+static const char * const kLibraryNames[] =
+{
+	"libluajit-5.1.so.2",
+	"libluajit-5.1.so",
+	"libluajit.so",
+	"liblua5.1.so.0",
+	"liblua5.1.so",
+	"liblua-5.1.so",
+	"liblua.so.5.1",
+	"liblua.so",
+};
+#endif
 
 static std::string ExecutableDirectory(void)
 {
+#ifdef __APPLE__
 	uint32_t size = 0;
 	_NSGetExecutablePath(NULL, &size);
 	if (size == 0)
@@ -67,6 +89,19 @@ static std::string ExecutableDirectory(void)
 	char resolved[PATH_MAX] = "";
 	if (realpath(&buffer[0], resolved) == NULL)
 		return std::string();
+#elif defined(__linux__)
+	char exe[PATH_MAX] = "";
+	const ssize_t len = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+	if (len <= 0)
+		return std::string();
+	exe[len] = '\0';
+
+	char resolved[PATH_MAX] = "";
+	if (realpath(exe, resolved) == NULL)
+		return std::string();
+#else
+	return std::string();
+#endif
 
 	std::string path(resolved);
 	const size_t slash = path.rfind('/');
@@ -87,20 +122,36 @@ static std::string JoinPath(const std::string &dir, const char *name)
 }
 
 // Directories to try, in order.  Empty entries mean "no directory", i.e. pass
-// the bare library name to dlopen() and let dyld search.
+// the bare library name to dlopen() and let the dynamic loader search.
 static std::vector<std::string> CandidateDirectories(void)
 {
 	std::vector<std::string> dirs;
 
 	const std::string exeDir = ExecutableDirectory();
 	if (!exeDir.empty())
+	{
+#ifdef __APPLE__
 		dirs.push_back(exeDir + "/../Frameworks");
+#else
+		dirs.push_back(exeDir);
+		dirs.push_back(exeDir + "/../lib");
+#endif
+	}
 
+#ifdef __APPLE__
 	dirs.push_back("/opt/homebrew/opt/luajit/lib");
 	dirs.push_back("/opt/homebrew/lib");
 	dirs.push_back("/usr/local/opt/luajit/lib");
 	dirs.push_back("/usr/local/lib");
 	dirs.push_back("/opt/local/lib");
+#else
+	dirs.push_back("/usr/local/lib64");
+	dirs.push_back("/usr/local/lib");
+	dirs.push_back("/usr/lib64");
+	dirs.push_back("/usr/lib");
+	dirs.push_back("/lib64");
+	dirs.push_back("/lib");
+#endif
 
 	dirs.push_back("");
 	return dirs;
@@ -161,6 +212,9 @@ static bool TryLoad(const std::string &path)
 static void LoadOnce(void)
 {
 	const char *overridePath = getenv("DESMUME_LUAJIT_DYLIB");
+	if (overridePath == NULL || overridePath[0] == '\0')
+		overridePath = getenv("DESMUME_LUA_DYLIB");
+
 	if (overridePath != NULL && overridePath[0] != '\0')
 	{
 		// A forced path is exactly that - do not silently fall back to some
@@ -173,6 +227,7 @@ static void LoadOnce(void)
 	}
 
 	std::string firstError;
+	std::string symbolError;
 	const std::vector<std::string> dirs = CandidateDirectories();
 	for (size_t i = 0; i < dirs.size(); i++)
 	{
@@ -182,12 +237,21 @@ static void LoadOnce(void)
 				return;
 			if (firstError.empty())
 				firstError = sLastError;
+			// A library that dlopen()s but does not export the Lua 5.1 API is
+			// much more informative than the first "no such file" error: it
+			// usually means a newer Lua (5.2+) is installed instead of 5.1.
+			if (symbolError.empty() &&
+			    sLastError.find(" does not export ") != std::string::npos)
+				symbolError = sLastError;
 		}
 	}
 
-	// Every candidate failed.  Keep the failure of the first (most likely)
-	// candidate, that is the one that names the file people expect to exist.
-	sLastError = firstError.empty() ? "libluajit-5.1.dylib not found" : firstError;
+	// Every candidate failed.  Prefer the incompatible-library message when
+	// there is one, otherwise name the first (most likely) missing file.
+	if (!symbolError.empty())
+		sLastError = symbolError;
+	else
+		sLastError = firstError.empty() ? "LuaJIT or Lua 5.1 shared library not found" : firstError;
 }
 
 bool LuaJIT_LoadLibrary(void)

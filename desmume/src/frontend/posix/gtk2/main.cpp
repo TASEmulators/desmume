@@ -72,6 +72,11 @@
 	#include "gdbstub.h"
 #endif
 
+#ifdef HAVE_LUA
+	#include "tools/luaScriptConsole.h"
+	#include "lua-engine.h"
+#endif
+
 #if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
 	#if defined(ENABLE_OPENGL_ES)
 		#include "OGLRender_ES3.h"
@@ -203,6 +208,11 @@ static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void *);
 #endif
 static void GraphicsSettingsDialog();
 
+#ifdef HAVE_LUA
+static void AddLuaScript();
+static void CloseAllLuaScripts();
+static void ShowAboutLuaScripting();
+#endif
 
 static const char *ui_description =
 "<ui>"
@@ -406,6 +416,15 @@ static const char *ui_description =
 "      <separator/>"
 "      <menuitem action='ioregs'/>"
 "      <separator/>"
+#ifdef HAVE_LUA
+"      <menu action='LuaScriptingMenu'>"
+"        <menuitem action='addluascript'/>"
+"        <menuitem action='closealluascripts'/>"
+"        <separator/>"
+"        <menuitem action='aboutluascripting'/>"
+"      </menu>"
+"      <separator/>"
+#endif
 "      <menu action='LayersMenu'>"
 "        <menuitem action='layermainbg0'/>"
 "        <menuitem action='layermainbg1'/>"
@@ -487,6 +506,12 @@ static const GtkActionEntry action_entries[] = {
 
     { "ToolsMenu", NULL, "_Tools" },
       { "dumpram",    NULL,         "Dump ram to ...",         NULL,  NULL,   DumpRamDialog },
+#ifdef HAVE_LUA
+      { "LuaScriptingMenu",   NULL, "_Lua Scripting" },
+        { "addluascript",     NULL, "_New Lua Script Window...", NULL, NULL, AddLuaScript },
+        { "closealluascripts",NULL, "_Close All Script Windows", NULL, NULL, CloseAllLuaScripts },
+        { "aboutluascripting",NULL, "_About Lua Scripting...", NULL, NULL, ShowAboutLuaScripting },
+#endif
       { "LayersMenu", NULL, "View _Layers" },
 
     { "HelpMenu", NULL, "_Help" },
@@ -1330,6 +1355,21 @@ static void SaveStateDialog()
     }
     gtk_widget_destroy(pFileSelection);
 }
+
+#ifdef HAVE_LUA
+static void AddLuaScript()
+{
+    lua_script_open_console(GTK_WINDOW(pWindow));
+}
+static void CloseAllLuaScripts()
+{
+    lua_script_close_all();
+}
+static void ShowAboutLuaScripting()
+{
+    lua_script_show_about(GTK_WINDOW(pWindow));
+}
+#endif
 
 static void DumpRamDialog()
 {
@@ -3160,7 +3200,18 @@ gboolean EmuLoop(gpointer data)
         touchpad.click = 0;
     }
 
+#ifdef HAVE_LUA
+    NDS_beginProcessingInput();
+    CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+    NDS_endProcessingInput();
+#endif
+
     desmume_cycle();    /* Emule ! */
+
+#ifdef HAVE_LUA
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+#endif
 
     _updateDTools();
 

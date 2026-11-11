@@ -37,11 +37,18 @@ dep_x11 = dependency('x11')
 osd_elf_font_systems = ['android', 'dragonfly', 'freebsd', 'gnu', 'linux',
                         'netbsd', 'openbsd', 'solaris']
 
-# Lua stays off here.  Enabling it needs -DHAVE_LUA propagated into the core
-# sources (autotools has the same gap) as well as a dependency.  lua-engine.cpp
-# itself is engine-agnostic now - only the public Lua 5.1 C API - so either
-# 'luajit' (preferred, matches the Windows build) or 'lua-5.1' works here.
-#dep_lua = dependency('luajit', required: false)
+# Lua scripting is resolved with dlopen() at runtime, exactly like the macOS
+# frontend.  Nothing links against Lua at build time and no system development
+# package is needed: the local LuaJIT headers describe the Lua 5.1 ABI, and
+# LuaJIT (preferred) or a Lua 5.1 shared library is loaded when a script starts.
+# The loader lives in frontend/cocoa/LuaJITApi.cpp so both POSIX and Cocoa share
+# the same implementation.
+add_global_arguments('-DHAVE_LUA=1', '-DDESMUME_LUA_DYNAMIC=1',
+                     language: ['c', 'cpp'])
+
+# dlopen() lives in libdl on older glibc.  On modern glibc and macOS it is part
+# of libc, so a missing libdl is not an error.
+dep_dl = cxx.find_library('dl', required: false)
 
 if get_option('wifi')
   add_global_arguments('-DEXPERIMENTAL_WIFI_COMM', language: ['c', 'cpp'])
@@ -100,6 +107,7 @@ includes = include_directories(
   '../../../src/libretro-common/include',
   '../../../src/frontend',
   '../windows/agg/include',
+  '../windows/lua/include',
   '../windows/agg/font_freetype',
 )
 
@@ -414,14 +422,16 @@ if get_option('osd-elf-fonts') and osd_elf_font_systems.contains(host_machine.sy
   add_global_arguments('-DDESMUME_ELF_FONTS', language: ['c', 'cpp'])
 endif
 
-# TODO: fix Lua on non-Windows (needs HAVE_LUA defined for the core sources;
-# see the note at the dependency declaration above).
-#if dep_lua.found()
-#  dependencies += dep_lua
-#  libdesmume_src += [
-#    '../../lua-engine.cpp',
-#  ]
-#endif
+# Lua engine.  The sources are always built: the loader makes the emulator
+# start even when no LuaJIT/Lua 5.1 shared library is installed, and the script
+# console then reports why scripting is unavailable.
+if dep_dl.found()
+  dependencies += dep_dl
+endif
+libdesmume_src += [
+  '../../lua-engine.cpp',
+  '../cocoa/LuaJITApi.cpp',
+]
 
 if get_option('gdb-stub')
   add_global_arguments('-DGDB_STUB', language: ['c', 'cpp'])

@@ -25,8 +25,12 @@ desmume_SOURCES = \
 	cheatsGTK.h cheatsGTK.cpp \
 	main.cpp main.h
 
+if HAVE_LUA
+desmume_SOURCES += tools/luaScriptConsole.cpp tools/luaScriptConsole.h
+endif
+
 desmume_LDADD = ../libdesmume.a \
-	$(X_LIBS) -lX11 $(SDL_LIBS) $(GTK_LIBS) $(GTHREAD_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS) $(LIBSOUNDTOUCH_LIBS) $(LUA_LIBS)
+	$(X_LIBS) -lX11 $(SDL_LIBS) $(GTK_LIBS) $(GTHREAD_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS) $(LIBSOUNDTOUCH_LIBS)
 
 if ENABLE_OPENGL_ES
 desmume_LDADD += $(OPENGLES_LIBS)
