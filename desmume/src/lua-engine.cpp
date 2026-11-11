@@ -4132,7 +4132,7 @@ DEFINE_LUA_FUNCTION(emu_addmenu, "menuName, menuEntries")
 		PlatformMenu menu = (PlatformMenu)MacLua_MenuRoot();
 #else
 		// GTK3: the app menubar, exposed through the frontend hooks.  Without
-		// hooks (CLI, GTK2) the whole API stays a no-op.
+		// hooks (CLI) the whole API stays a no-op.
 		if (sMenuHooks == NULL || sMenuHooks->rootMenu == NULL)
 			return 0;
 		PlatformMenu menu = (PlatformMenu)sMenuHooks->rootMenu();
@@ -4770,7 +4770,7 @@ DEFINE_LUA_FUNCTION(input_getcurrentinputstatus, "")
 	worry(L,10);
 #else
 	// POSIX frontends install a handler; without one this stays an empty
-	// table (the CLI and the retired GTK2 frontend).
+	// table (the CLI frontend).
 	if (sInputStatusHandler != NULL)
 	{
 		LuaInputStatus status;
