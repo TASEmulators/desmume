@@ -1,7 +1,7 @@
 # WGPU OSD 迁移计划
 
-> 状态：设计草案，已完成实施前代码复核，尚未实施
-> 日期：2026-11-10
+> 状态：设计草案，已完成实施前代码复核；WGPU/Metal/Lua 相关落地记录见 §11–§21
+> 日期：2026-11-10（§21 更新于 2026-11-11）
 > 前置工作：路线 1（Windows 原生 GDI+ 后端）已落地，见 `frontend/modules/osd/agg/native_draw.*` 与 `frontend/windows/osd_fonts/`
 > 复核：2026-11-10 逐行核对了本文涉及的文件；与代码冲突之处及新增约束集中在 §9，阅读时以 §9 为准
 
@@ -853,3 +853,208 @@ Windows x64 默认配置（`UseNativeOsd` 未指定，即 GDI+ 后端）链接�
 §2.1 的「去 libagg」目标在 Windows 默认构建与阶段 4 构建上都真正落地：`UseNativeOsd=false`（legacy AGG 后端）是唯一还需要 `agg-2.5*.lib` 的配置。§19 只是链接层的临时兜底，已被本节替代。§12.4 的「`wgpu_draw.cpp` 始终参与编译、持续被编译检查」保持不变（现在它更干净：纯渲染器）。§18.2 的对比表描述的是当时状态；WGPU 侧现在同样 AGG-free，区别只剩「Windows 版仍继承抽象接口以复用 `aggDraw.hud` 接线」。
 
 **未验证**：Windows 完整 `msbuild` 全链接、GUI 实机（旋转 × 布局 × 滤镜）、WGPU 离屏像素 golden、POSIX 完整 meson 构建（本机无 freetype/fontconfig，`AGG2D_USE_VECTORFONTS` 分支只做了静态核对）。这些由用户在各自平台执行。本机也没有重跑 §12.5 / §13.5 / §17.3 的 WGPU 离屏对拍——旧 `WGPUOSDAggTarget` 已移除，对拍脚本需要改为实例化 `WGPUOSDDrawTarget`；渲染管线本身（`WGPUOSDRenderer` + WGSL）未改动，理论上结果不变，但仍建议实跑一次。
+
+
+## 21. POSIX Lua 脚本支持：PR #969 现状与缺口（2026-11-11）
+
+本节记录 `TASEmulators/desmume#969`（标题 “added lua support for ubuntu”）应用到当前工作树后的事实。所有改动均未提交。**GTK2 已决定淘汰**：相关代码只保留到工作树可编译为止，不再继续修，也不计入剩余工作量。
+
+### 21.1 PR #969 提供了什么
+
+- 状态：open、未合并；作者 `marko-kriskovic`；7 个提交；11 个文件，**+1,382 / −10**。
+- 改动文件：
+
+  | 文件 | 行数 | 内容 |
+  | --- | --- | --- |
+  | `posix/gtk/tools/luaScriptConsole.cpp/.h` | +521 / +33 | GTK3 脚本控制台 |
+  | `posix/gtk2/tools/luaScriptConsole.cpp/.h` | +532 / +33 | GTK2 脚本控制台 |
+  | `posix/gtk/main.cpp` | +37 / −1 | app action、菜单回调、`EmuLoop` 前后 Lua 回调 |
+  | `posix/gtk/menu.ui` | +13 | Tools → Lua Scripts → Add new script |
+  | `posix/gtk/meson.build` | +5 | 控制台源文件 + `--dynamic-list lua-exports.txt` |
+  | `posix/gtk2/main.cpp` | +43 | GTK2 菜单/回调 |
+  | `posix/gtk2/meson.build` | +5 | 控制台源文件 |
+  | `posix/meson.build` | +12 / −9 | `dep_lua`（`lua5.1` / `lua-5.1`）、`HAVE_LUA`、`lua-engine.cpp` |
+  | `posix/lua-exports.txt` | +148 | 导出 Lua C API 符号，供 `--dynamic-list` 使用 |
+
+- 功能范围：
+  - **每个脚本一个独立控制台窗口**：路径输入、Browse、Edit/Create/View、Run/Stop/Restart、stdout 开关、250,000 字符输出上限、拖放 `.lua` 文件。
+  - **inotify 自动重载**：脚本文件保存后停止并重新运行。
+  - **菜单入口**：GTK3 与 GTK2 的 Tools 菜单都能打开控制台。
+  - **运行钩子**：GTK3 在 `desmume_cycle()` 前后调用 `LUACALL_BEFOREEMULATION` / `AFTEREMULATION` / `AFTEREMULATIONGUI`。
+  - **构建**：Meson 探测系统 Lua 开发包并链接；没有 Lua 时整个 Lua 支持不编译。
+- PR 自述限制：需要用户自行安装 Lua 5.1；只在 Ubuntu 上、只用一个脚本测过；没有验证 Windows 回归。
+
+### 21.2 当前工作树相对 PR 改了什么
+
+| 主题 | PR #969 | 当前实现 |
+| --- | --- | --- |
+| Lua 依赖 | 系统 `lua5.1`/`lua-5.1` 开发包，构建期链接 | 仓库内 `frontend/windows/lua/include` 头文件；运行期 `dlopen`，**优先 LuaJIT，回退 Lua 5.1**；不链接 Lua |
+| 符号导出 | `lua-exports.txt` + `-Wl,--dynamic-list` | 删除；复用 `frontend/cocoa/LuaJITApiSymbols.h` 的函数指针表 |
+| 构建系统 | 只改 Meson | Meson + autotools；`HAVE_LUA` 无条件定义，缺运行库时仍能启动并解释原因 |
+| 缺失运行库 | 没有 Lua 就不编译/不可用 | 控制台照常打开，Run 时在输出里报告加载失败原因；About 显示库路径 |
+| 引擎回调线程 | 回调里直接操作 GTK 控件 | 全部用高于 `EMULOOP_PRIO` 的 idle 回主线程（`G_PRIORITY_DEFAULT`），按 uid 重查控制台；窗口已销毁时安全丢弃 |
+| 文件监视 | `volatile bool`；每次 start 都 join/重启线程 | `g_atomic_int` 标志 + `watched_path`；路径未变时不重启 |
+| 路径状态 | 输入框清空后仍保留旧 `filename` | 清空/文件不存在时清除；Run 前重新读取并检查存在性 |
+| 关闭窗口 | 运行中直接 destroy，`onstop` 里可能再次 destroy | `closeOnStop` 延迟到 onstop idle，避免回调重入和 use-after-free |
+| About | 无 | 新增 “About Lua Scripting”，复用 Windows/macOS 的 `GetLuaEngineInfo()` + 新 `GetLuaEngineLibraryPath()` |
+| M1 帧推进 | 无 | `GtkDriver::EMU_StepMainLoop()` + `EmuStepFrame()` + `LuaPumpEvents()`；见 21.3 |
+| M1 UI 钩子 | 无 | `SetLuaPopupHandler()` / `SetLuaOpenScriptHandler()`，共享 `lua-engine.cpp` 不引入 GTK 依赖 |
+| M2 输入 | 无 | `SetLuaInputStatusHandler()` / `SetLuaGetControllerStatusHandler()`；GTK3 实现键鼠 + SDL 手柄，见 21.7 |
+| M3 菜单 | 无 | `LuaMenuHooks` + GTK3 `GMenu` 动态模型、逐项 action、section 分隔符、延迟点击；见 21.8 |
+| GTK2 | 完整实现 | 同步修复，但**前端已决定淘汰**，不再投入 |
+
+- 当前工作树相对上游：16 个已跟踪文件 **+1,997 / −137**（不含本节文档），另有 4 个新控制台文件共 **1,485 行**（GTK3 760、GTK2 725）。GTK2 退役后，有效新增约为 **760 行控制台 + 1,995 行接线/构建/驱动/输入/菜单**。
+- 已验证：Meson GTK3 与 GTK2 构建成功（M1/M2/M3 后再次验证）；`autoreconf -fi` 与 out-of-tree `configure` 成功；运行期加载器实际加载 `/usr/lib64/libluajit-5.1.so.2`；强制覆盖路径与加载失败路径均按预期报错；GTK 产物不链接 Lua，只链接 `libdl`。GTK3 已在真实 X11 窗口里用 Castlevania: Dawn of Sorrow (USA) ROM 跑通 M1：`loop.lua`（`while true do emu.frameadvance() end`）能启动，Stop 能中止并显示 `terminated by user`，Browse/Stop/Run 状态正确复位；`emu.openscript` 的自动启动路径也能真正执行脚本；`osd-shapes.lua` 的 `agg.*` 图形已能显示并逐帧动画（见 21.6）。M2 也已实测：模拟 `W` 键后 `input.get()` 返回 `{W=true}`；指针映射函数对上半屏中心返回 `(128,-96)`、下半屏中心返回 `(128,96)`、屏外返回 false；SDL 虚拟手柄验证了按钮、轴和对角 hat 语义（见 21.7）。M3 已验证：`emu.addmenu()` 能建立顶层菜单/嵌套子菜单/分隔符，`setmenuiteminfo()` 能改名、启用/禁用、首次显式 `checked` 后转为复选菜单项，`registermenustart()` 按 250 ms 定时触发，菜单点击会延迟到帧边界执行；初始化完成后菜单模型不再重建（见 21.8）。
+- 未验证：完整 autotools 构建被 `desmume/src/types.h` 的 `std::memory_order_relaxed`（缺少 `c++14` 标志）挡住，这是既有问题；Windows/macOS 未做运行期回归；GTK2 已退役，未做运行期回归。
+
+### 21.3 PR 没提供、POSIX 仍缺什么
+
+| 能力 | 当前 POSIX 行为 | 影响 | 估算 |
+| --- | --- | --- | --- |
+| `emu.frameadvance()` / `emu.emulateframe*()` / `emu.wait()` / `emu.pause()` | **已实现**：`GtkDriver::EMU_StepMainLoop()` 返回 `ESTEP_DONE` / `ESTEP_CALL_AGAIN`，遵守 `allowSleep` / `allowPause` / `frameSkip` / `disableUser` / `disableCore` | 常规帧推进脚本可以运行 | 完成 |
+| `emu.addmenu()` / `emu.setmenuiteminfo()` / `emu.registermenustart()` | **已实现**：共享引擎通过 `LuaMenuHooks` 调用 GTK3；GTK3 维护自己的菜单树并渲染成 `GMenu` 模型。每个叶子项对应一个 `app.lua<ID>` action，分隔符用 section 边界表示，`registermenustart` 由 250 ms 定时器和帧边界触发，点击排队到帧边界执行 | 脚本可以创建/修改菜单并响应点击 | 完成 |
+| `emu.openscript()` | **已实现**：新建控制台并把脚本排到下一个 idle 启动；相对路径先按调用脚本目录解析；文件不存在返回可捕获的 Lua 错误 | 子脚本可以启动，且 `pcall(emu.openscript, ...)` 会先返回 | 完成 |
+| `input.get()` | **已实现**：GTK3 跟踪前台键盘事件（GDK keyval → Windows `s_keyToName` 词汇），鼠标按钮取自 `gdk_window_get_device_position()` 的 `GdkModifierType`，坐标用现有 cairo 矩阵换算成上屏负 y / 下屏 0..191；无钩子的前端仍返回空表 | 键鼠脚本可读真实输入 | 完成 |
+| `controller.get()` | **已实现**：复用 `open_joysticks[]`，经 `get_joystick_raw_state()` 读取 hat/按钮/轴；对角 hat 默认不返回，`returnDiagonals=true` 时返回；无手柄返回空表 | 手柄脚本可读真实输入 | 完成 |
+| `gui.popup()` / `input.popup()` | **已实现**：GTK 模态对话框，按钮顺序和返回字符串与 Windows `MessageBox` 一致（`ok` / `yes` / `no` / `cancel` / `abort` / `retry` / `ignore`） | 用户可以选择，脚本按选择分支 | 完成 |
+| About Lua Scripting | 已实现 | — | 完成 |
+| 脚本控制台（Run/Stop/Edit/监视/拖放/stdout） | 已实现 | — | 完成 |
+
+M1 帧推进的实现要点：
+
+1. `EMU_StepMainLoop()` 在每次调用时先摘掉 `regMainLoop`，用 `gtk_main_iteration_do(FALSE)` 泵事件，执行一帧后再挂回去。这样脚本的 `while true do emu.frameadvance() end` 不会和正常的 `EmuLoop` 叠加成双倍帧，脚本结束后普通模拟立即恢复。
+2. 暂停时（`!desmume_running() && allowPause`）泵事件并 `usleep(10ms)`，返回 `ESTEP_CALL_AGAIN`，与 Windows `StepRunLoop_Paused()` 的契约一致；Run/Stop/关闭窗口仍然可点。
+3. 正常速度下用绝对 16.667 ms 截止时间限速，落后超过 100 ms 时重新锚定；等待期间继续泵事件。快进/不睡眠模式只泵一次事件。
+4. `EMU_IsAtFrameBoundary()` 在 `desmume_cycle()` 期间为 false，防止在模拟回调里递归推进帧。
+5. Stop 仍走引擎已有的跨线程请求机制：UI 线程只置 `stopRequested` / `closeRequested` 并 `RaiseAbortRequest`，真正的销毁在引擎线程处理，事件泵不会在脚本执行中直接释放 `lua_State`。
+6. 控制台的 idle 回调必须显式使用高于 `EMULOOP_PRIO` 的优先级（当前用 `G_PRIORITY_DEFAULT`）。`EmuLoop` 是常驻就绪的 idle source，默认 `G_PRIORITY_DEFAULT_IDLE`（200）的回调在模拟运行时永远轮不到；这会让 Stop 后 Browse 仍禁用、`script stopped.` 不显示，也会让 `emu.openscript` 打开的脚本永远不启动。已在 GTK3 控制台的全部 idle 队列上修正。
+
+### 21.4 改动量评估
+
+| 里程碑 | 内容 | 代码量 | 人日 |
+| --- | --- | --- | --- |
+| M1 可用（**已完成**） | `EMU_StepMainLoop` + 事件泵 + 原子停止标志；popup 对话框；`emu.openscript` | 已完成 | 已完成 |
+| M2 输入（**已完成**） | `input.get` / `controller.get`（GTK 键鼠 + SDL 手柄状态） | 已完成 | 已完成 |
+| M3 菜单（**已完成**） | `emu.addmenu` / `setmenuiteminfo` / `registermenustart`（GMenu 动态模型） | 已完成 | 已完成 |
+| 测试/文档 | 手动脚本矩阵、失败路径、Windows/macOS 回归 | — | 1–2 |
+| **合计（M3 之后）** | 功能已齐，剩跨平台回归与文档 | **0 行功能代码** | **1–2** |
+
+- M1/M2/M3 完成后，`api-smoke.lua` 的帧推进、弹窗、`emu.openscript`、`input.get()`、`controller.get()`、`emu.addmenu()` / `setmenuiteminfo()` / `registermenustart()` 路径都已通了。
+- M3 的实际改动约 **800 行**（`lua-engine.h/.cpp` 的通用 POSIX 分支 + `gtk/main.cpp` 的菜单树/模型/action/定时器），落在原估 200–400 行之上，主要多出的是 action 生命周期、动态复选状态、延迟点击和避免模型重建的细节。
+- 已投入的 PR + 当前修正约 **3,500 行新增**（含 1,485 行控制台），所以剩余工作只剩验证与文档。
+
+### 21.5 结论
+
+PR #969 提供的是一个**能打开控制台、能运行不依赖帧推进的简单脚本**的 Linux 原型；它没有实现 POSIX 的帧推进，也没有菜单、输入、弹窗和 About。当前工作树已经把构建、运行期加载、线程安全、About、autotools 和 **M1 帧推进/弹窗/子脚本**、**M2 键鼠/手柄输入**、**M3 脚本菜单** 补齐。功能层面已无阻断项；剩余是跨平台运行期回归（Windows/macOS 未做）和测试/文档，GTK2 不计入。M1 已在真实 GTK3 窗口中验证（帧推进、Stop、`emu.openscript`）；M2 的键盘、鼠标坐标和手柄读取也已在真实窗口中验证（见 21.7）；M3 的菜单创建/更新/定时回调/点击已在真实窗口中验证（见 21.8）；控制台 idle 优先级导致的 Stop 后状态不刷新问题已修复。
+
+### 21.6 GTK3 OSD 合成顺序修复（2026-11-11）
+
+**现象**：`documentation/lua-api/examples/osd-shapes.lua` 能运行（`AnyLuaActive()==true`），但 `agg.*` 画的图形完全看不见。
+
+**根因**：GTK3 的显示链路是「GPU 输出 → `video->GetSrcBufferPtr()` → `RunFilter()` 拷贝到 `video->GetDstBufferPtr()` → 显示读 dst」。`agg.*` 通过 `aggDraw.hud` 画进 src，但旧代码在 `Gtk3GPUEventHandler::DidFrameEnd()` 里、也就是 `desmume_cycle()` 内部就调用了 `RedrawScreen()`，顺序是：
+
+```
+DidFrameEnd: 转换 GPU 输出到 src → 画内置 HUD → RunFilter(src→dst) → queue_draw
+回到 EmuLoop/EmuStepFrame: CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI)  // agg.* 此时才画进 src
+```
+
+Lua 回调执行时 src 已经过滤完毕，之后也没有第二次 `RunFilter()`，所以像素只留在 src，永远到不了显示读取的 dst。gdb 实测：`src[60*256+20] == 0xFF4078E8`（脚本的蓝色矩形），而 `dst[60*256+20] == 0xFF180029`（游戏原像素），且 `aggDraw.hud->buf().buf() == video->GetSrcBufferPtr()`。
+
+**修复**（`posix/gtk/main.cpp`）：把原来一体的 `RedrawScreen()` 拆成准备和呈现两段，并按 Windows 的层序排列。
+
+1. `PrepareHudTarget()`：帧转换进 src 后立即调用。负责 OSD 缩放/字体更新，并**每帧**把 `aggDraw.hud` 重新 attach 到 `video->GetSrcBufferPtr()`——即使所有内置 HUD 选项都关闭也要 attach，因为 Lua 无条件通过 `aggDraw.hud` 绘图。此段不画内置 HUD，也不跑滤镜。
+2. `DidFrameEnd()` 只做「转换 → `PrepareHudTarget()` → `sFramePresentPending = true`」，不再直接呈现。
+3. `PresentFrame()`：在 `LUACALL_AFTEREMULATIONGUI` 之后调用（`EmuStepFrame()` 和 `EmuLoop()` 各一处）。顺序为「内置 HUD（`osd->update()` / `DrawHUD()` / `osd->clear()`）→ `video->RunFilter()` → `gtk_widget_queue_draw()`」，即 Lua 先画、内置 HUD 后覆盖，与 Windows `display.cpp` 一致。
+4. `RedrawScreen()` 保留给非帧路径（菜单、缩放、暂停等）：先 `PrepareHudTarget()`，再强制 `sFramePresentPending = true` 并立即 `PresentFrame()`，行为与旧版一致。
+
+**验证**（真实 GTK3 窗口 + Castlevania ROM，脚本经控制台自动启动）：
+
+- `aggDraw.hud->buf().buf() == video->GetSrcBufferPtr()`，`src[60*256+20] == dst[60*256+20] == 0xFF4078E8`（蓝色矩形）；paint-state 控件的填充矩形同样出现在 dst。
+- 间隔 1 秒抓取两次 dst：动画绿色条从 x≈144–158 移到 x≈61–75，约 46,935 个像素发生变化，证明脚本不是只呈现一帧。
+- 未启用任何内置 HUD 时也走同一条路径（`aggDraw.hud` 始终指向 src）。
+- 合成层序现在是：NDS 画面 → Lua `agg.*`/`gui.*` → 内置 FPS/输入 HUD → 视频滤镜 → 显示。
+
+### 21.7 GTK3 `input.get()` / `controller.get()` 实现与验证（2026-11-11）
+
+**共享接口**（`lua-engine.h` / `lua-engine.cpp`）：新增两个纯 C POD 结构和函数指针钩子，共享引擎仍然不包含 GTK/SDL 头文件。
+
+- `LuaInputStatus`：`keyNames[64][16]`、`keyCount`、`mouseValid`、`mouseX/Y`；`LuaGetInputStatusHandler` 返回 false 时 `input.get()` 输出空表。
+- `LuaControllerStatus`：`dpad[4]`（up/right/down/left）、`buttonCount`、`buttons[33]`、`axisCount`、`axes[6]`（x/y/z/r/u/v，−1..1）；`LuaGetControllerStatusHandler` 返回 false 表示该手柄不存在，引擎输出空表。
+- `SetLuaInputStatusHandler()` / `SetLuaGetControllerStatusHandler()` 由前端在启动时安装。POSIX 的 `#else` 分支在无钩子时保持旧行为（空表），CLI 与已退役的 GTK2 不受影响。
+
+**键盘**（`gtk/main.cpp`）：`std::set<guint> sLuaPressedKeys` 在 `Key_Press` / `Key_Release` 记录**所有** GDK keyval，而不只是绑定到 DS 按键的那些；`GtkLua_KeyName()` 映射到 Windows `s_keyToName[]` 词汇（A–Z、0–9、F1–F24、numpad、方向键、符号键、鼠标键）。`focus-out-event` 清空集合，避免失焦后收不到 release 而把按键永远当成按住。语义对应 Windows 非 `allowBackgroundInput` 路径：只报告前台窗口收到的按键。
+
+**鼠标**：`gdk_window_get_device_position()` 必须传入真实 `GdkDevice`（本 GTK 构建对 NULL 会触发 `gdk_window_get_device_position_double: assertion 'GDK_IS_DEVICE (device)' failed`），因此通过 `gdk_display_get_default_seat()` + `gdk_seat_get_pointer()` 取指针设备。按钮取自 `GdkModifierType` 的 `GDK_BUTTON1/2/3_MASK`，名称与键盘共用命名空间（`leftclick` / `rightclick` / `middleclick`）。坐标用显示路径已经维护的 `topscreen_matrix` / `touch_matrix`（以及 hybrid 变体）换算：上屏 y 为负、下屏 0..191。与 macOS 一致，只有指针位于任一屏幕内才输出 `xmouse`/`ymouse`（Windows 会无条件输出，越界值也可能出现）。
+
+**手柄**（`posix/shared/ctrlssdl.cpp/.h`）：新增 `joystick_raw_state` 与 `get_joystick_raw_state()`，直接复用已打开的 `open_joysticks[]`，避免第二次 `SDL_JoystickOpen`；用 `SDL_JoystickGetHat/GetButton/GetAxis` 读取状态，轴按 −32768..32767 → −1..1。`GtkLua_GetControllerStatus()` 把 SDL hat 位映射到四个方向；对角 hat 在 `returnDiagonals=false` 时全部为 false，`true` 时返回两个方向，与 Windows `JOY_RETURNPOV` 语义一致。无手柄或索引越界返回 false，引擎输出空表。
+
+**验证**（真实 GTK3 窗口 + Castlevania ROM，脚本经控制台启动，结果写入文件）：
+
+- 键盘：`gdk_test_simulate_key()` 注入 `W` 按下 → `input.get()` 返回 `{W=true}`；释放后 `sLuaPressedKeys` 为空。
+- 鼠标坐标：直接调用 `GtkLua_PointerToScreen()`：`(154,96) → (128,-96)`、`(154,288) → (128,96)`、`(5,5) → false`；真实指针位于窗口内时 `input.get()` 返回 `xmouse=51, ymouse=-48`，修复设备参数后不再出现 `Gdk-CRITICAL`。
+- 鼠标按钮：在 `GtkLua_GetInputStatus()` 的 mask 判定处断点注入 `GDK_BUTTON1_MASK`，脚本输出 `{leftclick=true}`。
+- 手柄：`SDL_JoystickAttachVirtual()` 创建 6 轴/15 键/1 hat 虚拟手柄，按下 button 1、x=16384、hat=up|right：`controller.get()` 返回 `1=true`、`x≈0.500015`、dpad 全 false；`controller.get(0,true)` 返回 `up=true,right=true`。Lua 端到端输出一致。
+- 无手柄：`controller.get()` / `controller.get(0,true)` 返回 `{}`，不报错。
+
+**范围/限制**：
+
+- GTK2 与 CLI 未安装钩子，保持空表（GTK2 已退役）；Windows/macOS 代码未改动，也未做运行期回归。
+- 本会话是 Wayland/COSMIC + XWayland，合成器不响应 `XWarpPointer` / `gdk_device_warp`，所以鼠标按钮改用断点注入 mask 验证；坐标映射本身通过直接函数调用确定性验证。
+- M2 实际改动约 **400 行**（原估 100–200 行），多出的部分主要是 GDK→Windows 键名映射和旋转/交换/hybrid 坐标换算。
+
+### 21.8 GTK3 `emu.addmenu()` / `setmenuiteminfo()` / `registermenustart()` 实现与验证（2026-11-11）
+
+**共享接口**（`lua-engine.h` / `lua-engine.cpp`）：新增纯 C 的 `LuaMenuHooks` 函数表与 `SetLuaMenuHooks()`；共享引擎仍然不包含 GTK 头文件。
+
+- 钩子覆盖：分配/释放菜单项 ID、判断 ID 归属、取根菜单、查找子菜单、添加子菜单/普通项/分隔符、删除项、判断空菜单、设置启用/复选/标题、请求一次 `registermenustart` 刷新。
+- POSIX 的 `#else` 分支不再走空实现：`IsLuaMenuItem()`、`SearchFreeMenuItem()`、`AddSubMenu()`、`AddMenuEntries()`、`emu_addmenu()`、`emu_setmenuiteminfo()`、`emu_registermenustart()` 以及 `StopLuaScript()` 的清理都改为通过钩子调用。CLI 与已退役的 GTK2 不安装钩子，行为保持为空操作。
+- `emu.setmenuiteminfo()` 的 POSIX 分支与 Win32 契约一致：按回调函数找到菜单项，只应用 `enabled` / `checked` / `name` 中实际给出的字段。
+
+**GTK3 实现**（`gtk/main.cpp`）：
+
+- `GtkLuaMenu` / `GtkLuaMenuEntry` / `GtkLuaAction` 维护一棵独立于静态 `menu.ui` 的脚本菜单树；顶层菜单追加到 `GtkApplication` 的 app menubar，脚本停止时移除。
+- 每个叶子项对应一个 `app.lua<ID>` action，ID 池为 40000–40511。`GtkLua_EnsureAction()` 创建/复用 action，`GtkLua_SetEnabled()` / `SetChecked()` / `SetTitle()` 就地更新。
+- `GMenu` 没有独立的分隔符项：分隔符在重建模型时转成 section 边界，`GtkMenuTracker` 会把 section 边界画成菜单分隔线。
+- 标题里的 `_` 转义成 `__`，避免 GTK 把 Lua 标题当作助记符。
+- 菜单点击不直接调用 Lua：`GtkLua_MenuItemActivated()` 只把 item ID 放进 `sLuaPendingMenuClicks`，由 `GtkLua_DrainMenuCalls()` 在帧边界（`LUACALL_AFTEREMULATION` 之后）统一执行，避免在 Lua 已运行时重入 `lua_State`。
+- `registermenustart` 由 250 ms 定时器置 pending，再在帧边界调用 `LUACALL_ONINITMENU`；没有 Lua 在运行时定时器会立即 drain。定时器**不重建模型**。
+
+**两处实测暴露并修复的问题**：
+
+1. **hover 闪烁 / 子菜单一开就关**：最初每次 `LUACALL_ONINITMENU` 后都无条件 `GtkLua_RebuildAll()`。菜单打开时清空并重填 `GMenu` 模型会重置 hover 状态并关闭已展开的子菜单，表现为约 4 Hz 闪烁。修复：`ONINITMENU` 只让 `setmenuiteminfo()` 就地更新 action，不重建模型；只有增删项/改标题才重建。
+2. **所有菜单项都显示复选框**：最初每个 action 都是 stateful boolean，`GtkMenuTracker` 因此把所有项都画成 check item。修复：普通项先用无状态 action；某菜单项第一次收到显式的 `checked` 字段（true 或 false）时，才替换成 stateful boolean action。复选性是粘性的（之后取消勾选仍保留空复选框）。以首次显式 `checked`（而不是首次 `true`）作为切换点，可以让 `api-smoke.lua` 在脚本启动后的第一次 `registermenustart` 里就把四个图层项全部转成复选项，之后菜单打开期间不再重建模型。
+
+**验证**（真实 GTK3 窗口 + Castlevania ROM，脚本经控制台启动，结果写文件；因合成器不提供截图协议，用 gdb 在定时器/action 层取证）：
+
+- `emu.addmenu("LuaTest", {...})` 成功；嵌套 `Sub → Nested`、`nil` 分隔符、禁用项都建立成功；`emu.setmenuiteminfo()` 的改名/`checked=true` 生效；`registermenustart` 连续触发 3 次并写入日志。
+- 初始化后的 ID 与 action 状态：40000 = 顶层子菜单（无 action）、40001 = 复选项（stateful `b`，state=`true`）、40002 = 子菜单（无 action）、40003 = 嵌套普通项（无状态 action）、40004 = 分隔符（无 action）。普通项不再带复选框。
+- 初始化完成后连续 10 个 250 ms tick，`GtkLua_RebuildAll()` 调用次数为 **0**，因此定时刷新不会造成 hover 闪烁或子菜单关闭。
+- 用用户提供的 `documentation/lua-api/examples/api-smoke.lua`（无限 `frameadvance` 循环 + 每 1.5 s 切换图层预设）复测：普通项 40001 保持无状态 action；`Layer masks` 下的 40006 在第一次 `registermenustart` 后即为 stateful boolean（即使当前 `state=false` 也仍是复选项）；初始化完成后连续 tick 的模型重建次数为 **0**。
+- 通过 `g_action_activate()` 触发 40001 / 40003，脚本分别记录 `clicked Item 1 checked=true` 和 `clicked Nested`，证明点击排队与 `CallRegisteredLuaMenuHandlers()` 路径可用。
+- 关闭主窗口时 gdb 的 `run` 正常返回，进程退出；当时脚本控制台仍然打开（见 21.9）。
+
+**与 Windows/macOS 的刻意偏差**：
+
+- Windows 在 `WM_INITMENUPOPUP` 时调用 `CallRegisteredLuaMenuHandlers(LUACALL_ONINITMENU)`，macOS 在菜单即将打开时排队；`GMenuModel` 没有“即将显示”信号，所以 GTK3 用 **250 ms 定时器 + 帧边界**近似。`registermenustart` 会在菜单未打开时也执行，频率约 4 Hz，而不是每次弹出执行一次。这是 GTK3 的已知行为差异。
+- `GMenu` 没有分隔符项，只能靠 section 边界表达；外观一致，但模型结构不同。
+
+**范围/限制**：
+
+- GTK2 与 CLI 未安装菜单钩子，`emu.addmenu()` 保持空操作（GTK2 已退役）；Windows/macOS 代码未改动，也未做运行期回归。
+- 本环境无法截图，复选框外观和 hover 效果是通过 action 的 statefulness/state 间接验证的；`GtkMenuTracker` 正是根据 action 的 state 类型决定是否画 check item。
+- `setmenuiteminfo(name=...)` 改标题时仍然必须重建 `GMenu` 模型（`GMenu` 没有就地改 label 的 API）；相同标题会跳过重建，但如果脚本在每次 `registermenustart` 里都改标题，仍可能出现与旧版相同的 hover/子菜单重置。`api-smoke.lua` 只改 `checked`/`enabled`，不会触发重建。
+- M3 实际改动约 **800 行**（原估 200–400 行）。
+
+### 21.9 GTK3 关闭主窗口 / 退出修复（2026-11-11）
+
+**现象**：关闭主窗口后 Lua 控制台不会跟着关闭，进程也不退出；必须把所有控制台窗口逐个关闭进程才结束。
+
+**根因**：控制台是独立的 `GtkWindow` toplevel，不是 `GtkApplicationWindow`，因此不受主窗口销毁影响；主窗口原来的 `destroy` 处理器只停止模拟循环，没有关闭控制台，也没有显式结束 `GtkApplication`。
+
+**修复**（`gtk/main.cpp`）：
+
+- 新增 `QuitApplication()`：`emu_halt()`、摘掉 `regMainLoop`、`lua_script_close_all()`，然后 `g_application_quit()`。
+- File → Quit 的 `DoQuit()` 与主窗口 `destroy` 的 `OnMainWindowDestroy()` 都走 `QuitApplication()`；用 `sQuitRequested` 防止两者互相递归。
+- 主窗口的 `destroy` 信号改接到 `OnMainWindowDestroy()`（原来误接 `DoQuit` 的 action 签名）。
+
+**验证**：打开 Lua 控制台并运行脚本后，通过 gdb 调用 `gtk_window_close(pWindow)`；`gdb run` 正常返回，进程退出，控制台未单独关闭。
