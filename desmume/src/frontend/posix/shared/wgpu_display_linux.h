@@ -79,10 +79,20 @@ public:
 	bool upscalerCompiled();
 
 	// Presents one already composited BGRA frame. The rectangles use the same
-	// conventions as WGPUPresent::present().
+	// conventions as WGPUPresent::present(). `overlay` is the optional HUD
+	// layer; the GTK frontend passes the WGPU OSD target's texture view here,
+	// and leaves it NULL when it composites the HUD on the CPU instead.
 	bool present(const u32* pixels, int width, int height,
 				 const WGPUPresentRect* srcRects, const WGPUPresentRect* dstRects,
-				 const WGPUPresentRect* gapRect, int rotation, u32 gapColor);
+				 const WGPUPresentRect* gapRect, int rotation, u32 gapColor,
+				 const WGPUPresentOverlay* overlay = NULL);
+
+	// The objects beginX11()/beginWayland() created, as void*. They are valid
+	// between a successful begin and the next kill(); the GPU OSD uses them to
+	// build its own pipelines on the presentation device.
+	void* instance() const;
+	void* device() const;
+	void* queue() const;
 
 	bool active;
 

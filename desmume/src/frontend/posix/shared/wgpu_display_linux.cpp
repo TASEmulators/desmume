@@ -193,14 +193,31 @@ bool WGPULinuxDisplay::upscalerCompiled()
 
 bool WGPULinuxDisplay::present(const u32 *pixels, int width, int height,
 							   const WGPUPresentRect *srcRects, const WGPUPresentRect *dstRects,
-							   const WGPUPresentRect *gapRect, int rotation, u32 gapColor)
+							   const WGPUPresentRect *gapRect, int rotation, u32 gapColor,
+							   const WGPUPresentOverlay *overlay)
 {
 	if ( (this->_window == NULL) || !this->_present.isReady() )
 	{
 		return false;
 	}
 
-	return this->_present.present(pixels, width, height, srcRects, dstRects, gapRect, rotation, (uint32_t)gapColor);
+	return this->_present.present(pixels, width, height, srcRects, dstRects, gapRect,
+	                              rotation, (uint32_t)gapColor, overlay);
+}
+
+void *WGPULinuxDisplay::instance() const
+{
+	return this->_present.instance();
+}
+
+void *WGPULinuxDisplay::device() const
+{
+	return this->_present.device();
+}
+
+void *WGPULinuxDisplay::queue() const
+{
+	return this->_present.queue();
 }
 
 #else
@@ -233,9 +250,14 @@ int WGPULinuxDisplay::upscaler() { return this->_upscalerPending; }
 bool WGPULinuxDisplay::upscalerCompiled() { return false; }
 
 bool WGPULinuxDisplay::present(const u32*, int, int, const WGPUPresentRect*,
-							   const WGPUPresentRect*, const WGPUPresentRect*, int, u32)
+							   const WGPUPresentRect*, const WGPUPresentRect*, int, u32,
+							   const WGPUPresentOverlay*)
 {
 	return false;
 }
+
+void *WGPULinuxDisplay::instance() const { return NULL; }
+void *WGPULinuxDisplay::device() const { return NULL; }
+void *WGPULinuxDisplay::queue() const { return NULL; }
 
 #endif

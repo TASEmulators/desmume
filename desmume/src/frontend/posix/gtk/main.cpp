@@ -70,6 +70,9 @@
 #include "wgpu.h"
 #endif
 #include "../shared/wgpu_display_linux.h"
+#if defined(DESMUME_WGPU_OSD)
+#include "frontend/modules/osd/wgpu/wgpu_osd_draw.h"
+#endif
 #include "cheatsGTK.h"
 #include "frontend/modules/osd/agg/agg_osd.h"
 
@@ -130,6 +133,47 @@ VideoFilter* video;
 // wgpu-native, in which case every frame falls back to the Cairo path below.
 static WGPULinuxDisplay wgpu_display;
 static bool wgpu_initialization_failed = false;
+
+#if defined(DESMUME_WGPU_OSD)
+// GPU HUD state (wgpu-agg.md 22). The target records agg_osd.cpp / Lua agg.*
+// drawing and renders it into a texture that WGPU_PresentFrame samples as a
+// second layer. sGpuHudView is what the last rendered frame left behind; it has
+// to stay alive until the Expose callback that presents that frame, and must be
+// dropped whenever the device/surface is recreated.
+static WGPUOSDDrawTarget *sGpuHudTarget = NULL;
+static bool sGpuHudFontsRegistered = false;
+static bool sGpuHudFrameActive = false;
+static void *sGpuHudView = NULL;
+static int sGpuHudViewWidth = 0;
+static int sGpuHudViewHeight = 0;
+#endif
+
+// Drops the cached HUD view. Called whenever the WebGPU surface is torn down:
+// the view belongs to a texture that is about to be destroyed.
+static void WGPU_HudInvalidateView()
+{
+#if defined(DESMUME_WGPU_OSD)
+	sGpuHudView = NULL;
+	sGpuHudViewWidth = 0;
+	sGpuHudViewHeight = 0;
+#endif
+}
+
+static void WGPU_KillDisplay()
+{
+	wgpu_display.kill();
+	WGPU_HudInvalidateView();
+}
+
+// True when PrepareHudTarget() installed the GPU recorder for this frame.
+static bool WGPU_HudFrameActive()
+{
+#if defined(DESMUME_WGPU_OSD)
+	return sGpuHudFrameActive;
+#else
+	return false;
+#endif
+}
 
 #define GPU_SCALE_FACTOR_MIN 1.0f
 #define GPU_SCALE_FACTOR_MAX 16.0f
@@ -1957,7 +2001,222 @@ static bool WGPU_BeginNativeWindow(GtkWidget *widget, GdkWindow *window)
 	return false;
 }
 
-// Returns true when WebGPU presented the frame. False means Cairo should draw
+#if defined(DESMUME_WGPU_OSD)
+// Is there anything that should go into the HUD layer this frame?  The target
+// is only installed when something will draw, so a frame with the HUD and Lua
+// both idle keeps the old cheap path.
+static bool GtkHudNeedsDrawing()
+{
+	bool wanted = (
+		CommonSettings.hud.ShowInputDisplay ||
+		CommonSettings.hud.ShowGraphicalInputDisplay ||
+		CommonSettings.hud.FpsDisplay ||
+		CommonSettings.hud.FrameCounterDisplay ||
+		CommonSettings.hud.ShowLagFrameCounter ||
+		CommonSettings.hud.ShowMicrophone ||
+		CommonSettings.hud.ShowRTC ||
+		HudEditorMode ||
+		HudNeedsDrawStateSlots()
+	);
+
+#ifdef HAVE_LUA
+	wanted = wanted || AnyLuaActive();
+#endif
+
+	return wanted;
+}
+
+// The GPU recorder only knows the same layouts the WebGPU present path can
+// draw; a Cairo frame must keep the CPU-composited HUD, so stay off those.
+static bool WGPU_HudWanted()
+{
+	if ( !config.presentationWGPU || !config.presentationWGPUHud )
+	{
+		return false;
+	}
+
+	if ( (nds_screen.orientation == ORIENT_HYBRID_EQUAL) ||
+		 (nds_screen.orientation == ORIENT_HYBRID_VERTICAL) )
+	{
+		return false;
+	}
+
+	const int rotation = nds_screen.rotation_angle;
+	return (rotation == 0) || (rotation == 90) || (rotation == 180) || (rotation == 270);
+}
+
+// Creates the target (and the device, if the first expose has not run yet),
+// resizes it to the frame, clears it and installs it as aggDraw.hud.  Returns
+// false when the caller must fall back to the AGG target in the source buffer.
+static bool WGPU_HudPrepare(int width, int height)
+{
+	if ( (width <= 0) || (height <= 0) || !WGPU_HudWanted() || !GtkHudNeedsDrawing() )
+	{
+		return false;
+	}
+
+	if ( (pDrawingArea == NULL) || !gtk_widget_get_realized(pDrawingArea) )
+	{
+		return false;
+	}
+
+	GdkWindow *window = gtk_widget_get_window(pDrawingArea);
+	if (window == NULL)
+	{
+		return false;
+	}
+
+	// The OSD is recorded before the first Expose, so the device has to be
+	// brought up here rather than lazily in WGPU_PresentFrame().
+	if (!wgpu_display.active)
+	{
+		if (wgpu_initialization_failed)
+		{
+			return false;
+		}
+
+		if (!WGPU_BeginNativeWindow(pDrawingArea, window))
+		{
+			wgpu_initialization_failed = true;
+			return false;
+		}
+	}
+
+	if (sGpuHudTarget == NULL)
+	{
+		sGpuHudTarget = new WGPUOSDDrawTarget(width, height);
+	}
+	else
+	{
+		// Resize() releases the renderer when the size actually changed; the
+		// beginGPU() below then rebuilds it, including the glyph atlas.
+		sGpuHudTarget->setDrawTargetDims(NULL, width, height, width * 4);
+	}
+
+	if (!sGpuHudFontsRegistered)
+	{
+		std::vector<WGPUOSDFont> fonts;
+		fonts.reserve((size_t)font_Nums);
+
+		for (int i = 0; i < font_Nums; i++)
+		{
+			if (fonts_list[i].font == NULL)
+			{
+				continue;
+			}
+
+			WGPUOSDFont font;
+			font.name = fonts_list[i].name;
+			font.data = fonts_list[i].font;
+			font.size = 0;
+			fonts.push_back(font);
+		}
+
+		sGpuHudTarget->setFonts(fonts.empty() ? NULL : &fonts[0], (int)fonts.size());
+		sGpuHudFontsRegistered = true;
+	}
+
+	if (!sGpuHudTarget->beginGPU(wgpu_display.instance(), wgpu_display.device(), wgpu_display.queue()))
+	{
+		return false;
+	}
+
+	// Every frame starts from an empty HUD texture; the source buffer used to
+	// provide that reset by being overwritten with the game frame.
+	sGpuHudTarget->clear();
+
+	WGPU_HudInvalidateView();
+	Agg_setHudTarget(sGpuHudTarget);
+	sGpuHudFrameActive = true;
+
+	return true;
+}
+
+// Renders the recorded HUD into its texture and restores the default target.
+// The returned view is sampled by the WebGPU present pass of this frame.
+static bool WGPU_HudRenderFrame()
+{
+	if (!sGpuHudFrameActive)
+	{
+		return false;
+	}
+
+	sGpuHudFrameActive = false;
+	WGPU_HudInvalidateView();
+
+	const bool ok = (sGpuHudTarget != NULL) && sGpuHudTarget->render();
+
+	if (ok)
+	{
+		sGpuHudView = sGpuHudTarget->textureView();
+		sGpuHudViewWidth = sGpuHudTarget->targetWidth();
+		sGpuHudViewHeight = sGpuHudTarget->targetHeight();
+	}
+
+	Agg_setHudTarget(NULL);
+
+	return (sGpuHudView != NULL);
+}
+
+// Puts the last rendered HUD back into the CPU screenshot, which reads the
+// source buffer and therefore no longer contains it.  The texture holds
+// premultiplied BGRA; the screenshot is straight RGBA.
+static void WGPU_HudCompositeScreenshot(u8 *dst, int width, int height)
+{
+	if ( (dst == NULL) || !config.presentationWGPUHud || (sGpuHudView == NULL) ||
+		 (sGpuHudTarget == NULL) )
+	{
+		return;
+	}
+
+	const int hudWidth = sGpuHudTarget->targetWidth();
+	const int hudHeight = sGpuHudTarget->targetHeight();
+
+	if ( (hudWidth != width) || (hudHeight != height) )
+	{
+		return;
+	}
+
+	std::vector<uint8_t> hud((size_t)hudWidth * (size_t)hudHeight * 4);
+
+	if (!sGpuHudTarget->readPixels(hud.data(), hudWidth * 4))
+	{
+		return;
+	}
+
+	for (int y = 0; y < height; y++)
+	{
+		const uint8_t *src = hud.data() + (size_t)y * (size_t)hudWidth * 4;
+		uint8_t *out = dst + (size_t)y * (size_t)width * 4;
+
+		for (int x = 0; x < width; x++, src += 4, out += 4)
+		{
+			const unsigned a = src[3];
+
+			if (a == 0)
+			{
+				continue;
+			}
+
+			const unsigned inv = 255u - a;
+			const unsigned r = src[2] + (out[0] * inv + 127u) / 255u;
+			const unsigned g = src[1] + (out[1] * inv + 127u) / 255u;
+			const unsigned b = src[0] + (out[2] * inv + 127u) / 255u;
+
+			out[0] = (uint8_t)((r > 255) ? 255 : r);
+			out[1] = (uint8_t)((g > 255) ? 255 : g);
+			out[2] = (uint8_t)((b > 255) ? 255 : b);
+			out[3] = 255;
+		}
+	}
+}
+#else
+static bool WGPU_HudPrepare(int, int) { return false; }
+static bool WGPU_HudRenderFrame() { return false; }
+static void WGPU_HudCompositeScreenshot(u8 *, int, int) {}
+#endif
+
+// Returns true when WebGPU presented the frame.  False means Cairo should draw
 // it instead; a failed device or surface is torn down so the next expose can
 // retry (or keep using Cairo when the device is unavailable).
 static bool WGPU_PresentFrame(GtkWidget *widget, GdkWindow *window, gint daW, gint daH)
@@ -2064,6 +2323,24 @@ static bool WGPU_PresentFrame(GtkWidget *widget, GdkWindow *window, gint daW, gi
 	// 0x00BBGGRR. Cairo uses 30% gray for the gap; keep the same colour.
 	const u32 gapColor = 0x004D4D4D;
 
+	// The HUD layer is only valid for the frame that rendered it; PresentFrame()
+	// clears it when the HUD render fails.
+	const WGPUPresentOverlay *overlayPtr = NULL;
+
+#if defined(DESMUME_WGPU_OSD)
+	WGPUPresentOverlay overlay;
+
+	if ( (sGpuHudView != NULL) && (sGpuHudViewWidth > 0) && (sGpuHudViewHeight > 0) )
+	{
+		memset(&overlay, 0, sizeof(overlay));
+		overlay.textureView = sGpuHudView;
+		overlay.width = sGpuHudViewWidth;
+		overlay.height = sGpuHudViewHeight;
+		overlay.premultiplied = true;
+		overlayPtr = &overlay;
+	}
+#endif
+
 	wgpu_display.setClientSize(daW * scale, daH * scale, scale);
 
 	int daX = 0;
@@ -2071,9 +2348,9 @@ static bool WGPU_PresentFrame(GtkWidget *widget, GdkWindow *window, gint daW, gi
 	WGPU_GetDrawingAreaPosition(widget, &daX, &daY);
 	wgpu_display.setClientPosition(daX, daY);
 
-	if (!wgpu_display.present(fbuf, dstW, dstH, srcRects, dstRects, gapPtr, rotation, gapColor))
+	if (!wgpu_display.present(fbuf, dstW, dstH, srcRects, dstRects, gapPtr, rotation, gapColor, overlayPtr))
 	{
-		wgpu_display.kill();
+		WGPU_KillDisplay();
 		return false;
 	}
 
@@ -2252,6 +2529,17 @@ static void PrepareHudTarget()
 	// Always re-attach, even when every built-in HUD element is disabled:
 	// Lua scripts draw through aggDraw.hud unconditionally, and the source
 	// buffer is the frame that is about to be presented.
+	//
+	// The GPU HUD target records the same drawing into a texture that the
+	// WebGPU present pass samples instead of compositing here.  When it is not
+	// available (disabled, unsupported layout, no device) the AGG target keeps
+	// the CPU behaviour unchanged.
+	WGPU_HudInvalidateView();
+
+	if (WGPU_HudPrepare(w, h))
+		return;
+
+	Agg_setHudTarget(NULL);
 	aggDraw.hud->setDrawTargetDims( (u8 *)video->GetSrcBufferPtr(), w, h, w * sizeof(u32) );
 #endif // HAVE_LIBAGG
 }
@@ -2278,12 +2566,41 @@ static void PresentFrame()
 		CommonSettings.hud.ShowRTC ||
 		HudEditorMode
 	);
-	
+
+	// The GPU recorder only carries the bitmap glyph atlas, so vector-font text
+	// would be dropped.  Draw the same bitmap text the Windows frontend uses
+	// while the GPU target is active and restore the configured mode afterwards.
+	const bool gpuHudFrame = WGPU_HudFrameActive();
+	const bool savedUseVectorFonts = osd->useVectorFonts;
+
+	if (gpuHudFrame)
+		osd->useVectorFonts = false;
+
 	if (needsHUDDisplay)
 	{
 		osd->update();
 		DrawHUD();
 		osd->clear();
+	}
+
+	osd->useVectorFonts = savedUseVectorFonts;
+
+	// Turn the recorded agg_osd/Lua drawing into the texture overlaid by the
+	// WebGPU present pass.  If that fails, fall back to compositing the
+	// built-in HUD into the source buffer so the frame is not left without it.
+	const bool hudRendered = WGPU_HudRenderFrame();
+
+	if (gpuHudFrame && !hudRendered)
+	{
+		Agg_setHudTarget(NULL);
+		aggDraw.hud->setDrawTargetDims( (u8 *)video->GetSrcBufferPtr(), (int)video->GetSrcWidth(), (int)video->GetSrcHeight(), (int)video->GetSrcWidth() * sizeof(u32) );
+
+		if (needsHUDDisplay)
+		{
+			osd->update();
+			DrawHUD();
+			osd->clear();
+		}
 	}
 #endif // HAVE_LIBAGG
 	
@@ -4081,7 +4398,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 
 		if (presentationChanged)
 		{
-			wgpu_display.kill();
+			WGPU_KillDisplay();
 
 			if (useWGPUPresentation)
 			{
@@ -4161,6 +4478,9 @@ static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer use
 	gtk3gpuEvent->VideoFetchLock();
 	ColorspaceConvertBuffer888xTo8888Opaque<true, false>(video->GetSrcBufferPtr(), (u32 *)screenshotBuffer, videoWidth * videoHeight);
 	gtk3gpuEvent->VideoFetchUnlock();
+
+	// In GPU HUD mode the OSD lives in a texture, not in the source buffer.
+	WGPU_HudCompositeScreenshot(screenshotBuffer, videoWidth, videoHeight);
 	
 	screenshot = gdk_pixbuf_new_from_data(screenshotBuffer,
                           GDK_COLORSPACE_RGB,
@@ -5997,7 +6317,7 @@ static void Teardown() {
 	// EGL/Vulkan state are still alive. The static destructor would otherwise
 	// do it after exit() has started tearing down GTK and the display
 	// connection, which is too late for the graphics drivers.
-	wgpu_display.kill();
+	WGPU_KillDisplay();
 
     delete video;
     
