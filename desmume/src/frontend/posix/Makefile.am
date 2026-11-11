@@ -1,6 +1,6 @@
 include desmume.mk
 
-AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
+AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
 
 
 
@@ -236,15 +236,9 @@ libdesmume_a_SOURCES += \
 endif
 endif
 
-if HAVE_OPENAL
-libdesmume_a_SOURCES += shared/mic_openal.cpp
-else
-if HAVE_ALSA
-libdesmume_a_SOURCES += shared/mic_alsa.cpp
-else
-libdesmume_a_SOURCES += ../../mic.cpp
-endif
-endif
+# SDL2 is a hard dependency of the POSIX frontends, so microphone capture
+# is always available through SDL (no ALSA/OpenAL conditionals).
+libdesmume_a_SOURCES += shared/mic_sdl.cpp
 
 if HAVE_LIBSOUNDTOUCH
 libdesmume_a_SOURCES += ../../metaspu/SndOut.cpp ../../metaspu/SndOut.h ../../metaspu/Timestretcher.cpp

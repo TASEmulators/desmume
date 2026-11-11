@@ -20,8 +20,6 @@ dep_zlib = dependency('zlib')
 dep_threads = dependency('threads')
 dep_gl = dependency('gl', required: false)
 dep_gles = dependency('glesv2', required: false)
-dep_openal = dependency('openal', required: get_option('openal'))
-dep_alsa = dependency('alsa', required: false)
 dep_soundtouch = dependency('soundtouch', required: false)
 # AGG is compiled from the bundled Windows sources below. Distributions have
 # dropped libagg (Fedora no longer ships it), and this is the exact AGG version
@@ -313,21 +311,11 @@ elif get_option('egl')
   endif
 endif
 
-if dep_openal.found()
-  dependencies += dep_openal
-  libdesmume_src += [
-    'shared/mic_openal.cpp',
-  ]
-elif dep_alsa.found()
-  dependencies += dep_alsa
-  libdesmume_src += [
-    'shared/mic_alsa.cpp',
-  ]
-else
-  libdesmume_src += [
-    '../../mic.cpp',
-  ]
-endif
+# SDL2 is a hard dependency, so microphone capture is always available
+# through SDL (no ALSA/OpenAL conditionals or optional dependencies).
+libdesmume_src += [
+  'shared/mic_sdl.cpp',
+]
 
 if dep_soundtouch.found()
   dependencies += dep_soundtouch

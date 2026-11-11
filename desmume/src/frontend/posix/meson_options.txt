@@ -18,11 +18,6 @@ option('egl',
   value: false,
   description: 'Use a EGL context',
 )
-option('openal',
-  type: 'boolean',
-  value: false,
-  description: 'Enable experimental OpenAL microphone input',
-)
 option('frontend-gtk',
   type: 'boolean',
   value: true,

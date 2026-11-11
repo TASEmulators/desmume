@@ -194,23 +194,11 @@ AC_ARG_ENABLE([hud],
               [AC_HELP_STRING([--enable-hud], [Enable HUD rendering, requires libagg])],
               [libagg=yes])
 
-HAVE_OPENAL=no
-dnl - openal support
-AC_ARG_ENABLE(openal,
-	      [AC_HELP_STRING(--enable-openal, enable experimental OpenAL microphone input)],
-	      [openal=yes])
-
-if test "x$openal" = "xyes" ; then
-	AC_CHECK_LIB([openal], [main],[
-                HAVE_OPENAL=yes
-		LIBS="$LIBS -lopenal"
-	])
-fi
-AM_CONDITIONAL([HAVE_OPENAL], [test "${HAVE_OPENAL}" = "yes"])
+dnl - Microphone capture uses SDL2 (shared/mic_sdl.cpp), which this frontend
+dnl   already requires for sound output and input.  No ALSA/OpenAL detection.
 
 dnl - Check for GTK
 FOUND_GLIB=no
-HAVE_ALSA=no
 GLIB_VER=2.8
 GTK_VER=2.14
 
@@ -255,13 +243,6 @@ AM_CONDITIONAL([HAVE_LUA], [true])
 AC_SEARCH_LIBS([dlopen], [dl], [],
                [AC_MSG_ERROR([dlopen() is required for Lua scripting])])
 
-if test ! "x$HAVE_OPENAL" = "xyes" ; then
-  PKG_CHECK_MODULES(ALSA, alsa >= 1.0, HAVE_ALSA=yes, HAVE_ALSA=no)
-  AC_SUBST(ALSA_CFLAGS)
-  AC_SUBST(ALSA_LIBS)
-fi
-AM_CONDITIONAL([HAVE_ALSA], [test "${HAVE_ALSA}" = "yes"])
-
 PKG_CHECK_MODULES(LIBAGG, libagg >= 2.4.0, FOUND_LIBAGG=yes, FOUND_LIBAGG=no)
 AM_CONDITIONAL([HAVE_LIBAGG], [test "x$libagg" = "xyes" -a "${FOUND_LIBAGG}" = "yes"])
 if test "x$libagg" = "xyes" ; then
@@ -282,12 +263,6 @@ if test "x$HAVE_LIBSOUNDTOUCH" = "xyes"; then
    AC_DEFINE([HAVE_LIBSOUNDTOUCH])
 else
    AC_MSG_WARN([SoundTouch library not found, pcsx2 resampler will be disabled])
-fi
-
-if test "x$HAVE_ALSA" = "xno"; then
-   if test "x$HAVE_OPENAL" = "xno"; then
-      AC_DEFINE([FAKE_MIC])
-   fi
 fi
 
 dnl - Determine which UIs to build
@@ -321,11 +296,8 @@ case $host in
     UI_DIR="windows"
     ;;
   *darwin*)
-    dnl - openal is required on mac os x and we are not able to figure out if it's installed or not
-    AC_DEFINE(HAVE_OPENAL)
-    LIBS="$LIBS -framework OpenGL -framework OpenAL"
-    CPPFLAGS="$CPPFLAGS -I/System/Library/Frameworks/OpenAL.framework/Headers"
-	AC_SUBST(CPPFLAGS)
+    dnl - OpenGL is a system framework; microphone capture now goes through SDL2.
+    LIBS="$LIBS -framework OpenGL"
     dnl - extra hackery needed for X includes
     AC_PATH_XTRA
     ;;
