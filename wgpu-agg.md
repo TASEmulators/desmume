@@ -1,7 +1,7 @@
 # WGPU OSD 迁移计划
 
-> 状态：设计草案，已完成实施前代码复核；WGPU/Metal/Lua 相关落地记录见 §11–§21
-> 日期：2026-11-10（§21 更新于 2026-11-11）
+> 状态：设计草案，已完成实施前代码复核；WGPU/Metal/Lua 相关落地记录见 §11–§22
+> 日期：2026-11-10（§21–§22 更新于 2026-11-11）
 > 前置工作：路线 1（Windows 原生 GDI+ 后端）已落地，见 `frontend/modules/osd/agg/native_draw.*` 与 `frontend/windows/osd_fonts/`
 > 复核：2026-11-10 逐行核对了本文涉及的文件；与代码冲突之处及新增约束集中在 §9，阅读时以 §9 为准
 
@@ -1058,3 +1058,96 @@ Lua 回调执行时 src 已经过滤完毕，之后也没有第二次 `RunFilter
 - 主窗口的 `destroy` 信号改接到 `OnMainWindowDestroy()`（原来误接 `DoQuit` 的 action 签名）。
 
 **验证**：打开 Lua 控制台并运行脚本后，通过 gdb 调用 `gtk_window_close(pWindow)`；`gdb run` 正常返回，进程退出，控制台未单独关闭。
+
+
+## 22. Linux GTK3：让 Lua `agg.*` 走 WGSL 原生绘制的剩余阻碍（2026-11-11）
+
+> 本节是需求分析，不含代码改动；所有行号均在 2026-11-11 逐行核对过当前工作树。
+> §8.5 中「Linux 需先提供非 AGG 生成层」的表述已被 §16 / §20 取代：录制器已经 AGG-free 且无条件参与 POSIX 构建。本节以最新代码为准。
+
+### 22.1 需求边界与两个易混淆的概念
+
+**需求**：Linux 使用 WGPU 呈现时，Lua `agg.*` 的图元与文字由 WGSL 管线（SDF + 字形图集）绘制，不再经 libagg 的 CPU 光栅器。
+
+**与 §21 的关系**：§21 解决「Lua 脚本能不能在 Linux 跑起来」（控制台、帧推进、输入、菜单、弹窗、运行库加载），本节解决「`agg.*` 的像素画到哪里」。两者正交：共享的 `lua-engine.cpp` 全文件只有 1 处提到 WebGPU，且是注释（`lua-engine.cpp:2890`），没有任何 WGPU 符号。二者只在 `aggDraw.hud`（`AggDrawTarget*`）这一个点相交——前端安装哪个目标，决定背后是 AGG、WGPU 还是 Metal。因此本节不需要改 Lua 引擎，也不能靠「两边都用 WGPU」自动达成；反过来，即使 GTK 走 Cairo 回退，§21 的适配依然必须存在。
+
+**「去 libagg」的两层含义**见 22.6：运行时不走 CPU 光栅可行，编译期彻底不含 AGG 尚未做到。
+
+### 22.2 已具备，不需要重做
+
+| 能力 | 位置 / 依据 |
+| --- | --- |
+| AGG-free 录制器 `WGPUOSDDrawTarget`（只继承抽象 `AggDrawTarget`，不实例化 `Agg2D`，obj 无 `agg::*` 未定义符号） | `modules/osd/wgpu/wgpu_osd_draw.{h,cpp}`；§20.4 |
+| SDF 形状管线 + R8 点阵字形图集，覆盖 `osd-shapes.lua` 全部图元（矩形 / 圆角 / 椭圆 / 三角 / 星形 / 弧 / 曲线 / 多边形 / 线 / 线性渐变 / 文字） | `modules/osd/wgpu/wgpu_draw.{h,cpp}`、`hud_shapes.wgsl`、`hud_text.wgsl`；§12–§13、§17 |
+| POSIX 无条件编译录制器与共享呈现层，并定义 `ENABLE_WGPU` / `HAVE_LIBAGG` / `DESMUME_WGPU_OSD` | `posix/meson.build:344-355, 468-479` |
+| 34 份点阵字体在 Linux 可用（自定义 ELF 段） | `posix/meson.build:370-423`、`aggdraw.cpp:194-207`；§14 |
+| GTK3 已有完整 WGPU 呈现（X11 / Wayland subsurface），且默认开启 | `gtk/main.cpp:1929-2081`、`gtk/config_opts.h:61` |
+| 共享层支持 HUD 纹理零拷贝进入 overlay | `shared/wgpu_present.h:54-65, 208-210`、`wgpu_present.cpp:2067-2075, 2316-2328`；§15.1 |
+| 换绘制目标无需改 Lua：`agg.*` 经 `OSD_HUD_TARGET` → `aggDraw.hud`，`gui.*` 经 `buf()` | `lua-engine.cpp:52-56, 2893-2896, 4817+`；`Agg_setHudTarget()` 在 `aggdraw.cpp:247-249` |
+| 每帧自动清目标纹理、设备变化时自动重建且重建字形图集 | `wgpu_draw.cpp:1692`（`loadOp=Clear`）、`:876`（`CreateResources()` 结尾 `BuildAtlas()`）、`:1492-1499`（`begin()` 比较 instance/device） |
+
+**结论**：WGSL 后端、字体数据、呈现管线、Lua 调用点都已就位，缺的是「把录制器装进 GTK 帧链路」。
+
+### 22.3 P0 阻塞：不解决就一帧都画不出来
+
+**1. GTK3 零接线，`DESMUME_WGPU_OSD` 是死宏。**
+全仓只有 `windows/display.cpp:619-683, 882-994` 使用 `WGPUOSDDrawTarget`；POSIX 里唯一出现是 `posix/meson.build:349` 的编译项。`DESMUME_WGPU_OSD` 在 Linux 只被 `meson.build:355` 定义，没有任何 C++ 代码 `#if` 消费它。需要照 Windows 阶段 4 实现 GTK 版的 `WGPU_HudTarget()` / `HudBegin()` / `HudRender()`，用 `Agg_setHudTarget()` 在 `LUACALL_AFTEREMULATIONGUI` 与内置 HUD 绘制期间安装 GPU 目标、绘制后恢复。
+
+**2. 帧时序与 Windows 不同（本节最易踩坑处）。**
+Windows 在同一个 `Display()` 里完成「clear → Lua → HUD → render → present」（`windows/display.cpp:906-1034`）。GTK 是：
+
+```
+DidFrameEnd (gtk/main.cpp:6220) → PrepareHudTarget (:2219，attach 到 src)
+  → EmuLoop / EmuStepFrame 的 LUACALL_AFTEREMULATIONGUI (:4680 / :4468)
+  → PresentFrame (:2262)：内置 HUD、osd->clear()、RunFilter、queue_draw
+  → 异步 ExposeDrawingArea → WGPU_PresentFrame (:1963)
+```
+
+由此产生四个必须处理的问题：
+
+| 问题 | 位置 | 处理 |
+| --- | --- | --- |
+| `osd->clear()` 在绘制**之后**调用，会把刚录制的图元清空 | `:2286` | 移到帧首；且不能挂在 `needsHUDDisplay`（`:2271`）下，该开关只管内置 HUD，Lua 无条件绘制 |
+| device 惰性创建在 `WGPU_BeginNativeWindow()`，晚于 HUD `render()` | `:1984` | 在 render 前显式 `beginX11` / `beginWayland` 或提供 ensure 路径；首帧与设备失败回退都要覆盖 |
+| `textureView()` 必须活过 `queue_draw` 到 expose 回调 | `:2293` → `:2160` → `:2074` | 缓存 view，并在 `kill()` / `Resize()` 重建纹理时失效，否则 overlay bind group 引用已释放的 view |
+| clear / render 必须独立于 `needsHUDDisplay` | `:2270-2288` | 拆出独立的 HUD 帧生命周期，参照 §15.2 |
+
+设备生命周期本身不是阻碍：`WGPUOSDRenderer::begin()` 比较 instance/device 并自动 `kill()` 重建，`CreateResources()` 结尾会重建字形图集（`wgpu_draw.cpp:1492-1499, 876`）。
+
+**3. Linux 适配器缺两个 API。**
+`WGPULinuxDisplay::present()` 仍是 8 参、不透传 `overlay`（`wgpu_display_linux.h:83-85`、`wgpu_display_linux.cpp:194-204`），类里也没有 `instance()` / `device()` / `queue()` 访问器；GTK 调用点 `gtk/main.cpp:2074` 只传 8 个参数。共享层的这三个访问器在 `shared/wgpu_present.h:208-210`，但 `!ENABLE_WGPU` 的 stub（`wgpu_present.cpp:22-49`）与 `wgpu_display_linux.cpp:206-241` 的 stub 都缺定义，新增时要同步补齐，否则非 WGPU 构建链接失败。
+
+### 22.4 P1：画得出来，但结果不对或丢东西
+
+| 编号 | 阻碍 | 位置 | 说明 / 决策点 |
+| --- | --- | --- | --- |
+| 4 | HUD 目标尺寸契约冲突 | `gtk/main.cpp:2227-2255`（每帧 attach 到 src，尺寸随 `gpu_scale_factor`）、`:2230-2249`（`osd->scale` / `Hud.rescale`）、`aggdraw.cpp:252-272`（`Agg_setCustomSize` 只改 `targets[1]`）、`wgpu_osd_draw.cpp:76-123`（`setDrawTargetDims` / `attach` 会 `Resize()`，Resize 会 kill renderer **并清空已录制内容**） | 必须二选一：GPU 目标固定 256×384（与 `windows/display.cpp:625` 和 Lua 脚本 256×192 单屏坐标一致，但需把 scale 归一），或跟随 src 尺寸（保持现有 HUD 坐标，但缩放 / 滤镜变化会反复重建纹理）。这是唯一需要产品决策的几何问题 |
+| 5 | 字体未注册 → `agg.text()` 静默消失 | `wgpu_osd_draw.cpp:447`（未注册字体直接 `return`）、`:195-223`（`setFonts()`） | 需调 `setFonts(fonts_list[])`；ELF 段字体已可用 |
+| 6 | 矢量字体路径是 no-op | `meson.build:359-367`（有 freetype + fontconfig 就定义 `AGG2D_USE_VECTORFONTS`）、`gtk/main.cpp:2237-2238`（`setVectorFont` + `osd->useVectorFonts`）、`wgpu_osd_draw.h:234-237`（`setVectorFont` / `renderVectorFontText` 为空）、`agg_osd.cpp:97-104` | GPU 目标下内置 HUD 文字会消失；要么在该路径禁用矢量字体，要么补矢量字形图集 |
+| 7 | 字体选择同步缺失 | `windows/display.cpp:664-675`（INI `[Display] HUD Font`） | GTK 没有等价实现；Lua `agg.setFont()` 会经 `OSD_HUD_TARGET` 作用到新目标，但默认字体需重新设置 |
+| 8 | Cairo 回退看不到 GPU 目标 | `gtk/main.cpp:1965-1988`（hybrid 布局 / 非法 rotation / 设备失败返回 false）、`:2160-2204`（Cairo 画 dst） | 必须保留 AGG 目标作回退，或用 `WGPUOSDDrawTarget::readPixels()` 合成进 dst |
+| 9 | 截图丢 HUD | `gtk/main.cpp:4162`（截图读 src） | 现状 `agg.*` 图形会进截图；改为 GPU 目标后不再进 src。录像读 `masterNativeBuffer16`（`:6233`）不受影响。需决定是否 `readPixels()` 补回 |
+| 10 | 滤镜语义变化 | `gtk/main.cpp:2290`（`RunFilter`）、`wgpu_present.cpp:2316-2328`（overlay 在 pass 最后绘制） | GPU overlay 同时绕过 CPU 滤镜与 WGPU 滤镜链，HUD 更清晰但不再被滤镜处理；与 §4 决策点 1 同源 |
+| 11 | `gui.*` 混用 | `lua-engine.cpp:2893-2896, 2955`；`wgpu_osd_draw.h:83-89` | `blend32()` 是直通 alpha，GPU 目标的 CPU 回退层按预乘解释 → 半透明 `gui.pixel` 偏亮；CPU 层总在形状 / 字形之后合成，混用时无法保持调用顺序（§17.2 / §18.2） |
+| 12 | 录制器语义边界 | `wgpu_osd_draw.h:142-237`；§20.3 | 非单位仿射、非 `BlendAlpha`、clip、radial gradient、路径命令均为 no-op（不再回退 AGG）。`osd-shapes.lua` 用到的都在覆盖内，但脚本触碰这些会静默丢失 |
+
+### 22.5 P2：工程化与验证
+
+| 编号 | 阻碍 | 位置 |
+| --- | --- | --- |
+| 13 | 无运行时开关 | Windows 有 `UseWgpuHudOverlay` / `UseGpuHudOverlay`（默认关，`windows/desmume.props`），GTK `gtk/config_opts.h:61-67` 无对应项。关闭时必须与现状逐字节一致 |
+| 14 | autotools 未同步 | `posix/Makefile.am:128-137` 缺 `wgpu_draw.cpp`、`wgpu_osd_draw.cpp`、`wgpu_upscaler_linux.cpp` 与 ELF 字体段；`configure.ac:266` 的 `HAVE_LIBAGG` 仍依赖系统 libagg，与 §16 的无条件自带 AGG 不一致 |
+| 15 | 验证空白 | §20.5：离屏对拍脚本仍指向已删除的 `WGPUOSDAggTarget`，需改实例化 `WGPUOSDDrawTarget` 重跑；X11 / Wayland 实机、像素 golden、rotation × swap × CPU/GPU 滤镜 × `gpu_scale_factor` 矩阵、设备切换（`gtk/main.cpp:4084` 的 `kill()`）均未验证 |
+
+### 22.6 「去 libagg」的两层含义
+
+- **运行时（本节需求）**：可行。`WGPUOSDDrawTarget` 只继承抽象 `AggDrawTarget`，不实例化 `Agg2DBase` / `T_AGG_RGBA`，`agg.*` 的图元由 WGSL SDF 与字形图集光栅化（§20）。
+- **编译期（完全不含 AGG）**：尚未做到。`posix/meson.build:117-145` 仍把 25 个仓库内 AGG 源文件静态编进 `libdesmume`；`aggdraw.h` 无条件 include `agg2d.h` / `agg_color_rgba.h` / `agg_rendering_buffer.h`，`AggDrawTarget` 的签名含 `agg::rgba8`、`agg::rendering_buffer` 等类型；`aggdraw.cpp` / `agg_osd.cpp` 仍参与编译。彻底去掉需按 §8.4 做接口去 AGG 化，或像 macOS 那样提供不继承 `AggDrawTarget` 的 AGG-free 录制目标（`MacMetalOSDDraw.h:144`）并改 `lua-engine.cpp` 的目标选择宏。
+
+### 22.7 建议顺序与验收门槛
+
+1. **P0**：适配器透传 overlay + 三个访问器（含 stub）→ GTK 帧生命周期接线（帧首 clear、提前 ensure device、安装 / 恢复目标、render、view 缓存与失效）。目标是「WGPU 呈现下 `osd-shapes.lua` 能画出第一帧」。
+2. **P1**：先定 HUD 目标尺寸契约，再补 `setFonts()` 与矢量字体决策，然后处理 Cairo 回退 / 截图 / 滤镜 / `gui.*` alpha。
+3. **P2**：加运行时开关（默认关）、同步 autotools、补齐验证。
+
+验收（沿用 §9.4 的标准）：开关关闭时与改动前逐字节一致；X11 与 Wayland 各跑一遍；几何矩阵覆盖 rotation × swap × CPU 滤镜 × GPU 滤镜 × `gpu_scale_factor`，用十字标记检查 1px 偏移；`agg.*` 与真实 `T_AGG_RGBA` 的像素对拍允许每通道 ±1（抗锯齿边缘放宽）；hybrid 布局与设备失败时回退到 AGG 且图形不消失；截图 / 录像行为按 22.4 第 9 条的决策记录为预期结果。
