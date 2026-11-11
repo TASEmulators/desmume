@@ -30,7 +30,7 @@ jobs:
           path: desmume/src/frontend/interface/build/libdesmume.so
 
   build_macos:
-    runs-on: macos-15
+    runs-on: macos-latest
     name: Build MacOS
     steps:
       - name: Checkout
@@ -60,7 +60,7 @@ jobs:
           path: desmume/src/frontend/interface/build/libdesmume.dylib
 
   build_windows:
-    runs-on: windows-2022
+    runs-on: windows-latest
     name: Build Windows
     strategy:
       fail-fast: false
