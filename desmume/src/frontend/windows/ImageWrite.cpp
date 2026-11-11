@@ -37,10 +37,15 @@
 // the import table of the exe, and the exe would then refuse to start on XP,
 // where the DLL does not exist at all.  Defining them here keeps WIC a run time
 // dependency: on XP CoCreateInstance simply fails and the caller falls back.
-DEFINE_GUID(IID_IWICImagingFactory,
-            0xec5ec8a9, 0xc395, 0x4314, 0x9c, 0x77, 0x54, 0xd7, 0xa9, 0x35, 0xff, 0x70);
-DEFINE_GUID(IID_IWICBitmapEncoderInfo,
-            0x94c9b4ee, 0xa09f, 0x4f92, 0x8a, 0x1e, 0x4a, 0x9b, 0xce, 0x7e, 0x76, 0xfb);
+//
+// Note: recent MinGW-w64 headers already emit these two IIDs (as selectany)
+// once <initguid.h> has been included, so re-defining them with DEFINE_GUID
+// trips a "redefinition" error.  Use file-local constants with distinct names
+// instead; they carry the same values and are passed as REFIID.
+static const GUID DESMUME_IID_IWICImagingFactory =
+    {0xec5ec8a9, 0xc395, 0x4314, {0x9c, 0x77, 0x54, 0xd7, 0xa9, 0x35, 0xff, 0x70}};
+static const GUID DESMUME_IID_IWICBitmapEncoderInfo =
+    {0x94c9b4ee, 0xa09f, 0x4f92, {0x8a, 0x1e, 0x4a, 0x9b, 0xce, 0x7e, 0x76, 0xfb}};
 
 #ifdef _MSC_VER
 #pragma comment(lib, "ole32.lib")
@@ -382,7 +387,7 @@ void enumerateFormats()
 
 	IWICImagingFactory *factory = NULL;
 	if (SUCCEEDED(CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER,
-	                               IID_IWICImagingFactory, (void **)&factory)))
+	                               DESMUME_IID_IWICImagingFactory, (void **)&factory)))
 	{
 		s_wicAvailable = true;
 
@@ -396,7 +401,7 @@ void enumerateFormats()
 			while (s_formatCount < kMaxFormats && enumerator->Next(1, &unknown, &got) == S_OK)
 			{
 				IWICBitmapEncoderInfo *info = NULL;
-				if (SUCCEEDED(unknown->QueryInterface(IID_IWICBitmapEncoderInfo, (void **)&info)))
+				if (SUCCEEDED(unknown->QueryInterface(DESMUME_IID_IWICBitmapEncoderInfo, (void **)&info)))
 				{
 					FormatEntry &entry = s_formats[s_formatCount];
 					WCHAR       wide[256];
@@ -535,7 +540,7 @@ bool writeBGRToFile(const char *fileName, const GUID &container, const char *con
 		}
 
 		HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER,
-		                              IID_IWICImagingFactory, (void **)&factory);
+		                              DESMUME_IID_IWICImagingFactory, (void **)&factory);
 		if (FAILED(hr))
 		{
 			failWrite(fileName, "CoCreateInstance(CLSID_WICImagingFactory)", hr);
