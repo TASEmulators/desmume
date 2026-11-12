@@ -50,7 +50,7 @@ static const char* help_string = \
 "Arguments affecting overall emulator behaviour: (`user settings`):" ENDL
 " --num-cores N              Override numcores detection and use this many" ENDL
 " --spu-synch                Use SPU synch (crackles; helps streams; default ON)" ENDL
-" --spu-method N             Select SPU synch method: 0:N, 1:Z, 2:P; default 0" ENDL
+" --spu-method N             Select SPU synch method: 0:N crossfade resampler (low CPU), 1:Z micro-resampler (low latency), 2:P time-stretch (keeps pitch); default 0" ENDL
 " --3d-render [SW|AUTOGL|GL|OLDGL]" ENDL
 "                            Select 3d renderer; default SW" ENDL
 " --3d-texture-deposterize-enable" ENDL

@@ -647,18 +647,18 @@
               <attribute name='target'>dual-async</attribute>
             </item>
             <item>
-              <attribute name='label' translatable='yes'>Synchronous (_N)</attribute>
+              <attribute name='label' translatable='yes'>_N: Crossfade resampler (low CPU)</attribute>
               <attribute name='action'>app.spu_mode</attribute>
               <attribute name='target'>sync-n</attribute>
             </item>
             <item>
-              <attribute name='label' translatable='yes'>Synchronous (_Z)</attribute>
+              <attribute name='label' translatable='yes'>_Z: Micro-resampler (low latency)</attribute>
               <attribute name='action'>app.spu_mode</attribute>
               <attribute name='target'>sync-z</attribute>
             </item>
 <!-- #ifdef HAVE_LIBSOUNDTOUCH
             <item>
-              <attribute name='label' translatable='yes'>Synchronous (_P)</attribute>
+              <attribute name='label' translatable='yes'>_P: Time-stretch (keeps pitch)</attribute>
               <attribute name='action'>app.spu_mode</attribute>
               <attribute name='target'>sync-p</attribute>
             </item>

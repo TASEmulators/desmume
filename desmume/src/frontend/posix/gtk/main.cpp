@@ -6043,7 +6043,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 #ifdef HAVE_LIBSOUNDTOUCH
     GMenu *audio_sync_menu = G_MENU(gtk_builder_get_object(builder, "audio-synchronisation"));
-    GMenuItem *sync_p = g_menu_item_new("Synchronous (_P)", "app.spu_mode(\"sync-p\")");
+    GMenuItem *sync_p = g_menu_item_new("_P: Time-stretch (keeps pitch)", "app.spu_mode(\"sync-p\")");
     g_menu_append_item(audio_sync_menu, sync_p);
 #endif
 
