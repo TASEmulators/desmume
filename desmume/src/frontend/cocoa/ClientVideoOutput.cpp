@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2025 DeSmuME team
+	Copyright (C) 2025-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -138,7 +138,7 @@ void ClientVideoCaptureOutput::HandleReceiveGPUFrame()
 		return;
 	}
 	
-	const ClientDisplayPresenterProperties &cdpProperty = this->_cdp->GetPresenterProperties();
+	const ClientDisplayPresenterProperties &cdpp = this->_cdp->GetPresenterProperties();
 	
 	this->_cdp->LoadDisplays();
 	this->_cdp->ProcessDisplays();
@@ -148,11 +148,11 @@ void ClientVideoCaptureOutput::HandleReceiveGPUFrame()
 	
 	if (this->_videoCaptureBuffer == NULL)
 	{
-		this->_videoCaptureBuffer = (Color4u8 *)malloc_alignedPage(cdpProperty.clientWidth * cdpProperty.clientHeight * sizeof(Color4u8));
+		this->_videoCaptureBuffer = (Color4u8 *)malloc_alignedPage(cdpp.viewportActualWidth * cdpp.viewportActualHeight * sizeof(Color4u8));
 	}
 	
 	this->_cdp->CopyFrameToBuffer(this->_videoCaptureBuffer);
-	this->_avCaptureObject->CaptureVideoFrame(this->_videoCaptureBuffer, (size_t)cdpProperty.clientWidth, (size_t)cdpProperty.clientHeight, NDSColorFormat_BGR888_Rev);
+	this->_avCaptureObject->CaptureVideoFrame(this->_videoCaptureBuffer, (size_t)cdpp.viewportActualWidth, (size_t)cdpp.viewportActualHeight, NDSColorFormat_BGR888_Rev);
 	this->_avCaptureObject->StreamWriteStart();
 	
 	pthread_mutex_unlock(&this->_mutexCaptureBuffer);
@@ -717,22 +717,6 @@ VideoFilterTypeID ClientDisplayViewOutput::GetPixelScalerID()
 	pthread_mutex_unlock(&this->_mutexPixelScaler);
 	
 	return filterID;
-}
-
-void ClientDisplayViewOutput::SetScaleFactor(double scaleFactor)
-{
-	pthread_mutex_lock(&this->_mutexIsHUDVisible);
-	this->_cdv->Get3DPresenter()->SetScaleFactor(scaleFactor);
-	pthread_mutex_unlock(&this->_mutexIsHUDVisible);
-}
-
-double ClientDisplayViewOutput::GetScaleFactor()
-{
-	pthread_mutex_lock(&this->_mutexIsHUDVisible);
-	const double scaleFactor = this->_cdv->Get3DPresenter()->GetScaleFactor();
-	pthread_mutex_unlock(&this->_mutexIsHUDVisible);
-	
-	return scaleFactor;
 }
 
 void ClientDisplayViewOutput::CommitPresenterProperties(const ClientDisplayPresenterProperties &viewProps, bool needsFlush)

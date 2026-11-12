@@ -36,11 +36,17 @@
 #endif
 
 class MacOGLDisplayView;
+class MacOGLDisplayPresenter;
 
 @interface DisplayViewOpenGLLayer : CAOpenGLLayer <DisplayViewCALayer>
 {
 	MacDisplayLayeredView *_cdv;
+	MacOGLDisplayPresenter *presenter;
 }
+
+@property (readonly, nonatomic) MacOGLDisplayPresenter *presenter;
+
+- (id) initWithDisplayPresenter:(MacOGLDisplayPresenter *)thePresenter;
 
 @end
 
@@ -99,6 +105,7 @@ public:
 	void operator delete(void *ptr);
 	MacOGLDisplayPresenter();
 	MacOGLDisplayPresenter(MacOGLClientFetchObject *fetchObject);
+	MacOGLDisplayPresenter(MacOGLClientFetchObject *fetchObject, const ClientDisplayPresenterProperties &props);
 	~MacOGLDisplayPresenter();
 	
 	virtual void Init();
@@ -108,8 +115,7 @@ public:
 	CGLPixelFormatObj GetPixelFormat() const;
 	CGLContextObj GetContext() const;
 	
-	virtual void LoadHUDFont();
-	virtual void SetScaleFactor(const double scaleFactor);
+	virtual void LoadHUDFont(const size_t glyphSize, const size_t glyphTileSize);
 	
 	// NDS screen filters
 	virtual void SetFiltersPreferGPU(const bool preferGPU);
@@ -128,7 +134,7 @@ public:
 class MacOGLDisplayView : public MacDisplayLayeredView
 {
 private:
-	void __InstanceInit(MacOGLClientFetchObject *fetchObject);
+	void __InstanceInit(MacOGLClientFetchObject *fetchObject, const ClientDisplayPresenterProperties &props);
 	
 protected:
 	apple_unfairlock_t _unfairlockViewNeedsFlush;
@@ -136,6 +142,7 @@ protected:
 public:
 	MacOGLDisplayView();
 	MacOGLDisplayView(MacOGLClientFetchObject *fetchObject);
+	MacOGLDisplayView(MacOGLClientFetchObject *fetchObject, const ClientDisplayPresenterProperties &props);
 	virtual ~MacOGLDisplayView();
 	
 	virtual bool GetViewNeedsFlush();

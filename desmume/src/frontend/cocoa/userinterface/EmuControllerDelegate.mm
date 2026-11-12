@@ -304,7 +304,22 @@
 
 - (IBAction) newDisplayWindow:(id)sender
 {
-	DisplayWindowController *newWindowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:self];
+	ClientDisplayPresenterProperties userDefaultsViewProps;
+	userDefaultsViewProps.mode        = (ClientDisplayMode)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"];
+	userDefaultsViewProps.layout      = (ClientDisplayLayout)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"];
+	userDefaultsViewProps.order       = (ClientDisplayOrder)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"];
+	userDefaultsViewProps.gapScale    = ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayViewCombo_Gap"] / 100.0);
+	userDefaultsViewProps.rotation    = [[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"];
+	userDefaultsViewProps.screenScale = ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0);
+	ClientDisplayPresenter::CalculateViewPropertiesWithAllScalars(userDefaultsViewProps, userDefaultsViewProps.screenScale, 1.0);
+	
+	const BOOL isShowingStatusBar = [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"];
+	
+	DisplayWindowController *newWindowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow"
+																					   emuControlDelegate:self
+																						   viewProperties:userDefaultsViewProps
+																						  isMinSizeNormal:YES
+																					   isShowingStatusBar:isShowingStatusBar];
 	
 	[newWindowController window]; // Just reference the window to force the nib to load.
 	[[newWindowController view] setAllowViewUpdates:YES];
@@ -2821,19 +2836,42 @@
 	{
 		for (NSDictionary *windowProperties in windowPropertiesList)
 		{
-			DisplayWindowController *windowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:self];
+			ClientDisplayPresenterProperties savedViewProps;
+			savedViewProps.mode        = (ClientDisplayMode)(([windowProperties objectForKey:@"displayMode"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayMode"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"]);
+			savedViewProps.layout      = (ClientDisplayLayout)(([windowProperties objectForKey:@"displayOrientation"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayOrientation"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"]);
+			savedViewProps.order       = (ClientDisplayOrder)(([windowProperties objectForKey:@"displayOrder"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayOrder"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"]);
+			savedViewProps.gapScale    = ([windowProperties objectForKey:@"displayGap"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayGap"] doubleValue] : ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayViewCombo_Gap"] / 100.0);
+			savedViewProps.screenScale = ([windowProperties objectForKey:@"displayScale"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayScale"] doubleValue] : ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0);
+			
+			double localRotation = ([windowProperties objectForKey:@"displayRotation"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayRotation"] doubleValue] : [[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"];
+			localRotation = fmod(localRotation, 360.0);
+			
+			if (localRotation < 0.0)
+			{
+				localRotation += 360.0;
+			}
+			else if (localRotation == 360.0)
+			{
+				localRotation = 0.0;
+			}
+			
+			savedViewProps.rotation = (localRotation == 0.0) ? 0.0 : 360.0 - localRotation;
+			
+			ClientDisplayPresenter::CalculateViewPropertiesWithAllScalars(savedViewProps, savedViewProps.screenScale, 1.0);
+			
+			const BOOL isMinSizeNormal    = ([windowProperties objectForKey:@"isMinSizeNormal"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isMinSizeNormal"] boolValue] : YES;
+			const BOOL isShowingStatusBar = ([windowProperties objectForKey:@"isShowingStatusBar"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isShowingStatusBar"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"];
+			
+			DisplayWindowController *windowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow"
+																							emuControlDelegate:self
+																								viewProperties:savedViewProps
+																							   isMinSizeNormal:isMinSizeNormal
+																							isShowingStatusBar:isShowingStatusBar];
 			
 			if (windowController == nil)
 			{
 				continue;
 			}
-			
-			const NSInteger displayMode				= ([windowProperties objectForKey:@"displayMode"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayMode"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"];
-			const double displayScale				= ([windowProperties objectForKey:@"displayScale"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayScale"] doubleValue] : ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0);
-			const double displayRotation			= ([windowProperties objectForKey:@"displayRotation"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayRotation"] doubleValue] : [[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"];
-			const NSInteger displayOrientation		= ([windowProperties objectForKey:@"displayOrientation"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayOrientation"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"];
-			const NSInteger displayOrder			= ([windowProperties objectForKey:@"displayOrder"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayOrder"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"];
-			const double displayGap					= ([windowProperties objectForKey:@"displayGap"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayGap"] doubleValue] : ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayViewCombo_Gap"] / 100.0);
 			
 			const NSInteger displayMainSource		= ([windowProperties objectForKey:@"displayMainVideoSource"]  != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayMainVideoSource"] integerValue]  : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayMainVideoSource"];
 			const NSInteger displayTouchSource		= ([windowProperties objectForKey:@"displayTouchVideoSource"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayTouchVideoSource"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayTouchVideoSource"];
@@ -2865,8 +2903,6 @@
 			const NSUInteger hudColorInputPendingOnly = ([windowProperties objectForKey:@"hudColorInputPendingOnly"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorInputPendingOnly"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Input_PendingOnly"];
 			
 			const BOOL useVerticalSync				= ([windowProperties objectForKey:@"useVerticalSync"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"useVerticalSync"] boolValue] : YES;
-			const BOOL isMinSizeNormal				= ([windowProperties objectForKey:@"isMinSizeNormal"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isMinSizeNormal"] boolValue] : YES;
-			const BOOL isShowingStatusBar			= ([windowProperties objectForKey:@"isShowingStatusBar"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isShowingStatusBar"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"];
 			const BOOL isInFullScreenMode			= ([windowProperties objectForKey:@"isInFullScreenMode"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isInFullScreenMode"] boolValue] : NO;
 			const NSUInteger screenIndex			= ([windowProperties objectForKey:@"screenIndex"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"screenIndex"] unsignedIntegerValue] : 0;
 			NSString *windowFrameStr				= (NSString *)[windowProperties valueForKey:@"windowFrame"];
@@ -2880,15 +2916,6 @@
 			
 			// Force the window to load now so that we can overwrite its internal defaults with the user's defaults.
 			[windowController window];
-			
-			[windowController setDisplayMode:(ClientDisplayMode)displayMode
-								   viewScale:displayScale
-									rotation:displayRotation
-									  layout:(ClientDisplayLayout)displayOrientation
-									   order:(ClientDisplayOrder)displayOrder
-									gapScale:displayGap
-							 isMinSizeNormal:isMinSizeNormal
-						  isShowingStatusBar:isShowingStatusBar];
 			
 			[[windowController view] setDisplayMainVideoSource:displayMainSource];
 			[[windowController view] setDisplayTouchVideoSource:displayTouchSource];

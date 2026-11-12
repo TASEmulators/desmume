@@ -344,6 +344,7 @@ protected:
 public:
 	MacMetalDisplayPresenter();
 	MacMetalDisplayPresenter(MetalDisplayViewSharedData *sharedObject);
+	MacMetalDisplayPresenter(MetalDisplayViewSharedData *sharedObject, const ClientDisplayPresenterProperties &cdpp);
 	virtual ~MacMetalDisplayPresenter();
 	
 	MacMetalDisplayPresenterObject* GetPresenterObject() const;
@@ -370,7 +371,7 @@ public:
 class MacMetalDisplayView : public MacDisplayLayeredView
 {
 private:
-	void __InstanceInit(MetalDisplayViewSharedData *sharedObject);
+	void __InstanceInit(MetalDisplayViewSharedData *sharedObject, const ClientDisplayPresenterProperties &cdpp);
 	
 protected:
 	apple_unfairlock_t _unfairlockViewNeedsFlush;
@@ -378,6 +379,7 @@ protected:
 public:
 	MacMetalDisplayView();
 	MacMetalDisplayView(MetalDisplayViewSharedData *sharedObject);
+	MacMetalDisplayView(MetalDisplayViewSharedData *sharedObject, const ClientDisplayPresenterProperties &cdpp);
 	virtual ~MacMetalDisplayView();
 	
 	virtual void Init();

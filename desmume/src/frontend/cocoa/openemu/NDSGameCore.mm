@@ -489,9 +489,9 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	ClientDisplayPresenterProperties newProps;
 	UpdateDisplayPropertiesFromStates(displayModeStates, newProps);
 	
-	ClientDisplayPresenter::CalculateNormalSize(newProps.mode, newProps.layout, newProps.gapScale, newProps.normalWidth, newProps.normalHeight);
-	double transformNormalWidth  = newProps.normalWidth;
-	double transformNormalHeight = newProps.normalHeight;
+	ClientDisplayPresenter::CalculateNormalSize(newProps.mode, newProps.layout, newProps.gapScale, newProps.screenNormalWidth, newProps.screenNormalHeight);
+	double transformNormalWidth  = newProps.screenNormalWidth;
+	double transformNormalHeight = newProps.screenNormalHeight;
 	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, newProps.rotation, transformNormalWidth, transformNormalHeight);
 	
 	     if ( DISPLAYMODE_STATEBIT_CHECK(displayModeStates, NDSDisplayOptionID_3D_RenderScaling_1x) ) _selectedRenderScaling = 1;

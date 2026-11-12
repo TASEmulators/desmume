@@ -56,7 +56,6 @@
 	NSScreen *assignedScreen;
 	NSWindow *masterWindow;
 	
-	NSSize _minDisplayViewSize;
 	BOOL _isMinSizeNormal;
 	NSUInteger _statusBarHeight;
 	BOOL _isUpdatingDisplayScaleValueOnly;
@@ -64,7 +63,7 @@
 	BOOL _masterStatusBarState;
 	NSRect _masterWindowFrame;
 	double _masterWindowScale;
-	double _localViewScale;
+	double _localScreenScale;
 	double _localRotation;
 }
 
@@ -92,13 +91,22 @@
 @property (assign) BOOL isMinSizeNormal;
 @property (assign) BOOL isShowingStatusBar;
 
-- (id)initWithWindowNibName:(NSString *)windowNibName emuControlDelegate:(EmuControllerDelegate *)theEmuController;
+- (id)initWithWindowNibName:(NSString *)windowNibName
+		 emuControlDelegate:(EmuControllerDelegate *)theEmuController
+			 viewProperties:(const ClientDisplayPresenterProperties &)cdpp
+			isMinSizeNormal:(BOOL)isMinSizeNormal
+		 isShowingStatusBar:(BOOL)isShowingStatusBar;
 
 - (ClientDisplayPresenterProperties &) localViewProperties;
 - (void) setVideoPropertiesWithoutUpdateUsingPreferGPU:(BOOL)preferGPU
 									 sourceDeposterize:(BOOL)useDeposterize
 										  outputFilter:(NSInteger)outputFilterID
 										   pixelScaler:(NSInteger)pixelScalerID;
+
+- (void) setDisplayWindowByViewProperties:(const ClientDisplayPresenterProperties &)cdpp
+						  isMinSizeNormal:(BOOL)isMinSizeNormal
+					   isShowingStatusBar:(BOOL)isShowingStatusBar;
+
 - (void) setDisplayMode:(ClientDisplayMode)mode
 			  viewScale:(double)viewScale
 			   rotation:(double)rotation
@@ -114,7 +122,7 @@
 - (double) masterWindowScale;
 - (NSRect) updateViewProperties;
 - (void) resizeWithTransform;
-- (double) maxViewScaleInHostScreen:(double)contentBoundsWidth height:(double)contentBoundsHeight;
+- (double) maxViewScaleInHostScreen:(double)unscaledRotatedWidth height:(double)unscaledRotatedHeight;
 - (void) enterLegacyFullScreen;
 - (void) exitLegacyFullScreen;
 - (void) updateDisplayID;

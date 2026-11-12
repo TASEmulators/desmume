@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2018-2025 DeSmuME team
+	Copyright (C) 2018-2026 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1360,8 +1360,6 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	param.cdpProperty.order			= (ClientDisplayOrder)[self displayOrder];
 	param.cdpProperty.gapScale		= (double)[self displaySeparation] / 100.0;
 	param.cdpProperty.rotation		= (double)[self displayRotation];
-	param.cdpProperty.clientWidth	= [self videoWidth];
-	param.cdpProperty.clientHeight	= [self videoHeight];
 	
 	const u8 lastBufferIndex = currentFetchObj->GetLastFetchIndex();
 	const NDSDisplayInfo &displayInfo = currentFetchObj->GetFetchDisplayInfoForBufferIndex(lastBufferIndex);
@@ -1372,9 +1370,7 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 		return;
 	}
 	
-	ClientDisplayPresenter::CalculateNormalSize(param.cdpProperty.mode, param.cdpProperty.layout, param.cdpProperty.gapScale, param.cdpProperty.normalWidth, param.cdpProperty.normalHeight);
-	param.cdpProperty.viewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(param.cdpProperty.normalWidth, param.cdpProperty.normalHeight, param.cdpProperty.clientWidth, param.cdpProperty.clientHeight);
-	param.cdpProperty.gapDistance = (double)DS_DISPLAY_UNSCALED_GAP * param.cdpProperty.gapScale;
+	ClientDisplayPresenter::CalculateViewPropertiesWithActualViewportSizeZoomed(param.cdpProperty, (double)[self videoWidth], (double)[self videoHeight], 1.0);
 	
 	// Generate the base file name.
 	NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
@@ -1390,7 +1386,7 @@ ClientAVCaptureError FFmpegFileStream::WriteOneFrame(const AVStreamWriteParam &p
 	FFmpegFileStream *ffmpegFS = new FFmpegFileStream;
 	
 	ffmpegFS->InitBaseProperties((AVFileTypeID)param.formatID, fileName,
-								 param.cdpProperty.clientWidth, param.cdpProperty.clientHeight,
+								 param.cdpProperty.viewportActualWidth, param.cdpProperty.viewportActualHeight,
 								 MAX_PENDING_FRAME_COUNT);
 	
 	error = ffmpegFS->Open();

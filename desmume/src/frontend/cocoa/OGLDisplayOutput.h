@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2025 DeSmuME team
+	Copyright (C) 2014-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -469,6 +469,9 @@ public:
 
 class OGLDisplayPresenter : public ClientDisplay3DPresenter
 {
+private:
+	void __InstanceInit();
+	
 protected:
 	OGLContextInfo *_contextInfo;
 	GLsizei _viewportWidth;
@@ -497,6 +500,7 @@ protected:
 	
 public:
 	OGLDisplayPresenter();
+	OGLDisplayPresenter(const ClientDisplayPresenterProperties &cdpp);
 	~OGLDisplayPresenter();
 	
 	OGLContextInfo* GetContextInfo();

@@ -22,24 +22,7 @@
 
 ClientDisplayPresenter::ClientDisplayPresenter()
 {
-	_fetchObject = NULL;
-	_lastFontFilePath = NULL;
-	_hudFontFileCache = NULL;
-	_hudFontFileCacheSize = 0;
-	
-	ClientDisplayPresenterProperties defaultProperty;
-	defaultProperty.normalWidth		= GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	defaultProperty.normalHeight	= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0;
-	defaultProperty.clientWidth		= defaultProperty.normalWidth;
-	defaultProperty.clientHeight	= defaultProperty.normalHeight;
-	defaultProperty.rotation		= 0.0;
-	defaultProperty.viewScale		= 1.0;
-	defaultProperty.gapScale		= 0.0;
-	defaultProperty.gapDistance		= DS_DISPLAY_UNSCALED_GAP * defaultProperty.gapScale;
-	defaultProperty.mode			= ClientDisplayMode_Dual;
-	defaultProperty.layout			= ClientDisplayLayout_Vertical;
-	defaultProperty.order			= ClientDisplayOrder_MainFirst;
-	
+	ClientDisplayPresenterProperties defaultProperty = ClientDisplayPresenter::GetDefaultProperties();
 	__InstanceInit(defaultProperty);
 }
 
@@ -73,8 +56,15 @@ ClientDisplayPresenter::~ClientDisplayPresenter()
 
 void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperties &props)
 {
+	_fetchObject = NULL;
+	_lastFontFilePath = NULL;
+	_hudFontFileCache = NULL;
+	_hudFontFileCacheSize = 0;
+	
 	_propsPending = props;
 	_propsApplied = _propsPending;
+	
+	_hudObjectScale = ClientDisplayPresenter::CalculateHUDObjectScale(_propsApplied);
 	
 	_useDeposterize = false;
 	_pixelScaler = VideoFilterTypeID_None;
@@ -87,9 +77,6 @@ void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperti
 	_selectedSourceForDisplay[NDSDisplayID_Main]  = NDSDisplayID_Main;
 	_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Touch;
 	
-	_scaleFactor = 1.0;
-	
-	_hudObjectScale = 1.0;
 	_isHUDRenderMipmapped = false;
 	_isHUDVisible = false;
 	_showExecutionSpeed = false;
@@ -132,12 +119,10 @@ void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperti
 	}
 	
 	memset(_glyphInfo, 0, sizeof(_glyphInfo));
-	_glyphTileSize = ((double)HUD_TEXTBOX_BASEGLYPHSIZE * _scaleFactor) + 0.0001;
-	_glyphSize = ((double)_glyphTileSize * 0.75) + 0.0001;
 	
 	// Set up the text box, which resides at glyph position 1.
 	GlyphInfo &boxInfo = _glyphInfo[1];
-	boxInfo.width = _glyphTileSize;
+	boxInfo.width = _propsApplied.hudGlyphTileSize;
 	boxInfo.texCoord[0] = 1.0f/16.0f;		boxInfo.texCoord[1] = 0.0f;
 	boxInfo.texCoord[2] = 2.0f/16.0f;		boxInfo.texCoord[3] = 0.0f;
 	boxInfo.texCoord[4] = 2.0f/16.0f;		boxInfo.texCoord[5] = 1.0f/16.0f;
@@ -252,28 +237,6 @@ void ClientDisplayPresenter::_SetHUDShowInfoItem(bool &infoItemFlag, const bool 
 	this->_UpdateHUDString();
 }
 
-double ClientDisplayPresenter::GetScaleFactor() const
-{
-	return this->_scaleFactor;
-}
-
-void ClientDisplayPresenter::SetScaleFactor(const double scaleFactor)
-{
-	const bool willChangeScaleFactor = (this->_scaleFactor != scaleFactor);
-	
-	if ( !willChangeScaleFactor && (this->_hudFontFileCache != NULL) )
-	{
-		return;
-	}
-	
-	this->_scaleFactor = scaleFactor;
-	this->_glyphTileSize = (double)HUD_TEXTBOX_BASEGLYPHSIZE * scaleFactor;
-	this->_glyphSize = (double)this->_glyphTileSize * 0.75;
-	
-	this->LoadHUDFont();
-	this->_UpdateViewScale();
-}
-
 void ClientDisplayPresenter::_UpdateClientSize()
 {
 	pthread_mutex_lock(&this->_mutexHUDString);
@@ -283,22 +246,7 @@ void ClientDisplayPresenter::_UpdateClientSize()
 
 void ClientDisplayPresenter::_UpdateViewScale()
 {
-	double checkWidth = this->_propsApplied.normalWidth;
-	double checkHeight = this->_propsApplied.normalHeight;
-	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, this->_propsApplied.rotation, checkWidth, checkHeight);
-	this->_propsApplied.viewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, this->_propsApplied.clientWidth, this->_propsApplied.clientHeight);
-	
-	const double logicalClientWidth = this->_propsApplied.clientWidth / this->_scaleFactor;
-	
-	this->_hudObjectScale = logicalClientWidth / this->_propsApplied.normalWidth;
-	if (this->_hudObjectScale > 1.74939175)
-	{
-		// If the view scale is <= 1.74939175, we scale the HUD objects linearly. Otherwise, we scale
-		// the HUD objects logarithmically, up to a maximum scale of 3.0.
-		this->_hudObjectScale = (-12000.0 * pow(this->_hudObjectScale+4.5075, -5.0)) + 3.0;
-	}
-	
-	this->_hudObjectScale *= this->_scaleFactor;
+	this->_hudObjectScale = ClientDisplayPresenter::CalculateHUDObjectScale(this->_propsApplied);
 	
 	pthread_mutex_lock(&this->_mutexHUDString);
 	this->_hudNeedsUpdate = true;
@@ -319,8 +267,7 @@ void ClientDisplayPresenter::CommitPresenterProperties(const ClientDisplayPresen
 void ClientDisplayPresenter::SetupPresenterProperties()
 {
 	// Validate the staged properties.
-	this->_propsPending.gapDistance = (double)DS_DISPLAY_UNSCALED_GAP * this->_propsPending.gapScale;
-	ClientDisplayPresenter::CalculateNormalSize(this->_propsPending.mode, this->_propsPending.layout, this->_propsPending.gapScale, this->_propsPending.normalWidth, this->_propsPending.normalHeight);
+	ClientDisplayPresenter::CalculateViewPropertiesWithActualViewportSizeZoomed(this->_propsPending, this->_propsPending.viewportActualWidth, this->_propsPending.viewportActualHeight, this->_propsPending.clientScale);
 	
 	const bool didNormalSizeChange = (this->_propsApplied.mode != this->_propsPending.mode) ||
 	                                 (this->_propsApplied.layout != this->_propsPending.layout) ||
@@ -328,10 +275,16 @@ void ClientDisplayPresenter::SetupPresenterProperties()
 	
 	const bool didOrderChange = (this->_propsApplied.order != this->_propsPending.order);
 	const bool didRotationChange = (this->_propsApplied.rotation != this->_propsPending.rotation);
-	const bool didClientSizeChange = (this->_propsApplied.clientWidth != this->_propsPending.clientWidth) || (this->_propsApplied.clientHeight != this->_propsPending.clientHeight);
+	const bool didClientScaleFactorChange = (this->_propsApplied.clientScale != this->_propsPending.clientScale);
+	const bool didClientSizeChange = (this->_propsApplied.viewportActualWidth != this->_propsPending.viewportActualWidth) || (this->_propsApplied.viewportActualHeight != this->_propsPending.viewportActualHeight);
 	
 	// Copy the staged properties to the current rendering properties.
 	this->_propsApplied = this->_propsPending;
+	
+	if (didClientScaleFactorChange)
+	{
+		this->LoadHUDFont(this->_propsApplied.hudGlyphSize, this->_propsApplied.hudGlyphTileSize);
+	}
 	
 	// Update internal states based on the new render properties
 	this->_UpdateViewScale();
@@ -358,7 +311,7 @@ void ClientDisplayPresenter::SetupPresenterProperties()
 		this->_UpdateRotation();
 	}
 	
-	if (didClientSizeChange)
+	if (didClientSizeChange || didClientScaleFactorChange)
 	{
 		this->_UpdateClientSize();
 	}
@@ -373,7 +326,7 @@ double ClientDisplayPresenter::GetRotation() const
 
 double ClientDisplayPresenter::GetViewScale() const
 {
-	return this->_propsApplied.viewScale;
+	return this->_propsApplied.screenScale;
 }
 
 ClientDisplayMode ClientDisplayPresenter::GetMode() const
@@ -398,7 +351,7 @@ double ClientDisplayPresenter::GetGapScale() const
 
 double ClientDisplayPresenter::GetGapDistance() const
 {
-	return this->_propsApplied.gapDistance;
+	return this->_propsApplied.screenGapDistance;
 }
 
 ClientDisplaySource ClientDisplayPresenter::GetDisplayVideoSource(const NDSDisplayID displayID) const
@@ -490,7 +443,7 @@ void ClientDisplayPresenter::SetHUDFontPath(const char *filePath)
 	this->_lastFontFilePath = filePath;
 }
 
-void ClientDisplayPresenter::LoadHUDFont()
+void ClientDisplayPresenter::LoadHUDFont(const size_t glyphSize, const size_t glyphTileSize)
 {
 	if (this->_lastFontFilePath == NULL)
 	{
@@ -541,7 +494,7 @@ void ClientDisplayPresenter::LoadHUDFont()
 		return;
 	}
 	
-	this->CopyHUDFont(fontFace, this->_glyphSize, this->_glyphTileSize, this->_glyphInfo);
+	this->CopyHUDFont(fontFace, glyphSize, glyphTileSize, this->_glyphInfo);
 	
 	FT_Done_Face(fontFace);
 }
@@ -577,7 +530,6 @@ void ClientDisplayPresenter::SetHUDObjectScale(float objectScale)
 {
 	this->_hudObjectScale = objectScale;
 }
-
 
 bool ClientDisplayPresenter::WillHUDRenderMipmapped() const
 {
@@ -1237,7 +1189,7 @@ void ClientDisplayPresenter::ConvertNormalToTransformedBounds(const double scala
 double ClientDisplayPresenter::GetMaxScalarWithinBounds(const double normalBoundsWidth, const double normalBoundsHeight,
 														const double keepInBoundsWidth, const double keepInBoundsHeight)
 {
-	const double maxX = (normalBoundsWidth <= 0.0) ? 0.0 : keepInBoundsWidth / normalBoundsWidth;
+	const double maxX = (normalBoundsWidth  <= 0.0) ? 0.0 : keepInBoundsWidth  / normalBoundsWidth;
 	const double maxY = (normalBoundsHeight <= 0.0) ? 0.0 : keepInBoundsHeight / normalBoundsHeight;
 	
 	return (maxX <= maxY) ? maxX : maxY;
@@ -1281,6 +1233,157 @@ void ClientDisplayPresenter::CalculateNormalSize(const ClientDisplayMode mode, c
 		outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 		outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	}
+}
+
+ClientDisplayPresenterProperties ClientDisplayPresenter::GetDefaultProperties()
+{
+	ClientDisplayPresenterProperties defaultProperty;
+	defaultProperty.mode      = ClientDisplayMode_Dual;
+	defaultProperty.layout    = ClientDisplayLayout_Vertical;
+	defaultProperty.order     = ClientDisplayOrder_MainFirst;
+	defaultProperty.gapScale  = 0.0;
+	defaultProperty.rotation  = 0.0;
+	ClientDisplayPresenter::CalculateViewPropertiesWithAllScalars(defaultProperty, 1.0, 1.0);
+	
+	return defaultProperty;
+}
+
+void ClientDisplayPresenter::CalculateViewPropertiesWithScreenScalarOnly(ClientDisplayPresenterProperties &inoutViewProps, double screenScale)
+{
+	inoutViewProps.screenGapDistance  = DS_DISPLAY_UNSCALED_GAP * inoutViewProps.gapScale;
+	
+	ClientDisplayPresenter::CalculateNormalSize(inoutViewProps.mode, inoutViewProps.layout, inoutViewProps.gapScale, inoutViewProps.screenNormalWidth, inoutViewProps.screenNormalHeight);
+	
+	inoutViewProps.screenUnscaledRotatedWidth  = inoutViewProps.screenNormalWidth;
+	inoutViewProps.screenUnscaledRotatedHeight = inoutViewProps.screenNormalHeight;
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, inoutViewProps.rotation, inoutViewProps.screenUnscaledRotatedWidth, inoutViewProps.screenUnscaledRotatedHeight);
+	
+	inoutViewProps.screenScale             = screenScale;
+	inoutViewProps.screenTransformedWidth  = inoutViewProps.screenUnscaledRotatedWidth  * screenScale;
+	inoutViewProps.screenTransformedHeight = inoutViewProps.screenUnscaledRotatedHeight * screenScale;
+}
+
+void ClientDisplayPresenter::CalculateViewPropertiesWithClientScalarOnly(ClientDisplayPresenterProperties &inoutViewProps, double clientScale)
+{
+	inoutViewProps.clientScale          = clientScale;
+	inoutViewProps.viewportActualWidth  = inoutViewProps.viewportLogicalWidth  * clientScale;
+	inoutViewProps.viewportActualHeight = inoutViewProps.viewportLogicalHeight * clientScale;
+	
+	inoutViewProps.hudGlyphTileSize = ((double)HUD_TEXTBOX_BASEGLYPHSIZE * clientScale) + 0.0001;
+	inoutViewProps.hudGlyphSize     = ((double)inoutViewProps.hudGlyphTileSize * 0.75) + 0.0001;
+}
+
+void ClientDisplayPresenter::CalculateViewPropertiesWithAllScalars(ClientDisplayPresenterProperties &inoutViewProps, double screenScale, double clientScale)
+{
+	ClientDisplayPresenter::CalculateViewPropertiesWithScreenScalarOnly(inoutViewProps, screenScale);
+	
+	inoutViewProps.viewportLogicalWidth  = inoutViewProps.screenTransformedWidth;
+	inoutViewProps.viewportLogicalHeight = inoutViewProps.screenTransformedHeight;
+	
+	ClientDisplayPresenter::CalculateViewPropertiesWithClientScalarOnly(inoutViewProps, clientScale);
+}
+
+void ClientDisplayPresenter::CalculateViewPropertiesWithLogicalViewportSize(ClientDisplayPresenterProperties &inoutViewProps, double logicalWidth, double logicalHeight, double clientScale)
+{
+	inoutViewProps.screenGapDistance = DS_DISPLAY_UNSCALED_GAP * inoutViewProps.gapScale;
+	inoutViewProps.hudGlyphTileSize  = ((double)HUD_TEXTBOX_BASEGLYPHSIZE * clientScale) + 0.0001;
+	inoutViewProps.hudGlyphSize      = ((double)inoutViewProps.hudGlyphTileSize * 0.75) + 0.0001;
+	
+	ClientDisplayPresenter::CalculateNormalSize(inoutViewProps.mode, inoutViewProps.layout, inoutViewProps.gapScale, inoutViewProps.screenNormalWidth, inoutViewProps.screenNormalHeight);
+	
+	inoutViewProps.screenUnscaledRotatedWidth  = inoutViewProps.screenNormalWidth;
+	inoutViewProps.screenUnscaledRotatedHeight = inoutViewProps.screenNormalHeight;
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, inoutViewProps.rotation, inoutViewProps.screenUnscaledRotatedWidth, inoutViewProps.screenUnscaledRotatedHeight);
+	
+	inoutViewProps.clientScale           = clientScale;
+	inoutViewProps.viewportLogicalWidth  = logicalWidth;
+	inoutViewProps.viewportLogicalHeight = logicalHeight;
+	inoutViewProps.viewportActualWidth   = logicalWidth  * clientScale;
+	inoutViewProps.viewportActualHeight  = logicalHeight * clientScale;
+}
+
+double ClientDisplayPresenter::CalculateViewPropertiesWithLogicalViewportSizeZoomed(ClientDisplayPresenterProperties &inoutViewProps, double logicalWidth, double logicalHeight, double clientScale)
+{
+	inoutViewProps.screenGapDistance = DS_DISPLAY_UNSCALED_GAP * inoutViewProps.gapScale;
+	inoutViewProps.hudGlyphTileSize  = ((double)HUD_TEXTBOX_BASEGLYPHSIZE * clientScale) + 0.0001;
+	inoutViewProps.hudGlyphSize      = ((double)inoutViewProps.hudGlyphTileSize * 0.75) + 0.0001;
+	
+	ClientDisplayPresenter::CalculateNormalSize(inoutViewProps.mode, inoutViewProps.layout, inoutViewProps.gapScale, inoutViewProps.screenNormalWidth, inoutViewProps.screenNormalHeight);
+	
+	inoutViewProps.screenUnscaledRotatedWidth  = inoutViewProps.screenNormalWidth;
+	inoutViewProps.screenUnscaledRotatedHeight = inoutViewProps.screenNormalHeight;
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, inoutViewProps.rotation, inoutViewProps.screenUnscaledRotatedWidth, inoutViewProps.screenUnscaledRotatedHeight);
+	
+	inoutViewProps.clientScale           = clientScale;
+	inoutViewProps.viewportLogicalWidth  = logicalWidth;
+	inoutViewProps.viewportLogicalHeight = logicalHeight;
+	inoutViewProps.viewportActualWidth   = logicalWidth  * clientScale;
+	inoutViewProps.viewportActualHeight  = logicalHeight * clientScale;
+	
+	inoutViewProps.screenScale             = ClientDisplayPresenter::GetMaxScalarWithinBounds(inoutViewProps.screenUnscaledRotatedWidth, inoutViewProps.screenUnscaledRotatedHeight, inoutViewProps.viewportLogicalWidth, inoutViewProps.viewportLogicalHeight);
+	inoutViewProps.screenTransformedWidth  = inoutViewProps.screenUnscaledRotatedWidth  * inoutViewProps.screenScale;
+	inoutViewProps.screenTransformedHeight = inoutViewProps.screenUnscaledRotatedHeight * inoutViewProps.screenScale;
+	
+	return inoutViewProps.screenScale;
+}
+
+void ClientDisplayPresenter::CalculateViewPropertiesWithActualViewportSize(ClientDisplayPresenterProperties &inoutViewProps, double actualWidth, double actualHeight, double clientScale)
+{
+	inoutViewProps.screenGapDistance = DS_DISPLAY_UNSCALED_GAP * inoutViewProps.gapScale;
+	inoutViewProps.hudGlyphTileSize  = ((double)HUD_TEXTBOX_BASEGLYPHSIZE * clientScale) + 0.0001;
+	inoutViewProps.hudGlyphSize      = ((double)inoutViewProps.hudGlyphTileSize * 0.75) + 0.0001;
+	
+	ClientDisplayPresenter::CalculateNormalSize(inoutViewProps.mode, inoutViewProps.layout, inoutViewProps.gapScale, inoutViewProps.screenNormalWidth, inoutViewProps.screenNormalHeight);
+	
+	inoutViewProps.screenUnscaledRotatedWidth  = inoutViewProps.screenNormalWidth;
+	inoutViewProps.screenUnscaledRotatedHeight = inoutViewProps.screenNormalHeight;
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, inoutViewProps.rotation, inoutViewProps.screenUnscaledRotatedWidth, inoutViewProps.screenUnscaledRotatedHeight);
+	
+	inoutViewProps.clientScale           = clientScale;
+	inoutViewProps.viewportActualWidth   = actualWidth;
+	inoutViewProps.viewportActualHeight  = actualHeight;
+	inoutViewProps.viewportLogicalWidth  = actualWidth  / clientScale;
+	inoutViewProps.viewportLogicalHeight = actualHeight / clientScale;
+}
+
+double ClientDisplayPresenter::CalculateViewPropertiesWithActualViewportSizeZoomed(ClientDisplayPresenterProperties &inoutViewProps, double actualWidth, double actualHeight, double clientScale)
+{
+	inoutViewProps.screenGapDistance = DS_DISPLAY_UNSCALED_GAP * inoutViewProps.gapScale;
+	inoutViewProps.hudGlyphTileSize  = ((double)HUD_TEXTBOX_BASEGLYPHSIZE * clientScale) + 0.0001;
+	inoutViewProps.hudGlyphSize      = ((double)inoutViewProps.hudGlyphTileSize * 0.75) + 0.0001;
+	
+	ClientDisplayPresenter::CalculateNormalSize(inoutViewProps.mode, inoutViewProps.layout, inoutViewProps.gapScale, inoutViewProps.screenNormalWidth, inoutViewProps.screenNormalHeight);
+	
+	inoutViewProps.screenUnscaledRotatedWidth  = inoutViewProps.screenNormalWidth;
+	inoutViewProps.screenUnscaledRotatedHeight = inoutViewProps.screenNormalHeight;
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, inoutViewProps.rotation, inoutViewProps.screenUnscaledRotatedWidth, inoutViewProps.screenUnscaledRotatedHeight);
+	
+	inoutViewProps.clientScale           = clientScale;
+	inoutViewProps.viewportActualWidth   = actualWidth;
+	inoutViewProps.viewportActualHeight  = actualHeight;
+	inoutViewProps.viewportLogicalWidth  = actualWidth  / clientScale;
+	inoutViewProps.viewportLogicalHeight = actualHeight / clientScale;
+	
+	inoutViewProps.screenScale             = ClientDisplayPresenter::GetMaxScalarWithinBounds(inoutViewProps.screenUnscaledRotatedWidth, inoutViewProps.screenUnscaledRotatedHeight, inoutViewProps.viewportLogicalWidth, inoutViewProps.viewportLogicalHeight);
+	inoutViewProps.screenTransformedWidth  = inoutViewProps.screenUnscaledRotatedWidth  * inoutViewProps.screenScale;
+	inoutViewProps.screenTransformedHeight = inoutViewProps.screenUnscaledRotatedHeight * inoutViewProps.screenScale;
+	
+	return inoutViewProps.screenScale;
+}
+
+double ClientDisplayPresenter::CalculateHUDObjectScale(const ClientDisplayPresenterProperties &inViewProps)
+{
+	double hudObjectScale = inViewProps.viewportLogicalWidth / inViewProps.screenNormalWidth;
+	if (hudObjectScale > 1.74939175)
+	{
+		// If the view scale is <= 1.74939175, we scale the HUD objects linearly. Otherwise, we scale
+		// the HUD objects logarithmically, up to a maximum scale of 3.0.
+		hudObjectScale = (-12000.0 * pow(hudObjectScale+4.5075, -5.0)) + 3.0;
+	}
+	
+	hudObjectScale *= inViewProps.clientScale;
+	
+	return hudObjectScale;
 }
 
 ClientDisplayViewInterface::ClientDisplayViewInterface()
@@ -1371,21 +1474,17 @@ void ClientDisplayViewInterface::FlushAndFinalizeImmediate()
 
 // Touch screen input handling
 void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterProperties &props,
-											 const double logicalClientWidth, const double logicalClientHeight,
 											 const double clientX, const double clientY,
 											 const bool isInitialTouchPress,
 											 uint8_t &outX, uint8_t &outY, bool &outTouchPressInMajorDisplay)
 {
 	double x = clientX;
 	double y = clientY;
-	double w = props.normalWidth;
-	double h = props.normalHeight;
 	
-	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, props.rotation, w, h);
-	const double s = ClientDisplayPresenter::GetMaxScalarWithinBounds(w, h, logicalClientWidth, logicalClientHeight);
+	const double s = ClientDisplayPresenter::GetMaxScalarWithinBounds(props.screenUnscaledRotatedWidth, props.screenUnscaledRotatedHeight, props.viewportLogicalWidth, props.viewportLogicalHeight);
 	
-	ClientDisplayViewInterface::ConvertClientToNormalPoint(props.normalWidth, props.normalHeight,
-														   logicalClientWidth, logicalClientHeight,
+	ClientDisplayViewInterface::ConvertClientToNormalPoint(props.screenNormalWidth, props.screenNormalHeight,
+														   props.viewportLogicalWidth, props.viewportLogicalHeight,
 														   s,
 														   props.rotation,
 														   x, y);
@@ -1417,7 +1516,7 @@ void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterPropert
 				const bool handleClickInMajorDisplay = outTouchPressInMajorDisplay;
 				if (!handleClickInMajorDisplay)
 				{
-					const double minorDisplayScale = (props.normalWidth - (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+					const double minorDisplayScale = (props.screenNormalWidth - (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 					x = (x - GPU_FRAMEBUFFER_NATIVE_WIDTH) / minorDisplayScale;
 					y = y / minorDisplayScale;
 				}
@@ -1428,7 +1527,7 @@ void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterPropert
 			{
 				if (props.order == ClientDisplayOrder_TouchFirst)
 				{
-					y -= ((double)GPU_FRAMEBUFFER_NATIVE_HEIGHT + props.gapDistance);
+					y -= ((double)GPU_FRAMEBUFFER_NATIVE_HEIGHT + props.screenGapDistance);
 				}
 				break;
 			}
@@ -1461,7 +1560,6 @@ void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterPropert
 }
 
 void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterProperties &props,
-											 const double logicalClientWidth, const double logicalClientHeight,
 											 const double clientX, const double clientY,
 											 const int inputID, const bool isInitialTouchPress,
 											 uint8_t &outX, uint8_t &outY) const
@@ -1469,7 +1567,6 @@ void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterPropert
 	bool isClickInMajorDisplay = (*this->_initialTouchInMajorDisplay)[inputID];
 	
 	ClientDisplayViewInterface::GetNDSPoint(props,
-											logicalClientWidth, logicalClientHeight,
 											clientX, clientY,
 											isInitialTouchPress,
 											outX, outY, isClickInMajorDisplay);
@@ -1600,7 +1697,7 @@ void ClientDisplay3DPresenter::SetHUDPositionVertices(float viewportWidth, float
 	
 	const char *cString = hudString.c_str();
 	const size_t textLength = (hudString.length() <= HUD_TEXT_MAX_CHARACTERS) ? hudString.length() : HUD_TEXT_MAX_CHARACTERS;
-	const float charSize = this->_glyphSize;
+	const float charSize = this->_propsApplied.hudGlyphSize;
 	const float lineHeight = charSize * 0.8f;
 	const float textBoxTextOffset = charSize * 0.25f;
 	float charLocX = textBoxTextOffset;
@@ -1637,7 +1734,7 @@ void ClientDisplay3DPresenter::SetHUDPositionVertices(float viewportWidth, float
 			continue;
 		}
 		
-		const float charWidth = this->_glyphInfo[c].width * charSize / (float)this->_glyphTileSize;
+		const float charWidth = this->_glyphInfo[c].width * charSize / (float)this->_propsApplied.hudGlyphTileSize;
 		
 		vtxPositionBufferPtr[j+0] = charLocX;					vtxPositionBufferPtr[j+1] = charLocY + charSize;	// Top Left
 		vtxPositionBufferPtr[j+2] = charLocX + charWidth;		vtxPositionBufferPtr[j+3] = charLocY + charSize;	// Top Right
@@ -1652,7 +1749,7 @@ void ClientDisplay3DPresenter::SetHUDPositionVertices(float viewportWidth, float
 		textBoxScale = HUD_TEXTBOX_BASE_SCALE * HUD_TEXTBOX_MIN_SCALE;
 	}
 	
-	textBoxScale /= this->_scaleFactor;
+	textBoxScale /= this->_propsApplied.clientScale;
 	
 	float boxOffset = 8.0f * HUD_TEXTBOX_BASE_SCALE * this->_hudObjectScale;
 	if (boxOffset < 1.0f)
@@ -1664,7 +1761,7 @@ void ClientDisplay3DPresenter::SetHUDPositionVertices(float viewportWidth, float
 		boxOffset = 8.0f;
 	}
 	
-	boxOffset *= this->_scaleFactor;
+	boxOffset *= this->_propsApplied.clientScale;
 	
 	// Set the width of the text box
 	vtxPositionBufferPtr[2] += textBoxWidth;
@@ -1691,7 +1788,7 @@ void ClientDisplay3DPresenter::SetHUDPositionVertices(float viewportWidth, float
 	for (size_t k = 0; k < HUD_INPUT_ELEMENT_LENGTH; i++, j+=8, k++)
 	{
 		const char c = hudInputString[k];
-		const float charWidth = this->_glyphInfo[c].width * charSize / (float)this->_glyphTileSize;
+		const float charWidth = this->_glyphInfo[c].width * charSize / (float)this->_propsApplied.hudGlyphTileSize;
 		
 		vtxPositionBufferPtr[j+0] = charLocX;					vtxPositionBufferPtr[j+1] = charLocY + charSize;	// Top Left
 		vtxPositionBufferPtr[j+2] = charLocX + charWidth;		vtxPositionBufferPtr[j+3] = charLocY + charSize;	// Top Right
@@ -1706,7 +1803,7 @@ void ClientDisplay3DPresenter::SetHUDPositionVertices(float viewportWidth, float
 		inputScale = 0.45 * 1.0;
 	}
 	
-	inputScale /= this->_scaleFactor;
+	inputScale /= this->_propsApplied.clientScale;
 	
 	for (size_t k = (textLength * 8); k < ((textLength + HUD_INPUT_ELEMENT_LENGTH) * 8); k+=2)
 	{
@@ -1726,8 +1823,8 @@ void ClientDisplay3DPresenter::SetHUDTouchLinePositionVertices(float *vtxBufferP
 {
 	const float x = (this->_ndsFrameInfo.inputStatesApplied.Touch == 0) ? this->_ndsFrameInfo.touchLocXApplied : this->_ndsFrameInfo.touchLocXPending;
 	const float y = 191.0f - ((this->_ndsFrameInfo.inputStatesApplied.Touch == 0) ? this->_ndsFrameInfo.touchLocYApplied : this->_ndsFrameInfo.touchLocYPending);
-	const float w = this->_propsApplied.normalWidth / 2.0f;
-	const float h = this->_propsApplied.normalHeight / 2.0f;
+	const float w = this->_propsApplied.screenNormalWidth  / 2.0f;
+	const float h = this->_propsApplied.screenNormalHeight / 2.0f;
 	static const float native_w = (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	
 	if (this->_propsApplied.mode == ClientDisplayMode_Dual)
@@ -1860,7 +1957,7 @@ void ClientDisplay3DPresenter::SetHUDTouchLinePositionVertices(float *vtxBufferP
 				
 			default: // Default to vertical orientation.
 			{
-				const float g = (float)this->_propsApplied.gapDistance;
+				const float g = (float)this->_propsApplied.screenGapDistance;
 				
 				if (this->_propsApplied.order == ClientDisplayOrder_MainFirst)
 				{
@@ -2133,8 +2230,8 @@ void ClientDisplay3DPresenter::SetHUDTextureCoordinates(float *texCoordBufferPtr
 
 void ClientDisplay3DPresenter::SetScreenVertices(float *vtxBufferPtr)
 {
-	const float w = this->_propsApplied.normalWidth / 2.0f;
-	const float h = this->_propsApplied.normalHeight / 2.0f;
+	const float w = this->_propsApplied.screenNormalWidth  / 2.0f;
+	const float h = this->_propsApplied.screenNormalHeight / 2.0f;
 	const size_t f = (this->_propsApplied.order == ClientDisplayOrder_MainFirst) ? 0 : 8;
 	
 	if (this->_propsApplied.mode == ClientDisplayMode_Dual)
@@ -2180,7 +2277,7 @@ void ClientDisplay3DPresenter::SetScreenVertices(float *vtxBufferPtr)
 				
 			case ClientDisplayLayout_Hybrid_16_9:
 			{
-				const float g = (float)this->_propsApplied.gapDistance * (this->_propsApplied.normalWidth - (float)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				const float g = (float)this->_propsApplied.screenGapDistance * (this->_propsApplied.screenNormalWidth - (float)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				
 				vtxBufferPtr[0]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[1]		= -h + g + (64.0f * 2.0f);	// Minor top display, top left
 				vtxBufferPtr[2]		=  w;											vtxBufferPtr[3]		= -h + g + (64.0f * 2.0f);	// Minor top display, top right
@@ -2203,7 +2300,7 @@ void ClientDisplay3DPresenter::SetScreenVertices(float *vtxBufferPtr)
 				
 			case ClientDisplayLayout_Hybrid_16_10:
 			{
-				const float g = (float)this->_propsApplied.gapDistance * (this->_propsApplied.normalWidth - (float)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				const float g = (float)this->_propsApplied.screenGapDistance * (this->_propsApplied.screenNormalWidth - (float)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				
 				vtxBufferPtr[0]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[1]		= -h + g + (38.4f * 2.0f);	// Minor top display, top left
 				vtxBufferPtr[2]		=  w;											vtxBufferPtr[3]		= -h + g + (38.4f * 2.0f);	// Minor top display, top right
@@ -2226,7 +2323,7 @@ void ClientDisplay3DPresenter::SetScreenVertices(float *vtxBufferPtr)
 				
 			default: // Default to vertical orientation.
 			{
-				const float g = (float)this->_propsApplied.gapDistance;
+				const float g = (float)this->_propsApplied.screenGapDistance;
 				
 				vtxBufferPtr[0+f]	= -w;									vtxBufferPtr[1+f]	=  h;						// Top display, top left
 				vtxBufferPtr[2+f]	=  w;									vtxBufferPtr[3+f]	=  h;						// Top display, top right

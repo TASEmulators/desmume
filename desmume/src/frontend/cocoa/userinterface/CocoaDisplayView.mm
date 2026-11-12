@@ -66,7 +66,6 @@
 @dynamic sourceDeposterize;
 @dynamic outputFilter;
 @dynamic pixelScaler;
-@dynamic scaleFactor;
 
 - (id)initWithFrame:(NSRect)frameRect
 {
@@ -212,16 +211,14 @@
 	
 	if (displayMode != ClientDisplayMode_Main)
 	{
-		const ClientDisplayPresenterProperties &props = cdv->Get3DPresenter()->GetPresenterProperties();
-		const double scaleFactor = cdv->Get3DPresenter()->GetScaleFactor();
+		const ClientDisplayPresenterProperties &cdpp = cdv->Get3DPresenter()->GetPresenterProperties();
 		const NSEventType eventType = [theEvent type];
 		const bool isInitialMouseDown = (eventType == EVENT_MOUSEDOWN_LEFT) || (eventType == EVENT_MOUSEDOWN_RIGHT) || (eventType == EVENT_MOUSEDOWN_OTHER);
 		
 		// Convert the clicked location from window coordinates, to view coordinates, and finally to NDS touchscreen coordinates.
 		const NSPoint clientLoc = [self convertPoint:[theEvent locationInWindow] fromView:nil];
 		
-		cdv->GetNDSPoint(props,
-						 props.clientWidth / scaleFactor, props.clientHeight / scaleFactor,
+		cdv->GetNDSPoint(cdpp,
 						 clientLoc.x, clientLoc.y, (int)buttonNumber, isInitialMouseDown, x, y);
 	}
 	
@@ -559,23 +556,15 @@
 	return (VideoFilterTypeID)_dvo->GetPixelScalerID();
 }
 
-- (void) setScaleFactor:(double)theScale
+- (void) setupLayerWithViewProperties:(const ClientDisplayPresenterProperties &)cdpp
+				   graphicsController:(CocoaGraphicsController *)graphicsController
 {
-	_dvo->SetScaleFactor(theScale);
-}
-
-- (double) scaleFactor
-{
-	return _dvo->GetScaleFactor();
-}
-
-- (void) setupLayer
-{
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	EmuControllerDelegate *emuControl = [windowController emuControl];
-	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[emuControl cdsGraphicsController] content];
+	if (graphicsController == nil)
+	{
+		return;
+	}
+	
 	MacGPUFetchObjectDisplayLink *dlFetchObj = (MacGPUFetchObjectDisplayLink *)[graphicsController fetchObject];
-	_dvo->SetMacFetchObject(dlFetchObj);
 	
 #ifdef ENABLE_APPLE_METAL
 	BOOL isMetalLayer = NO;
@@ -586,7 +575,7 @@
 		
 		if ([metalSharedData device] != nil)
 		{
-			MacMetalDisplayView *macMTLCDV = new MacMetalDisplayView(metalSharedData);
+			MacMetalDisplayView *macMTLCDV = new MacMetalDisplayView(metalSharedData, cdpp);
 			macMTLCDV->Init();
 			
 			localLayer = macMTLCDV->GetCALayer();
@@ -596,17 +585,10 @@
 	else
 #endif
 	{
-		MacOGLDisplayView *macOGLCDV = new MacOGLDisplayView((MacOGLClientFetchObject *)dlFetchObj);
+		MacOGLDisplayView *macOGLCDV = new MacOGLDisplayView((MacOGLClientFetchObject *)dlFetchObj, cdpp);
 		macOGLCDV->Init();
 		
 		localLayer = macOGLCDV->GetCALayer();
-		
-#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-		if ([[self window] respondsToSelector:@selector(backingScaleFactor)] && [localLayer respondsToSelector:@selector(setContentsScale:)])
-		{
-			[localLayer setContentsScale:[[self window] backingScaleFactor]];
-		}
-#endif
 		
 		if (_willRenderToCALayerDirectly)
 		{
@@ -622,6 +604,7 @@
 #endif
 			localOGLContext = ((MacOGLDisplayPresenter *)macOGLCDV->Get3DPresenter())->GetNSContext();
 			[localOGLContext retain];
+			[localOGLContext update];
 		}
 	}
 	
@@ -634,26 +617,10 @@
 	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
 	cdv->Get3DPresenter()->SetHUDFontPath([CocoaDSUtil cPathFromFilePath:fontPath]);
 	cdv->Get3DPresenter()->SetHUDRenderMipmapped(true);
-	
-	// Set up the scaling factor if this is a Retina window
-	float scaleFactor = 1.0f;
-#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	if ([[windowController masterWindow] respondsToSelector:@selector(backingScaleFactor)])
-	{
-		scaleFactor = [[windowController masterWindow] backingScaleFactor];
-	}
-#endif
-	
-	if (scaleFactor != 1.0f)
-	{
-		_dvo->SetScaleFactor(scaleFactor);
-	}
-	else
-	{
-		cdv->Get3DPresenter()->LoadHUDFont();
-	}
-	
+	cdv->Get3DPresenter()->LoadHUDFont(cdpp.hudGlyphSize, cdpp.hudGlyphTileSize);
 	cdv->Get3DPresenter()->UpdateLayout();
+	
+	_dvo->SetMacFetchObject(dlFetchObj);
 	
 	if (localOGLContext != nil)
 	{
@@ -684,29 +651,24 @@
 	}
 }
 
-- (void) updateLayerPresenterProperties:(ClientDisplayPresenterProperties &)props scaleFactor:(const double)scaleFactor needFlush:(BOOL)needFlush
+- (void) updateLayerPresenterProperties:(ClientDisplayPresenterProperties &)cdpp needFlush:(BOOL)needFlush
 {
-	double checkWidth = props.normalWidth;
-	double checkHeight = props.normalHeight;
-	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, props.rotation, checkWidth, checkHeight);
-	props.viewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, props.clientWidth, props.clientHeight);
-	
 	if (localOGLContext != nil)
 	{
 		[localOGLContext update];
 	}
 	else if ([localLayer isKindOfClass:[CAOpenGLLayer class]])
 	{
-		[localLayer setBounds:CGRectMake(0.0f, 0.0f, props.clientWidth / scaleFactor, props.clientHeight / scaleFactor)];
+		[localLayer setBounds:CGRectMake(0.0f, 0.0f, cdpp.viewportLogicalWidth, cdpp.viewportLogicalHeight)];
 	}
 #ifdef ENABLE_APPLE_METAL
 	else if ([localLayer isKindOfClass:[CAMetalLayer class]])
 	{
-		[(CAMetalLayer *)localLayer setDrawableSize:CGSizeMake(props.clientWidth, props.clientHeight)];
+		[(CAMetalLayer *)localLayer setDrawableSize:CGSizeMake(cdpp.viewportActualWidth, cdpp.viewportActualHeight)];
 	}
 #endif
 	
-	_dvo->CommitPresenterProperties(props, (needFlush) ? true : false);
+	_dvo->CommitPresenterProperties(cdpp, (needFlush) ? true : false);
 }
 
 - (void) isPixelScalerSupportedByID:(NSInteger)filterID cpu:(BOOL &)outSupportedOnCPU shader:(BOOL &)outSupportedOnShader
@@ -723,8 +685,9 @@
 - (NSImage *) image
 {
 	MacDisplayLayeredView *cdv = (MacDisplayLayeredView *)_dvo->GetClientDisplayView();
+	const ClientDisplayPresenterProperties &cdpp = cdv->Get3DPresenter()->GetPresenterProperties();
 	
-	NSSize viewSize = NSMakeSize(cdv->Get3DPresenter()->GetPresenterProperties().clientWidth, cdv->Get3DPresenter()->GetPresenterProperties().clientHeight);
+	NSSize viewSize = NSMakeSize(cdpp.viewportActualWidth, cdpp.viewportActualHeight);
 	NSUInteger w = viewSize.width;
 	NSUInteger h = viewSize.height;
 	
@@ -865,22 +828,19 @@
 	if (rect.size.width != oldFrame.size.width || rect.size.height != oldFrame.size.height)
 	{
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-		NSRect newViewportRect = rect;
+		double clientScale = 1.0;
 		
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-		if ([self respondsToSelector:@selector(convertRectToBacking:)])
+		if ([[self window] respondsToSelector:@selector(backingScaleFactor)])
 		{
-			newViewportRect = [self convertRectToBacking:rect];
+			clientScale = [[self window] backingScaleFactor];
 		}
 #endif
 		
 		// Calculate the view scale for the given client size.
-		ClientDisplayPresenterProperties &props = [windowController localViewProperties];
-		props.clientWidth = newViewportRect.size.width;
-		props.clientHeight = newViewportRect.size.height;
-		
-		const double scaleFactor = _dvo->GetScaleFactor();
-		[self updateLayerPresenterProperties:props scaleFactor:scaleFactor needFlush:YES];
+		ClientDisplayPresenterProperties &cdpp = [windowController localViewProperties];
+		ClientDisplayPresenter::CalculateViewPropertiesWithLogicalViewportSizeZoomed(cdpp, rect.size.width, rect.size.height, clientScale);
+		[self updateLayerPresenterProperties:cdpp needFlush:YES];
 	}
 }
 

@@ -1021,8 +1021,8 @@
 	MTLViewport newViewport;
 	newViewport.originX = 0.0;
 	newViewport.originY = 0.0;
-	newViewport.width  = cdp->GetPresenterProperties().clientWidth;
-	newViewport.height = cdp->GetPresenterProperties().clientHeight;
+	newViewport.width  = (thePresenter != NULL) ? thePresenter->GetPresenterProperties().viewportActualWidth  : GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	newViewport.height = (thePresenter != NULL) ? thePresenter->GetPresenterProperties().viewportActualHeight : GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	newViewport.znear = 0.0;
 	newViewport.zfar = 1.0;
 	
@@ -1920,14 +1920,16 @@
 
 - (void) updateRenderBuffers
 {
+	const ClientDisplayPresenterProperties &cdpp = cdp->GetPresenterProperties();
+	
 	// Set up the view properties.
 	bool needEncodeViewport = false;
 	
 	MTLViewport newViewport;
 	newViewport.originX = 0.0;
 	newViewport.originY = 0.0;
-	newViewport.width  = cdp->GetPresenterProperties().clientWidth;
-	newViewport.height = cdp->GetPresenterProperties().clientHeight;
+	newViewport.width  = cdpp.viewportActualWidth;
+	newViewport.height = cdpp.viewportActualHeight;
 	newViewport.znear = 0.0;
 	newViewport.zfar = 1.0;
 	
@@ -1935,17 +1937,17 @@
 	{
 		needEncodeViewport = true;
 		
-		_cdvPropertiesBuffer.width    = cdp->GetPresenterProperties().clientWidth;
-		_cdvPropertiesBuffer.height   = cdp->GetPresenterProperties().clientHeight;
+		_cdvPropertiesBuffer.width  = cdpp.viewportActualWidth;
+		_cdvPropertiesBuffer.height = cdpp.viewportActualHeight;
 		
 		[self setNeedsViewportUpdate:NO];
 	}
 	
 	if ([self needsRotationScaleUpdate])
 	{
-		_cdvPropertiesBuffer.rotation            = cdp->GetPresenterProperties().rotation;
-		_cdvPropertiesBuffer.viewScale           = cdp->GetPresenterProperties().viewScale;
-		_cdvPropertiesBuffer.lowerHUDMipMapLevel = ( ((float)HUD_TEXTBOX_BASE_SCALE * cdp->GetHUDObjectScale() / cdp->GetScaleFactor()) >= (2.0/3.0) ) ? 0 : 1;
+		_cdvPropertiesBuffer.rotation            = cdpp.rotation;
+		_cdvPropertiesBuffer.viewScale           = cdpp.screenScale * cdpp.clientScale;
+		_cdvPropertiesBuffer.lowerHUDMipMapLevel = ( ((float)HUD_TEXTBOX_BASE_SCALE * cdp->GetHUDObjectScale() / cdpp.clientScale) >= (2.0/3.0) ) ? 0 : 1;
 		
 		[self setNeedsRotationScaleUpdate:NO];
 	}
@@ -2083,7 +2085,7 @@
 		
 		[self setRenderBufferState:ClientDisplayBufferState_Writing index:selectedIndex];
 		
-		cdp->SetHUDPositionVertices((float)cdp->GetPresenterProperties().clientWidth, (float)cdp->GetPresenterProperties().clientHeight, (float *)[_hudVtxPositionBuffer[selectedIndex] contents]);
+		cdp->SetHUDPositionVertices((float)cdpp.viewportActualWidth, (float)cdpp.viewportActualHeight, (float *)[_hudVtxPositionBuffer[selectedIndex] contents]);
 		cdp->SetHUDColorVertices((Color4u8 *)[_hudVtxColorBuffer[selectedIndex] contents]);
 		cdp->SetHUDTextureCoordinates((float *)[_hudTexCoordBuffer[selectedIndex] contents]);
 		
@@ -2113,6 +2115,8 @@
 						doYFlip:(BOOL)willFlip
 					   doSwapRB:(BOOL)willSwapRB
 {
+	const ClientDisplayPresenterProperties &cdpp = cdp->GetPresenterProperties();
+	
 	// Generate the command encoder.
 	id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_outputRenderPassDesc];
 	
@@ -2137,7 +2141,7 @@
 	[rce setVertexBytes:&doYFlip length:sizeof(uint8_t) atIndex:3];
 	[rce setFragmentBytes:&willSwapRB length:sizeof(uint8_t) atIndex:1];
 	
-	switch (cdp->GetPresenterProperties().mode)
+	switch (cdpp.mode)
 	{
 		case ClientDisplayMode_Main:
 		{
@@ -2163,10 +2167,10 @@
 			
 		case ClientDisplayMode_Dual:
 		{
-			const NDSDisplayID majorDisplayID = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
-			const size_t majorDisplayVtx = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
+			const NDSDisplayID majorDisplayID = (cdpp.order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
+			const size_t majorDisplayVtx = (cdpp.order == ClientDisplayOrder_MainFirst) ? 8 : 12;
 			
-			switch (cdp->GetPresenterProperties().layout)
+			switch (cdpp.layout)
 			{
 				case ClientDisplayLayout_Hybrid_2_1:
 				case ClientDisplayLayout_Hybrid_16_9:
@@ -2293,8 +2297,9 @@
 
 - (void) renderToBuffer:(Color4u8 *)dstBuffer
 {
-	const size_t clientWidth  = cdp->GetPresenterProperties().clientWidth;
-	const size_t clientHeight = cdp->GetPresenterProperties().clientHeight;
+	const ClientDisplayPresenterProperties &cdpp = cdp->GetPresenterProperties();
+	const size_t clientWidth  = cdpp.viewportActualWidth;
+	const size_t clientHeight = cdpp.viewportActualHeight;
 	
 	task_t renderTask = mach_task_self();
 	semaphore_t semRenderToBuffer = 0;
@@ -2403,8 +2408,12 @@
 	presenterObject = thePresenterObject;
 	if (thePresenterObject != nil)
 	{
+		const ClientDisplayPresenterProperties &cdpp = [thePresenterObject cdp]->GetPresenterProperties();
+		
 		[self setDevice:[[thePresenterObject sharedData] device]];
 		[thePresenterObject setDrawableFormat:[self pixelFormat]];
+		[self setDrawableSize:CGSizeMake(cdpp.viewportActualWidth, cdpp.viewportActualHeight)];
+		[self setContentsScale:cdpp.clientScale];
 	}
 	
 	[self setOpaque:YES];
@@ -2417,9 +2426,18 @@
 	[self setLayerDrawable0:nil];
 	[self setLayerDrawable1:nil];
 	[self setLayerDrawable2:nil];
-	dispatch_release(_semDrawable);
 	
-	delete _drawableQueue;
+	if (_semDrawable != NULL)
+	{
+		dispatch_release(_semDrawable);
+		_semDrawable = NULL;
+	}
+	
+	if (_drawableQueue != NULL)
+	{
+		delete _drawableQueue;
+		_drawableQueue = NULL;
+	}
 	
 	[_displayTexturePair.main  release];
 	[_displayTexturePair.touch release];
@@ -2703,7 +2721,12 @@ MacMetalDisplayPresenter::MacMetalDisplayPresenter()
 	__InstanceInit(nil);
 }
 
-MacMetalDisplayPresenter::MacMetalDisplayPresenter(MetalDisplayViewSharedData *sharedObject)// : MacDisplayPresenterInterface(sharedObject)
+MacMetalDisplayPresenter::MacMetalDisplayPresenter(MetalDisplayViewSharedData *sharedObject)
+{
+	__InstanceInit(sharedObject);
+}
+
+MacMetalDisplayPresenter::MacMetalDisplayPresenter(MetalDisplayViewSharedData *sharedObject, const ClientDisplayPresenterProperties &cdpp) : ClientDisplay3DPresenter(cdpp)
 {
 	__InstanceInit(sharedObject);
 }
@@ -2891,12 +2914,19 @@ void MacMetalDisplayPresenter::CopyFrameToBuffer(Color4u8 *dstBuffer)
 
 MacMetalDisplayView::MacMetalDisplayView()
 {
-	__InstanceInit(nil);
+	ClientDisplayPresenterProperties defaultViewProps = ClientDisplayPresenter::GetDefaultProperties();
+	__InstanceInit(nil, defaultViewProps);
 }
 
 MacMetalDisplayView::MacMetalDisplayView(MetalDisplayViewSharedData *sharedObject)
 {
-	__InstanceInit(sharedObject);
+	ClientDisplayPresenterProperties defaultViewProps = ClientDisplayPresenter::GetDefaultProperties();
+	__InstanceInit(sharedObject, defaultViewProps);
+}
+
+MacMetalDisplayView::MacMetalDisplayView(MetalDisplayViewSharedData *sharedObject, const ClientDisplayPresenterProperties &cdpp)
+{
+	__InstanceInit(sharedObject, cdpp);
 }
 
 MacMetalDisplayView::~MacMetalDisplayView()
@@ -2905,12 +2935,12 @@ MacMetalDisplayView::~MacMetalDisplayView()
 	apple_unfairlock_destroy(_unfairlockViewNeedsFlush);
 }
 
-void MacMetalDisplayView::__InstanceInit(MetalDisplayViewSharedData *sharedObject)
+void MacMetalDisplayView::__InstanceInit(MetalDisplayViewSharedData *sharedObject, const ClientDisplayPresenterProperties &cdpp)
 {
 	_allowViewUpdates = false;
 	_unfairlockViewNeedsFlush = apple_unfairlock_create();
 	
-	MacMetalDisplayPresenter *newMetalPresenter = new MacMetalDisplayPresenter(sharedObject);
+	MacMetalDisplayPresenter *newMetalPresenter = new MacMetalDisplayPresenter(sharedObject, cdpp);
 	_presenter = newMetalPresenter;
 	
 	_caLayer = [[DisplayViewMetalLayer alloc] initWithDisplayPresenterObject:newMetalPresenter->GetPresenterObject()];
