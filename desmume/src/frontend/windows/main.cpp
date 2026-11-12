@@ -36,6 +36,7 @@
 #include <commdlg.h>
 #include <tchar.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -73,6 +74,7 @@
 #include "resource.h"
 #include "CWindow.h"
 #include "DPI.h"
+#include "DarkMode.h"
 #include "UiFont.h"
 #include "version.h"
 #include "inputdx.h"
@@ -2473,6 +2475,10 @@ int _main()
 		exit(-1);
 	}
 
+	// The HWND exists but is not shown yet: this is the right moment for the
+	// DWM attribute and for the menu bar subclass to take effect.
+	darkMode::applyFrame(MainWindow->getHWnd());
+
 	switch (displayMethod)
 	{
 		case DISPMETHOD_OPENGL:
@@ -2959,6 +2965,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	// PerMonitorV2; this covers builds that do not embed it.
 	DPI_EnablePerMonitorAwareness();
 
+	// Also before any window exists: the app mode is a process wide setting
+	// and the common controls have to be initialised before the toolbar.
+	darkMode::init();
+
 #if defined(ENABLE_WGPU)
 	// Headless development hook: render a reference scene through the WebGPU
 	// renderer and exit. Used to validate the backend without a ROM.
@@ -3163,8 +3173,32 @@ void SetRotate(HWND hwnd, int rot, bool user)
 		case 270: cwid = IDC_ROTATE0; ccwid = IDC_ROTATE180; break;
 	}
 
-	MainWindowToolbar->ChangeButtonID(4, ccwid);
-	MainWindowToolbar->ChangeButtonID(5, cwid);
+	// Retag the two rotation buttons.  Their toolbar index is no longer fixed
+	// (Stop / Frame Advance / Reset are inserted before them), so find them by
+	// their current rotation command id instead of a hard-coded index.  The
+	// first one found in index order (CCW) gets ccwid, the second (CW) gets cwid.
+	{
+		HWND tb = MainWindowToolbar->GetHWnd();
+		int rotIdx[2] = { -1, -1 };
+		const int n = (int)SendMessage(tb, TB_BUTTONCOUNT, 0, 0);
+		for (int i = 0; i < n && (rotIdx[0] < 0 || rotIdx[1] < 0); i++)
+		{
+			TBBUTTON btn;
+			if (SendMessage(tb, TB_GETBUTTON, i, (LPARAM)&btn))
+			{
+				switch (btn.idCommand)
+				{
+				case IDC_ROTATE0: case IDC_ROTATE90:
+				case IDC_ROTATE180: case IDC_ROTATE270:
+					if (rotIdx[0] < 0) rotIdx[0] = i;
+					else if (rotIdx[1] < 0) rotIdx[1] = i;
+					break;
+				}
+			}
+		}
+		if (rotIdx[0] >= 0) MainWindowToolbar->ChangeButtonID(rotIdx[0], ccwid);
+		if (rotIdx[1] >= 0) MainWindowToolbar->ChangeButtonID(rotIdx[1], cwid);
+	}
 
 	WritePrivateProfileInt("Video","Window Rotate",video.rotation,IniName);
 	if(user)
@@ -3553,6 +3587,7 @@ static BOOL OpenCore(const char* filename)
 		MainWindowToolbar->EnableButton(IDM_PAUSE, true);
 		MainWindowToolbar->EnableButton(IDM_CLOSEROM, true);
 		MainWindowToolbar->EnableButton(IDM_RESET, true);
+		MainWindowToolbar->EnableButton(IDC_FRAMEADVANCE, true);
 		MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PAUSE);
 
 		// Warn the user if the battery save won't be written to an actual file on disk.
@@ -3665,6 +3700,7 @@ void CloseRom()
 	MainWindowToolbar->EnableButton(IDM_PAUSE, false);
 	MainWindowToolbar->EnableButton(IDM_CLOSEROM, false);
 	MainWindowToolbar->EnableButton(IDM_RESET, false);
+	MainWindowToolbar->EnableButton(IDC_FRAMEADVANCE, false);
 	MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PLAY);
 }
 
@@ -4053,6 +4089,56 @@ static void ShowToolWindow(HWND hwnd)
 	SetForegroundWindow(hwnd);
 }
 
+
+
+// SetRotate() retags the two rotate buttons with the command id of the angle
+// they will switch to.  The tooltip therefore has to be derived from the
+// difference between that target and the current rotation, not from the id
+// alone.
+static const char *RotateToolTipText(int commandID)
+{
+	int target;
+	switch (commandID)
+	{
+	case IDC_ROTATE0:   target = 0;   break;
+	case IDC_ROTATE90:  target = 90;  break;
+	case IDC_ROTATE180: target = 180; break;
+	case IDC_ROTATE270: target = 270; break;
+	default: return NULL;
+	}
+
+	const int delta = (target - video.rotation + 360) % 360;
+	if (delta == 90)
+		return "Rotate screen 90 degrees clockwise";
+	if (delta == 270)
+		return "Rotate screen 90 degrees counter-clockwise";
+	return "Rotate screen";
+}
+
+// comctl32 asks a toolbar for help text in two different ways, and each of
+// them has an ANSI and a Unicode variant.  A version 6 toolbar sends
+// TBN_GETINFOTIP and expects the text copied into its own buffer; the older
+// tooltip path sends TTN_NEEDTEXT and expects a string pointer.  Measured on
+// Windows 11 (comctl32 6.0.26100.9843), this MultiByte build receives the
+// *Unicode* variant TBN_GETINFOTIPW (-719), not TBN_GETINFOTIPA (-718), so
+// all four are wired up below and share this one lookup.
+static const char *ToolBarTipText(int commandID)
+{
+	switch (commandID)
+	{
+	case IDM_OPEN:
+		return RecentRoms.empty()
+			? "Open a ROM"
+			: "Open a ROM\nClick the arrow to open a recent ROM";
+	case IDM_PAUSE:
+		return paused ? "Resume emulation" : "Pause emulation";
+	case IDM_CLOSEROM: return "Stop emulation";
+	case IDM_RESET:    return "Reset emulation";
+	case IDC_FRAMEADVANCE: return "Frame advance";
+	default:           return RotateToolTipText(commandID);
+	}
+}
+
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
@@ -4370,32 +4456,27 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindowToolbar->AppendButton(IDM_OPEN, IDB_OPEN, TBSTATE_ENABLED, false);
 			MainWindowToolbar->AppendSeparator();
 			MainWindowToolbar->AppendButton(IDM_PAUSE, IDB_PLAY, 0, false);
+			MainWindowToolbar->AppendButton(IDM_CLOSEROM, IDB_STOP, 0, false);
+			MainWindowToolbar->AppendButton(IDC_FRAMEADVANCE, IDB_FRAMEADVANCE, 0, false);
+			MainWindowToolbar->AppendButton(IDM_RESET, IDB_RESET, 0, false);
 			MainWindowToolbar->AppendSeparator();
 
-			//zero 03-feb-2013 - this isnt necessary, since the SetRotate function gets called eventually
-			//int cwid, ccwid;
-			//switch (video.rotation)
-			//{
-			//	case 0: cwid = IDC_ROTATE90; ccwid = IDC_ROTATE270; break;
-			//	case 90: cwid = IDC_ROTATE180; ccwid = IDC_ROTATE0; break;
-			//	case 180: cwid = IDC_ROTATE270; ccwid = IDC_ROTATE90; break;
-			//	case 270: cwid = IDC_ROTATE0; ccwid = IDC_ROTATE180; break;
-			//}
-
+			// SetRotate() retags the two rotation buttons later, but it returns
+			// early for a layout other than a single screen.  Give them their
+			// rotation-0 command ids right away so they are always distinct:
+			// EnableButton() and the tooltips both address them by command id.
+			// SetRotate now locates them by command id rather than a hard-coded
+			// index, so the Stop / Frame Advance / Reset buttons inserted before
+			// them do not shift the rotation mapping.
 			DWORD rotstate = (video.layout == 0) ? TBSTATE_ENABLED : 0;
-			MainWindowToolbar->AppendButton(0, IDB_ROTATECCW, rotstate, false);
-			MainWindowToolbar->AppendButton(0, IDB_ROTATECW, rotstate, false);
-
-			//we WANT it to be hard to do these operations. accidents would be bad. lets not use these buttons
-			//MainWindowToolbar->AppendSeparator();
-			//MainWindowToolbar->AppendSeparator();
-			//MainWindowToolbar->AppendSeparator();
-			//MainWindowToolbar->AppendButton(IDM_CLOSEROM, IDB_STOP, 0, false);
-			//MainWindowToolbar->AppendButton(IDM_RESET, IDB_RESET, 0, false);
+			MainWindowToolbar->AppendButton(IDC_ROTATE270, IDB_ROTATECCW, rotstate, false);
+			MainWindowToolbar->AppendButton(IDC_ROTATE90,  IDB_ROTATECW,  rotstate, false);
 
 
 			bool showtb = GetPrivateProfileBool("Display", "Show Toolbar", true, IniName);
 			MainWindowToolbar->Show(showtb);
+
+			
 
 			return 0;
 		}
@@ -4494,6 +4575,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			{
 				MainWindowToolbar->SetDPI(DPI_GetForWindow(hwnd));
 			}
+
+			// The menu bar font is built for the old DPI; rebuild it the next
+			// time the bar is painted.
+			darkMode::resetFont();
 
 			SetMinWindowSize();
 
@@ -5768,6 +5853,27 @@ DOKEYDOWN:
 			ResetGame();
 			return 0;
 
+		case IDC_FRAMEADVANCE:
+			if (romloaded)
+			{
+				if (!emu_paused)
+				{
+					// running: pause at the next frame boundary
+					Pause();
+				}
+				else
+				{
+					// already paused: step exactly one frame. The main loop
+					// consumes frameAdvance and halts again after one frame
+					// (see StepRunLoop_Throttle), so no button-release event
+					// is needed.
+					NDS_OmitFrameSkip();
+					execute = TRUE;
+					frameAdvance = true;
+				}
+			}
+			break;
+
 		case ID_STREAMFROMDISK:
 			CommonSettings.loadToMemory = false;
 			WritePrivateProfileBool("General", "ROM Loading Mode", CommonSettings.loadToMemory, IniName);
@@ -6090,7 +6196,7 @@ DOKEYDOWN:
 			{
 				OpenConsole();			// Init debug console
 				ConsoleAlwaysTop(gConsoleTopmost);
-			}
+							}
 			else
 			{
 				CloseConsole();
@@ -6208,6 +6314,17 @@ DOKEYDOWN:
 				NMHDR nmhdr = *(NMHDR*)lParam;
 				switch (nmhdr.code)
 				{
+				case NM_CUSTOMDRAW:
+					// The main window only has one custom drawn child: the
+					// toolbar.  Its background and hot/pressed faces are painted
+					// with the dark chrome colours.
+					if (MainWindowToolbar != NULL &&
+						nmhdr.hwndFrom == MainWindowToolbar->GetHWnd())
+					{
+						return darkMode::toolBarCustomDraw(lParam);
+					}
+					return 0;
+
 				case TBN_DROPDOWN:
 					{
 						NMTOOLBAR nmtb = *(NMTOOLBAR*)lParam;
@@ -6232,39 +6349,66 @@ DOKEYDOWN:
 					}
 					return 0;
 
-				case TTN_NEEDTEXT:
+				case TBN_GETINFOTIPA:
 					{
-						TOOLTIPTEXT* ttt = (TOOLTIPTEXT*)lParam;
-						ttt->hinst = hAppInst;
-
-						switch (ttt->hdr.idFrom)
-						{
-						case IDM_OPEN:
-							if (RecentRoms.empty()) ttt->lpszText = "Open a ROM";
-							else ttt->lpszText = "Open a ROM\nClick the arrow to open a recent ROM"; break;
-
-						case IDM_PAUSE:
-							if (paused) ttt->lpszText = "Resume emulation";
-							else ttt->lpszText = "Pause emulation"; break;
-
-						case IDM_CLOSEROM: ttt->lpszText = "Stop emulation"; break;
-						case IDM_RESET: ttt->lpszText = "Reset emulation"; break;
-
-						case IDC_ROTATE0:
-							if (video.rotation == 90) ttt->lpszText = "Rotate CCW";
-							else if (video.rotation == 270) ttt->lpszText = "Rotate CW"; break;
-						case IDC_ROTATE90:
-							if (video.rotation == 180) ttt->lpszText = "Rotate CCW";
-							else if (video.rotation == 0) ttt->lpszText = "Rotate CW"; break;
-						case IDC_ROTATE180:
-							if (video.rotation == 270) ttt->lpszText = "Rotate CCW";
-							else if (video.rotation == 90) ttt->lpszText = "Rotate CW"; break;
-						case IDC_ROTATE270:
-							if (video.rotation == 0) ttt->lpszText = "Rotate CCW";
-							else if (video.rotation == 180) ttt->lpszText = "Rotate CW"; break;
-						}
+						// iItem is the button command id; pszText is a buffer
+						// owned by the control.
+						NMTBGETINFOTIPA *info = (NMTBGETINFOTIPA*)lParam;
+						const char *text = ToolBarTipText(info->iItem);
+						if (text == NULL)
+							info->pszText[0] = '\0';
+						else
+							lstrcpynA(info->pszText, text, info->cchTextMax);
+												return 0;
 					}
-					return 0;
+
+				case TBN_GETINFOTIPW:
+					{
+						// v6 controls are Unicode internally even when the
+						// host was built as MultiByte, so both variants are
+						// needed.  Convert the ASCII menu wording on the fly.
+						NMTBGETINFOTIPW *info = (NMTBGETINFOTIPW*)lParam;
+						const char *text = ToolBarTipText(info->iItem);
+						wchar_t wide[256];
+						if (text == NULL)
+							wide[0] = L'\0';
+						else
+							MultiByteToWideChar(CP_ACP, 0, text, -1, wide, 256);
+						lstrcpynW(info->pszText, wide, info->cchTextMax);
+						return 0;
+					}
+
+				case TTN_NEEDTEXTA:
+					{
+						// The text is a literal string, not a string resource,
+						// so hinst must be NULL or comctl32 tries to
+						// LoadString() the pointer as a resource id.
+						TOOLTIPTEXTA *ttt = (TOOLTIPTEXTA*)lParam;
+						ttt->hinst = NULL;
+						const char *text = ToolBarTipText((int)ttt->hdr.idFrom);
+						ttt->lpszText = (text == NULL) ? NULL : const_cast<char*>(text);
+												return 0;
+					}
+
+				case TTN_NEEDTEXTW:
+					{
+						TOOLTIPTEXTW *ttt = (TOOLTIPTEXTW*)lParam;
+						ttt->hinst = NULL;
+						const char *text = ToolBarTipText((int)ttt->hdr.idFrom);
+						// The control reads this pointer after the notification
+						// returns, so the buffer must outlive this call.
+						static wchar_t wide[256];
+						if (text == NULL)
+						{
+							ttt->lpszText = NULL;
+						}
+						else
+						{
+							MultiByteToWideChar(CP_ACP, 0, text, -1, wide, 256);
+							ttt->lpszText = wide;
+						}
+												return 0;
+					}
 				}
 			}
 			return 0;

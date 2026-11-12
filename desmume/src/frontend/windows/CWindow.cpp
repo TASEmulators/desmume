@@ -21,12 +21,14 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
+#include <stdio.h>
 
 #include "debug.h"
 
 #include "resource.h"
 #include "main.h"
 #include "DPI.h"
+#include "DarkMode.h"
 #include "UiFont.h"
 #include "IORegView.h"
 #include "windriver.h"
@@ -344,6 +346,7 @@ void RefreshAllToolWindows()
 //-----------------------------------------------------------------------------
 
 static const int kToolBarBitmapSize = 16;
+static const int kToolBarEdgeGap = 6;  // logical pixels before the first button
 
 // Nearest-neighbour upscale of a toolbar bitmap to size x size.
 //
@@ -445,11 +448,296 @@ static HBITMAP ScaleBitmapToSquare(HBITMAP hbmp, int size)
 	return hbmpScaled;
 }
 
+//-----------------------------------------------------------------------------
+//   Vector-style toolbar artwork from the Windows icon font
+//-----------------------------------------------------------------------------
+
+// The bundled BMPs are 16x16 pixel art.  Upscaling them for HiDPI only
+// duplicates pixels, so render the equivalent Segoe icon glyph at the final
+// DPI size instead.  Both the font and every individual glyph are probed at
+// run time; anything missing falls back to the original bitmap resource.
+static const wchar_t *const kIconFontFaces[] =
+{
+	L"Segoe Fluent Icons",  // Windows 11
+	L"Segoe MDL2 Assets",   // Windows 10
+};
+
+// Segoe icon fonts are a single outline set, not the paired Regular/Filled
+// families shipped as Fluent UI System Icons SVGs.  Every toolbar button uses
+// the outline (hollow) glyph for a consistent line-art look; the renderer
+// probes the installed font (Segoe Fluent Icons, then Segoe MDL2 Assets) and
+// falls back to the bundled BMP resource when the glyph is missing.
+struct IconGlyph
+{
+	wchar_t codes[3];  // zero-terminated, best first
+	bool mirror;       // the font ships one rotation direction only
+};
+
+static const IconGlyph *findIconGlyph(int bitmapId)
+{
+	// Code points were verified against the installed fonts with
+	// GetGlyphIndicesW.  Refresh and Rotate have no solid counterpart in
+	// either font, so those two keep their outline artwork.
+	switch (bitmapId)
+	{
+	case IDB_OPEN:
+		{ static const IconGlyph g = { { 0xE838, 0, 0 }, false }; return &g; } // FolderOpen (outline)
+	case IDB_PLAY:
+		{ static const IconGlyph g = { { 0xE768, 0, 0 }, false }; return &g; } // Play (outline)
+	case IDB_PAUSE:
+		{ static const IconGlyph g = { { 0xE769, 0, 0 }, false }; return &g; } // Pause (outline)
+	case IDB_STOP:
+		{ static const IconGlyph g = { { 0xE71A, 0, 0 }, false }; return &g; } // Stop (outline)
+	case IDB_RESET:
+		{ static const IconGlyph g = { { 0xE72C, 0, 0 }, false }; return &g; } // Refresh (outline only)
+	case IDB_FRAMEADVANCE:
+		{ static const IconGlyph g = { { 0xE893, 0, 0 }, false }; return &g; } // Next (outline)
+	case IDB_ROTATECW:
+		{ static const IconGlyph g = { { 0xE7AD, 0, 0 }, false }; return &g; } // Rotate (outline only), CW
+	case IDB_ROTATECCW:
+		{ static const IconGlyph g = { { 0xE7AD, 0, 0 }, true  }; return &g; } // mirrored = CCW
+	default:
+		return NULL;
+	}
+}
+
+static void iconFontTrace(const char *msg)
+{
+	OutputDebugStringA(msg);
+	if (GetConsoleWindow() != NULL)
+	{
+		fputs(msg, stdout);
+		fflush(stdout);
+	}
+}
+
+struct IconFontLookup
+{
+	const wchar_t *face;
+	bool found;
+};
+
+static int CALLBACK iconFontEnumProc(const LOGFONTW *lf, const TEXTMETRICW *, DWORD, LPARAM param)
+{
+	IconFontLookup *lookup = reinterpret_cast<IconFontLookup *>(param);
+	if (wcsncmp(lf->lfFaceName, lookup->face, LF_FACESIZE) == 0)
+		lookup->found = true;
+	return TRUE;
+}
+
+// -2 = not probed yet, -1 = unavailable, 0..1 = index into kIconFontFaces.
+static int g_iconFontFace = -2;
+
+static const wchar_t *iconFontFace()
+{
+	if (g_iconFontFace != -2)
+		return g_iconFontFace >= 0 ? kIconFontFaces[g_iconFontFace] : NULL;
+
+	g_iconFontFace = -1;
+	HDC dc = GetDC(NULL);
+	if (dc != NULL)
+	{
+		for (int i = 0; i < 2 && g_iconFontFace < 0; i++)
+		{
+			IconFontLookup lookup = { kIconFontFaces[i], false };
+			LOGFONTW lf;
+			ZeroMemory(&lf, sizeof(lf));
+			lf.lfCharSet = DEFAULT_CHARSET;
+			wcsncpy(lf.lfFaceName, kIconFontFaces[i], LF_FACESIZE - 1);
+			EnumFontFamiliesExW(dc, &lf, iconFontEnumProc,
+				reinterpret_cast<LPARAM>(&lookup), 0);
+			if (lookup.found)
+				g_iconFontFace = i;
+		}
+		ReleaseDC(NULL, dc);
+	}
+
+	if (g_iconFontFace < 0)
+	{
+		iconFontTrace("[toolbar] icon font not found; using BMP resources\n");
+		return NULL;
+	}
+
+	char msg[160];
+	char face[64];
+	WideCharToMultiByte(CP_ACP, 0, kIconFontFaces[g_iconFontFace], -1,
+		face, sizeof(face), NULL, NULL);
+	_snprintf(msg, sizeof(msg) - 1, "[toolbar] icon font active: %s\n", face);
+	msg[sizeof(msg) - 1] = '\0';
+	iconFontTrace(msg);
+	return kIconFontFaces[g_iconFontFace];
+}
+
+// Mirror a 24bpp DIB in place.  Used to derive the counter-clockwise rotation
+// glyph, since the font only contains the clockwise one.
+static void flipBitmapHorizontal(HBITMAP hbmp)
+{
+	BITMAP bm;
+	if (GetObject(hbmp, sizeof(bm), &bm) == 0 || bm.bmWidth < 2 || bm.bmHeight < 1)
+		return;
+
+	const int width = bm.bmWidth;
+	const int height = bm.bmHeight;
+	const int stride = ((width * 3 + 3) / 4) * 4;
+
+	HDC dc = CreateCompatibleDC(NULL);
+	if (dc == NULL)
+		return;
+
+	BITMAPINFO info;
+	ZeroMemory(&info, sizeof(info));
+	info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	info.bmiHeader.biWidth = width;
+	info.bmiHeader.biHeight = height;
+	info.bmiHeader.biPlanes = 1;
+	info.bmiHeader.biBitCount = 24;
+	info.bmiHeader.biCompression = BI_RGB;
+
+	u8 *pixels = new u8[(size_t)stride * (size_t)height];
+	if (GetDIBits(dc, hbmp, 0, height, pixels, &info, DIB_RGB_COLORS) != 0)
+	{
+		for (int y = 0; y < height; y++)
+		{
+			u8 *row = pixels + (size_t)y * stride;
+			for (int x = 0; x < width / 2; x++)
+			{
+				u8 *a = row + x * 3;
+				u8 *b = row + (width - 1 - x) * 3;
+				for (int c = 0; c < 3; c++)
+				{
+					const u8 tmp = a[c];
+					a[c] = b[c];
+					b[c] = tmp;
+				}
+			}
+		}
+		SetDIBits(dc, hbmp, 0, height, pixels, &info, DIB_RGB_COLORS);
+	}
+
+	delete[] pixels;
+	DeleteDC(dc);
+}
+
+// Returns NULL when the font is unavailable or the glyph is missing, so the
+// caller can fall back to the bundled bitmap.  The background is already the
+// button face colour, which is exactly what the opaque toolbar artwork needs.
+static HBITMAP renderIconFontBitmap(const IconGlyph &icon, int size,
+                                   COLORREF ink, COLORREF face)
+{
+	const wchar_t *fontFace = iconFontFace();
+	if (fontFace == NULL || size <= 0)
+		return NULL;
+
+	HDC screen = GetDC(NULL);
+	if (screen == NULL)
+		return NULL;
+
+	HDC dc = CreateCompatibleDC(screen);
+	if (dc == NULL)
+	{
+		ReleaseDC(NULL, screen);
+		return NULL;
+	}
+
+	HBITMAP result = CreateCompatibleBitmap(screen, size, size);
+	if (result == NULL)
+	{
+		DeleteDC(dc);
+		ReleaseDC(NULL, screen);
+		return NULL;
+	}
+
+	HGDIOBJ oldBmp = SelectObject(dc, result);
+
+	LOGFONTW lf;
+	ZeroMemory(&lf, sizeof(lf));
+	// At lfHeight = -size the glyph stays inside the square for every DPI
+	// from 16 to 48 px; a larger font starts clipping the ascender.
+	lf.lfHeight = -size;
+	lf.lfWeight = FW_NORMAL;
+	lf.lfCharSet = DEFAULT_CHARSET;
+	lf.lfQuality = ANTIALIASED_QUALITY;  // grey AA, no ClearType colour fringes
+	wcsncpy(lf.lfFaceName, fontFace, LF_FACESIZE - 1);
+
+	HFONT font = CreateFontIndirectW(&lf);
+	if (font == NULL)
+	{
+		SelectObject(dc, oldBmp);
+		DeleteObject(result);
+		DeleteDC(dc);
+		ReleaseDC(NULL, screen);
+		return NULL;
+	}
+	HGDIOBJ oldFont = SelectObject(dc, font);
+
+	// Older Windows builds ship a smaller glyph set.  Try the solid artwork
+	// first, then the outline equivalent, and only then give up so the caller
+	// can use the bundled bitmap instead of drawing a missing-glyph box.
+	wchar_t code = 0;
+	for (int i = 0; i < 3 && icon.codes[i] != 0; i++)
+	{
+		wchar_t candidate = icon.codes[i];
+		WORD glyphIndex = 0;
+		GetGlyphIndicesW(dc, &candidate, 1, &glyphIndex,
+			GGI_MARK_NONEXISTING_GLYPHS);
+		if (glyphIndex != 0 && glyphIndex != 0xFFFF)
+		{
+			code = candidate;
+			break;
+		}
+	}
+	if (code == 0)
+	{
+		SelectObject(dc, oldFont);
+		DeleteObject(font);
+		SelectObject(dc, oldBmp);
+		DeleteObject(result);
+		DeleteDC(dc);
+		ReleaseDC(NULL, screen);
+		return NULL;
+	}
+	if (code != icon.codes[0])
+	{
+		char msg[128];
+		_snprintf(msg, sizeof(msg) - 1,
+			"[toolbar] solid glyph U+%04X unavailable; using U+%04X\n",
+			(unsigned)icon.codes[0], (unsigned)code);
+		msg[sizeof(msg) - 1] = '\0';
+		iconFontTrace(msg);
+	}
+
+	RECT rc = { 0, 0, size, size };
+	HBRUSH brush = CreateSolidBrush(face);
+	FillRect(dc, &rc, brush);
+	DeleteObject(brush);
+
+	SetBkMode(dc, TRANSPARENT);
+	SetTextColor(dc, ink);
+	DrawTextW(dc, &code, 1, &rc,
+		DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+
+	SelectObject(dc, oldFont);
+	DeleteObject(font);
+	SelectObject(dc, oldBmp);
+	DeleteDC(dc);
+	ReleaseDC(NULL, screen);
+
+	if (icon.mirror)
+		flipBitmapHorizontal(result);
+
+	return result;
+}
+
 void CToolBar::CreateToolBarWindow()
 {
-	// Note: dropdown buttons look like crap without TBSTYLE_FLAT
-	hWnd = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, 
-		WS_CHILD | WS_VISIBLE | WS_BORDER | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS, 
+	// Note: dropdown buttons look like crap without TBSTYLE_FLAT.
+	// The themed WS_BORDER draws a light hairline even in dark mode, so the
+	// dark toolbar reads better without it.
+	DWORD style = WS_CHILD | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS;
+	if (!darkMode::enabled())
+		style |= WS_BORDER;
+
+	hWnd = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, style,
 		0, 0, 0, 0, hParent, NULL, hAppInst, NULL);
 
 	if (hWnd == NULL)
@@ -461,6 +749,14 @@ void CToolBar::CreateToolBarWindow()
 	SendMessage(hWnd, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
 	SendMessage(hWnd, TB_SETEXTENDEDSTYLE, 0, TBSTYLE_EX_DRAWDDARROWS);
 
+	// Give the first button a gutter so the artwork is not flush with the
+	// left edge of the window.  TB_SETINDENT shifts the whole strip without
+	// inserting a button, so the button count and ordering are unaffected.
+	// Scaling keeps the gap the same physical size at every DPI, and
+	// CreateToolBarWindow() runs again on a DPI change, so the indent is
+	// reapplied to the new HWND.
+	SendMessage(hWnd, TB_SETINDENT, DPI_Scale(kToolBarEdgeGap, dpi), 0);
+
 	// Must be set before the first bitmap is added; the button strip is sized
 	// from the image size, which is what makes the toolbar grow with the DPI.
 	// The unscaled case is left at the common-control default so the window
@@ -470,6 +766,10 @@ void CToolBar::CreateToolBarWindow()
 	{
 		SendMessage(hWnd, TB_SETBITMAPSIZE, 0, MAKELPARAM(bitmapSize, bitmapSize));
 	}
+
+	// SetDPI destroys and recreates this HWND, so the dark colours have to be
+	// re-applied for every incarnation of the control.
+	darkMode::prepareToolBar(hWnd);
 }
 
 void CToolBar::DestroyBitmaps()
@@ -635,14 +935,40 @@ int CToolBar::GetBitmapIndex(int uBitmapID)
 		return it->second.first;
 	}
 
-	HBITMAP hbmp = LoadBitmap(hAppInst, MAKEINTRESOURCE(uBitmapID));
+	const int size = DPI_Scale(kToolBarBitmapSize, dpi);
+
+	// The artwork is opaque: its background must match the face the buttons
+	// are drawn on.  In dark mode that face is our dark panel colour, not
+	// COLOR_BTNFACE, which would leave a light square behind every icon.
+	const COLORREF face = darkMode::enabled()
+	                    ? darkMode::panelColor()
+	                    : GetSysColor(COLOR_BTNFACE);
+	const COLORREF ink = darkMode::enabled()
+	                   ? darkMode::panelTextColor()
+	                   : GetSysColor(COLOR_BTNTEXT);
+
+	// Prefer the icon font so HiDPI gets real vector edges; findIconGlyph()
+	// puts solid variants ahead of their outline equivalents.  Rendered
+	// bitmaps already carry the face colour as their background; only the
+	// bundled BMPs need their magenta key replaced with it.
+	const IconGlyph *glyph = findIconGlyph(uBitmapID);
+	HBITMAP hbmp = (glyph != NULL)
+		? renderIconFontBitmap(*glyph, size, ink, face)
+		: NULL;
+
 	if (hbmp == NULL)
 	{
-		return 0;
-	}
+		if (glyph != NULL)
+			iconFontTrace("[toolbar] glyph render failed; using BMP resource\n");
 
-	hbmp = ScaleBitmapToSquare(hbmp, DPI_Scale(kToolBarBitmapSize, dpi));
-	MakeBitmapPseudoTransparent(hbmp, RGB(255, 0, 255), GetSysColor(COLOR_BTNFACE));
+		hbmp = LoadBitmap(hAppInst, MAKEINTRESOURCE(uBitmapID));
+		if (hbmp == NULL)
+		{
+			return 0;
+		}
+		hbmp = ScaleBitmapToSquare(hbmp, size);
+		MakeBitmapPseudoTransparent(hbmp, RGB(255, 0, 255), face);
+	}
 
 	// Add the bitmap to the toolbar's image list
 	TBADDBITMAP bmp;
@@ -650,6 +976,10 @@ int CToolBar::GetBitmapIndex(int uBitmapID)
 	bmp.nID = (UINT_PTR)hbmp;
 
 	const int bmpid = (int)SendMessage(hWnd, TB_ADDBITMAP, 1, (LPARAM)&bmp);
+
+	// Dark mode keeps a dimmed copy at the same image list index, so disabled
+	// buttons can be painted without comctl32's light system 3D face colour.
+	darkMode::addToolBarBitmap(hWnd, bmpid, hbmp);
 
 	// Save the bitmap (if it gets deleted, the toolbar is too)
 	hBitmaps[uBitmapID] = TBitmapPair(bmpid, hbmp);

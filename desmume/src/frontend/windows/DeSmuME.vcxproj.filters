@@ -987,6 +987,9 @@
     <ClCompile Include="..\shared\ramwatch_core.cpp">
       <Filter>frontend\shared</Filter>
     </ClCompile>
+    <ClCompile Include="DarkMode.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="DPI.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -1757,6 +1760,9 @@
     </ClInclude>
     <ClInclude Include="..\shared\ram_search_core.h">
       <Filter>frontend\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="DarkMode.h">
+      <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="DPI.h">
       <Filter>frontend\Windows</Filter>

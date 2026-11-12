@@ -24,6 +24,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "aviout.h"
 #include "windriver.h"
 #include "winutil.h"
+#include "DarkMode.h"
 
 #ifdef DESMUME_NATIVE_DRAW
 #include "../modules/osd/agg/native_draw.h"
@@ -83,6 +84,20 @@ bool frameAdvance = false;
 
 bool SeparationBorderDrag = true;
 int ScreenGapColor = 0xFFFFFF;
+
+// With no ROM loaded the GPU reset leaves both emulated screens white.  In
+// dark mode the idle display is black instead, like VBA, and the user's
+// chosen screen gap colour is only overridden while the emulator is idle.
+static bool useDarkIdleScreen()
+{
+	return !romloaded && darkMode::enabled();
+}
+
+static u32 effectiveScreenGapColor()
+{
+	return useDarkIdleScreen() ? (u32)darkMode::displayColor() : (u32)ScreenGapColor;
+}
+
 /*const u32 gapColors[16] = {
 Color::Gray,
 Color::Brown,
@@ -326,7 +341,7 @@ static void OGL_DrawTexture(RECT* srcRects, RECT* dstRects)
 		//adjust client rect into scissor rect (0,0 at bottomleft)
 		glScissor(dstRects[2].left, dstRects[2].bottom, dstRects[2].right - dstRects[2].left, dstRects[2].top - dstRects[2].bottom);
 
-		u32 color_rev = (u32)ScreenGapColor;
+		u32 color_rev = effectiveScreenGapColor();
 		int r = (color_rev >> 0) & 0xFF;
 		int g = (color_rev >> 8) & 0xFF;
 		int b = (color_rev >> 16) & 0xFF;
@@ -595,7 +610,7 @@ static void DD_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight)
 	{
 		//u32 color = gapColors[win_fw_config.fav_colour];
 		//u32 color_rev = (((color & 0xFF) << 16) | (color & 0xFF00) | ((color & 0xFF0000) >> 16));
-		u32 color_rev = (u32)ScreenGapColor;
+		u32 color_rev = effectiveScreenGapColor();
 
 		HDC dc;
 		HBRUSH brush;
@@ -743,7 +758,7 @@ static void WGPU_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight,
 
 	wgpudisplay.present(srcFramebuffer, videoWidth, videoHeight,
 	                    srcRects, dstRects, &GapRect, video.rotation,
-	                    (u32)ScreenGapColor, overlay);
+	                    effectiveScreenGapColor(), overlay);
 }
 
 void displayThread(void *arg)
@@ -818,6 +833,7 @@ void DoDisplay()
 
 	const bool needsVideoFiltering = (video.currentfilter != video.NONE);
 	const bool needsBacklightApply = (dispInfo.backlightIntensity[NDSDisplayID_Main] < 1.0f) || (dispInfo.backlightIntensity[NDSDisplayID_Touch] < 1.0f);
+	const bool darkIdleScreen = useDarkIdleScreen();
 
 	const bool needsHUDDrawing = (
 		CommonSettings.hud.ShowInputDisplay ||
@@ -859,7 +875,7 @@ void DoDisplay()
 		displayNeedsBufferUpdates = false;
 	}
 
-	if (isRunningDirectDraw || isRunningWGPU || needsVideoFiltering || needsBacklightApply)
+	if (isRunningDirectDraw || isRunningWGPU || needsVideoFiltering || needsBacklightApply || darkIdleScreen)
 	{
 		//we have to do a copy here because we're about to draw the OSD onto it. bummer.
 		WinGPUEvent->VideoFetchLock();
@@ -870,6 +886,19 @@ void DoDisplay()
 			ColorspaceConvertBuffer888xTo8888Opaque<true, false>((u32*)video.srcBuffer, video.buffer, video.srcBufferSize / sizeof(u32));
 
 		WinGPUEvent->VideoFetchUnlock();
+
+		if (darkIdleScreen && video.buffer != NULL)
+		{
+			// GPU::Reset() clears both screens to white and no ROM is running
+			// to draw over them.  Replace the copied frame with the dark idle
+			// colour; the HUD is still composited on top further down.  Going
+			// through the secondary buffer also covers the OpenGL path that
+			// would otherwise read the GPU's white framebuffer directly.
+			const u32 idlePixel = darkMode::displayPixel32();
+			const size_t idlePixCount = (size_t)video.prefilterWidth * (size_t)video.prefilterHeight;
+			for (size_t i = 0; i < idlePixCount; i++)
+				video.buffer[i] = idlePixel;
+		}
 
 		//some games use the backlight for fading effects
 		const size_t pixCount = video.prefilterWidth * video.prefilterHeight / 2;

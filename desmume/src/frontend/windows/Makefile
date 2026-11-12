@@ -30,7 +30,7 @@ CPPFLAGS = -DMINGW_HAS_SECURE_API \
 # LuaJIT lua51.dll from .libs/<arch> instead.
 CXXFLAGS = -I. -I../.. -I../../frontend/modules/osd/agg \
   -Iagg/include -Iwinpcap -Idirectx -I../../lua \
-  -fpermissive -fms-extensions -Wno-write-strings -std=gnu++11 $(OPT)
+  -fpermissive -fms-extensions -Wno-write-strings -std=gnu++14 $(OPT)
 
 CFLAGS=$(OPT)
 
@@ -85,6 +85,7 @@ AGG_SRCS = \
 SRCS = \
 	AboutBox.cpp \
 	CWindow.cpp \
+	DarkMode.cpp \
 	FEX_Interface.cpp \
 	FirmConfig.cpp \
 	IORegView.cpp \

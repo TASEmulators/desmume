@@ -265,6 +265,7 @@
     <ClCompile Include="colorctrl.cpp" />
     <ClCompile Include="console.cpp" />
     <ClCompile Include="CWindow.cpp" />
+    <ClCompile Include="DarkMode.cpp" />
     <ClCompile Include="ddraw.cpp" />
     <ClCompile Include="dxerr8_compat.cpp" />
     <ClCompile Include="display.cpp" />
@@ -587,6 +588,7 @@
     <ClInclude Include="wgpu_present_win32.h" />
     <ClInclude Include="wgpu_upscaler_win32.h" />
     <ClInclude Include="..\shared\wgpu_present.h" />
+    <ClInclude Include="DarkMode.h" />
     <ClInclude Include="..\shared\ram_debug_core.h" />
     <ClInclude Include="..\shared\ramwatch_core.h" />
     <ClInclude Include="..\shared\ram_search_core.h" />
