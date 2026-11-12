@@ -208,14 +208,35 @@ libdesmume_src += [
   '../posix/shared/mic_sdl.cpp',
 ]
 
+soundtouch_includes = []
 if dep_soundtouch.found()
   dependencies += dep_soundtouch
-  add_global_arguments('-DHAVE_LIBSOUNDTOUCH', language: ['c', 'cpp'])
+else
+  # Use the bundled SoundTouch sources when the system library is unavailable.
+  # This keeps the "P" synchronization method available on platforms such as
+  # ARM64, where a soundtouch development package may not be installed.
+  soundtouch_includes = [include_directories('../../metaspu/SoundTouch')]
   libdesmume_src += [
-    '../../metaspu/SndOut.cpp',
-    '../../metaspu/Timestretcher.cpp',
+    '../../metaspu/SoundTouch/AAFilter.cpp',
+    '../../metaspu/SoundTouch/cpu_detect_x86.cpp',
+    '../../metaspu/SoundTouch/FIFOSampleBuffer.cpp',
+    '../../metaspu/SoundTouch/FIRFilter.cpp',
+    '../../metaspu/SoundTouch/InterpolateCubic.cpp',
+    '../../metaspu/SoundTouch/InterpolateLinear.cpp',
+    '../../metaspu/SoundTouch/InterpolateShannon.cpp',
+    '../../metaspu/SoundTouch/mmx_optimized.cpp',
+    '../../metaspu/SoundTouch/RateTransposer.cpp',
+    '../../metaspu/SoundTouch/SoundTouch.cpp',
+    '../../metaspu/SoundTouch/sse_optimized.cpp',
+    '../../metaspu/SoundTouch/TDStretch.cpp',
   ]
 endif
+
+add_global_arguments('-DHAVE_LIBSOUNDTOUCH', language: ['c', 'cpp'])
+libdesmume_src += [
+  '../../metaspu/SndOut.cpp',
+  '../../metaspu/Timestretcher.cpp',
+]
 
 if get_option('gdb-stub')
   add_global_arguments('-DGDB_STUB', language: ['c', 'cpp'])
@@ -241,6 +262,6 @@ colorspacehandler_simd = rval[0]
 library('desmume',
   libdesmume_src,
   dependencies: dependencies,
-  include_directories: includes,
+  include_directories: [includes] + soundtouch_includes,
   link_with: colorspacehandler_simd,
 )

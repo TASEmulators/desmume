@@ -108,7 +108,7 @@
 		8C43E7B927E3CD0100A35F65 /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C81E31B21676C00ACECD5 /* hq3x.cpp */; };
 		8C43E7BA27E3CD0100A35F65 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
 		8C43E7BB27E3CD0100A35F65 /* ClientDisplayView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD07DA1E19CAA6007867CA /* ClientDisplayView.cpp */; };
-		8C43E7BC27E3CD0100A35F65 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		8C43E7BC27E3CD0100A35F65 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		8C43E7BD27E3CD0100A35F65 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
 		8C43E7BE27E3CD0100A35F65 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB301BDE1D9C8BAC00246A93 /* deposterize.cpp */; };
 		8C43E7BF27E3CD0100A35F65 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
@@ -222,7 +222,6 @@
 		8C43E82C27E3CD0100A35F65 /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */; };
 		8C43E82D27E3CD0100A35F65 /* MetalRendererCommonShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */; };
 		8C43E82E27E3CD0100A35F65 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
-		8C43E82F27E3CD0100A35F65 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		8C43E83027E3CD0100A35F65 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		8C43E83127E3CD0100A35F65 /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF511345ACBF00AF11D1 /* xstring.cpp */; };
 		8C43E83227E3CD0100A35F65 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABD104271346653B00AF11D1 /* main.m */; };
@@ -423,7 +422,7 @@
 		8C43E92F27E3CD4C00A35F65 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA81345AC8400AF11D1 /* common.cpp */; };
 		8C43E93027E3CD4C00A35F65 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
 		8C43E93127E3CD4C00A35F65 /* psaux.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731661BB51FDC00B26147 /* psaux.c */; };
-		8C43E93227E3CD4C00A35F65 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		8C43E93227E3CD4C00A35F65 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		8C43E93327E3CD4C00A35F65 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
 		8C43E93427E3CD4C00A35F65 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */; };
 		8C43E93527E3CD4C00A35F65 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
@@ -521,7 +520,6 @@
 		8C43E99227E3CD4C00A35F65 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
 		8C43E99327E3CD4C00A35F65 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		8C43E99427E3CD4C00A35F65 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
-		8C43E99527E3CD4C00A35F65 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		8C43E99627E3CD4C00A35F65 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		8C43E99727E3CD4C00A35F65 /* ClientDisplayView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD07DA1E19CAA6007867CA /* ClientDisplayView.cpp */; };
 		8C43E99827E3CD4C00A35F65 /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */; };
@@ -689,7 +687,7 @@
 		8CCD842827E40B730024BDD5 /* ftsystem.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7931BB4EC1000B08C25 /* ftsystem.c */; };
 		8CCD842927E40B730024BDD5 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA81345AC8400AF11D1 /* common.cpp */; };
 		8CCD842A27E40B730024BDD5 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
-		8CCD842B27E40B730024BDD5 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		8CCD842B27E40B730024BDD5 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		8CCD842C27E40B730024BDD5 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
 		8CCD842D27E40B730024BDD5 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
 		8CCD842E27E40B730024BDD5 /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEAB1345AC8400AF11D1 /* debug.cpp */; };
@@ -794,7 +792,6 @@
 		8CCD849227E40B730024BDD5 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		8CCD849327E40B730024BDD5 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
 		8CCD849427E40B730024BDD5 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
-		8CCD849527E40B730024BDD5 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		8CCD849627E40B730024BDD5 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		8CCD849727E40B730024BDD5 /* ftbbox.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7771BB4EC1000B08C25 /* ftbbox.c */; };
 		8CCD849827E40B730024BDD5 /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */; };
@@ -1039,7 +1036,7 @@
 		AB36C7A827F2C8AE00C763C8 /* ftsystem.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7931BB4EC1000B08C25 /* ftsystem.c */; };
 		AB36C7A927F2C8AE00C763C8 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA81345AC8400AF11D1 /* common.cpp */; };
 		AB36C7AA27F2C8AE00C763C8 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
-		AB36C7AB27F2C8AE00C763C8 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		AB36C7AB27F2C8AE00C763C8 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		AB36C7AC27F2C8AE00C763C8 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
 		AB36C7AD27F2C8AE00C763C8 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
 		AB36C7AE27F2C8AE00C763C8 /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEAB1345AC8400AF11D1 /* debug.cpp */; };
@@ -1144,7 +1141,6 @@
 		AB36C81227F2C8AE00C763C8 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		AB36C81327F2C8AE00C763C8 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
 		AB36C81427F2C8AE00C763C8 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
-		AB36C81527F2C8AE00C763C8 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		AB36C81627F2C8AE00C763C8 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		AB36C81727F2C8AE00C763C8 /* ftbbox.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7771BB4EC1000B08C25 /* ftbbox.c */; };
 		AB36C81827F2C8AE00C763C8 /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */; };
@@ -1571,7 +1567,7 @@
 		AB53AFCC2F9D8AB400025334 /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C81E31B21676C00ACECD5 /* hq3x.cpp */; };
 		AB53AFCD2F9D8AB400025334 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
 		AB53AFCE2F9D8AB400025334 /* ClientDisplayView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD07DA1E19CAA6007867CA /* ClientDisplayView.cpp */; };
-		AB53AFCF2F9D8AB400025334 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		AB53AFCF2F9D8AB400025334 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		AB53AFD02F9D8AB400025334 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
 		AB53AFD12F9D8AB400025334 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB301BDE1D9C8BAC00246A93 /* deposterize.cpp */; };
 		AB53AFD22F9D8AB400025334 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
@@ -1695,7 +1691,6 @@
 		AB53B0482F9D8AB400025334 /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */; };
 		AB53B0492F9D8AB400025334 /* MetalRendererCommonShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB5B1D4921D1F31E00BF0E0F /* MetalRendererCommonShaders.metal */; };
 		AB53B04A2F9D8AB400025334 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
-		AB53B04B2F9D8AB400025334 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		AB53B04C2F9D8AB400025334 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		AB53B04D2F9D8AB400025334 /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF511345ACBF00AF11D1 /* xstring.cpp */; };
 		AB53B04E2F9D8AB400025334 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABD104271346653B00AF11D1 /* main.m */; };
@@ -1939,7 +1934,7 @@
 		AB790058215B84E50082AE82 /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C81E31B21676C00ACECD5 /* hq3x.cpp */; };
 		AB790059215B84E50082AE82 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
 		AB79005A215B84E50082AE82 /* ClientDisplayView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD07DA1E19CAA6007867CA /* ClientDisplayView.cpp */; };
-		AB79005B215B84E50082AE82 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		AB79005B215B84E50082AE82 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		AB79005C215B84E50082AE82 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
 		AB79005D215B84E50082AE82 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB301BDE1D9C8BAC00246A93 /* deposterize.cpp */; };
 		AB79005E215B84E50082AE82 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
@@ -2051,7 +2046,6 @@
 		AB7900C9215B84E50082AE82 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
 		AB7900CA215B84E50082AE82 /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */; };
 		AB7900CB215B84E50082AE82 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
-		AB7900CC215B84E50082AE82 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		AB7900CD215B84E50082AE82 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		AB7900CE215B84E50082AE82 /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF511345ACBF00AF11D1 /* xstring.cpp */; };
 		AB7900CF215B84E50082AE82 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABD104271346653B00AF11D1 /* main.m */; };
@@ -2281,7 +2275,7 @@
 		AB7901CC215B84F20082AE82 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA81345AC8400AF11D1 /* common.cpp */; };
 		AB7901CD215B84F20082AE82 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
 		AB7901CE215B84F20082AE82 /* psaux.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731661BB51FDC00B26147 /* psaux.c */; };
-		AB7901CF215B84F20082AE82 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		AB7901CF215B84F20082AE82 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		AB7901D0215B84F20082AE82 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
 		AB7901D1215B84F20082AE82 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */; };
 		AB7901D2215B84F20082AE82 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
@@ -2378,7 +2372,6 @@
 		AB79022E215B84F20082AE82 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
 		AB79022F215B84F20082AE82 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		AB790230215B84F20082AE82 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
-		AB790231215B84F20082AE82 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		AB790232215B84F20082AE82 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		AB790233215B84F20082AE82 /* ClientDisplayView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD07DA1E19CAA6007867CA /* ClientDisplayView.cpp */; };
 		AB790234215B84F20082AE82 /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */; };
@@ -2543,7 +2536,7 @@
 		AB796CF615CDCBA200C59155 /* cheatSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA61345AC8400AF11D1 /* cheatSystem.cpp */; };
 		AB796CF715CDCBA200C59155 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA81345AC8400AF11D1 /* common.cpp */; };
 		AB796CF815CDCBA200C59155 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
-		AB796CF915CDCBA200C59155 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		AB796CF915CDCBA200C59155 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		AB796CFA15CDCBA200C59155 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
 		AB796CFB15CDCBA200C59155 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
 		AB796CFC15CDCBA200C59155 /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEAB1345AC8400AF11D1 /* debug.cpp */; };
@@ -2615,7 +2608,6 @@
 		AB796D4315CDCBA200C59155 /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECE1345AC8400AF11D1 /* version.cpp */; };
 		AB796D4415CDCBA200C59155 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
 		AB796D4515CDCBA200C59155 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
-		AB796D4615CDCBA200C59155 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		AB796D4715CDCBA200C59155 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		AB796D4815CDCBA200C59155 /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF511345ACBF00AF11D1 /* xstring.cpp */; };
 		AB796D4915CDCBA200C59155 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABD104271346653B00AF11D1 /* main.m */; };
@@ -3059,7 +3051,7 @@
 		AB8F3C7B1A53AC2600A80BF6 /* slot2_auto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB29B16518313C14009B7982 /* slot2_auto.cpp */; };
 		AB8F3C7C1A53AC2600A80BF6 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA81345AC8400AF11D1 /* common.cpp */; };
 		AB8F3C7D1A53AC2600A80BF6 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
-		AB8F3C7E1A53AC2600A80BF6 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		AB8F3C7E1A53AC2600A80BF6 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		AB8F3C7F1A53AC2600A80BF6 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
 		AB8F3C801A53AC2600A80BF6 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
 		AB8F3C811A53AC2600A80BF6 /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEAB1345AC8400AF11D1 /* debug.cpp */; };
@@ -3139,7 +3131,6 @@
 		AB8F3CCF1A53AC2600A80BF6 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
 		AB8F3CD01A53AC2600A80BF6 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		AB8F3CD11A53AC2600A80BF6 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
-		AB8F3CD21A53AC2600A80BF6 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		AB8F3CD31A53AC2600A80BF6 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		AB8F3CD41A53AC2600A80BF6 /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */; };
 		AB8F3CD51A53AC2600A80BF6 /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF511345ACBF00AF11D1 /* xstring.cpp */; };
@@ -4058,7 +4049,7 @@
 		ABB3C6891501C04F00E0C22E /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
 		ABB3C68A1501C04F00E0C22E /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
 		ABB3C68B1501C04F00E0C22E /* AAFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6513AF1D6D00502E1E /* AAFilter.cpp */; };
-		ABB3C68C1501C04F00E0C22E /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		ABB3C68C1501C04F00E0C22E /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		ABB3C68D1501C04F00E0C22E /* FIFOSampleBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6813AF1D6D00502E1E /* FIFOSampleBuffer.cpp */; };
 		ABB3C68E1501C04F00E0C22E /* FIRFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6913AF1D6D00502E1E /* FIRFilter.cpp */; };
 		ABB3C68F1501C04F00E0C22E /* mmx_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6A13AF1D6D00502E1E /* mmx_optimized.cpp */; };
@@ -4066,7 +4057,6 @@
 		ABB3C6911501C04F00E0C22E /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6C13AF1D6D00502E1E /* SoundTouch.cpp */; };
 		ABB3C6921501C04F00E0C22E /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6D13AF1D6D00502E1E /* sse_optimized.cpp */; };
 		ABB3C6931501C04F00E0C22E /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6E13AF1D6D00502E1E /* TDStretch.cpp */; };
-		ABB3C6941501C04F00E0C22E /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		ABB3C6951501C04F00E0C22E /* metaspu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF771345ACFA00AF11D1 /* metaspu.cpp */; };
 		ABB3C6961501C04F00E0C22E /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		ABB3C6971501C04F00E0C22E /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
@@ -4243,7 +4233,7 @@
 		ABC858A728273FEE00A03EA9 /* ftsystem.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7931BB4EC1000B08C25 /* ftsystem.c */; };
 		ABC858A828273FEE00A03EA9 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA81345AC8400AF11D1 /* common.cpp */; };
 		ABC858A928273FEE00A03EA9 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
-		ABC858AA28273FEE00A03EA9 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		ABC858AA28273FEE00A03EA9 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		ABC858AB28273FEE00A03EA9 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
 		ABC858AC28273FEE00A03EA9 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
 		ABC858AD28273FEE00A03EA9 /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEAB1345AC8400AF11D1 /* debug.cpp */; };
@@ -4348,7 +4338,6 @@
 		ABC8591128273FEE00A03EA9 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		ABC8591228273FEE00A03EA9 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
 		ABC8591328273FEE00A03EA9 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
-		ABC8591428273FEE00A03EA9 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		ABC8591528273FEE00A03EA9 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		ABC8591628273FEE00A03EA9 /* ftbbox.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7771BB4EC1000B08C25 /* ftbbox.c */; };
 		ABC8591728273FEE00A03EA9 /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */; };
@@ -4576,7 +4565,7 @@
 		ABD2CD5B26E05CB000FB15F7 /* ftsystem.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7931BB4EC1000B08C25 /* ftsystem.c */; };
 		ABD2CD5C26E05CB000FB15F7 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA81345AC8400AF11D1 /* common.cpp */; };
 		ABD2CD5D26E05CB000FB15F7 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
-		ABD2CD5E26E05CB000FB15F7 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		ABD2CD5E26E05CB000FB15F7 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */; };
 		ABD2CD5F26E05CB000FB15F7 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
 		ABD2CD6026E05CB000FB15F7 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
 		ABD2CD6126E05CB000FB15F7 /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEAB1345AC8400AF11D1 /* debug.cpp */; };
@@ -4681,7 +4670,6 @@
 		ABD2CDC526E05CB000FB15F7 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		ABD2CDC626E05CB000FB15F7 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
 		ABD2CDC726E05CB000FB15F7 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
-		ABD2CDC826E05CB000FB15F7 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
 		ABD2CDC926E05CB000FB15F7 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		ABD2CDCA26E05CB000FB15F7 /* ftbbox.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7771BB4EC1000B08C25 /* ftbbox.c */; };
 		ABD2CDCB26E05CB000FB15F7 /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */; };
@@ -4972,6 +4960,42 @@
 		A7E500000000000000000030 /* MacMetalOSDFontData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000003 /* MacMetalOSDFontData.cpp */; };
 		A7E500000000000000000031 /* MacMetalOSDRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000005 /* MacMetalOSDRenderer.mm */; };
 		A7E500000000000000000032 /* MacMetalOSDShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A7E500000000000000000006 /* MacMetalOSDShaders.metal */; };
+		2CF4F5356EEAA96C0AA48622 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		706CB21C4F041D956ED04C1C /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		3D18CA21246A57CA59BE5FF4 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		573C0546D4A93419539EF62A /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		B0601A9012086BC4A2506074 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		2D20AC1DA18A5212FA53EAA6 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		1659DE758D308517D3F9F8E6 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		DC9CDB513443BC49EBB052E7 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		627318916852E1BECA645C95 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		03598002CCFA6AE1EA4DEC9C /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		FEDF8C4917AB82BFFDC52108 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		4A3EFF2FA75F7591E1B327C6 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		67CB6522609F6BDB03768403 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		620F0A65B2D056F499F82A86 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		C1D71ED03CDF957FFE5021C2 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		F7ABA97C092F5887C9F60F99 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		FF894CC3B27FF3B0FC001339 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		B2746044DBDD066E6A83C137 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		8A296B3B6A941C8CF0754AFD /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		5A1BD56FBB60DA0FC0E0FAF8 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		F2497582A3E6BADE18728A95 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		282AD1FCA25EBEBB861EAD0F /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		699C445385988D7CCAE05FF9 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		ED99C277048E638009BFF8E1 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		0CDFC42DAE4E1CD41D42E6C5 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		BD871AD37A49F47B06E25D81 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		AC04FC195081BC3823B4046F /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		D8544520B73DC64FB17D1F2E /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		13B79904E242FFC11813E0EB /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		3591B83D5386ABE65E7678F7 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		3CC5A16D296060FE5414B012 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		69201DA008BD0CBFC454DBCB /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		E5C236A218032A3EE4DC480E /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		DB9BEDD8E41FA335DC00CC27 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
+		BDE01F7595605733877157A5 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
+		E2CF1281040A03DC4E641D36 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -5506,7 +5530,6 @@
 		ABAD07DA1E19CAA6007867CA /* ClientDisplayView.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClientDisplayView.cpp; sourceTree = "<group>"; };
 		ABAD07DB1E19CAA6007867CA /* ClientDisplayView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientDisplayView.h; sourceTree = "<group>"; };
 		ABAD3E5913AF1D6D00502E1E /* AAFilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AAFilter.h; sourceTree = "<group>"; };
-		ABAD3E5A13AF1D6D00502E1E /* BPMDetect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BPMDetect.h; sourceTree = "<group>"; };
 		ABAD3E5B13AF1D6D00502E1E /* cpu_detect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cpu_detect.h; sourceTree = "<group>"; };
 		ABAD3E5C13AF1D6D00502E1E /* FIFOSampleBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FIFOSampleBuffer.h; sourceTree = "<group>"; };
 		ABAD3E5D13AF1D6D00502E1E /* FIFOSamplePipe.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FIFOSamplePipe.h; sourceTree = "<group>"; };
@@ -5515,9 +5538,8 @@
 		ABAD3E6013AF1D6D00502E1E /* SoundTouch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SoundTouch.h; sourceTree = "<group>"; };
 		ABAD3E6113AF1D6D00502E1E /* STTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = STTypes.h; sourceTree = "<group>"; };
 		ABAD3E6213AF1D6D00502E1E /* TDStretch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TDStretch.h; sourceTree = "<group>"; };
-		ABAD3E6313AF1D6D00502E1E /* WavFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WavFile.h; sourceTree = "<group>"; };
 		ABAD3E6513AF1D6D00502E1E /* AAFilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AAFilter.cpp; sourceTree = "<group>"; };
-		ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cpu_detect_x86_gcc.cpp; sourceTree = "<group>"; };
+		ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cpu_detect_x86.cpp; sourceTree = "<group>"; };
 		ABAD3E6813AF1D6D00502E1E /* FIFOSampleBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FIFOSampleBuffer.cpp; sourceTree = "<group>"; };
 		ABAD3E6913AF1D6D00502E1E /* FIRFilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FIRFilter.cpp; sourceTree = "<group>"; };
 		ABAD3E6A13AF1D6D00502E1E /* mmx_optimized.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mmx_optimized.cpp; sourceTree = "<group>"; };
@@ -5525,7 +5547,6 @@
 		ABAD3E6C13AF1D6D00502E1E /* SoundTouch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SoundTouch.cpp; sourceTree = "<group>"; };
 		ABAD3E6D13AF1D6D00502E1E /* sse_optimized.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sse_optimized.cpp; sourceTree = "<group>"; };
 		ABAD3E6E13AF1D6D00502E1E /* TDStretch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TDStretch.cpp; sourceTree = "<group>"; };
-		ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WavFile.cpp; sourceTree = "<group>"; };
 		ABADF1161DEA4C1200A142B1 /* Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Database.h; sourceTree = "<group>"; };
 		ABADF1171DEA4C1200A142B1 /* Database.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Database.cpp; sourceTree = "<group>"; };
 		ABADF11A1DEA4CF700A142B1 /* features_cpu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = features_cpu.c; sourceTree = "<group>"; };
@@ -5903,6 +5924,13 @@
 		A7E500000000000000000004 /* MacMetalOSDRenderer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MacMetalOSDRenderer.h; sourceTree = "<group>"; };
 		A7E500000000000000000005 /* MacMetalOSDRenderer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MacMetalOSDRenderer.mm; sourceTree = "<group>"; };
 		A7E500000000000000000006 /* MacMetalOSDShaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = MacMetalOSDShaders.metal; sourceTree = "<group>"; };
+		08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InterpolateCubic.cpp; sourceTree = "<group>"; };
+		627A40C9474644A342396DC3 /* InterpolateCubic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InterpolateCubic.h; sourceTree = "<group>"; };
+		500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InterpolateLinear.cpp; sourceTree = "<group>"; };
+		54E828D1D2C46FA6CA65FE4E /* InterpolateLinear.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InterpolateLinear.h; sourceTree = "<group>"; };
+		1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InterpolateShannon.cpp; sourceTree = "<group>"; };
+		6772906A1DF7E3AD49D3E869 /* InterpolateShannon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InterpolateShannon.h; sourceTree = "<group>"; };
+		286465ADA8DBC07FA39221BB /* soundtouch_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = soundtouch_config.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -7384,7 +7412,6 @@
 			isa = PBXGroup;
 			children = (
 				ABAD3E5913AF1D6D00502E1E /* AAFilter.h */,
-				ABAD3E5A13AF1D6D00502E1E /* BPMDetect.h */,
 				ABAD3E5B13AF1D6D00502E1E /* cpu_detect.h */,
 				ABAD3E5C13AF1D6D00502E1E /* FIFOSampleBuffer.h */,
 				ABAD3E5D13AF1D6D00502E1E /* FIFOSamplePipe.h */,
@@ -7393,9 +7420,8 @@
 				ABAD3E6013AF1D6D00502E1E /* SoundTouch.h */,
 				ABAD3E6113AF1D6D00502E1E /* STTypes.h */,
 				ABAD3E6213AF1D6D00502E1E /* TDStretch.h */,
-				ABAD3E6313AF1D6D00502E1E /* WavFile.h */,
 				ABAD3E6513AF1D6D00502E1E /* AAFilter.cpp */,
-				ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */,
+				ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86.cpp */,
 				ABAD3E6813AF1D6D00502E1E /* FIFOSampleBuffer.cpp */,
 				ABAD3E6913AF1D6D00502E1E /* FIRFilter.cpp */,
 				ABAD3E6A13AF1D6D00502E1E /* mmx_optimized.cpp */,
@@ -7403,7 +7429,13 @@
 				ABAD3E6C13AF1D6D00502E1E /* SoundTouch.cpp */,
 				ABAD3E6D13AF1D6D00502E1E /* sse_optimized.cpp */,
 				ABAD3E6E13AF1D6D00502E1E /* TDStretch.cpp */,
-				ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */,
+				08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */,
+				627A40C9474644A342396DC3 /* InterpolateCubic.h */,
+				500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */,
+				54E828D1D2C46FA6CA65FE4E /* InterpolateLinear.h */,
+				1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */,
+				6772906A1DF7E3AD49D3E869 /* InterpolateShannon.h */,
+				286465ADA8DBC07FA39221BB /* soundtouch_config.h */,
 			);
 			path = SoundTouch;
 			sourceTree = "<group>";
@@ -10295,7 +10327,7 @@
 				8C43E7B927E3CD0100A35F65 /* hq3x.cpp in Sources */,
 				8C43E7BA27E3CD0100A35F65 /* cp15.cpp in Sources */,
 				8C43E7BB27E3CD0100A35F65 /* ClientDisplayView.cpp in Sources */,
-				8C43E7BC27E3CD0100A35F65 /* cpu_detect_x86_gcc.cpp in Sources */,
+				8C43E7BC27E3CD0100A35F65 /* cpu_detect_x86.cpp in Sources */,
 				8C43E7BD27E3CD0100A35F65 /* crc.cpp in Sources */,
 				8C43E7BE27E3CD0100A35F65 /* deposterize.cpp in Sources */,
 				8C43E7BF27E3CD0100A35F65 /* datetime.cpp in Sources */,
@@ -10421,7 +10453,6 @@
 				8C43E82C27E3CD0100A35F65 /* colorspacehandler.cpp in Sources */,
 				8C43E82D27E3CD0100A35F65 /* MetalRendererCommonShaders.metal in Sources */,
 				8C43E82E27E3CD0100A35F65 /* videofilter.cpp in Sources */,
-				8C43E82F27E3CD0100A35F65 /* WavFile.cpp in Sources */,
 				8C43E83027E3CD0100A35F65 /* wifi.cpp in Sources */,
 				8C43E83127E3CD0100A35F65 /* xstring.cpp in Sources */,
 				8C43E83227E3CD0100A35F65 /* main.m in Sources */,
@@ -10484,6 +10515,9 @@
 				8C43E88827E3CD0100A35F65 /* mic_ext.cpp in Sources */,
 				8C43E88927E3CD0100A35F65 /* ftsystem.c in Sources */,
 				8C43E88A27E3CD0100A35F65 /* FileMigrationDelegate.mm in Sources */,
+				2CF4F5356EEAA96C0AA48622 /* InterpolateCubic.cpp in Sources */,
+				706CB21C4F041D956ED04C1C /* InterpolateLinear.cpp in Sources */,
+				3D18CA21246A57CA59BE5FF4 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10538,7 +10572,7 @@
 				8C43E93027E3CD4C00A35F65 /* cp15.cpp in Sources */,
 				8C43E93127E3CD4C00A35F65 /* psaux.c in Sources */,
 				AB8800572AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
-				8C43E93227E3CD4C00A35F65 /* cpu_detect_x86_gcc.cpp in Sources */,
+				8C43E93227E3CD4C00A35F65 /* cpu_detect_x86.cpp in Sources */,
 				8C43E93327E3CD4C00A35F65 /* crc.cpp in Sources */,
 				8C43E93427E3CD4C00A35F65 /* MacOGLDisplayView.mm in Sources */,
 				8C43E93527E3CD4C00A35F65 /* datetime.cpp in Sources */,
@@ -10647,7 +10681,6 @@
 				8C43E99227E3CD4C00A35F65 /* vfat.cpp in Sources */,
 				8C43E99327E3CD4C00A35F65 /* videofilter.cpp in Sources */,
 				8C43E99427E3CD4C00A35F65 /* slot2_passme.cpp in Sources */,
-				8C43E99527E3CD4C00A35F65 /* WavFile.cpp in Sources */,
 				8C43E99627E3CD4C00A35F65 /* wifi.cpp in Sources */,
 				8C43E99727E3CD4C00A35F65 /* ClientDisplayView.cpp in Sources */,
 				8C43E99827E3CD4C00A35F65 /* slot1_retail_mcrom.cpp in Sources */,
@@ -10701,6 +10734,9 @@
 				8C43E9E727E3CD4C00A35F65 /* audiosamplegenerator.cpp in Sources */,
 				8C43E9E827E3CD4C00A35F65 /* mic_ext.cpp in Sources */,
 				8C43E9E927E3CD4C00A35F65 /* FileMigrationDelegate.mm in Sources */,
+				573C0546D4A93419539EF62A /* InterpolateCubic.cpp in Sources */,
+				B0601A9012086BC4A2506074 /* InterpolateLinear.cpp in Sources */,
+				2D20AC1DA18A5212FA53EAA6 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10726,7 +10762,7 @@
 				8CCD842827E40B730024BDD5 /* ftsystem.c in Sources */,
 				8CCD842927E40B730024BDD5 /* common.cpp in Sources */,
 				8CCD842A27E40B730024BDD5 /* cp15.cpp in Sources */,
-				8CCD842B27E40B730024BDD5 /* cpu_detect_x86_gcc.cpp in Sources */,
+				8CCD842B27E40B730024BDD5 /* cpu_detect_x86.cpp in Sources */,
 				8CCD842C27E40B730024BDD5 /* crc.cpp in Sources */,
 				8CCD842D27E40B730024BDD5 /* datetime.cpp in Sources */,
 				8CCD842E27E40B730024BDD5 /* debug.cpp in Sources */,
@@ -10841,7 +10877,6 @@
 				8CCD849227E40B730024BDD5 /* videofilter.cpp in Sources */,
 				8CCD849327E40B730024BDD5 /* ClientInputHandler.cpp in Sources */,
 				8CCD849427E40B730024BDD5 /* slot2_passme.cpp in Sources */,
-				8CCD849527E40B730024BDD5 /* WavFile.cpp in Sources */,
 				AB7991452E712F510030C0A6 /* ClientAudioOutput.cpp in Sources */,
 				8CCD849627E40B730024BDD5 /* wifi.cpp in Sources */,
 				AB79914F2E71EF050030C0A6 /* CocoaAudioController.mm in Sources */,
@@ -10917,6 +10952,9 @@
 				8CCD84F927E40B730024BDD5 /* mic_ext.cpp in Sources */,
 				8CCD84FA27E40B730024BDD5 /* FileMigrationDelegate.mm in Sources */,
 				8CCD84FB27E40B730024BDD5 /* hq3x.cpp in Sources */,
+				1659DE758D308517D3F9F8E6 /* InterpolateCubic.cpp in Sources */,
+				DC9CDB513443BC49EBB052E7 /* InterpolateLinear.cpp in Sources */,
+				627318916852E1BECA645C95 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10941,7 +10979,7 @@
 				AB36C7A927F2C8AE00C763C8 /* common.cpp in Sources */,
 				AB36C7AA27F2C8AE00C763C8 /* cp15.cpp in Sources */,
 				AB7991522E71EF060030C0A6 /* CocoaAudioController.mm in Sources */,
-				AB36C7AB27F2C8AE00C763C8 /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB36C7AB27F2C8AE00C763C8 /* cpu_detect_x86.cpp in Sources */,
 				AB36C7AC27F2C8AE00C763C8 /* crc.cpp in Sources */,
 				AB36C7AD27F2C8AE00C763C8 /* datetime.cpp in Sources */,
 				AB36C7AE27F2C8AE00C763C8 /* debug.cpp in Sources */,
@@ -11056,7 +11094,6 @@
 				AB36C81227F2C8AE00C763C8 /* videofilter.cpp in Sources */,
 				AB36C81327F2C8AE00C763C8 /* ClientInputHandler.cpp in Sources */,
 				AB36C81427F2C8AE00C763C8 /* slot2_passme.cpp in Sources */,
-				AB36C81527F2C8AE00C763C8 /* WavFile.cpp in Sources */,
 				AB36C81627F2C8AE00C763C8 /* wifi.cpp in Sources */,
 				AB36C81727F2C8AE00C763C8 /* ftbbox.c in Sources */,
 				AB36C81827F2C8AE00C763C8 /* slot1_retail_mcrom.cpp in Sources */,
@@ -11157,6 +11194,9 @@
 				AB36C87927F2C8AE00C763C8 /* mic_ext.cpp in Sources */,
 				AB36C87A27F2C8AE00C763C8 /* FileMigrationDelegate.mm in Sources */,
 				AB36C87B27F2C8AE00C763C8 /* hq3x.cpp in Sources */,
+				03598002CCFA6AE1EA4DEC9C /* InterpolateCubic.cpp in Sources */,
+				FEDF8C4917AB82BFFDC52108 /* InterpolateLinear.cpp in Sources */,
+				4A3EFF2FA75F7591E1B327C6 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11185,7 +11225,7 @@
 				AB53AFCC2F9D8AB400025334 /* hq3x.cpp in Sources */,
 				AB53AFCD2F9D8AB400025334 /* cp15.cpp in Sources */,
 				AB53AFCE2F9D8AB400025334 /* ClientDisplayView.cpp in Sources */,
-				AB53AFCF2F9D8AB400025334 /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB53AFCF2F9D8AB400025334 /* cpu_detect_x86.cpp in Sources */,
 				AB53AFD02F9D8AB400025334 /* crc.cpp in Sources */,
 				AB53AFD12F9D8AB400025334 /* deposterize.cpp in Sources */,
 				AB53AFD22F9D8AB400025334 /* datetime.cpp in Sources */,
@@ -11312,7 +11352,6 @@
 				AB53B0482F9D8AB400025334 /* colorspacehandler.cpp in Sources */,
 				AB53B0492F9D8AB400025334 /* MetalRendererCommonShaders.metal in Sources */,
 				AB53B04A2F9D8AB400025334 /* videofilter.cpp in Sources */,
-				AB53B04B2F9D8AB400025334 /* WavFile.cpp in Sources */,
 				AB53B04C2F9D8AB400025334 /* wifi.cpp in Sources */,
 				AB53B04D2F9D8AB400025334 /* xstring.cpp in Sources */,
 				AB53B04E2F9D8AB400025334 /* main.m in Sources */,
@@ -11374,6 +11413,9 @@
 				AB53B0872F9D8AB400025334 /* mic_ext.cpp in Sources */,
 				AB53B0882F9D8AB400025334 /* ftsystem.c in Sources */,
 				AB53B0892F9D8AB400025334 /* FileMigrationDelegate.mm in Sources */,
+				67CB6522609F6BDB03768403 /* InterpolateCubic.cpp in Sources */,
+				620F0A65B2D056F499F82A86 /* InterpolateLinear.cpp in Sources */,
+				C1D71ED03CDF957FFE5021C2 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11402,7 +11444,7 @@
 				AB790058215B84E50082AE82 /* hq3x.cpp in Sources */,
 				AB790059215B84E50082AE82 /* cp15.cpp in Sources */,
 				AB79005A215B84E50082AE82 /* ClientDisplayView.cpp in Sources */,
-				AB79005B215B84E50082AE82 /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB79005B215B84E50082AE82 /* cpu_detect_x86.cpp in Sources */,
 				AB79005C215B84E50082AE82 /* crc.cpp in Sources */,
 				AB79005D215B84E50082AE82 /* deposterize.cpp in Sources */,
 				AB79005E215B84E50082AE82 /* datetime.cpp in Sources */,
@@ -11526,7 +11568,6 @@
 				AB7900CA215B84E50082AE82 /* colorspacehandler.cpp in Sources */,
 				AB5B1D4C21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */,
 				AB7900CB215B84E50082AE82 /* videofilter.cpp in Sources */,
-				AB7900CC215B84E50082AE82 /* WavFile.cpp in Sources */,
 				AB7900CD215B84E50082AE82 /* wifi.cpp in Sources */,
 				AB7900CE215B84E50082AE82 /* xstring.cpp in Sources */,
 				AB7900CF215B84E50082AE82 /* main.m in Sources */,
@@ -11619,6 +11660,9 @@
 				AB790125215B84E50082AE82 /* mic_ext.cpp in Sources */,
 				AB790126215B84E50082AE82 /* ftsystem.c in Sources */,
 				AB790127215B84E50082AE82 /* FileMigrationDelegate.mm in Sources */,
+				F7ABA97C092F5887C9F60F99 /* InterpolateCubic.cpp in Sources */,
+				FF894CC3B27FF3B0FC001339 /* InterpolateLinear.cpp in Sources */,
+				B2746044DBDD066E6A83C137 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11670,7 +11714,7 @@
 				AB7901CC215B84F20082AE82 /* common.cpp in Sources */,
 				AB7901CD215B84F20082AE82 /* cp15.cpp in Sources */,
 				AB7901CE215B84F20082AE82 /* psaux.c in Sources */,
-				AB7901CF215B84F20082AE82 /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB7901CF215B84F20082AE82 /* cpu_detect_x86.cpp in Sources */,
 				AB7901D0215B84F20082AE82 /* crc.cpp in Sources */,
 				AB7901D1215B84F20082AE82 /* MacOGLDisplayView.mm in Sources */,
 				AB7901D2215B84F20082AE82 /* datetime.cpp in Sources */,
@@ -11779,7 +11823,6 @@
 				AB79022E215B84F20082AE82 /* vfat.cpp in Sources */,
 				AB79022F215B84F20082AE82 /* videofilter.cpp in Sources */,
 				AB790230215B84F20082AE82 /* slot2_passme.cpp in Sources */,
-				AB790231215B84F20082AE82 /* WavFile.cpp in Sources */,
 				AB790232215B84F20082AE82 /* wifi.cpp in Sources */,
 				AB790233215B84F20082AE82 /* ClientDisplayView.cpp in Sources */,
 				AB790234215B84F20082AE82 /* slot1_retail_mcrom.cpp in Sources */,
@@ -11865,6 +11908,9 @@
 				AB790283215B84F20082AE82 /* audiosamplegenerator.cpp in Sources */,
 				AB790284215B84F20082AE82 /* mic_ext.cpp in Sources */,
 				AB790285215B84F20082AE82 /* FileMigrationDelegate.mm in Sources */,
+				8A296B3B6A941C8CF0754AFD /* InterpolateCubic.cpp in Sources */,
+				5A1BD56FBB60DA0FC0E0FAF8 /* InterpolateLinear.cpp in Sources */,
+				F2497582A3E6BADE18728A95 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11893,7 +11939,7 @@
 				AB4C81E41B21676C00ACECD5 /* hq3x.cpp in Sources */,
 				AB796CF815CDCBA200C59155 /* cp15.cpp in Sources */,
 				ABAD07DC1E19CAA6007867CA /* ClientDisplayView.cpp in Sources */,
-				AB796CF915CDCBA200C59155 /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB796CF915CDCBA200C59155 /* cpu_detect_x86.cpp in Sources */,
 				AB796CFA15CDCBA200C59155 /* crc.cpp in Sources */,
 				AB301BDF1D9C8BAC00246A93 /* deposterize.cpp in Sources */,
 				AB796CFB15CDCBA200C59155 /* datetime.cpp in Sources */,
@@ -12017,7 +12063,6 @@
 				AB5FDDAC1D62C89E0094617C /* colorspacehandler.cpp in Sources */,
 				AB5B1D4A21D1F31E00BF0E0F /* MetalRendererCommonShaders.metal in Sources */,
 				AB796D4515CDCBA200C59155 /* videofilter.cpp in Sources */,
-				AB796D4615CDCBA200C59155 /* WavFile.cpp in Sources */,
 				AB796D4715CDCBA200C59155 /* wifi.cpp in Sources */,
 				AB796D4815CDCBA200C59155 /* xstring.cpp in Sources */,
 				AB796D4915CDCBA200C59155 /* main.m in Sources */,
@@ -12110,6 +12155,9 @@
 				ABD10AEA1715FCDD00B5729D /* mic_ext.cpp in Sources */,
 				ABFEA8581BB4EC1100B08C25 /* ftsystem.c in Sources */,
 				ABD42047172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */,
+				282AD1FCA25EBEBB861EAD0F /* InterpolateCubic.cpp in Sources */,
+				699C445385988D7CCAE05FF9 /* InterpolateLinear.cpp in Sources */,
+				ED99C277048E638009BFF8E1 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12161,7 +12209,7 @@
 				AB8F3C7C1A53AC2600A80BF6 /* common.cpp in Sources */,
 				AB8F3C7D1A53AC2600A80BF6 /* cp15.cpp in Sources */,
 				ABA7316D1BB51FDC00B26147 /* psaux.c in Sources */,
-				AB8F3C7E1A53AC2600A80BF6 /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB8F3C7E1A53AC2600A80BF6 /* cpu_detect_x86.cpp in Sources */,
 				AB8F3C7F1A53AC2600A80BF6 /* crc.cpp in Sources */,
 				AB3BF4031E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */,
 				AB8F3C801A53AC2600A80BF6 /* datetime.cpp in Sources */,
@@ -12270,7 +12318,6 @@
 				AB8F3CCF1A53AC2600A80BF6 /* vfat.cpp in Sources */,
 				AB8F3CD01A53AC2600A80BF6 /* videofilter.cpp in Sources */,
 				AB8F3CD11A53AC2600A80BF6 /* slot2_passme.cpp in Sources */,
-				AB8F3CD21A53AC2600A80BF6 /* WavFile.cpp in Sources */,
 				AB8F3CD31A53AC2600A80BF6 /* wifi.cpp in Sources */,
 				ABAD07DD1E19CAA6007867CA /* ClientDisplayView.cpp in Sources */,
 				AB8F3CD41A53AC2600A80BF6 /* slot1_retail_mcrom.cpp in Sources */,
@@ -12356,6 +12403,9 @@
 				AB8F3D1B1A53AC2600A80BF6 /* audiosamplegenerator.cpp in Sources */,
 				AB8F3D1C1A53AC2600A80BF6 /* mic_ext.cpp in Sources */,
 				AB8F3D1D1A53AC2600A80BF6 /* FileMigrationDelegate.mm in Sources */,
+				0CDFC42DAE4E1CD41D42E6C5 /* InterpolateCubic.cpp in Sources */,
+				BD871AD37A49F47B06E25D81 /* InterpolateLinear.cpp in Sources */,
+				AC04FC195081BC3823B4046F /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12415,7 +12465,7 @@
 				ABB3C68B1501C04F00E0C22E /* AAFilter.cpp in Sources */,
 				AB49B540281687B90069F1D7 /* ftfstype.c in Sources */,
 				AB49B53F281687B90069F1D7 /* ftfntfmt.c in Sources */,
-				ABB3C68C1501C04F00E0C22E /* cpu_detect_x86_gcc.cpp in Sources */,
+				ABB3C68C1501C04F00E0C22E /* cpu_detect_x86.cpp in Sources */,
 				ABB3C68D1501C04F00E0C22E /* FIFOSampleBuffer.cpp in Sources */,
 				AB8044F22F0E4A2B00A6824E /* ClientAVCaptureObject.cpp in Sources */,
 				ABDB1BE62E6602A5002AD9AF /* ClientEmulationOutput.cpp in Sources */,
@@ -12428,7 +12478,6 @@
 				ABB3C6921501C04F00E0C22E /* sse_optimized.cpp in Sources */,
 				ABB3C6931501C04F00E0C22E /* TDStretch.cpp in Sources */,
 				ABBFFF871D6283C1003CD598 /* colorspacehandler.cpp in Sources */,
-				ABB3C6941501C04F00E0C22E /* WavFile.cpp in Sources */,
 				ABB3C6951501C04F00E0C22E /* metaspu.cpp in Sources */,
 				ABB3C6961501C04F00E0C22E /* SndOut.cpp in Sources */,
 				ABB3C6971501C04F00E0C22E /* Timestretcher.cpp in Sources */,
@@ -12539,6 +12588,9 @@
 				ABD10AED17160C9300B5729D /* ringbuffer.cpp in Sources */,
 				ABD10AEE17160CDD00B5729D /* cocoa_input.mm in Sources */,
 				AB49B53E281687B90069F1D7 /* ftdebug.c in Sources */,
+				D8544520B73DC64FB17D1F2E /* InterpolateCubic.cpp in Sources */,
+				13B79904E242FFC11813E0EB /* InterpolateLinear.cpp in Sources */,
+				3591B83D5386ABE65E7678F7 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12565,7 +12617,7 @@
 				ABC858A728273FEE00A03EA9 /* ftsystem.c in Sources */,
 				ABC858A828273FEE00A03EA9 /* common.cpp in Sources */,
 				ABC858A928273FEE00A03EA9 /* cp15.cpp in Sources */,
-				ABC858AA28273FEE00A03EA9 /* cpu_detect_x86_gcc.cpp in Sources */,
+				ABC858AA28273FEE00A03EA9 /* cpu_detect_x86.cpp in Sources */,
 				ABC858AB28273FEE00A03EA9 /* crc.cpp in Sources */,
 				ABC858AC28273FEE00A03EA9 /* datetime.cpp in Sources */,
 				ABC858AD28273FEE00A03EA9 /* debug.cpp in Sources */,
@@ -12680,7 +12732,6 @@
 				ABC8591228273FEE00A03EA9 /* ClientInputHandler.cpp in Sources */,
 				ABDB1BF82E66486E002AD9AF /* ClientVideoOutput.cpp in Sources */,
 				ABC8591328273FEE00A03EA9 /* slot2_passme.cpp in Sources */,
-				ABC8591428273FEE00A03EA9 /* WavFile.cpp in Sources */,
 				ABC8591528273FEE00A03EA9 /* wifi.cpp in Sources */,
 				ABC8591628273FEE00A03EA9 /* ftbbox.c in Sources */,
 				ABC8591728273FEE00A03EA9 /* slot1_retail_mcrom.cpp in Sources */,
@@ -12784,6 +12835,9 @@
 				ABC8597828273FEE00A03EA9 /* mic_ext.cpp in Sources */,
 				ABC8597928273FEE00A03EA9 /* FileMigrationDelegate.mm in Sources */,
 				ABC8597A28273FEE00A03EA9 /* hq3x.cpp in Sources */,
+				3CC5A16D296060FE5414B012 /* InterpolateCubic.cpp in Sources */,
+				69201DA008BD0CBFC454DBCB /* InterpolateLinear.cpp in Sources */,
+				E5C236A218032A3EE4DC480E /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12810,7 +12864,7 @@
 				ABD2CD5B26E05CB000FB15F7 /* ftsystem.c in Sources */,
 				ABD2CD5C26E05CB000FB15F7 /* common.cpp in Sources */,
 				ABD2CD5D26E05CB000FB15F7 /* cp15.cpp in Sources */,
-				ABD2CD5E26E05CB000FB15F7 /* cpu_detect_x86_gcc.cpp in Sources */,
+				ABD2CD5E26E05CB000FB15F7 /* cpu_detect_x86.cpp in Sources */,
 				ABD2CD5F26E05CB000FB15F7 /* crc.cpp in Sources */,
 				ABD2CD6026E05CB000FB15F7 /* datetime.cpp in Sources */,
 				ABD2CD6126E05CB000FB15F7 /* debug.cpp in Sources */,
@@ -12925,7 +12979,6 @@
 				ABD2CDC626E05CB000FB15F7 /* ClientInputHandler.cpp in Sources */,
 				ABDB1BF12E66486E002AD9AF /* ClientVideoOutput.cpp in Sources */,
 				ABD2CDC726E05CB000FB15F7 /* slot2_passme.cpp in Sources */,
-				ABD2CDC826E05CB000FB15F7 /* WavFile.cpp in Sources */,
 				ABD2CDC926E05CB000FB15F7 /* wifi.cpp in Sources */,
 				ABD2CDCA26E05CB000FB15F7 /* ftbbox.c in Sources */,
 				ABD2CDCB26E05CB000FB15F7 /* slot1_retail_mcrom.cpp in Sources */,
@@ -13029,6 +13082,9 @@
 				ABD2CE2C26E05CB000FB15F7 /* mic_ext.cpp in Sources */,
 				ABD2CE2D26E05CB000FB15F7 /* FileMigrationDelegate.mm in Sources */,
 				ABD2CE2E26E05CB000FB15F7 /* hq3x.cpp in Sources */,
+				DB9BEDD8E41FA335DC00CC27 /* InterpolateCubic.cpp in Sources */,
+				BDE01F7595605733877157A5 /* InterpolateLinear.cpp in Sources */,
+				E2CF1281040A03DC4E641D36 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

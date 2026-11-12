@@ -261,17 +261,18 @@ SRCS = \
 	../../metaspu/SndOut.cpp \
 	../../metaspu/Timestretcher.cpp \
 	../../metaspu/win32/ConfigSoundtouch.cpp \
-	../../metaspu/SoundTouch/3dnow_win.cpp \
 	../../metaspu/SoundTouch/AAFilter.cpp \
-	../../metaspu/SoundTouch/cpu_detect_x86_win.cpp \
+	../../metaspu/SoundTouch/cpu_detect_x86.cpp \
 	../../metaspu/SoundTouch/FIFOSampleBuffer.cpp \
 	../../metaspu/SoundTouch/FIRFilter.cpp \
+	../../metaspu/SoundTouch/InterpolateCubic.cpp \
+	../../metaspu/SoundTouch/InterpolateLinear.cpp \
+	../../metaspu/SoundTouch/InterpolateShannon.cpp \
 	../../metaspu/SoundTouch/mmx_optimized.cpp \
 	../../metaspu/SoundTouch/RateTransposer.cpp \
 	../../metaspu/SoundTouch/SoundTouch.cpp \
 	../../metaspu/SoundTouch/sse_optimized.cpp \
 	../../metaspu/SoundTouch/TDStretch.cpp \
-	../../metaspu/SoundTouch/WavFile.cpp \
 	../modules/Disassembler.cpp \
 	../modules/osd/agg/aggdraw.cpp \
 	../modules/osd/agg/agg_osd.cpp \
