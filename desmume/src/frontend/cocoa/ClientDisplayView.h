@@ -112,17 +112,22 @@ typedef struct ClientFrameInfo ClientFrameInfo;
 
 struct ClientDisplayPresenterProperties
 {
+	// These are the primary members of this struct. All other members will have some
+	// dependence on these, and so it is always important to assign them valid values
+	// before passing this struct to any related methods.
 	ClientDisplayMode mode;
 	ClientDisplayLayout layout;
 	ClientDisplayOrder order;
 	double gapScale;
 	double rotation;
 	
-	// The screen scale is a size multiplier for the NDS screen layout, as drawn into
-	// the viewport.
+	// The screen scale is the primary size multiplier for the NDS screen layout, as
+	// drawn into the viewport.
 	double screenScale;
 	
-	// The client scale
+	// The client scale is a secondary size multiplier that is applied to the NDS
+	// screen layout. It is used in tandem with the actual viewport size for the
+	// support of HiDPI viewports.
 	double clientScale;
 	
 	// The "logical viewport size" represents the size of the viewport that matches
