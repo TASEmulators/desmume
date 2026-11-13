@@ -161,6 +161,11 @@ public:
 
 	DateTime rtcStart;
 
+	// Optional header field: the wall-clock time the movie was recorded, as a
+	// decimal Unix timestamp. Older builds ignore this key when loading, and
+	// movies written before it existed simply leave it empty.
+	std::string recordDate;
+
 	//was the frame data stored in binary?
 	bool binaryFlag;
 
@@ -226,6 +231,7 @@ private:
 	void installRomSerial(std::string& key, std::string& val) { romSerial = val; }
 	void installGuid(std::string& key, std::string& val) { guid = Desmume_Guid::fromString(val); }
 	void installRtcStartNew(std::string& key, std::string& val) { DateTime::TryParse(val.c_str(), rtcStart); }
+	void installRecordDate(std::string& key, std::string& val) { recordDate = val; }
 	void installBinary(std::string& key, std::string& val) { binaryFlag = atoi(val.c_str()) != 0; }
 	void installUseExtBios(std::string& key, std::string& val) { useExtBios = atoi(val.c_str()) != 0; }
 	void installSwiFromBios(std::string& key, std::string& val) { swiFromBios = atoi(val.c_str()) != 0; }
@@ -258,7 +264,9 @@ extern MovieData currMovieData;		//adelikat: main needs this for frame counter d
 extern bool movie_reset_command;
 
 bool FCEUI_MovieGetInfo(EMUFILE &fp, MOVIE_INFO &info, bool skipFrameCount);
-void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart);
+// description is written as one ordinary "comment" line; the default keeps the
+// other frontends' call sites unchanged. No new DSM header key is involved.
+void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart, const std::wstring &description = L"");
 const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe); // returns NULL on success, errmsg on failure
 void UnloadMovieEmulationSettings();
 bool AreMovieEmulationSettingsActive();

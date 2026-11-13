@@ -240,7 +240,8 @@ MovieData::MovieData(bool fromCurrentSettings)
 	installValueMap["guid"] = &MovieData::installGuid;
 	installValueMap["rtcStart"] = &MovieData::installRtcStart;
 	installValueMap["rtcStartNew"] = &MovieData::installRtcStartNew;
-	
+	installValueMap["recordDate"] = &MovieData::installRecordDate;
+
 	installValueMap["comment"] = &MovieData::installComment;
 	installValueMap["binary"] = &MovieData::installBinary;
 	installValueMap["useExtBios"] = &MovieData::installUseExtBios;
@@ -399,6 +400,11 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	fp.fprintf("jitBlockSize %d\n", CommonSettings.use_jit ? CommonSettings.jit_max_block_size : 0);
 
 	fp.fprintf("rtcStartNew %s\n", rtcStart.ToString().c_str());
+
+	// Optional: movies recorded before this field existed stay without it, and
+	// older builds silently ignore the key when they load the file.
+	if (!recordDate.empty())
+		fp.fprintf("recordDate %s\n", recordDate.c_str());
 
 	for (u32 i = 0; i < comments.size(); i++)
 		fp.fprintf("comment %s\n", wcstombs(comments[i]).c_str());
@@ -804,7 +810,7 @@ bool MovieData::loadSramFrom(std::vector<u8>* buf)
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
-void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart)
+void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart, const std::wstring &description)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
@@ -824,11 +830,18 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 	FCEUMOV_BumpGeneration();
 
 	if(author != L"") currMovieData.comments.push_back(L"author " + author);
+	if(description != L"") currMovieData.comments.push_back(description);
 	currMovieData.romChecksum = gameInfo.crc;
 	currMovieData.romSerial = gameInfo.ROMserial;
 	currMovieData.romFilename = path.GetRomName();
 	currMovieData.rtcStart = rtcstart;
 	currMovieData.micSamples = ::micSamples;
+
+	// Wall-clock recording time, as a decimal Unix timestamp. Movies written by
+	// older builds have no such key; those simply leave recordDate empty.
+	char dateBuf[32];
+	snprintf(dateBuf, sizeof(dateBuf), "%lld", (long long)time(NULL));
+	currMovieData.recordDate = dateBuf;
 
 	// reset firmware (some games can write to it)
 	if (!CommonSettings.UseExtFirmware)
