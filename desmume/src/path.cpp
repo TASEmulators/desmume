@@ -277,6 +277,7 @@ void PathInfo::ReadPathSettings()
 	ReadKeyW(pathToStateSlots, STATESLOTKEY);
 	ReadKeyW(pathToScreenshots, SCREENSHOTKEY);
 	ReadKeyW(pathToAviFiles, AVIKEY);
+	ReadKeyW(pathToMovies, MOVIEKEY);
 	ReadKeyW(pathToCheats, CHEATKEY);
 	ReadKeyW(pathToSounds, SOUNDKEY);
 	ReadKeyW(pathToFirmware, FIRMWAREKEY);
@@ -330,6 +331,9 @@ void PathInfo::SwitchPath(Action action, KnownPath path, char *buffer)
 		break;
 	case AVI_FILES:
 		pathToCopy = pathToAviFiles;
+		break;
+	case MOVIES:
+		pathToCopy = pathToMovies;
 		break;
 	case CHEATS:
 		pathToCopy = pathToCheats;

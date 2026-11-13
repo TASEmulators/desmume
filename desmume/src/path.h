@@ -83,6 +83,7 @@ public:
 	#define STATESLOTKEY	L"StateSlots"
 	#define SCREENSHOTKEY	L"Screenshots"
 	#define AVIKEY			L"AviFiles"
+	#define MOVIEKEY		L"Movies"
 	#define CHEATKEY		L"Cheats"
 	#define R4FORMATKEY		"R4format"
 	#define SOUNDKEY		L"SoundSamples"
@@ -111,6 +112,7 @@ public:
 		STATE_SLOTS,
 		SCREENSHOTS,
 		AVI_FILES,
+		MOVIES,
 		CHEATS,
 		SOUNDS,
 		FIRMWARE,
@@ -128,6 +130,7 @@ public:
 	char pathToStateSlots[MAX_PATH*8];
 	char pathToScreenshots[MAX_PATH*8];
 	char pathToAviFiles[MAX_PATH*8];
+	char pathToMovies[MAX_PATH*8];
 	char pathToCheats[MAX_PATH*8];
 	char pathToSounds[MAX_PATH*8];
 	char pathToFirmware[MAX_PATH*8];

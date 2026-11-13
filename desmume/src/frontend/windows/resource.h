@@ -206,6 +206,8 @@
 #define IDC_BROWSESRAMIMPORT            370
 #define IDC_STATESLOTPATHEDIT           371
 #define IDC_BROWSESTATESLOTS            372
+#define IDC_MOVIEPATHEDIT               374
+#define IDC_BROWSEMOVIES                375
 #define IDC_DES_BOX                     402
 #define IDC_R0                          403
 #define IDC_R1                          404
