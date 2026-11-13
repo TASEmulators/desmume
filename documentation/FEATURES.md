@@ -117,12 +117,21 @@ feature. Each entry says what you can do with it — not how it is built.
   address or number of changes.
 - **The full comparison set** — equal, not equal, less, greater, ≤, ≥,
   Different By and Modulo Is, with 1/2/4-byte widths, signed/unsigned/hex/20.12
-  display, optional misaligned addresses and a little-endian toggle.
+  display, optional misaligned addresses and a big-endian toggle.
+- **The Windows dialog layout** — the result list and its action column on top,
+  the four criteria groups (Comparison Operator, Compare To / By, Data Size,
+  Data Type / Display) underneath, so every option is visible at once.
+- **Narrow down without starting over** — Undo and Redo step through searches,
+  Eliminate drops a wrong candidate, Clear Change Counts restarts the change
+  counters, and Autosearch keeps applying the current criteria as the game runs
+  (Retry / Ignore / Stop when the list runs dry).
+- **Poke and hand off** — Poke writes the Specific Value into the selected
+  address, while Watch and Add Cheat turn a row into a RAM Watch entry or an
+  internal cheat, opening the target window when it is closed.
 - **A readable live result table** — Address / Value / Previous / Changes,
-  refreshed every frame and throttled for very large sets; double-click or Add
-  Watch sends a row to RAM Watch.
-- **Tools > RAM Search… (Cmd+Opt+S)** — this first pass covers core searching;
-  Eliminate, Poke, Undo/Redo, Auto-search and Add Cheat are not exposed yet.
+  refreshed every frame and throttled for very large sets; double-click a row to
+  send it to RAM Watch.
+- **Tools > RAM Search… (Cmd+Opt+S)**
 
 ### Metal OSD for Lua and the HUD
 - **AGG-free rendering** — Lua drawing and OSD text go into a HUD layer shared by

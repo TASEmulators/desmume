@@ -1072,6 +1072,14 @@
 	[self installRAMWatchMenuItem];
 	[self installRAMSearchMenuItem];
 
+	// RAM Search's Add Watch action is delivered as a notification that only
+	// RAM Watch observes. Create the controller up front so the action still
+	// works when RAM Watch was never opened from the Tools menu.
+	if (_ramWatchWindowController == nil)
+	{
+		_ramWatchWindowController = [[RAMWatchWindowController alloc] init];
+	}
+
 	// Auto-load the most recent watch list when the option is enabled. The
 	// window controller owns the preference keys and the actual loading.
 	if ([RAMWatchWindowController shouldAutoLoadOnLaunch])

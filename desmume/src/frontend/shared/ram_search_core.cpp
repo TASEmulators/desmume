@@ -56,9 +56,10 @@ namespace
 
 RAMSearchCore::RAMSearchCore()
 	: _hasUndo(false)
+	, _hasRedo(false)
 	, _size('b')
 	, _misaligned(false)
-	, _littleEndian(false)
+	, _littleEndian(true)
 	, _searchType(SEARCH_SPECIFIC_VALUE)
 	, _operator(COMPARE_EQUAL)
 	, _valueType(VALUE_SIGNED)
@@ -152,7 +153,9 @@ void RAMSearchCore::Reset()
 {
 	_candidates.clear();
 	_hasUndo = false;
+	_hasRedo = false;
 	_undoSnapshot.clear();
+	_redoSnapshot.clear();
 
 	const int sizeInBytes = RAMDebugCore::SizeInBytes(_size);
 	if (sizeInBytes == 0)
@@ -206,6 +209,14 @@ void RAMSearchCore::SignalNewSize()
 	// Candidate addresses depend on the step size and alignment, so they are
 	// rebuilt from scratch. The UI warns that this discards search progress.
 	Reset();
+}
+
+void RAMSearchCore::ClearChangeCounts()
+{
+	for (size_t i = 0; i < _candidates.size(); i++)
+	{
+		_candidates[i].changeCount = 0;
+	}
 }
 
 void RAMSearchCore::CompactAddresses()
@@ -270,6 +281,10 @@ void RAMSearchCore::Prune(SearchType search, CompareOperator op, ValueType type,
 		_undoSnapshot.clear();
 	}
 
+	// A fresh search invalidates the redo branch.
+	_hasRedo = false;
+	_redoSnapshot.clear();
+
 	const bool signedMode = (type == VALUE_SIGNED) || (type == VALUE_FIXED_20_12);
 	const uint32_t typedValue = (uint32_t)value;
 	const uint32_t typedParameter = (uint32_t)parameter;
@@ -333,9 +348,33 @@ bool RAMSearchCore::Undo()
 	{
 		return false;
 	}
+
+	// The list being replaced becomes the redo branch.
+	_redoSnapshot.swap(_candidates);
 	_candidates.swap(_undoSnapshot);
 	_undoSnapshot.clear();
 	_hasUndo = false;
+	_hasRedo = true;
+	return true;
+}
+
+bool RAMSearchCore::CanRedo() const
+{
+	return _hasRedo && !_redoSnapshot.empty();
+}
+
+bool RAMSearchCore::Redo()
+{
+	if (!CanRedo())
+	{
+		return false;
+	}
+
+	_undoSnapshot.swap(_candidates);
+	_candidates.swap(_redoSnapshot);
+	_redoSnapshot.clear();
+	_hasUndo = true;
+	_hasRedo = false;
 	return true;
 }
 
@@ -361,6 +400,24 @@ RAMSearchCore::Result RAMSearchCore::ResultAt(size_t index) const
 	result.previousValue = candidate.previousValue;
 	result.changeCount = candidate.changeCount;
 	return result;
+}
+
+bool RAMSearchCore::Eliminate(size_t index)
+{
+	if (index >= _candidates.size())
+	{
+		return false;
+	}
+
+	_candidates.erase(_candidates.begin() + (std::vector<Candidate>::difference_type)index);
+
+	// The undo and redo snapshots belong to the last search. Keeping them
+	// around would silently resurrect the eliminated row, so they are dropped.
+	_hasUndo = false;
+	_hasRedo = false;
+	_undoSnapshot.clear();
+	_redoSnapshot.clear();
+	return true;
 }
 
 bool RAMSearchCore::AddResultToWatchList(size_t index, char typeCode,

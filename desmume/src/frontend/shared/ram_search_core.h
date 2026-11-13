@@ -129,6 +129,8 @@ public:
 	void SignalNewFrame();
 	// Re-enumerates candidates after a size/alignment change.
 	void SignalNewSize();
+	// Zeroes every candidate's change counter (Windows' Clear Change Counts).
+	void ClearChangeCounts();
 
 	// ---- Searching -------------------------------------------------------
 
@@ -137,13 +139,24 @@ public:
 	void Prune(SearchType search, CompareOperator op, ValueType type,
 	           int32_t value, int32_t parameter);
 	void CompactAddresses();
+
+	// Each search stores the list it filtered as an undo snapshot, and an
+	// undone search stores the filtered list as a redo snapshot, so Undo and
+	// Redo walk back and forth exactly one step like the Windows dialog.
 	bool CanUndo() const;
 	bool Undo();
+	bool CanRedo() const;
+	bool Redo();
 
 	// ---- Results ---------------------------------------------------------
 
 	size_t ResultCount() const;
 	Result ResultAt(size_t index) const;
+
+	// Drops one result row from the candidate list (the Windows dialog's
+	// Eliminate). The address stays out of the list until the next Reset(),
+	// which matches how Windows deactivates the corresponding memory region.
+	bool Eliminate(size_t index);
 
 	// Adds a result row to the shared watch list.
 	bool AddResultToWatchList(size_t index, char typeCode, const std::string& comment,
@@ -169,7 +182,9 @@ private:
 
 	std::vector<Candidate> _candidates;
 	std::vector<Candidate> _undoSnapshot;
+	std::vector<Candidate> _redoSnapshot;
 	bool _hasUndo;
+	bool _hasRedo;
 
 	char _size;
 	bool _misaligned;

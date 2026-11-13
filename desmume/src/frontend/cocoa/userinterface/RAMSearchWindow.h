@@ -16,9 +16,12 @@
 */
 
 // Cocoa host for RAM Search (core feature set). The search engine lives in
-// ../../shared/ram_search_core.cpp. Advanced operations from the Windows
-// dialog (Eliminate, Poke, Undo/Redo, Auto-search, Add Cheat) are intentionally
-// left for a later pass.
+// ../../shared/ram_search_core.cpp. The window follows the Windows dialog: the
+// result list sits top-left, the action buttons run down its right edge, and
+// the search criteria live in four group boxes underneath. Row actions mirror
+// the Windows dialog as well: Watch inserts into RAM Watch, Add Cheat creates an
+// internal cheat in the Cheat Manager, Poke writes a value, Eliminate drops a
+// row, and Undo/Redo step through searches.
 
 #import <Cocoa/Cocoa.h>
 
@@ -28,24 +31,51 @@
 {
 	NSScrollView *_tableScrollView;
 	NSTableView *_tableView;
-	NSView *_sidebar;
+	NSView *_buttonColumn;
+	NSView *_optionsView;
 
-	NSPopUpButton *_searchTypePopUp;
-	NSPopUpButton *_operatorPopUp;
-	NSPopUpButton *_sizePopUp;
-	NSPopUpButton *_displayPopUp;
-	NSTextField *_valueField;
-	NSTextField *_parameterField;
+	// Comparison Operator group
+	NSTextField *_differentByField;
+	NSTextField *_moduloField;
+
+	// Compare To / By group
+	NSTextField *_specificValueField;
+	NSTextField *_specificAddressField;
+	NSTextField *_changeCountField;
+
+	// Data Size group
 	NSButton *_misalignButton;
-	NSButton *_littleEndianButton;
-	NSButton *_searchButton;
-	NSButton *_resetButton;
+	NSButton *_bigEndianButton;
+
+	// Data Type / Display group
+	NSButton *_autoSearchButton;
+
+	// Action buttons that need an enabled state
+	NSButton *_undoButton;
+	NSButton *_redoButton;
+	NSButton *_eliminateButton;
+	NSButton *_pokeButton;
 	NSButton *_addWatchButton;
-	NSTextField *_statusLabel;
+	NSButton *_addCheatButton;
+
+	// Every radio button in the window, in creation order. AppKit lets a
+	// button's type be set but not read back, so the list is what tells the
+	// four radio groups apart from the checkboxes that share a group box.
+	NSMutableArray *_radioButtons;
+
+	// Selected tags of the four radio groups
+	NSInteger _searchTypeTag;
+	NSInteger _operatorTag;
+	NSInteger _sizeTag;
+	NSInteger _displayTag;
 
 	NSTimer *_refreshTimer;
 	NSUInteger _refreshTick;
 	BOOL _didReset;
+
+	BOOL _autoSearchEnabled;
+	BOOL _autoSearchAutoRetry;
+	BOOL _isShowingAutoSearchAlert;
 }
 
 - (void) showRAMSearchWindow;

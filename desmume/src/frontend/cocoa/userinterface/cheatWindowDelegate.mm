@@ -26,6 +26,15 @@
 #include "ClientCheatManager.h"
 
 
+// RAM Search posts this instead of linking against the Cheat Manager window.
+NSString * const kCheatManagerAddInternalCheatNotification = @"org.desmume.DeSmuME.addInternalCheat";
+
+
+@interface CheatWindowDelegate (Private)
+- (void) addInternalCheatFromNotification:(NSNotification *)notification;
+@end
+
+
 @implementation CheatWindowDelegate
 
 @dynamic dummyObject;
@@ -95,11 +104,18 @@
 		[CocoaDSCheatItem setIconCodeBreaker:[[NSImage imageNamed:@"Icon_CodeBreaker_128x128"] retain]];
 	}
 	
+	[[NSNotificationCenter defaultCenter] addObserver:self
+	                                         selector:@selector(addInternalCheatFromNotification:)
+	                                             name:kCheatManagerAddInternalCheatNotification
+	                                           object:nil];
+	
 	return self;
 }
 
 - (void)dealloc
 {
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
+	
 	[self setWorkingCheat:nil];
 	[self setCdsCheats:nil];
 	[self setCurrentGameCode:nil];
@@ -145,6 +161,96 @@
 	[self setCdsCheats:nil];
 	
 	[CheatDatabaseWindowController setCurrentGameForAllWindowsSerial:nil crc:0];
+}
+
+- (BOOL) addInternalCheatWithAddress:(uint32_t)address
+                                size:(uint8_t)byteSize
+                               value:(uint32_t)value
+                         description:(NSString *)description
+{
+	CocoaDSCheatManager *cheatManager = [self cdsCheats];
+	if (cheatManager == nil)
+	{
+		NSBeep();
+		
+		NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+		[alert setMessageText:@"Add Cheat"];
+		[alert setInformativeText:@"Load a ROM before adding cheats. The cheat list belongs to the running game."];
+		[alert addButtonWithTitle:@"OK"];
+		[alert runModal];
+		
+		return NO;
+	}
+	
+	CocoaDSCheatItem *newCheatItem = [cheatManager newItem];
+	if (newCheatItem == nil)
+	{
+		return NO;
+	}
+	
+	// A brand new item already defaults to an internal cheat, but set the type
+	// explicitly so the address/value setters take effect.
+	[newCheatItem setCheatType:CheatType_Internal];
+	[newCheatItem setBytes:byteSize];
+	[newCheatItem setMemAddress:address];
+	[newCheatItem setValue:(SInt64)value];
+	
+	if ([description length] > 0)
+	{
+		[newCheatItem setDescription:description];
+	}
+	
+	// The Windows "Add Cheat" dialog checks "Enabled" by default, so the new
+	// cheat starts active and freezes the value that was captured.
+	[newCheatItem setEnabled:YES];
+	
+	[cheatListController setContent:[cheatManager sessionList]];
+	[cheatListTable reloadData];
+	[cheatManager save];
+	
+	// newItem appends, so the new cheat is always the last row. Selecting it
+	// populates the internal-cheat view with the address, size and value.
+	const NSInteger rowCount = (NSInteger)[cheatListTable numberOfRows];
+	if (rowCount > 0)
+	{
+		[cheatListTable selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)(rowCount - 1)]
+		               byExtendingSelection:NO];
+		[cheatListTable scrollRowToVisible:(rowCount - 1)];
+	}
+	
+	[window makeKeyAndOrderFront:self];
+	
+	return YES;
+}
+
+- (void) addInternalCheatFromNotification:(NSNotification *)notification
+{
+	NSDictionary *info = [notification userInfo];
+	if (info == nil)
+	{
+		return;
+	}
+	
+	id address = [info objectForKey:@"address"];
+	id byteSize = [info objectForKey:@"bytes"];
+	id value = [info objectForKey:@"value"];
+	if (![address isKindOfClass:[NSNumber class]] ||
+	    ![byteSize isKindOfClass:[NSNumber class]] ||
+	    ![value isKindOfClass:[NSNumber class]])
+	{
+		return;
+	}
+	
+	NSString *description = [info objectForKey:@"description"];
+	if (![description isKindOfClass:[NSString class]])
+	{
+		description = nil;
+	}
+	
+	[self addInternalCheatWithAddress:[address unsignedIntValue]
+	                             size:(uint8_t)[byteSize unsignedIntValue]
+	                            value:[value unsignedIntValue]
+	                      description:description];
 }
 
 - (IBAction) addToList:(id)sender
