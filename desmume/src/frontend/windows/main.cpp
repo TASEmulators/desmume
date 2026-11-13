@@ -1843,7 +1843,7 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 		lagframecounter=0;
 		UpdateRecentRoms(logicalName);
 		osd->setRotate(video.rotation);
-		if (AutoRWLoad)
+		if (RAMWatchCore::Get().AutoLoad())
 		{
 			//Open Ram Watch if its auto-load setting is checked
 			OpenRWRecentFile(0);	
@@ -2359,17 +2359,27 @@ int _main()
 	useModernFont = GetPrivateProfileBool("UI", "ModernFont", true, IniName);
 	uiFont::setModern(useModernFont);
 
-	//Get Ram-Watch values
-	RWSaveWindowPos = GetPrivateProfileBool("RamWatch", "SaveWindowPos", false, IniName);
-	ramw_x = GetPrivateProfileInt("RamWatch", "RWWindowPosX", 0, IniName);
-	ramw_y = GetPrivateProfileInt("RamWatch", "RWWindowPosY", 0, IniName);
-	AutoRWLoad = GetPrivateProfileBool("RamWatch", "Auto-load", false, IniName);
+	// RAM Watch preferences and recent files are owned by the shared core;
+	// the INI file is just this frontend's persistence mechanism for them.
+	RAMWatchCore& rwDoc = RAMWatchCore::Get();
+	rwDoc.SetSaveWindowPos(GetPrivateProfileBool("RamWatch", "SaveWindowPos", false, IniName));
+	rwDoc.SetWindowPosition(GetPrivateProfileInt("RamWatch", "RWWindowPosX", 0, IniName),
+	                        GetPrivateProfileInt("RamWatch", "RWWindowPosY", 0, IniName));
+	rwDoc.SetAutoLoad(GetPrivateProfileBool("RamWatch", "Auto-load", false, IniName));
+
+	std::vector<std::string> recentWatches;
 	for(int i = 0; i < MAX_RECENT_WATCHES; i++)
 	{
 		char str[256];
+		char value[1024] = "";
 		sprintf(str, "Recent Watch %d", i+1);
-		GetPrivateProfileString("Watches", str, "", &rw_recent_files[i][0], 1024, IniName);
+		GetPrivateProfileString("Watches", str, "", value, sizeof(value), IniName);
+		if (value[0] != '\0')
+		{
+			recentWatches.push_back(value);
+		}
 	}
+	rwDoc.SetRecentFiles(recentWatches);
 
 	autoLoadLua = GetPrivateProfileBool("Scripting", "AutoLoad", false, IniName);
 
@@ -4410,17 +4420,21 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 				WritePrivateProfileInt("Display", "ScreenGap", video.screengap, IniName);
 
-				//Save Ram Watch information
-				WritePrivateProfileInt("RamWatch", "SaveWindowPos", RWSaveWindowPos, IniName);
-				WritePrivateProfileInt("RamWatch", "RWWindowPosX", ramw_x, IniName);
-				WritePrivateProfileInt("RamWatch", "RWWindowPosY", ramw_y, IniName);
-				WritePrivateProfileInt("RamWatch", "Auto-load", AutoRWLoad, IniName);
+				//Save Ram Watch information (state lives in the shared core)
+				const RAMWatchCore& rwDoc = RAMWatchCore::Get();
+				WritePrivateProfileInt("RamWatch", "SaveWindowPos", rwDoc.SaveWindowPos(), IniName);
+				WritePrivateProfileInt("RamWatch", "RWWindowPosX", rwDoc.WindowX(), IniName);
+				WritePrivateProfileInt("RamWatch", "RWWindowPosY", rwDoc.WindowY(), IniName);
+				WritePrivateProfileInt("RamWatch", "Auto-load", rwDoc.AutoLoad(), IniName);
 
+				const std::vector<std::string>& recentWatches = rwDoc.RecentFiles();
 				for(int i = 0; i < MAX_RECENT_WATCHES; i++)
 				{
 					char str[256];
 					sprintf(str, "Recent Watch %d", i+1);
-					WritePrivateProfileString("Watches", str, &rw_recent_files[i][0], IniName);	
+					WritePrivateProfileString("Watches", str,
+					                          (i < (int)recentWatches.size()) ? recentWatches[i].c_str() : "",
+					                          IniName);
 				}
 
 				for(int i = 0; i < MAX_RECENT_SCRIPTS; i++)

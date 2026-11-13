@@ -30,6 +30,7 @@
 @class DisplayWindowController;
 @class RomInfoPanel;
 @class MemoryViewerWindowController;
+@class RAMWatchWindowController;
 @class MacScreenshotCaptureToolDelegate;
 @class MacAVCaptureToolDelegate;
 @class PreferencesWindowDelegate;
@@ -62,6 +63,7 @@ class AudioSampleBlockGenerator;
 	RomInfoPanel *romInfoPanel;
 	
 	MemoryViewerWindowController *_memoryViewerWindowController;
+	RAMWatchWindowController *_ramWatchWindowController;
 	
 	NSWindow *displayRotationPanel;
 	NSWindow *displaySeparationPanel;
@@ -250,6 +252,15 @@ class AudioSampleBlockGenerator;
 - (IBAction) toggleGPUState:(id)sender;
 - (IBAction) toggleGDBStubActivate:(id)sender;
 - (IBAction) openMemoryViewer:(id)sender;
+- (IBAction) openRAMWatch:(id)sender;
+
+// Reusable helper for debug tool windows. The RAM Search port can add its own
+// item with one call instead of duplicating the localized-menu lookup.
+- (NSMenu *) toolsMenu;
+- (NSMenuItem *) installToolMenuItemWithTitle:(NSString *)title
+                                        action:(SEL)action
+                                 keyEquivalent:(NSString *)keyEquivalent
+                                 modifierMask:(NSEventModifierFlags)modifierMask;
 
 - (IBAction) autoholdSet:(id)sender;
 - (IBAction) autoholdClear:(id)sender;

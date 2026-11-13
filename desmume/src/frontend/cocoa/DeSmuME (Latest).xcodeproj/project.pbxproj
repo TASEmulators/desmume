@@ -5020,6 +5020,42 @@
 		A7E5CAFE0000000000000026 /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
 		A7E5CAFE0000000000000027 /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
 		A7E5CAFE0000000000000028 /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE0000000000001000 /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE0000000000001001 /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE0000000000001002 /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
+		A7E5CAFE0000000000001003 /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE0000000000001004 /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE0000000000001005 /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
+		A7E5CAFE0000000000001006 /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE0000000000001007 /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE0000000000001008 /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
+		A7E5CAFE0000000000001009 /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE000000000000100A /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE000000000000100B /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
+		A7E5CAFE000000000000100C /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE000000000000100D /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE000000000000100E /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
+		A7E5CAFE000000000000100F /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE0000000000001010 /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE0000000000001011 /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
+		A7E5CAFE0000000000001012 /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE0000000000001013 /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE0000000000001014 /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
+		A7E5CAFE0000000000001015 /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE0000000000001016 /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE0000000000001017 /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
+		A7E5CAFE0000000000001018 /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE0000000000001019 /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE000000000000101A /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
+		A7E5CAFE000000000000101B /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE000000000000101C /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE000000000000101D /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
+		A7E5CAFE000000000000101E /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE000000000000101F /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE0000000000001020 /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
+		A7E5CAFE0000000000001021 /* ram_debug_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000102 /* ram_debug_core.cpp */; };
+		A7E5CAFE0000000000001022 /* ramwatch_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000104 /* ramwatch_core.cpp */; };
+		A7E5CAFE0000000000001023 /* RAMWatchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -5959,6 +5995,13 @@
 		A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MemoryViewerCore.cpp; sourceTree = "<group>"; };
 		A7E5CAFE0000000000000003 /* MemoryViewerWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MemoryViewerWindow.h; sourceTree = "<group>"; };
 		A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MemoryViewerWindow.mm; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000101 /* ram_debug_core.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../shared/ram_debug_core.h"; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000102 /* ram_debug_core.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "../../shared/ram_debug_core.cpp"; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000103 /* ramwatch_core.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../shared/ramwatch_core.h"; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000104 /* ramwatch_core.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "../../shared/ramwatch_core.cpp"; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000105 /* RAMWatchWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RAMWatchWindow.h"; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "RAMWatchWindow.mm"; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000107 /* ram_search_core.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../shared/ram_search_core.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -6725,6 +6768,13 @@
 		AB3ACB6514C2361100D7D192 /* userinterface */ = {
 			isa = PBXGroup;
 			children = (
+				A7E5CAFE0000000000000101 /* ram_debug_core.h */,
+				A7E5CAFE0000000000000102 /* ram_debug_core.cpp */,
+				A7E5CAFE0000000000000103 /* ramwatch_core.h */,
+				A7E5CAFE0000000000000104 /* ramwatch_core.cpp */,
+				A7E5CAFE0000000000000105 /* RAMWatchWindow.h */,
+				A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */,
+				A7E5CAFE0000000000000107 /* ram_search_core.h */,
 				A7E5CAFE0000000000000001 /* MemoryViewerCore.h */,
 				A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */,
 				A7E5CAFE0000000000000003 /* MemoryViewerWindow.h */,
@@ -10552,6 +10602,9 @@
 				3D18CA21246A57CA59BE5FF4 /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE0000000000000011 /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE0000000000000012 /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE0000000000001000 /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE0000000000001001 /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE0000000000001002 /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10773,6 +10826,9 @@
 				2D20AC1DA18A5212FA53EAA6 /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE0000000000000013 /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE0000000000000014 /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE0000000000001003 /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE0000000000001004 /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE0000000000001005 /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10993,6 +11049,9 @@
 				627318916852E1BECA645C95 /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE0000000000000015 /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE0000000000000016 /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE0000000000001006 /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE0000000000001007 /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE0000000000001008 /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11237,6 +11296,9 @@
 				4A3EFF2FA75F7591E1B327C6 /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE0000000000000017 /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE0000000000000018 /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE0000000000001009 /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE000000000000100A /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE000000000000100B /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11458,6 +11520,9 @@
 				C1D71ED03CDF957FFE5021C2 /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE0000000000000019 /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE000000000000001A /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE000000000000100C /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE000000000000100D /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE000000000000100E /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11707,6 +11772,9 @@
 				B2746044DBDD066E6A83C137 /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE000000000000001B /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE000000000000001C /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE000000000000100F /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE0000000000001010 /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE0000000000001011 /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11957,6 +12025,9 @@
 				F2497582A3E6BADE18728A95 /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE000000000000001D /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE000000000000001E /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE0000000000001012 /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE0000000000001013 /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE0000000000001014 /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12206,6 +12277,9 @@
 				ED99C277048E638009BFF8E1 /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE000000000000001F /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE0000000000000020 /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE0000000000001015 /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE0000000000001016 /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE0000000000001017 /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12456,6 +12530,9 @@
 				AC04FC195081BC3823B4046F /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE0000000000000021 /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE0000000000000022 /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE0000000000001018 /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE0000000000001019 /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE000000000000101A /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12643,6 +12720,9 @@
 				3591B83D5386ABE65E7678F7 /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE0000000000000023 /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE0000000000000024 /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE000000000000101B /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE000000000000101C /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE000000000000101D /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12892,6 +12972,9 @@
 				E5C236A218032A3EE4DC480E /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE0000000000000025 /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE0000000000000026 /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE000000000000101E /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE000000000000101F /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE0000000000001020 /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -13141,6 +13224,9 @@
 				E2CF1281040A03DC4E641D36 /* InterpolateShannon.cpp in Sources */,
 				A7E5CAFE0000000000000027 /* MemoryViewerCore.cpp in Sources */,
 				A7E5CAFE0000000000000028 /* MemoryViewerWindow.mm in Sources */,
+				A7E5CAFE0000000000001021 /* ram_debug_core.cpp in Sources */,
+				A7E5CAFE0000000000001022 /* ramwatch_core.cpp in Sources */,
+				A7E5CAFE0000000000001023 /* RAMWatchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

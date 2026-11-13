@@ -272,6 +272,8 @@
     <ClCompile Include="wgpu_present_win32.cpp" />
     <ClCompile Include="wgpu_upscaler_win32.cpp" />
     <ClCompile Include="..\shared\wgpu_present.cpp" />
+    <ClCompile Include="..\shared\ram_debug_core.cpp" />
+    <ClCompile Include="..\shared\ramwatch_core.cpp" />
     <ClCompile Include="DPI.cpp" />
     <ClCompile Include="UiFont.cpp" />
     <ClCompile Include="FEX_Interface.cpp" />
@@ -585,6 +587,9 @@
     <ClInclude Include="wgpu_present_win32.h" />
     <ClInclude Include="wgpu_upscaler_win32.h" />
     <ClInclude Include="..\shared\wgpu_present.h" />
+    <ClInclude Include="..\shared\ram_debug_core.h" />
+    <ClInclude Include="..\shared\ramwatch_core.h" />
+    <ClInclude Include="..\shared\ram_search_core.h" />
     <ClInclude Include="DPI.h" />
     <ClInclude Include="UiFont.h" />
     <ClInclude Include="FEX_Interface.h" />

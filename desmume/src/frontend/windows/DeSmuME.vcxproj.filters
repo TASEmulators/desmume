@@ -981,6 +981,12 @@
     <ClCompile Include="..\shared\wgpu_present.cpp">
       <Filter>frontend\shared</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\ram_debug_core.cpp">
+      <Filter>frontend\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\ramwatch_core.cpp">
+      <Filter>frontend\shared</Filter>
+    </ClCompile>
     <ClCompile Include="DPI.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -1741,6 +1747,15 @@
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\wgpu_present.h">
+      <Filter>frontend\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ram_debug_core.h">
+      <Filter>frontend\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ramwatch_core.h">
+      <Filter>frontend\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ram_search_core.h">
       <Filter>frontend\shared</Filter>
     </ClInclude>
     <ClInclude Include="DPI.h">

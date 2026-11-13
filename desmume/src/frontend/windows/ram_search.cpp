@@ -49,6 +49,9 @@
 
 #include "ram_search.h"
 #include "ramwatch.h"
+#include "../shared/ram_debug_core.h"
+// RAM Search engine interface seam for the Cocoa/GTK port:
+#include "../shared/ram_search_core.h"
 
 #include <assert.h>
 #include <commctrl.h>
@@ -905,54 +908,16 @@ unsigned int ReadValueAtHardwareAddress(unsigned int address, unsigned int size)
 	if((address & ~0xFFFFFF) == ~0xFFFFFF)
 		address &= 0xFFFFFF;
 
-
-	char buf[4];
-	MMU_DumpMemBlock(0, address, 4, (u8*)buf);
-
-	u32 val_u32 = *(u32*)buf;
-	u16 val_u16 = *(u16*)buf;
-	u8 val_u8 = *(u8*)buf;
-
-	switch (size)
-	{
-	case 1: return val_u8;
-	case 2: return val_u16;
-	case 4: return val_u32;
-	}
-//	if(IsInRange(address, 0xFF0000, _68K_RAM_SIZE))
-//		return ReadValueAtSoftwareAddress(Ram_68k + address - 0xFF0000, size, true);	
-/*	if(IsInRange(address, 0xFF0000, _68K_RAM_SIZE)) TODO
-		return ReadValueAtSoftwareAddress(Ram_68k + address - 0xFF0000, size, true);
-	if(IsInRange(address, 0xA00000, Z80_RAM_SIZE))
-		return ReadValueAtSoftwareAddress(Ram_Z80 + address - 0xA00000, size, true);
-	if(SegaCD_Started && IsInRange(address, 0x020000, SEGACD_RAM_PRG_SIZE))
-		return ReadValueAtSoftwareAddress(Ram_Prg + address - 0x020000, size, true);
-	if(SegaCD_Started && IsInRange(address, 0x200000, SEGACD_1M_RAM_SIZE))
-		return ReadValueAtSoftwareAddress(((Ram_Word_State & 0x2) ? Ram_Word_1M : Ram_Word_2M) + address - 0x200000, size, true);
-	if(IsInRange(address, 0x0, Rom_Size))
-		return ReadValueAtSoftwareAddress(Rom_Data + address, size, true);
-	if(_32X_Started && IsInRange(address, 0x06000000, _32X_RAM_SIZE))
-		return ReadValueAtSoftwareAddress(_32X_Ram + address - 0x06000000, size, false);*/
-	return 0;
+	// One implementation for every frontend (see ../shared/ram_debug_core.cpp).
+	return RAMDebugCore::ReadValue(address, (int)size);
 }
 bool WriteValueAtHardwareRAMAddress(unsigned int address, unsigned int value, unsigned int size, bool hookless)
 {
 	if((address & ~0xFFFFFF) == ~0xFFFFFF)
 		address &= 0xFFFFFF;
-/*	if(IsInRange(address, 0xFF0000, _68K_RAM_SIZE)) TODO
-		WriteValueAtSoftwareAddress(Ram_68k + address - 0xFF0000, value, size, true);
-	else if(IsInRange(address, 0xA00000, Z80_RAM_SIZE))
-		WriteValueAtSoftwareAddress(Ram_Z80 + address - 0xA00000, value, size, true);
-	else if(SegaCD_Started && IsInRange(address, 0x020000, SEGACD_RAM_PRG_SIZE))
-		WriteValueAtSoftwareAddress(Ram_Prg + address - 0x020000, value, size, true);
-	else if(SegaCD_Started && IsInRange(address, 0x200000, SEGACD_1M_RAM_SIZE))
-		WriteValueAtSoftwareAddress(((Ram_Word_State & 0x2) ? Ram_Word_1M : Ram_Word_2M) + address - 0x200000, value, size, true);
-	else if(_32X_Started && IsInRange(address, 0x06000000, _32X_RAM_SIZE))
-		WriteValueAtSoftwareAddress(_32X_Ram + address - 0x06000000, value, size, false);*/
-//	else return false;
-//	if(!hookless) // a script that calls e.g. memory.writebyte() should trigger write hooks
-//		CallRegisteredLuaMemHook(address, size, value, LUAMEMHOOK_WRITE);
-	return true;
+
+	(void)hookless; // Lua write hooks are not wired up on this frontend yet.
+	return RAMDebugCore::WriteValue(address, value, (int)size);
 }
 bool WriteValueAtHardwareROMAddress(unsigned int address, unsigned int value, unsigned int size)
 {
@@ -970,19 +935,8 @@ bool IsHardwareRAMAddressValid(unsigned int address)
 {
 	if((address & ~0xFFFFFF) == ~0xFFFFFF)
 		address &= 0xFFFFFF;
-//	if(IsInRange(address, 0xFF0000, _68K_RAM_SIZE))
-//		return true;
-//	if(IsInRange(address, 0xA00000, Z80_RAM_SIZE))
-//		return true;
 
-	return true; //TODO
-/*	if(SegaCD_Started && IsInRange(address, 0x020000, SEGACD_RAM_PRG_SIZE)) TODO
-		return true;
-	if(SegaCD_Started && IsInRange(address, 0x200000, SEGACD_1M_RAM_SIZE))
-		return true;
-	if(_32X_Started && IsInRange(address, 0x06000000, _32X_RAM_SIZE))
-		return true;*/
-	return false;
+	return RAMDebugCore::IsRAMAddressValid(address);
 }
 bool IsHardwareROMAddressValid(unsigned int address)
 {
@@ -1077,7 +1031,7 @@ void RefreshRamListSelectedCountControlStatus(HWND hDlg)
 	{
 		if(selCount < 2 || prevSelCount < 2)
 		{
-			EnableWindow(GetDlgItem(hDlg, IDC_C_WATCH), (selCount >= 1 && WatchCount < MAX_WATCH_COUNT) ? TRUE : FALSE);
+			EnableWindow(GetDlgItem(hDlg, IDC_C_WATCH), (selCount >= 1 && RAMWatchCore::Get().Count() < RAMWatchCore::kMaxWatchCount) ? TRUE : FALSE);
 			EnableWindow(GetDlgItem(hDlg, IDC_C_ADDCHEAT), (selCount >= 1) ? TRUE : FALSE);
 			EnableWindow(GetDlgItem(hDlg, IDC_C_ELIMINATE), (selCount >= 1) ? TRUE : FALSE);
 		}
@@ -1340,8 +1294,6 @@ static BOOL SelectingByKeyboard()
 	int d = GetKeyState(VK_DOWN); // space and tab are intentionally omitted
 	return (a | b | c | d) & 0x80;
 }
-
-extern void init_list_box(HWND Box, const char* Strs[], int numColumns, int *columnWidths);
 
 LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -1825,8 +1777,7 @@ invalid_field:
 						tempWatch.Size = rs_type_size;
 						tempWatch.Type = rs_t;
 						tempWatch.WrongEndian = 0; //Replace when I get little endian working
-						tempWatch.comment = NULL;
-
+						
 						if (selCount == 1)
 							inserted |= InsertWatch(tempWatch, hDlg);
 						else

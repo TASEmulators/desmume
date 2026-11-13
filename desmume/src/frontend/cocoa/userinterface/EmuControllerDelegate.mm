@@ -25,6 +25,7 @@
 #import "MacScreenshotCaptureTool.h"
 #import "preferencesWindowDelegate.h"
 #import "MemoryViewerWindow.h"
+#import "RAMWatchWindow.h"
 
 #import "CocoaAudioController.h"
 #import "CocoaDisplayView.h"
@@ -270,6 +271,7 @@
 	[audioController release];
 	
 	[_memoryViewerWindowController release];
+	[_ramWatchWindowController release];
 	
 	apple_unfairlock_destroy(_unfairlockFirmware);
 	
@@ -943,14 +945,14 @@
 	[_memoryViewerWindowController showWindowForRegion:MEMVIEW_ARM9 address:0xFFFFFFFF];
 }
 
-- (void) installMemoryViewerMenuItem
+- (NSMenu *) toolsMenu
 {
 	NSMenu *mainMenu = [NSApp mainMenu];
 	if (mainMenu == nil)
 	{
-		return;
+		return nil;
 	}
-	
+
 	// The Tools menu title is localized, so fall back to locating the menu by
 	// one of its known actions when the English title is not present.
 	NSMenuItem *toolsMenuItem = [mainMenu itemWithTitle:@"Tools"];
@@ -966,42 +968,88 @@
 					break;
 				}
 			}
-			
 			if (toolsMenuItem != nil)
 			{
 				break;
 			}
 		}
 	}
-	
-	NSMenu *toolsMenu = [toolsMenuItem submenu];
-	if (toolsMenu == nil)
+	return [toolsMenuItem submenu];
+}
+
+- (NSMenuItem *) installToolMenuItemWithTitle:(NSString *)title
+                                        action:(SEL)action
+                                 keyEquivalent:(NSString *)keyEquivalent
+                                 modifierMask:(NSEventModifierFlags)modifierMask
+{
+	NSMenu *toolsMenu = [self toolsMenu];
+	if ((toolsMenu == nil) || ([toolsMenu itemWithTitle:title] != nil))
 	{
-		return;
+		return nil;
 	}
-	
-	if ([toolsMenu itemWithTitle:@"Memory Viewer..."] != nil)
-	{
-		return;
-	}
-	
+
 	if (([[toolsMenu itemArray] count] > 0) && ![[[toolsMenu itemArray] lastObject] isSeparatorItem])
 	{
 		[toolsMenu addItem:[NSMenuItem separatorItem]];
 	}
-	
-	NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@"Memory Viewer..."
-												  action:@selector(openMemoryViewer:)
-										   keyEquivalent:@"m"];
-	[item setKeyEquivalentModifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)];
+
+	NSMenuItem *item = [[[NSMenuItem alloc] initWithTitle:title
+	                                               action:action
+	                                        keyEquivalent:keyEquivalent] autorelease];
 	[item setTarget:self];
+	if (modifierMask != 0)
+	{
+		[item setKeyEquivalentModifierMask:modifierMask];
+	}
 	[toolsMenu addItem:item];
-	[item release];
+	return item;
+}
+
+- (void) installMemoryViewerMenuItem
+{
+	[self installToolMenuItemWithTitle:@"Memory Viewer..."
+	                            action:@selector(openMemoryViewer:)
+	                     keyEquivalent:@"m"
+	                      modifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)];
+}
+
+- (void) installRAMWatchMenuItem
+{
+	// The RAM Search port only needs one more installToolMenuItem... call.
+	[self installToolMenuItemWithTitle:@"RAM Watch..."
+	                            action:@selector(openRAMWatch:)
+	                     keyEquivalent:@"w"
+	                      modifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)];
+}
+
+- (IBAction) openRAMWatch:(id)sender
+{
+	if (_ramWatchWindowController == nil)
+	{
+		_ramWatchWindowController = [[RAMWatchWindowController alloc] init];
+	}
+
+	// Suggest "<ROM name>.wch" in the Save As panel, like the Windows port.
+	NSURL *romURL = [[self currentRom] fileURL];
+	if (romURL != nil)
+	{
+		[_ramWatchWindowController setRomFileName:[[romURL lastPathComponent] stringByDeletingPathExtension]];
+	}
+
+	[_ramWatchWindowController showRAMWatchWindow];
 }
 
 - (void) applicationDidFinishLaunching:(NSNotification *)notification
 {
 	[self installMemoryViewerMenuItem];
+	[self installRAMWatchMenuItem];
+
+	// Auto-load the most recent watch list when the option is enabled. The
+	// window controller owns the preference keys and the actual loading.
+	if ([RAMWatchWindowController shouldAutoLoadOnLaunch])
+	{
+		[self openRAMWatch:self];
+	}
 }
 
 - (IBAction) changeRomSaveType:(id)sender

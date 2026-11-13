@@ -99,6 +99,8 @@ SRCS = \
 	wgpu_display.cpp \
 	wgpu_present_win32.cpp \
 	../shared/wgpu_present.cpp \
+	../shared/ram_debug_core.cpp \
+	../shared/ramwatch_core.cpp \
 	fsnitroView.cpp \
 	gbaslot_config.cpp \
 	ginfo.cpp \
