@@ -1563,6 +1563,16 @@ static void StepRunLoop_Core()
 
 	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
 	ServiceDisplayThreadInvocations();
+
+	// Pause at the frame requested by the Play Movie dialog. The core's own
+	// pauseframe is assigned on load but never read, so the Windows loop owns
+	// the one-shot check. It runs after NDS_exec, when the frame counter has
+	// already advanced, and only while a movie is actually playing.
+	if (moviePauseFrame >= 0 && movieMode == MOVIEMODE_PLAY && currFrameCounter >= moviePauseFrame)
+	{
+		moviePauseFrame = -1;
+		Pause();
+	}
 }
 
 static void StepRunLoop_Paused()

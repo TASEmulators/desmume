@@ -1248,6 +1248,35 @@
 #define CMD_DSM_SAVE                    6138
 #define CMD_DSM_SAVE_AS                 6139
 
+// Movie playback / recording dialogs (VBA-style). Kept in their own block so
+// they cannot collide with the hotkey and Lua ID ranges above.
+#define IDC_MOVIE_ROM                   27001
+#define IDC_YOUR_ROM                    27002
+#define IDC_MOVIE_REFRESH               27003
+#define IDC_EDIT_PAUSEFRAME             27004
+#define IDC_CHECK_PAUSEFRAME            27005
+#define IDC_PLAY_DESCRIPTION            27006
+#define IDC_MCORE                       27007
+#define IDC_MRECORD_DATE                27008
+#define IDC_MREC_POWER                  27009
+#define IDC_MREC_SRAM                   27010
+#define IDC_MREC_SNAPSHOT               27011
+#define IDC_MSYSTEM                     27012
+#define IDC_MFIRMWARE                   27013
+#define IDC_MLANGUAGE                   27014
+#define IDC_MNICKNAME                   27015
+#define IDC_MBIOSEXT                    27016
+#define IDC_MBIOSWI                     27017
+#define IDC_MFIRMEXT                    27018
+#define IDC_MBOOTFW                     27019
+#define IDC_REC_DESCRIPTION             27020
+#define IDC_REC_ROMINFO                 27021
+#define IDC_START_FROM_SAVESTATE        27022
+#define IDC_REC_BIOSEXT                 27023
+#define IDC_REC_BIOSWI                  27024
+#define IDC_REC_FIRMEXT                 27025
+#define IDC_REC_BOOTFW                  27026
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
