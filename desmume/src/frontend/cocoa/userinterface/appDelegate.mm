@@ -404,6 +404,50 @@
 	{
 		[emuControl changeHostMicrophonePermission:self];
 	}
+#ifdef HAVE_LUA
+	[self setupLuaMenu];
+#endif
+}
+
+- (void)setupLuaMenu
+{
+#ifdef HAVE_LUA
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
+	NSMenu *mainMenu = [NSApp mainMenu];
+	NSMenuItem *toolsMenuItem = nil;
+	for (NSMenuItem *item in [mainMenu itemArray])
+	{
+		if ([[item title] isEqualToString:@"Tools"])
+		{
+			toolsMenuItem = item;
+			break;
+		}
+	}
+	
+	if (toolsMenuItem)
+	{
+		NSMenu *toolsMenu = [toolsMenuItem submenu];
+		
+		// Add a separator first
+		[toolsMenu addItem:[NSMenuItem separatorItem]];
+		
+		// Add "Lua Scripting" submenu
+		NSMenuItem *luaScriptingItem = [[NSMenuItem alloc] initWithTitle:@"Lua Scripting" action:NULL keyEquivalent:@""];
+		NSMenu *luaSubmenu = [[NSMenu alloc] initWithTitle:@"Lua Scripting"];
+		
+		NSMenuItem *newWindowItem = [[NSMenuItem alloc] initWithTitle:@"New Lua Script Window..." action:@selector(addLuaScript:) keyEquivalent:@""];
+		[newWindowItem setTarget:emuControl];
+		
+		NSMenuItem *closeAllItem = [[NSMenuItem alloc] initWithTitle:@"Close All Script Windows" action:@selector(closeAllLuaScripts:) keyEquivalent:@""];
+		[closeAllItem setTarget:emuControl];
+		
+		[luaSubmenu addItem:newWindowItem];
+		[luaSubmenu addItem:closeAllItem];
+		[luaScriptingItem setSubmenu:luaSubmenu];
+		
+		[toolsMenu addItem:luaScriptingItem];
+	}
+#endif
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender

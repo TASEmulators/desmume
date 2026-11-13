@@ -192,6 +192,11 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
 	id<MTLComputePipelineState> pixelScalePipeline;
 	id<MTLRenderPipelineState> outputDrawablePipeline;
+#ifdef HAVE_LUA
+	id<MTLRenderPipelineState> luaOverlayPipeline;
+	id<MTLTexture> texLuaOverlay[2];
+	BOOL isLuaOverlayTexCreated;
+#endif
 	MTLPixelFormat drawableFormat;
 	
 	id<MTLBuffer> _hudVtxPositionBuffer[RENDER_BUFFER_COUNT];
@@ -232,6 +237,9 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
 @property (retain) id<MTLComputePipelineState> pixelScalePipeline;
 @property (retain) id<MTLRenderPipelineState> outputDrawablePipeline;
+#ifdef HAVE_LUA
+@property (retain) id<MTLRenderPipelineState> luaOverlayPipeline;
+#endif
 @property (assign) MTLPixelFormat drawableFormat;
 @property (retain) id<MTLBuffer> bufCPUFilterDstMain;
 @property (retain) id<MTLBuffer> bufCPUFilterDstTouch;

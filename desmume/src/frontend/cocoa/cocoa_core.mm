@@ -42,6 +42,51 @@
 #include "../../wifi.h"
 #undef BOOL
 
+#ifdef HAVE_LUA
+#define LUA_CORE
+#define loslib_c
+#define liolib_c
+#define lstrlib_c
+#define lbaselib_c
+
+extern "C" {
+#include "lua/lapi.c"
+#include "lua/lauxlib.c"
+#include "lua/lbaselib.c"
+#include "lua/lcode.c"
+#include "lua/ldblib.c"
+#include "lua/ldebug.c"
+#include "lua/ldo.c"
+#include "lua/ldump.c"
+#include "lua/lfunc.c"
+#include "lua/lgc.c"
+#include "lua/linit.c"
+#include "lua/liolib.c"
+#include "lua/llex.c"
+#include "lua/lmathlib.c"
+#include "lua/lmem.c"
+#include "lua/loadlib.c"
+#include "lua/lobject.c"
+#include "lua/lopcodes.c"
+#include "lua/loslib.c"
+#include "lua/lparser.c"
+#include "lua/lstate.c"
+#include "lua/lstring.c"
+#include "lua/lstrlib.c"
+#include "lua/ltable.c"
+#include "lua/ltablib.c"
+#include "lua/ltm.c"
+#include "lua/lundump.c"
+#include "lua/lvm.c"
+#include "lua/lzio.c"
+}
+
+#undef tostring
+
+#include "MacLuaScriptConsole.mm"
+#include "../../lua-engine.cpp"
+#endif
+
 //accessed from other files
 volatile bool execute = true;
 
@@ -195,6 +240,7 @@ volatile bool execute = true;
 	newDriver->SetCoreThreadMutexLock(&threadParam.mutexThreadExecute);
 	newDriver->SetCoreExecuteRWLock(&threadParam.rwlockCoreExecute);
 	newDriver->SetExecutionControl(execControl);
+	newDriver->SetDisplayOutputManager(macDisplayOutputManager);
 	driver = newDriver;
 	
 	frameStatus = @"---";
@@ -1194,11 +1240,31 @@ static void* RunCoreThread(void *arg)
 		
 		// Execute the frame and increment the frame counter.
 		pthread_rwlock_wrlock(&param->rwlockCoreExecute);
+#ifdef HAVE_LUA
+		int queuedUid;
+		std::string queuedFilename;
+		if (((macOS_driver *)driver)->GetQueuedScript(queuedUid, queuedFilename)) {
+			RunLuaScriptFile(queuedUid, queuedFilename.c_str());
+		}
+#endif
 		cheatManager->ApplyToMaster();
 		cheatManager->ApplyPendingInternalCheatWrites();
+#ifdef HAVE_LUA
+		lua_script_clear_graphics_buffer();
+		NDS_beginProcessingInput();
+		CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+		NDS_endProcessingInput();
+#endif
 		NDS_exec<false>();
 		SPU_Emulate_user();
 		execControl->FetchOutputPostNDSExec();
+#ifdef HAVE_LUA
+		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+		// Flush GUI draw calls deferred from the script body, then publish the
+		// completed overlay frame to the renderer.
+		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+		lua_script_present_graphics_buffer();
+#endif
 		pthread_rwlock_unlock(&param->rwlockCoreExecute);
 		
 		// Check if an internal execution error occurred that halted the emulation.
@@ -1400,3 +1466,22 @@ static void* RunCoreThread(void *arg)
 	
 	return NULL;
 }
+
+extern "C" void macOS_PumpEvents()
+{
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	while (true)
+	{
+		NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny
+											untilDate:[NSDate dateWithTimeIntervalSinceNow:0.0]
+											   inMode:NSDefaultRunLoopMode
+											  dequeue:YES];
+		if (event == nil)
+		{
+			break;
+		}
+		[NSApp sendEvent:event];
+	}
+	[pool release];
+}
+
