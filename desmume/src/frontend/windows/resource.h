@@ -1207,6 +1207,45 @@
 // Config > Use Modern UI Font (see UiFont.h).
 #define IDM_USE_MODERN_FONT             40254
 
+// File > DSM Editor... (see dsmeditor.cpp).
+#define IDM_DSM_EDITOR                  40255
+
+// The DSM Editor window, its stylus prompt, and the context menu of its grid.
+// The control ids sit in a range nothing else uses; the command ids below are
+// only ever sent by the editor itself.
+#define IDD_DSM_EDITOR                  6100
+#define IDD_DSM_TOUCH                   6101
+#define DSMEDITOR_MENU                  6102
+
+#define IDC_DSM_LIST                    6110
+#define IDC_DSM_HINT                    6111
+#define IDC_DSM_STATUS                  6112
+#define IDC_DSM_PLAY                    6113
+#define IDC_DSM_PAUSE                   6114
+#define IDC_DSM_STEP                    6115
+#define IDC_DSM_GOTOPLAYHEAD            6116
+#define IDC_DSM_READONLY                6117
+#define IDC_DSM_FOLLOW                  6118
+#define IDC_DSM_PREVMARK                6119
+#define IDC_DSM_NEXTMARK                6120
+#define IDC_DSM_GOTOLABEL               6121
+#define IDC_DSM_FRAMENO                 6122
+#define IDC_DSM_SAVE                    6123
+#define IDC_DSM_TOUCH_X                 6124
+#define IDC_DSM_TOUCH_Y                 6125
+#define IDC_DSM_TOUCH_DOWN              6126
+
+#define CMD_DSM_MARK                    6130
+#define CMD_DSM_INSERT                  6131
+#define CMD_DSM_INSERT_AFTER            6132
+#define CMD_DSM_DELETE                  6133
+#define CMD_DSM_CUT                     6134
+#define CMD_DSM_COPY                    6135
+#define CMD_DSM_PASTE                   6136
+#define CMD_DSM_TOUCH                   6137
+#define CMD_DSM_SAVE                    6138
+#define CMD_DSM_SAVE_AS                 6139
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

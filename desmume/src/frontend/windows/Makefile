@@ -97,6 +97,8 @@ SRCS = \
 	ddraw.cpp \
 	disView.cpp \
 	display.cpp \
+	dsmcsv.cpp \
+	dsmeditor.cpp \
 	wgpu_display.cpp \
 	wgpu_present_win32.cpp \
 	../shared/wgpu_present.cpp \

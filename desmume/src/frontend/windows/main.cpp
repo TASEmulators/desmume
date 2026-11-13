@@ -76,6 +76,7 @@
 #include "DPI.h"
 #include "DarkMode.h"
 #include "UiFont.h"
+#include "dsmeditor.h"
 #include "version.h"
 #include "inputdx.h"
 #include "console.h"
@@ -1490,6 +1491,10 @@ void CheckMessages()
 					SendMessage(RamWatchHWnd, msg.message, msg.wParam, msg.lParam);
 				continue;
 			}
+			// The DSM Editor is modeless too: without this, Tab, Enter and the
+			// arrow keys never reach it.
+			if (DSMEditorGetHwnd() && IsDialogMessage(DSMEditorGetHwnd(), &msg))
+				continue;
 			if (SoundView_GetHWnd() && IsDialogMessage(SoundView_GetHWnd(), &msg))
 				continue;
 
@@ -4218,6 +4223,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_RECORD_MOVIE,      (romloaded /*&& movieMode == MOVIEMODE_INACTIVE*/));
 			DesEnableMenuItem(mainMenu, IDM_PLAY_MOVIE,        (romloaded /*&& movieMode == MOVIEMODE_INACTIVE*/));
 			DesEnableMenuItem(mainMenu, IDM_STOPMOVIE,         (romloaded && movieMode != MOVIEMODE_INACTIVE));
+			DesEnableMenuItem(mainMenu, IDM_DSM_EDITOR,        romloaded);
 
 			DesEnableMenuItem(mainMenu, ID_RAM_WATCH,          romloaded);
 			DesEnableMenuItem(mainMenu, ID_RAM_SEARCH,         romloaded);
@@ -5627,6 +5633,9 @@ DOKEYDOWN:
 			return 0;
 		case IDM_STOPMOVIE:
 			FCEUI_StopMovie();
+			return 0;
+		case IDM_DSM_EDITOR:
+			DSMEditorOpen(hwnd);
 			return 0;
 
 		case ID_LCDS_VERTICAL:

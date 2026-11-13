@@ -278,4 +278,52 @@ void BinaryDataFromString(std::string &inStringData, std::vector<u8> *outBinaryD
 void ReplayRecToDesmumeInput(const MovieRecord &inRecord, UserInput &outInput);
 void DesmumeInputToReplayRec(const UserInput &inInput, MovieRecord &outRecord);
 
+//------------------------------------------------------------------------------
+// Timeline editing, for the DSM Editor (frontend/windows/dsmeditor.cpp).
+//
+// The editor works on the movie that is currently loaded, in memory, and it is
+// the only writer: everything below either reads a record, replaces one, or
+// moves the whole timeline.  Nothing here seeks, resets or changes movieMode -
+// that stays with the frontend, exactly as the VBM editor leaves VBA's player
+// alone.
+//
+// The emulator reads currMovieData.records[currFrameCounter] once per frame, on
+// the same thread the frontend runs on.  Replacing one record is therefore safe
+// at any time; inserting or deleting moves the frame the playhead points at, so
+// the caller is expected to pause first.
+//------------------------------------------------------------------------------
+enum MOVIE_EDIT_RESULT
+{
+	MOVIE_EDIT_OK = 0,
+	MOVIE_EDIT_NO_MOVIE,	// nothing is loaded
+	MOVIE_EDIT_RECORDING,	// the file is open for appending - the timeline is not ours
+	MOVIE_EDIT_RANGE,		// a frame number is past the end of the movie
+	MOVIE_EDIT_NO_MEMORY,
+	MOVIE_EDIT_IO
+};
+
+// What the movie actually contains, so the editor can decide which columns are
+// worth showing.  Collected in one pass over the records.
+struct MovieInputUsage
+{
+	u16	 padMask;		// pad bits that are set in at least one frame
+	u8	 commandMask;	// MOVIECMD_* bits that appear in at least one frame
+	bool touch;			// some frame touches the screen
+	bool micSample;		// some frame carries a non-zero mic sample index
+};
+
+bool				FCEUMOV_IsEditable();
+u32					FCEUMOV_GetLength();
+u32					FCEUMOV_GetGeneration();	// changes when the timeline is rebuilt
+MovieInputUsage		FCEUMOV_GetInputUsage();
+bool				FCEUMOV_GetRecord(u32 frame, MovieRecord &record);
+MOVIE_EDIT_RESULT	FCEUMOV_SetRecord(u32 frame, const MovieRecord &record);
+// records may be NULL, in which case count blank frames are inserted - which is
+// what "insert a frame" means in the editor.
+MOVIE_EDIT_RESULT	FCEUMOV_InsertRecords(u32 at, const MovieRecord *records, u32 count);
+// frames must be ascending and unique; the whole selection is compacted in one
+// pass, so deleting ten thousand rows is one rewrite and not ten thousand.
+MOVIE_EDIT_RESULT	FCEUMOV_DeleteRecords(const u32 *frames, u32 count);
+MOVIE_EDIT_RESULT	FCEUMOV_SaveMovie(const char *fname);
+
 #endif

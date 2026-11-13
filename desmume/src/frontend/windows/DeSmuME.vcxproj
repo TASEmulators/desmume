@@ -269,6 +269,8 @@
     <ClCompile Include="ddraw.cpp" />
     <ClCompile Include="dxerr8_compat.cpp" />
     <ClCompile Include="display.cpp" />
+    <ClCompile Include="dsmcsv.cpp" />
+    <ClCompile Include="dsmeditor.cpp" />
     <ClCompile Include="wgpu_display.cpp" />
     <ClCompile Include="wgpu_present_win32.cpp" />
     <ClCompile Include="wgpu_upscaler_win32.cpp" />
@@ -584,6 +586,8 @@
     <ClInclude Include="CWindow.h" />
     <ClInclude Include="ddraw.h" />
     <ClInclude Include="display.h" />
+    <ClInclude Include="dsmcsv.h" />
+    <ClInclude Include="dsmeditor.h" />
     <ClInclude Include="wgpu_display.h" />
     <ClInclude Include="wgpu_present_win32.h" />
     <ClInclude Include="wgpu_upscaler_win32.h" />

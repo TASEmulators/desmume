@@ -1113,6 +1113,45 @@ BEGIN
     CONTROL         "",1130,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,311,214
 END
 
+// The movie timeline editor.  Modeless, thick-framed and without
+// DS_MODALFRAME on purpose: DS_MODALFRAME would draw the fixed dialog border
+// around a window the user is supposed to resize, and it also gives the
+// caption no icon at all (see the note at the top of dsmeditor.cpp).
+IDD_DSM_EDITOR DIALOGEX 0, 0, 460, 274
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN
+CAPTION "DSM Editor"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Play",IDC_DSM_PLAY,6,5,30,13
+    PUSHBUTTON      "Pause",IDC_DSM_PAUSE,38,5,34,13
+    PUSHBUTTON      "Step",IDC_DSM_STEP,74,5,30,13
+    PUSHBUTTON      "Locate",IDC_DSM_GOTOPLAYHEAD,106,5,44,13
+    PUSHBUTTON      "Save",IDC_DSM_SAVE,154,5,32,13
+    CONTROL         "Read-only",IDC_DSM_READONLY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,192,7,46,9
+    CONTROL         "Follow",IDC_DSM_FOLLOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,7,38,9
+    PUSHBUTTON      "Prev mark",IDC_DSM_PREVMARK,286,5,40,13
+    PUSHBUTTON      "Next mark",IDC_DSM_NEXTMARK,328,5,40,13
+    LTEXT           "Frame:",IDC_DSM_GOTOLABEL,372,7,24,8
+    EDITTEXT        IDC_DSM_FRAMENO,398,5,44,13,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_DSM_LIST,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_OWNERDATA | WS_BORDER | WS_TABSTOP,6,21,448,214,WS_EX_CLIENTEDGE
+    LTEXT           "",IDC_DSM_HINT,6,239,448,19
+    LTEXT           "",IDC_DSM_STATUS,6,261,448,8
+END
+
+IDD_DSM_TOUCH DIALOGEX 0, 0, 176, 84
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Stylus Position"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "X (0-255):",IDC_STATIC,10,12,38,8
+    EDITTEXT        IDC_DSM_TOUCH_X,50,10,40,13,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Y (0-191):",IDC_STATIC,10,29,38,8
+    EDITTEXT        IDC_DSM_TOUCH_Y,50,27,40,13,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Stylus down on this frame",IDC_DSM_TOUCH_DOWN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,46,120,9
+    DEFPUSHBUTTON   "OK",IDOK,64,64,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,118,64,50,14
+END
+
 IDD_SOUNDSETTINGS DIALOGEX 0, 0, 387, 172
 STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 CAPTION "Sound Settings"
@@ -1703,6 +1742,7 @@ BEGIN
         MENUITEM "&Play Movie...",              IDM_PLAY_MOVIE
         MENUITEM "&Record Movie...",            IDM_RECORD_MOVIE
         MENUITEM "&Stop Movie",                 IDM_STOPMOVIE
+        MENUITEM "&DSM Editor...",              IDM_DSM_EDITOR
         MENUITEM SEPARATOR
         MENUITEM "&Reset",                      IDM_RESET
         MENUITEM "Close ROM",                   IDM_CLOSEROM
@@ -1947,6 +1987,30 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&Submit a bug report",        IDM_SUBMITBUGREPORT
         MENUITEM "&About",                      IDM_ABOUT
+    END
+END
+
+// The DSM Editor's grid menu.  It is a one-popup menu so TrackPopupMenu() can
+// take GetSubMenu(...,0) without a detour; the editor enables and greys the
+// items itself before showing it.
+DSMEDITOR_MENU MENU
+BEGIN
+    POPUP "Edit"
+    BEGIN
+        MENUITEM "&Mark / Unmark\tM",           CMD_DSM_MARK
+        MENUITEM SEPARATOR
+        MENUITEM "Insert Frame &Before\tIns",   CMD_DSM_INSERT
+        MENUITEM "Insert Frame &After",         CMD_DSM_INSERT_AFTER
+        MENUITEM "&Delete Frames\tDel",         CMD_DSM_DELETE
+        MENUITEM SEPARATOR
+        MENUITEM "Cu&t\tCtrl+X",                CMD_DSM_CUT
+        MENUITEM "&Copy\tCtrl+C",               CMD_DSM_COPY
+        MENUITEM "&Paste\tCtrl+V",              CMD_DSM_PASTE
+        MENUITEM SEPARATOR
+        MENUITEM "Set Stylus &Position...",     CMD_DSM_TOUCH
+        MENUITEM SEPARATOR
+        MENUITEM "&Save Movie",                 CMD_DSM_SAVE
+        MENUITEM "Save Movie &As...",           CMD_DSM_SAVE_AS
     END
 END
 

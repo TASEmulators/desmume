@@ -191,6 +191,25 @@ what it is useful for, without implementation detail.
   supports, with the bundled PNG/BMP writers as fallback; WIC stays a
   runtime-only dependency, so the executable still starts on old systems.
 
+### DSM Editor (movie timeline editor)
+- **The recorded input as a frame grid** — one row per frame, one column per
+  input the movie carries: the 13 pad bits, the stylus (x,y), the microphone
+  button, the lid and, when present, the reset command. A virtual list keeps a
+  three-hour movie as cheap as a three-second one.
+- **Edit the timeline, not just watch it** — click a cell to toggle that input
+  on that frame, double-click the stylus cell to type an exact position, and
+  insert, delete, cut, copy or paste whole frame ranges. Marks (`M`) flag
+  frames and the two mark buttons jump between them. The window opens
+  read-only, so looking at a timeline cannot change it by accident.
+- **A plain CSV on the clipboard** — a block of frames copies out as
+  `frame,R,L,D,U,T,S,B,A,Y,X,W,E,G,TouchX,TouchY,Touch,Mic,Lid,Reset`, so it
+  can be edited in Notepad and pasted back; a rejected paste names the line it
+  could not read.
+- **Save writes the .dsm back** — the whole movie is re-dumped in the format it
+  was loaded with (text or binary), and the title marks unsaved edits. The
+  emulator keeps exactly one playback path: the transport buttons forward the
+  File menu's own Pause and Frame Advance.
+
 ### OSD and Lua runtime
 - **GDI+ OSD** replaces libagg with embedded bitmap fonts, and an AGG-free
   WebGPU OSD backend keeps the default build free of the AGG library.

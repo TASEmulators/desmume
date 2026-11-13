@@ -969,6 +969,12 @@
     <ClCompile Include="display.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="dsmcsv.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="dsmeditor.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="wgpu_display.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -1738,6 +1744,12 @@
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="display.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="dsmcsv.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="dsmeditor.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="wgpu_display.h">
