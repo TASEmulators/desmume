@@ -1,7 +1,5 @@
 # DeSmuME Audio Synchronization Methods
 
-[中文版](audio-sync-methods.zh-CN.md)
-
 This document describes the audio synchronization methods supported by the DeSmuME
 core. It covers why synchronization is needed, how the three methods `N`, `Z`, and
 `P` differ, and which one to choose.
