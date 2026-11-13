@@ -191,6 +191,42 @@ what it is useful for, without implementation detail.
   supports, with the bundled PNG/BMP writers as fallback; WIC stays a
   runtime-only dependency, so the executable still starts on old systems.
 
+### Play Movie / Record Movie dialogs
+- **The whole movie is previewed before it starts** — picking a file fills in its
+  ROM (serial, CRC, file name) beside the ROM that is actually loaded, plus
+  author, comment, record date, core version, length, frame count and rerecord
+  count; OK stays disabled until the file can be read.
+- **Mismatches are called out** — a movie recorded against another ROM or
+  another core version is highlighted in red (and the core line says
+  "desync expected"), so an obviously wrong movie is caught before playback.
+- **Pause at a frame** — playback can stop automatically at a chosen frame
+  (default: the last one) instead of running to the end.
+- **Comments are editable** — with the movie opened read-write, the comment
+  field can be changed before playing; only the comment lines of the header are
+  rewritten and the recorded input is left untouched. Read-only movies lock the
+  field.
+- **Recording destinations and start points** — Record Movie offers power on,
+  reset/SRAM (with a `.dsv` picker) or the current emulator state, shows the ROM
+  and the emulation settings the movie will store, and takes an author and a
+  comment.
+- **File names that make sense** — both dialogs show only the file name and
+  resolve it against Path Settings > Movies, Browse opens in that folder, and
+  recording never overwrites an existing movie (`ROM.dsm` → `ROM - 1.dsm`).
+
+### Movies directory
+- **Path Settings > Movies** — recorded and played movies get their own
+  configurable folder next to screenshots, states and AVI files, defaulting to
+  `.\Movies` and created on demand.
+
+### Movie metadata: record date and comments
+- **Recording time is stored** — a new `recordDate` header field keeps the
+  wall-clock time a movie was recorded; the Play dialog shows it, movies
+  recorded by older builds simply report "Unknown", and older builds ignore the
+  field when they load the file.
+- **Free-form comments** — a description typed at record time is stored as an
+  ordinary comment line, so it opens in any DSM-aware tool and can be edited
+  later from the Play dialog.
+
 ### DSM Editor (movie timeline editor)
 - **The recorded input as a frame grid** — one row per frame, one column per
   input the movie carries: the 13 pad bits, the stylus (x,y), the microphone
