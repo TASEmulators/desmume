@@ -69,7 +69,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 #endif
 
-- (id)initWithWindowNibName:(NSString *)windowNibName emuControlDelegate:(EmuControllerDelegate *)theEmuController
+- (id)initWithWindowNibName:(NSString *)windowNibName
+		 emuControlDelegate:(EmuControllerDelegate *)theEmuController
+			 viewProperties:(const ClientDisplayPresenterProperties &)cdpp
+			isMinSizeNormal:(BOOL)isMinSizeNormal
+		 isShowingStatusBar:(BOOL)isShowingStatusBar
 {
 	self = [super initWithWindowNibName:windowNibName];
 	if (self == nil)
@@ -82,29 +86,19 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	assignedScreen = nil;
 	masterWindow = nil;
 	
-	// These need to be initialized first since there are dependencies on these.
-	_localViewProps.normalWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	_localViewProps.normalHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0;
-	_localViewProps.clientWidth = _localViewProps.normalWidth;
-	_localViewProps.clientHeight = _localViewProps.normalHeight;
-	_localViewProps.rotation = 0.0;
-	_localViewProps.viewScale = 1.0;
-	_localViewProps.gapScale = 0.0;
-	_localViewProps.gapDistance = DS_DISPLAY_UNSCALED_GAP * _localViewProps.gapScale;
-	_localViewProps.mode = ClientDisplayMode_Dual;
-	_localViewProps.layout = ClientDisplayLayout_Vertical;
-	_localViewProps.order = ClientDisplayOrder_MainFirst;
+	_localViewProps = cdpp;
+	ClientDisplayPresenter::CalculateViewPropertiesWithAllScalars(_localViewProps, cdpp.screenScale, cdpp.clientScale);
 	
-	_localViewScale = _localViewProps.viewScale;
-	_localRotation = 0.0;
-	_minDisplayViewSize = NSMakeSize(_localViewProps.clientWidth, _localViewProps.clientHeight + _localViewProps.gapDistance);
-	_isMinSizeNormal = YES;
-	_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
+	_localScreenScale = cdpp.screenScale;
+	_localRotation = (cdpp.rotation == 0.0) ? 0.0 : 360.0 - cdpp.rotation;
+	_isMinSizeNormal = isMinSizeNormal;
+	_statusBarHeight = (isShowingStatusBar) ? WINDOW_STATUS_BAR_HEIGHT : 0;
 	_isUpdatingDisplayScaleValueOnly = NO;
 	_canUseModernFullScreen = IsOSXVersionSupported(10, 7, 0);
-	_masterWindowScale = 1.0;
-	_masterWindowFrame = NSMakeRect(0.0, 0.0, _localViewProps.clientWidth, _localViewProps.clientHeight + _localViewProps.gapDistance);
-	_masterStatusBarState = NO;
+	
+	_masterWindowScale = _localScreenScale;
+	_masterWindowFrame = NSMakeRect(0.0, 0.0, _localViewProps.viewportLogicalWidth, _localViewProps.viewportLogicalHeight + _statusBarHeight);
+	_masterStatusBarState = isShowingStatusBar;
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(respondToScreenChange:)
@@ -139,7 +133,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// 2. Resize the window as a result of setting displayScale
 	//
 	// Use the _isUpdatingDisplayScaleValueOnly flag to control this property's behavior.
-	_localViewScale = s;
+	_localScreenScale = s;
 	
 	if (!_isUpdatingDisplayScaleValueOnly)
 	{
@@ -150,7 +144,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (double) displayScale
 {
-	return _localViewScale;
+	return _localScreenScale;
 }
 
 - (void) setDisplayRotation:(double)angleDegrees
@@ -169,6 +163,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Convert angle to clockwise-direction degrees (left-handed Cartesian coordinate system).
 	_localRotation = newAngleDegrees;
 	_localViewProps.rotation = (newAngleDegrees == 0.0) ? 0.0 : 360.0 - newAngleDegrees;
+	ClientDisplayPresenter::CalculateViewPropertiesWithScreenScalarOnly(_localViewProps, _localScreenScale);
 	
 	// Set the minimum content size for the window, since this will change based on rotation.
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
@@ -188,7 +183,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		// If the window size didn't change, it is possible that the old and new rotation angles
 		// are 180 degrees offset from each other. In this case, we'll need to force the
 		// display view to update itself.
-		if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
+		if ( (oldBounds.width == newBounds.width) && (oldBounds.height == newBounds.height) )
 		{
 			MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
 			dvo->CommitPresenterProperties(_localViewProps, true);
@@ -207,7 +202,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	                                ( ((_localViewProps.mode == ClientDisplayMode_Main) || (_localViewProps.mode == ClientDisplayMode_Touch)) && (displayModeID == ClientDisplayMode_Dual) );
 	_localViewProps.mode = (ClientDisplayMode)displayModeID;
 	
-	ClientDisplayPresenter::CalculateNormalSize((ClientDisplayMode)displayModeID, (ClientDisplayLayout)[self displayOrientation], [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
+	ClientDisplayPresenter::CalculateViewPropertiesWithScreenScalarOnly(_localViewProps, _localScreenScale);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
 	if (![self isFullScreen] && willModeChangeSize)
@@ -230,7 +225,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	_localViewProps.layout = (ClientDisplayLayout)theOrientation;
 	
-	ClientDisplayPresenter::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)theOrientation, [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
+	ClientDisplayPresenter::CalculateViewPropertiesWithScreenScalarOnly(_localViewProps, _localScreenScale);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
 	if ([self displayMode] == ClientDisplayMode_Dual)
@@ -268,7 +263,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setDisplayGap:(double)gapScalar
 {
 	_localViewProps.gapScale = gapScalar;
-	ClientDisplayPresenter::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)[self displayOrientation], gapScalar, _localViewProps.normalWidth, _localViewProps.normalHeight);
+	ClientDisplayPresenter::CalculateViewPropertiesWithScreenScalarOnly(_localViewProps, _localScreenScale);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
 	if ([self displayMode] == ClientDisplayMode_Dual)
@@ -319,20 +314,18 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setIsMinSizeNormal:(BOOL)theState
 {
 	_isMinSizeNormal = theState;
-	_minDisplayViewSize.width = _localViewProps.normalWidth;
-	_minDisplayViewSize.height = _localViewProps.normalHeight;
+	
+	// Set the minimum content size, keeping the display rotation in mind.
+	double unscaledRotatedMinWidth  = _localViewProps.screenUnscaledRotatedWidth;
+	double unscaledRotatedMinHeight = _localViewProps.screenUnscaledRotatedHeight;
 	
 	if (!_isMinSizeNormal)
 	{
-		_minDisplayViewSize.width /= 4.0;
-		_minDisplayViewSize.height /= 4.0;
+		unscaledRotatedMinWidth  /= 4.0;
+		unscaledRotatedMinHeight /= 4.0;
 	}
 	
-	// Set the minimum content size, keeping the display rotation in mind.
-	double transformedMinWidth = _minDisplayViewSize.width;
-	double transformedMinHeight = _minDisplayViewSize.height;
-	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
-	[masterWindow setContentMinSize:NSMakeSize(transformedMinWidth, transformedMinHeight + _statusBarHeight)];
+	[masterWindow setContentMinSize:NSMakeSize(unscaledRotatedMinWidth, unscaledRotatedMinHeight + _statusBarHeight)];
 }
 
 - (BOOL) isMinSizeNormal
@@ -397,54 +390,29 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	return _localViewProps;
 }
 
-- (void) setDisplayMode:(ClientDisplayMode)mode
-			  viewScale:(double)viewScale
-			   rotation:(double)rotation
-				 layout:(ClientDisplayLayout)layout
-				  order:(ClientDisplayOrder)order
-			   gapScale:(double)gapScale
-		isMinSizeNormal:(BOOL)isMinSizeNormal
-	 isShowingStatusBar:(BOOL)isShowingStatusBar
+- (void) setDisplayWindowByViewProperties:(const ClientDisplayPresenterProperties &)cdpp
+						  isMinSizeNormal:(BOOL)isMinSizeNormal
+					   isShowingStatusBar:(BOOL)isShowingStatusBar
 {
+	_localViewProps = cdpp;
+	_localScreenScale = cdpp.screenScale;
+	_localRotation  = (cdpp.rotation == 0.0) ? 0.0 : 360.0 - cdpp.rotation;
+	
 	_statusBarHeight = (isShowingStatusBar) ? WINDOW_STATUS_BAR_HEIGHT : 0;
-	
-	_localViewScale = viewScale;
-	_localRotation = fmod(rotation, 360.0);
-	if (_localRotation < 0.0)
-	{
-		_localRotation = 360.0 + _localRotation;
-	}
-	
-	if (_localRotation == 360.0)
-	{
-		_localRotation = 0.0;
-	}
-	
-	_localViewProps.mode		= mode;
-	_localViewProps.layout		= layout;
-	_localViewProps.order		= order;
-	_localViewProps.viewScale	= _localViewScale;
-	_localViewProps.gapScale	= gapScale;
-	_localViewProps.gapDistance	= DS_DISPLAY_UNSCALED_GAP * gapScale;
-	_localViewProps.rotation	= (_localRotation == 0.0) ? 0.0 : 360.0 - _localRotation;
-	
-	ClientDisplayPresenter::CalculateNormalSize(mode, layout, gapScale, _localViewProps.normalWidth, _localViewProps.normalHeight);
 	
 	// Set the minimum content size.
 	_isMinSizeNormal = isMinSizeNormal;
-	_minDisplayViewSize.width = _localViewProps.normalWidth;
-	_minDisplayViewSize.height = _localViewProps.normalHeight;
 	
-	if (!_isMinSizeNormal)
+	double unscaledRotatedMinWidth  = cdpp.screenUnscaledRotatedWidth;
+	double unscaledRotatedMinHeight = cdpp.screenUnscaledRotatedHeight;
+	
+	if (!isMinSizeNormal)
 	{
-		_minDisplayViewSize.width /= 4.0;
-		_minDisplayViewSize.height /= 4.0;
+		unscaledRotatedMinWidth  /= 4.0;
+		unscaledRotatedMinHeight /= 4.0;
 	}
 	
-	double transformedMinWidth = _minDisplayViewSize.width;
-	double transformedMinHeight = _minDisplayViewSize.height;
-	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
-	[masterWindow setContentMinSize:NSMakeSize(transformedMinWidth, transformedMinHeight + _statusBarHeight)];
+	[masterWindow setContentMinSize:NSMakeSize(unscaledRotatedMinWidth, unscaledRotatedMinHeight + _statusBarHeight)];
 	
 	// Set the client size and resize the window.
 	const NSRect newWindowFrame = [self updateViewProperties];
@@ -455,11 +423,54 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Just because the window size didn't change doesn't mean that other view properties haven't
 	// changed. Assume that view properties were changed and force them to update, whether the
 	// window size changed or not.
-	if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
+	if ( (oldBounds.width == newBounds.width) && (oldBounds.height == newBounds.height) )
 	{
 		MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
 		dvo->CommitPresenterProperties(_localViewProps, true);
 	}
+}
+
+- (void) setDisplayMode:(ClientDisplayMode)mode
+			  viewScale:(double)viewScale
+			   rotation:(double)rotation
+				 layout:(ClientDisplayLayout)layout
+				  order:(ClientDisplayOrder)order
+			   gapScale:(double)gapScale
+		isMinSizeNormal:(BOOL)isMinSizeNormal
+	 isShowingStatusBar:(BOOL)isShowingStatusBar
+{
+	double cleanLocalRotation = fmod(rotation, 360.0);
+	if (cleanLocalRotation < 0.0)
+	{
+		cleanLocalRotation = 360.0 + cleanLocalRotation;
+	}
+	
+	if (cleanLocalRotation == 360.0)
+	{
+		cleanLocalRotation = 0.0;
+	}
+	
+	ClientDisplayPresenterProperties newViewProps;
+	newViewProps.mode        = mode;
+	newViewProps.layout      = layout;
+	newViewProps.order       = order;
+	newViewProps.gapScale    = gapScale;
+	newViewProps.rotation    = (cleanLocalRotation == 0.0) ? 0.0 : 360.0 - cleanLocalRotation;
+	newViewProps.clientScale = 1.0;
+	
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+	// Set up the scaling factor to distinguish between Retina and non-Retina windows.
+	if ([[self window] respondsToSelector:@selector(backingScaleFactor)])
+	{
+		newViewProps.clientScale = [[self window] backingScaleFactor];
+	}
+#endif
+	
+	ClientDisplayPresenter::CalculateViewPropertiesWithAllScalars(newViewProps, viewScale, newViewProps.clientScale);
+	
+	[self setDisplayWindowByViewProperties:newViewProps
+						   isMinSizeNormal:isMinSizeNormal
+						isShowingStatusBar:isShowingStatusBar];
 }
 
 - (void) setVideoPropertiesWithoutUpdateUsingPreferGPU:(BOOL)preferGPU
@@ -475,15 +486,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) setupUserDefaults
 {
-	[self setDisplayMode:(ClientDisplayMode)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"]
-			   viewScale:([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0)
-				rotation:[[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"]
-				  layout:(ClientDisplayLayout)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"]
-				   order:(ClientDisplayOrder)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"]
-				gapScale:([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayViewCombo_Gap"] / 100.0)
-		 isMinSizeNormal:[self isMinSizeNormal]
-	  isShowingStatusBar:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"]];
-	
 	[[self view] setDisplayMainVideoSource:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayMainVideoSource"]];
 	[[self view] setDisplayTouchVideoSource:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayTouchVideoSource"]];
 	
@@ -529,20 +531,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (NSRect) updateViewProperties
 {
 	// Get the maximum scalar size within drawBounds.
-	double checkWidth = _localViewProps.normalWidth;
-	double checkHeight = _localViewProps.normalHeight;
-	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
-	
-	const double maxViewScaleInHostScreen = [self maxViewScaleInHostScreen:checkWidth height:checkHeight];
-	if (_localViewScale > maxViewScaleInHostScreen)
+	const double maxViewScaleInHostScreen = [self maxViewScaleInHostScreen:_localViewProps.screenUnscaledRotatedWidth height:_localViewProps.screenUnscaledRotatedHeight];
+	if (_localScreenScale > maxViewScaleInHostScreen)
 	{
-		_localViewScale = maxViewScaleInHostScreen;
+		_localScreenScale = maxViewScaleInHostScreen;
 	}
 	
 	// Get the new bounds for the window's content view based on the transformed draw bounds.
-	double transformedWidth = _localViewProps.normalWidth;
-	double transformedHeight = _localViewProps.normalHeight;
-	ClientDisplayPresenter::ConvertNormalToTransformedBounds(_localViewScale, _localViewProps.rotation, transformedWidth, transformedHeight);
+	const double transformedWidth  = _localViewProps.screenUnscaledRotatedWidth  * _localScreenScale;
+	const double transformedHeight = _localViewProps.screenUnscaledRotatedHeight * _localScreenScale;
 	
 	// Get the center of the content view in screen coordinates.
 	const NSRect windowContentRect = [[masterWindow contentView] bounds];
@@ -567,7 +564,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[masterWindow setFrame:newWindowFrame display:YES animate:NO];
 }
 
-- (double) maxViewScaleInHostScreen:(double)contentBoundsWidth height:(double)contentBoundsHeight
+- (double) maxViewScaleInHostScreen:(double)unscaledRotatedWidth height:(double)unscaledRotatedHeight
 {
 	const NSScreen *windowScreen = [[self window] screen];
 	NSRect screenFrameVisible = [windowScreen visibleFrame];
@@ -599,10 +596,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	// Determine the maximum scale based on the visible screen size (which
 	// doesn't include the menu bar, dock, or display notch).
-	const NSRect windowFrame = [[self window] frameRectForContentRect:NSMakeRect(0.0, 0.0, contentBoundsWidth, contentBoundsHeight + _statusBarHeight)];
-	const NSSize visibleScreenBounds = { (screenFrameVisible.size.width - (windowFrame.size.width - contentBoundsWidth)), (screenFrameVisible.size.height - (windowFrame.size.height - contentBoundsHeight)) };
+	const NSRect windowFrame = [[self window] frameRectForContentRect:NSMakeRect(0.0, 0.0, unscaledRotatedWidth, unscaledRotatedHeight)];
+	const NSSize visibleScreenBounds = { (screenFrameVisible.size.width - (windowFrame.size.width - unscaledRotatedWidth)), (screenFrameVisible.size.height - (windowFrame.size.height - unscaledRotatedHeight + _statusBarHeight)) };
 	
-	return ClientDisplayPresenter::GetMaxScalarWithinBounds(contentBoundsWidth, contentBoundsHeight, visibleScreenBounds.width, visibleScreenBounds.height);
+	return ClientDisplayPresenter::GetMaxScalarWithinBounds(unscaledRotatedWidth, unscaledRotatedHeight, visibleScreenBounds.width, visibleScreenBounds.height);
 }
 
 - (void) enterLegacyFullScreen
@@ -638,6 +635,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[view removeFromSuperviewWithoutNeedingDisplay];
 	[[newFullScreenWindow contentView] addSubview:view];
 	[view setFrame:screenRect];
+	_localScreenScale = _localViewProps.screenScale;
 	
 	// If the target screen is the main screen (index 0), then autohide the menu bar and dock.
 	if (targetScreen == [[NSScreen screens] objectAtIndex:0])
@@ -676,6 +674,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	viewFrame.size.height -= _statusBarHeight;
 	viewFrame.origin.y = _statusBarHeight;
 	[view setFrame:viewFrame];
+	_localScreenScale = _localViewProps.screenScale;
 	
     [masterWindow setInitialFirstResponder:view];
 	[masterWindow makeKeyAndOrderFront:self];
@@ -730,6 +729,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		screenRect.origin.x = 0.0;
 		screenRect.origin.y = 0.0;
 		[view setFrame:screenRect];
+		_localScreenScale = _localViewProps.screenScale;
 	}
 }
 
@@ -812,18 +812,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		[self setIsMinSizeNormal:YES];
 		
 		// Set the minimum content size, keeping the display rotation in mind.
-		double transformedMinWidth = _minDisplayViewSize.width;
-		double transformedMinHeight = _minDisplayViewSize.height;
-		ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
-		transformedMinHeight += _statusBarHeight;
+		const double unscaledRotatedMinWidth  = _localViewProps.screenUnscaledRotatedWidth;
+		const double unscaledRotatedMinHeight = _localViewProps.screenUnscaledRotatedHeight + _statusBarHeight;
 		
 		// Resize the window if it's smaller than the minimum content size.
 		NSRect windowContentRect = [masterWindow contentRectForFrameRect:[masterWindow frame]];
-		if (windowContentRect.size.width < transformedMinWidth || windowContentRect.size.height < transformedMinHeight)
+		if (windowContentRect.size.width < unscaledRotatedMinWidth || windowContentRect.size.height < unscaledRotatedMinHeight)
 		{
 			// Prepare to resize.
 			NSRect oldFrameRect = [masterWindow frame];
-			windowContentRect.size = NSMakeSize(transformedMinWidth, transformedMinHeight);
+			windowContentRect.size = NSMakeSize(unscaledRotatedMinWidth, unscaledRotatedMinHeight);
 			NSRect newFrameRect = [masterWindow frameRectForContentRect:windowContentRect];
 			
 			// Keep the window centered when expanding the size.
@@ -1352,31 +1350,57 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)windowDidLoad
 {
-	NSRect newViewFrameRect = NSMakeRect(0.0f, (CGFloat)_statusBarHeight, (CGFloat)_localViewProps.clientWidth, (CGFloat)_localViewProps.clientHeight);
-	NSView<CocoaDisplayViewProtocol> *newView = (NSView<CocoaDisplayViewProtocol> *)[[[CocoaDisplayView alloc] initWithFrame:newViewFrameRect] autorelease];
-	[self setView:newView];
-	
 	// Set up the master window that is associated with this window controller.
+	// The masterWindow object always refers to the original window in its
+	// floating window form.
+	//
+	// For modern fullscreen, masterWindow and [self window] are always the same.
+	// For legacy fullscreen, [self window] could refer to the secondary window
+	// that is created especially for full screen.
+	//
+	// In other words, masterWindow should refer specifically to the original
+	// floating window, and [self window] should refer to the current associated
+	// window (whether it is the original or the secondary full screen window).
 	[self setMasterWindow:[self window]];
 	[masterWindow setTitle:(NSString *)[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"]];
-	[[masterWindow contentView] addSubview:newView];
-	[masterWindow setInitialFirstResponder:newView];
-	[[emuControl windowList] addObject:self];
-	[emuControl updateAllWindowTitles];
-	
-	[newView setupLayer];
-	[newView setInputManager:[emuControl inputManager]];
 	
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
 	if (_canUseModernFullScreen)
 	{
 		[masterWindow setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
 	}
+	
+	// Set up the scaling factor to distinguish between Retina and non-Retina windows.
+	if ([[self window] respondsToSelector:@selector(backingScaleFactor)])
+	{
+		ClientDisplayPresenter::CalculateViewPropertiesWithClientScalarOnly(_localViewProps, (double)[[self window] backingScaleFactor]);
+	}
 #endif
+	
+	[[emuControl windowList] addObject:self];
+	[emuControl updateAllWindowTitles];
 	
 	// Set up some custom UI elements.
 	[microphoneGainMenuItem setView:microphoneGainControlView];
 	[outputVolumeMenuItem setView:outputVolumeControlView];
+	
+	// Second, we need to create the actual display view and attach it to the current window.
+	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[emuControl cdsGraphicsController] content];
+	
+	NSRect newViewFrameRect = NSMakeRect(0.0f, (CGFloat)_statusBarHeight, (CGFloat)_localViewProps.viewportLogicalWidth, (CGFloat)_localViewProps.viewportLogicalHeight);
+	NSView<CocoaDisplayViewProtocol> *newView = (NSView<CocoaDisplayViewProtocol> *)[[[CocoaDisplayView alloc] initWithFrame:newViewFrameRect] autorelease];
+	[self setView:newView];
+	[[[self window] contentView] addSubview:newView];
+	[[self window] setInitialFirstResponder:newView];
+	
+	[newView setupLayerWithViewProperties:_localViewProps
+					   graphicsController:graphicsController];
+	
+	[newView setInputManager:[emuControl inputManager]];
+	
+	[self setDisplayWindowByViewProperties:_localViewProps
+						   isMinSizeNormal:_isMinSizeNormal
+						isShowingStatusBar:(_statusBarHeight > 0)];
 	
 	// Setup default values per user preferences.
 	[self setupUserDefaults];
@@ -1420,14 +1444,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	const NSRect contentRect = [sender contentRectForFrameRect:frameRect];
 	
 	// Find the maximum scalar we can use for the display view, bounded by the content Rect.
-	double checkWidth = _localViewProps.normalWidth;
-	double checkHeight = _localViewProps.normalHeight;
-	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - _statusBarHeight);
-	_localViewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
+	_localScreenScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(_localViewProps.screenUnscaledRotatedWidth, _localViewProps.screenUnscaledRotatedHeight, contentBounds.width, contentBounds.height);
 	
 	// Make a new content Rect with our max scalar, and convert it back to a frame Rect.
-	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, checkWidth * _localViewScale, (checkHeight * _localViewScale) + _statusBarHeight);
+	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, _localViewProps.screenUnscaledRotatedWidth * _localScreenScale, (_localViewProps.screenUnscaledRotatedHeight * _localScreenScale) + _statusBarHeight);
 	const NSRect finalFrameRect = [sender frameRectForContentRect:finalContentRect];
 	
 	// Set the final size based on our new frame Rect.
@@ -1440,6 +1461,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	newContentFrame.origin.y = _statusBarHeight;
 	newContentFrame.size.height -= _statusBarHeight;
 	[view setFrame:newContentFrame];
+	_localScreenScale = _localViewProps.screenScale;
 }
 
 - (NSRect)windowWillUseStandardFrame:(NSWindow *)window defaultFrame:(NSRect)newFrame
@@ -1470,14 +1492,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	const NSRect contentRect = [window contentRectForFrameRect:frameRect];
 	
 	// Find the maximum scalar we can use for the display view, bounded by the content Rect.
-	double checkWidth = _localViewProps.normalWidth;
-	double checkHeight = _localViewProps.normalHeight;
-	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - _statusBarHeight);
-	const double maxS = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
+	const double maxS = ClientDisplayPresenter::GetMaxScalarWithinBounds(_localViewProps.screenUnscaledRotatedWidth, _localViewProps.screenUnscaledRotatedHeight, contentBounds.width, contentBounds.height);
 	
 	// Make a new content Rect with our max scalar, and convert it back to a frame Rect.
-	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, checkWidth * maxS, (checkHeight * maxS) + _statusBarHeight);
+	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, _localViewProps.screenUnscaledRotatedWidth * maxS, (_localViewProps.screenUnscaledRotatedHeight * maxS) + _statusBarHeight);
 	NSRect finalFrameRect = [window frameRectForContentRect:finalContentRect];
 	
 	if (isZooming)
@@ -1540,29 +1559,25 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// displays. This feature requires Mac OS X v10.7 Lion or later.
 	
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
-	MacDisplayLayeredView *cdv = (MacDisplayLayeredView *)dvo->GetClientDisplayView();
-	CALayer<DisplayViewCALayer> *localLayer = cdv->GetCALayer();
-	
 	if ([[self window] respondsToSelector:@selector(backingScaleFactor)])
 	{
-		const double oldScaleFactor = dvo->GetScaleFactor();
+		MacDisplayViewOutput *dvo = [[self view] displayViewOutput];
+		MacDisplayLayeredView *cdv = (MacDisplayLayeredView *)dvo->GetClientDisplayView();
+		
+		const double oldScaleFactor = _localViewProps.clientScale;
 		const double newScaleFactor = [[self window] backingScaleFactor];
 		
 		if (newScaleFactor != oldScaleFactor)
 		{
-			ClientDisplayPresenterProperties &props = [self localViewProperties];
-			props.clientWidth  *= newScaleFactor / oldScaleFactor;
-			props.clientHeight *= newScaleFactor / oldScaleFactor;
-			[[self view] updateLayerPresenterProperties:props scaleFactor:newScaleFactor needFlush:NO];
+			ClientDisplayPresenter::CalculateViewPropertiesWithClientScalarOnly(_localViewProps, newScaleFactor);
 			
-			if ([localLayer isKindOfClass:[CAOpenGLLayer class]] && [localLayer respondsToSelector:@selector(setContentsScale:)])
+			CALayer<DisplayViewCALayer> *localLayer = cdv->GetCALayer();
+			if ([localLayer respondsToSelector:@selector(setContentsScale:)])
 			{
 				[localLayer setContentsScale:newScaleFactor];
 			}
 			
-			dvo->SetScaleFactor(newScaleFactor);
-			dvo->SetViewNeedsFlush();
+			[[self view] updateLayerPresenterProperties:_localViewProps needFlush:YES];
 		}
 	}
 #endif
@@ -1606,6 +1621,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	// Always ensure that the view matches the window size when the window finishes entering full screen.
 	[view setFrame:[[[self window] contentView] bounds]];
+	_localScreenScale = _localViewProps.screenScale;
 }
 
 - (void)windowWillExitFullScreen:(NSNotification *)notification

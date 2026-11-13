@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2025 DeSmuME team
+	Copyright (C) 2025-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -807,22 +807,6 @@ VideoFilterTypeID ClientDisplayViewOutput::GetPixelScalerID()
 	pthread_mutex_unlock(&this->_mutexPixelScaler);
 	
 	return filterID;
-}
-
-void ClientDisplayViewOutput::SetScaleFactor(double scaleFactor)
-{
-	pthread_mutex_lock(&this->_mutexIsHUDVisible);
-	this->_cdv->Get3DPresenter()->SetScaleFactor(scaleFactor);
-	pthread_mutex_unlock(&this->_mutexIsHUDVisible);
-}
-
-double ClientDisplayViewOutput::GetScaleFactor()
-{
-	pthread_mutex_lock(&this->_mutexIsHUDVisible);
-	const double scaleFactor = this->_cdv->Get3DPresenter()->GetScaleFactor();
-	pthread_mutex_unlock(&this->_mutexIsHUDVisible);
-	
-	return scaleFactor;
 }
 
 void ClientDisplayViewOutput::CommitPresenterProperties(const ClientDisplayPresenterProperties &viewProps, bool needsFlush)

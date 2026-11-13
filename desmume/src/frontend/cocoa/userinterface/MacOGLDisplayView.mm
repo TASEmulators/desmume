@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2025 DeSmuME team
+	Copyright (C) 2017-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,8 +28,9 @@
 @implementation DisplayViewOpenGLLayer
 
 @synthesize _cdv;
+@synthesize presenter;
 
-- (id)init
+- (id) initWithDisplayPresenter:(MacOGLDisplayPresenter *)thePresenter
 {
 	self = [super init];
 	if(self == nil)
@@ -38,8 +39,25 @@
 	}
 	
 	_cdv = NULL;
+	presenter = thePresenter;
 	
-    [self setBounds:CGRectMake(0.0f, 0.0f, (float)GPU_FRAMEBUFFER_NATIVE_WIDTH, (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
+	if (thePresenter != NULL)
+	{
+		const ClientDisplayPresenterProperties &cdpp = thePresenter->GetPresenterProperties();
+		[self setBounds:CGRectMake(0.0f, 0.0f, (float)cdpp.viewportLogicalWidth, (float)cdpp.viewportLogicalHeight)];
+		
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+		if ([self respondsToSelector:@selector(setContentsScale:)])
+		{
+			[self setContentsScale:cdpp.clientScale];
+		}
+#endif
+	}
+	else
+	{
+		[self setBounds:CGRectMake(0.0f, 0.0f, (float)GPU_FRAMEBUFFER_NATIVE_WIDTH, (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
+	}
+	
 	[self setAsynchronous:NO];
 	[self setOpaque:YES];
 	
@@ -370,6 +388,11 @@ MacOGLDisplayPresenter::MacOGLDisplayPresenter(MacOGLClientFetchObject *fetchObj
 	__InstanceInit(fetchObject);
 }
 
+MacOGLDisplayPresenter::MacOGLDisplayPresenter(MacOGLClientFetchObject *fetchObject, const ClientDisplayPresenterProperties &cdpp) : OGLDisplayPresenter(cdpp)
+{
+	__InstanceInit(fetchObject);
+}
+
 void MacOGLDisplayPresenter::__InstanceInit(MacOGLClientFetchObject *fetchObject)
 {
 	_nsPixelFormat = nil;
@@ -510,19 +533,11 @@ CGLContextObj MacOGLDisplayPresenter::GetContext() const
 	return this->_context;
 }
 
-void MacOGLDisplayPresenter::LoadHUDFont()
+void MacOGLDisplayPresenter::LoadHUDFont(const size_t glyphSize, const size_t glyphTileSize)
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLDisplayPresenter::LoadHUDFont();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayPresenter::SetScaleFactor(const double scaleFactor)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLDisplayPresenter::SetScaleFactor(scaleFactor);
+	this->OGLDisplayPresenter::LoadHUDFont(glyphSize, glyphTileSize);
 	CGLUnlockContext(this->_context);
 }
 
@@ -595,12 +610,19 @@ void MacOGLDisplayPresenter::SetFrameInfoProcessed(const OGLFrameInfoProcessed &
 
 MacOGLDisplayView::MacOGLDisplayView()
 {
-	__InstanceInit(nil);
+	ClientDisplayPresenterProperties defaultViewProps = ClientDisplayPresenter::GetDefaultProperties();
+	__InstanceInit(nil, defaultViewProps);
 }
 
 MacOGLDisplayView::MacOGLDisplayView(MacOGLClientFetchObject *fetchObject)
 {
-	__InstanceInit(fetchObject);
+	ClientDisplayPresenterProperties defaultViewProps = ClientDisplayPresenter::GetDefaultProperties();
+	__InstanceInit(fetchObject, defaultViewProps);
+}
+
+MacOGLDisplayView::MacOGLDisplayView(MacOGLClientFetchObject *fetchObject, const ClientDisplayPresenterProperties &props)
+{
+	__InstanceInit(fetchObject, props);
 }
 
 MacOGLDisplayView::~MacOGLDisplayView()
@@ -611,15 +633,15 @@ MacOGLDisplayView::~MacOGLDisplayView()
 	this->_unfairlockViewNeedsFlush = NULL;
 }
 
-void MacOGLDisplayView::__InstanceInit(MacOGLClientFetchObject *fetchObject)
+void MacOGLDisplayView::__InstanceInit(MacOGLClientFetchObject *fetchObject, const ClientDisplayPresenterProperties &props)
 {
 	_allowViewUpdates = false;
 	_unfairlockViewNeedsFlush = apple_unfairlock_create();
 	
-	MacOGLDisplayPresenter *newOpenGLPresenter = new MacOGLDisplayPresenter(fetchObject);
+	MacOGLDisplayPresenter *newOpenGLPresenter = new MacOGLDisplayPresenter(fetchObject, props);
 	_presenter = newOpenGLPresenter;
 	
-	_caLayer = [[DisplayViewOpenGLLayer alloc] init];
+	_caLayer = [[DisplayViewOpenGLLayer alloc] initWithDisplayPresenter:newOpenGLPresenter];
 	[_caLayer setClientDisplayView:this];
 }
 

@@ -5700,9 +5700,19 @@ void OGLClientSharedData::FetchCustomDisplayByID_OGL(const NDSDisplayInfo *displ
 
 OGLDisplayPresenter::OGLDisplayPresenter()
 {
+	__InstanceInit();
+}
+
+OGLDisplayPresenter::OGLDisplayPresenter(const ClientDisplayPresenterProperties &cdpp) : ClientDisplay3DPresenter(cdpp)
+{
+	__InstanceInit();
+}
+
+void OGLDisplayPresenter::__InstanceInit()
+{
 	_contextInfo = NULL;
-	_viewportWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	_viewportHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2;
+	_viewportWidth  = (GLsizei)(_propsApplied.viewportActualWidth  + 0.0001);
+	_viewportHeight = (GLsizei)(_propsApplied.viewportActualHeight + 0.0001);
 	_needUpdateViewport = true;
 	_hasOGLPixelScaler = false;
 	
@@ -5757,8 +5767,8 @@ void OGLDisplayPresenter::_UpdateRotation()
 
 void OGLDisplayPresenter::_UpdateClientSize()
 {
-	this->_viewportWidth  = (GLsizei)(this->_propsApplied.clientWidth  + 0.0001);
-	this->_viewportHeight = (GLsizei)(this->_propsApplied.clientHeight + 0.0001);
+	this->_viewportWidth  = (GLsizei)(this->_propsApplied.viewportActualWidth  + 0.0001);
+	this->_viewportHeight = (GLsizei)(this->_propsApplied.viewportActualHeight + 0.0001);
 	this->_needUpdateViewport = true;
 	
 	this->GetHUDLayer()->SetNeedsUpdateVertices();
@@ -5969,9 +5979,9 @@ void OGLDisplayPresenter::CopyFrameToBuffer(Color4u8 *dstBuffer)
 	this->RenderFrameOGL(true);
 	
 #ifdef MSB_FIRST
-	glReadPixels(0, 0, this->_propsApplied.clientWidth, this->_propsApplied.clientHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, dstBuffer);
+	glReadPixels(0, 0, this->_propsApplied.viewportActualWidth, this->_propsApplied.viewportActualHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, dstBuffer);
 #else
-	glReadPixels(0, 0, this->_propsApplied.clientWidth, this->_propsApplied.clientHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
+	glReadPixels(0, 0, this->_propsApplied.viewportActualWidth, this->_propsApplied.viewportActualHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
 #endif
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
@@ -7403,20 +7413,20 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 	// First, draw the inputs.
 	if (this->_output->GetHUDShowInput())
 	{
-		const ClientDisplayPresenterProperties &cdp = this->_output->GetPresenterProperties();
+		const ClientDisplayPresenterProperties &cdpp = this->_output->GetPresenterProperties();
 		
 		// Draw the touch lines first.
 		if (isShaderSupported)
 		{
-			glUniform1f(this->_uniformAngleDegrees, cdp.rotation);
-			glUniform1f(this->_uniformScalar, cdp.viewScale);
+			glUniform1f(this->_uniformAngleDegrees, cdpp.rotation);
+			glUniform1f(this->_uniformScalar, cdpp.screenScale * cdpp.clientScale);
 		}
 		else
 		{
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
-			glRotatef(cdp.rotation, 0.0f, 0.0f, 1.0f);
-			glScalef(cdp.viewScale, cdp.viewScale, 1.0f);
+			glRotatef(cdpp.rotation, 0.0f, 0.0f, 1.0f);
+			glScalef(cdpp.screenScale * cdpp.clientScale, cdpp.screenScale * cdpp.clientScale, 1.0f);
 		}
 		
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -7624,9 +7634,9 @@ OGLDisplayLayer::~OGLDisplayLayer()
 
 void OGLDisplayLayer::_UpdateRotationScaleOGL()
 {
-	const ClientDisplayPresenterProperties &cdv = this->_output->GetPresenterProperties();
-	const double r = cdv.rotation;
-	const double s = cdv.viewScale;
+	const ClientDisplayPresenterProperties &cdpp = this->_output->GetPresenterProperties();
+	const double r = cdpp.rotation;
+	const double s = cdpp.screenScale * cdpp.clientScale;
 	
 	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
@@ -8155,6 +8165,7 @@ void OGLDisplayLayer::ProcessOGL()
 
 void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 {
+	const ClientDisplayPresenterProperties &cdpp = this->_output->GetPresenterProperties();
 	const bool isShaderSupported = this->_output->GetContextInfo()->IsShaderSupported();
 	
 	glDisable(GL_BLEND);
@@ -8207,7 +8218,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 	
 	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
 	
-	switch (this->_output->GetPresenterProperties().mode)
+	switch (cdpp.mode)
 	{
 		case ClientDisplayMode_Main:
 		{
@@ -8245,10 +8256,10 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 			
 		case ClientDisplayMode_Dual:
 		{
-			const NDSDisplayID majorDisplayID = (this->_output->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
-			const size_t majorDisplayVtx = (this->_output->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
+			const NDSDisplayID majorDisplayID = (cdpp.order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
+			const size_t majorDisplayVtx = (cdpp.order == ClientDisplayOrder_MainFirst) ? 8 : 12;
 			
-			switch (this->_output->GetPresenterProperties().layout)
+			switch (cdpp.layout)
 			{
 				case ClientDisplayLayout_Hybrid_2_1:
 				case ClientDisplayLayout_Hybrid_16_9:

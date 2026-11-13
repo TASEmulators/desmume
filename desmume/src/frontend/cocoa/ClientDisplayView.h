@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2025 DeSmuME team
+	Copyright (C) 2017-2026 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -112,18 +112,60 @@ typedef struct ClientFrameInfo ClientFrameInfo;
 
 struct ClientDisplayPresenterProperties
 {
+	// These are the primary members of this struct. All other members will have some
+	// dependence on these, and so it is always important to assign them valid values
+	// before passing this struct to any related methods.
 	ClientDisplayMode mode;
 	ClientDisplayLayout layout;
 	ClientDisplayOrder order;
 	double gapScale;
 	double rotation;
-	double clientWidth;
-	double clientHeight;
 	
-	double normalWidth;
-	double normalHeight;
-	double viewScale;
-	double gapDistance;
+	// The screen scale is the primary size multiplier for the NDS screen layout, as
+	// drawn into the viewport.
+	double screenScale;
+	
+	// The client scale is a secondary size multiplier that is applied to the NDS
+	// screen layout. It is used in tandem with the actual viewport size for the
+	// support of HiDPI viewports.
+	double clientScale;
+	
+	// The "logical viewport size" represents the size of the viewport that matches
+	// the size of client-side GUI windows and viewports.
+	double viewportLogicalWidth;
+	double viewportLogicalHeight;
+	
+	// The "actual viewport size" is the same as the logical viewport size, but with
+	// client-side scaling applied. This is intended for supporting HiDPI viewports.
+	double viewportActualWidth;
+	double viewportActualHeight;
+	
+	// The HUD glyph "tile" size is the dimensional size of each ASCII glyph, in pixels,
+	// calculated by multiplying a constant with the client-side scaling. The actual HUD
+	// glyph size used for display is scaled from the tile size.
+	size_t hudGlyphTileSize;
+	size_t hudGlyphSize;
+	
+	// The gap distance is the actual unit distance between the main and touch screens.
+	// It is calculated by multiplying a constant with the gap scaling and the screen
+	// scaling.
+	double screenGapDistance;
+	
+	// The "normal size" represents the size of the NDS screen layout by taking into
+	// account the display mode, display layout, and gap scaling. However, the "normal
+	// size" does not take apply any rotation or scaling.
+	double screenNormalWidth;
+	double screenNormalHeight;
+	
+	// This is the same as the normal size, but with rotation applied.
+	double screenUnscaledRotatedWidth;
+	double screenUnscaledRotatedHeight;
+	
+	// This is the normal size with both rotation and screen scaling applied.
+	// This size only encompasses the NDS screens themselves, and will always fit within
+	// logical viewport size.
+	double screenTransformedWidth;
+	double screenTransformedHeight;
 };
 typedef struct ClientDisplayPresenterProperties ClientDisplayPresenterProperties;
 
@@ -150,8 +192,6 @@ protected:
 	ClientDisplaySource _displaySourceSelect[2];
 	bool _isSelectedDisplayEnabled[2];
 	NDSDisplayID _selectedSourceForDisplay[2];
-	
-	double _scaleFactor;
 	
 	double _hudObjectScale;
 	bool _isHUDRenderMipmapped;
@@ -190,8 +230,6 @@ protected:
 	uint8_t *_hudFontFileCache;
 	size_t _hudFontFileCacheSize;
 	GlyphInfo _glyphInfo[256];
-	size_t _glyphSize;
-	size_t _glyphTileSize;
 	
 	Color4u8 *_vfMasterDstBuffer;
 	size_t _vfMasterDstBufferSize;
@@ -219,9 +257,6 @@ public:
 	virtual ~ClientDisplayPresenter();
 	
 	virtual void Init();
-	
-	double GetScaleFactor() const;
-	virtual void SetScaleFactor(const double scaleFactor);
 		
 	// NDS screen layout
 	const ClientDisplayPresenterProperties& GetPresenterProperties() const;
@@ -253,7 +288,7 @@ public:
 	// HUD appearance
 	const char* GetHUDFontPath() const;
 	void SetHUDFontPath(const char *filePath);
-	virtual void LoadHUDFont();
+	virtual void LoadHUDFont(const size_t glyphSize, const size_t glyphTileSize);
 	virtual void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
 	virtual void SetHUDInfo(const ClientFrameInfo &clientFrameInfo, const NDSFrameInfo &ndsFrameInfo);
 	
@@ -331,6 +366,19 @@ public:
 	
 	static void CalculateNormalSize(const ClientDisplayMode mode, const ClientDisplayLayout layout, const double gapScale,
 									double &outWidth, double &outHeight);
+	
+	static ClientDisplayPresenterProperties GetDefaultProperties();
+	
+	static void CalculateViewPropertiesWithScreenScalarOnly(ClientDisplayPresenterProperties &inoutViewProps, double screenScale);
+	static void CalculateViewPropertiesWithClientScalarOnly(ClientDisplayPresenterProperties &inoutViewProps, double clientScale);
+	static void CalculateViewPropertiesWithAllScalars(ClientDisplayPresenterProperties &inoutViewProps, double screenScale, double clientScale);
+	
+	static void CalculateViewPropertiesWithLogicalViewportSize(ClientDisplayPresenterProperties &inoutViewProps, double logicalWidth, double logicalHeight, double clientScale);
+	static double CalculateViewPropertiesWithLogicalViewportSizeZoomed(ClientDisplayPresenterProperties &inoutViewProps, double logicalWidth, double logicalHeight, double clientScale);
+	static void CalculateViewPropertiesWithActualViewportSize(ClientDisplayPresenterProperties &inoutViewProps, double actualWidth, double actualHeight, double clientScale);
+	static double CalculateViewPropertiesWithActualViewportSizeZoomed(ClientDisplayPresenterProperties &inoutViewProps, double actualWidth, double actualHeight, double clientScale);
+	
+	static double CalculateHUDObjectScale(const ClientDisplayPresenterProperties &inViewProps);
 };
 
 class ClientDisplayViewInterface
@@ -368,13 +416,11 @@ public:
 	
 	// Touch screen input handling
 	static void GetNDSPoint(const ClientDisplayPresenterProperties &props,
-					 const double logicalClientWidth, const double logicalClientHeight,
 					 const double clientX, const double clientY,
 					 const bool isInitialTouchPress,
 					 uint8_t &outX, uint8_t &outY, bool &outTouchPressInMajorDisplay);
 	
 	void GetNDSPoint(const ClientDisplayPresenterProperties &props,
-					 const double logicalClientWidth, const double logicalClientHeight,
 					 const double clientX, const double clientY,
 					 const int inputID, const bool isInitialTouchPress,
 					 uint8_t &outX, uint8_t &outY) const;

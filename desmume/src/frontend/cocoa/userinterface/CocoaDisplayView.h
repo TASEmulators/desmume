@@ -28,6 +28,7 @@
 struct ClientDisplayPresenterProperties;
 class MacDisplayViewOutput;
 class MacGPUFetchObjectDisplayLink;
+@class CocoaGraphicsController;
 
 @protocol CocoaDisplayViewProtocol <InputHIDManagerTarget, NSObject>
 
@@ -63,10 +64,10 @@ class MacGPUFetchObjectDisplayLink;
 @property (assign) BOOL sourceDeposterize;
 @property (assign) NSInteger outputFilter;
 @property (assign) NSInteger pixelScaler;
-@property (assign) double scaleFactor;
 
-- (void) setupLayer;
-- (void) updateLayerPresenterProperties:(ClientDisplayPresenterProperties &)props scaleFactor:(const double)scaleFactor needFlush:(BOOL)needFlush;
+- (void) setupLayerWithViewProperties:(const ClientDisplayPresenterProperties &)cdpp
+				   graphicsController:(CocoaGraphicsController *)graphicsController;
+- (void) updateLayerPresenterProperties:(ClientDisplayPresenterProperties &)cdpp needFlush:(BOOL)needFlush;
 - (void) isPixelScalerSupportedByID:(NSInteger)filterID cpu:(BOOL &)outSupportedOnCPU shader:(BOOL &)outSupportedOnShader;
 
 @end

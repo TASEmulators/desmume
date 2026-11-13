@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2025 DeSmuME team
+	Copyright (C) 2025-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -248,9 +248,6 @@ public:
 	
 	virtual void SetPixelScalerByID(VideoFilterTypeID filterID);
 	virtual VideoFilterTypeID GetPixelScalerID();
-	
-	void SetScaleFactor(double scaleFactor);
-	double GetScaleFactor();
 	
 	void CommitPresenterProperties(const ClientDisplayPresenterProperties &viewProps, bool needsFlush);
 	void UpdateHUD();

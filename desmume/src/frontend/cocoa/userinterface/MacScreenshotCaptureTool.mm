@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017-2025 DeSmuME team
+	Copyright (C) 2017-2026 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -72,21 +72,21 @@
 	
 	// Note: We're allocating the parameter's memory block here, but we will be freeing it once we copy it in the detached thread.
 	MacCaptureToolParams *param = new MacCaptureToolParams;
-	param->refObject				= NULL;
-	param->fetchObject				= [self fetchObject];
-	param->formatID					= [self formatID];
-	param->savePath					= std::string([CocoaDSUtil cPathFromFilePath:savePath]);
-	param->romName					= std::string([CocoaDSUtil cPathFromFilePath:romName]);
-	param->useDeposterize			= [self useDeposterize] ? true : false;
-	param->outputFilterID			= (OutputFilterTypeID)[self outputFilterID];
-	param->pixelScalerID			= (VideoFilterTypeID)[self pixelScalerID];
+	param->refObject               = NULL;
+	param->fetchObject             = [self fetchObject];
+	param->formatID                = [self formatID];
+	param->savePath                = std::string([CocoaDSUtil cPathFromFilePath:savePath]);
+	param->romName                 = std::string([CocoaDSUtil cPathFromFilePath:romName]);
+	param->useDeposterize          = [self useDeposterize] ? true : false;
+	param->outputFilterID          = (OutputFilterTypeID)[self outputFilterID];
+	param->pixelScalerID           = (VideoFilterTypeID)[self pixelScalerID];
 	
-	param->cdpProperty.mode			= (ClientDisplayMode)[self displayMode];
-	param->cdpProperty.layout		= (ClientDisplayLayout)[self displayLayout];
-	param->cdpProperty.order		= (ClientDisplayOrder)[self displayOrder];
-	param->cdpProperty.gapScale		= (double)[self displaySeparation] / 100.0;
-	param->cdpProperty.rotation		= (double)[self displayRotation];
-	param->cdpProperty.viewScale	= (double)[self displayScale] / 100.0;
+	param->cdpProperty.mode        = (ClientDisplayMode)[self displayMode];
+	param->cdpProperty.layout      = (ClientDisplayLayout)[self displayLayout];
+	param->cdpProperty.order       = (ClientDisplayOrder)[self displayOrder];
+	param->cdpProperty.gapScale    = (double)[self displaySeparation] / 100.0;
+	param->cdpProperty.rotation    = (double)[self displayRotation];
+	param->cdpProperty.screenScale = (double)[self displayScale] / 100.0;
 	
 	pthread_t fileWriteThread;
 	pthread_attr_t fileWriteThreadAttr;
@@ -142,21 +142,21 @@ static void* RunFileWriteThread(void *arg)
 	MacCaptureToolParams *inParams = (MacCaptureToolParams *)arg;
 	MacCaptureToolParams param;
 	
-	param.refObject					= inParams->refObject;
-	param.fetchObject				= inParams->fetchObject;
-	param.formatID					= inParams->formatID;
-	param.savePath					= inParams->savePath;
-	param.romName					= inParams->romName;
-	param.useDeposterize			= inParams->useDeposterize;
-	param.outputFilterID			= inParams->outputFilterID;
-	param.pixelScalerID				= inParams->pixelScalerID;
+	param.refObject               = inParams->refObject;
+	param.fetchObject             = inParams->fetchObject;
+	param.formatID                = inParams->formatID;
+	param.savePath                = inParams->savePath;
+	param.romName                 = inParams->romName;
+	param.useDeposterize          = inParams->useDeposterize;
+	param.outputFilterID          = inParams->outputFilterID;
+	param.pixelScalerID           = inParams->pixelScalerID;
 	
-	param.cdpProperty.mode			= inParams->cdpProperty.mode;
-	param.cdpProperty.layout		= inParams->cdpProperty.layout;
-	param.cdpProperty.order			= inParams->cdpProperty.order;
-	param.cdpProperty.gapScale		= inParams->cdpProperty.gapScale;
-	param.cdpProperty.rotation		= inParams->cdpProperty.rotation;
-	param.cdpProperty.viewScale		= inParams->cdpProperty.viewScale;
+	param.cdpProperty.mode        = inParams->cdpProperty.mode;
+	param.cdpProperty.layout      = inParams->cdpProperty.layout;
+	param.cdpProperty.order       = inParams->cdpProperty.order;
+	param.cdpProperty.gapScale    = inParams->cdpProperty.gapScale;
+	param.cdpProperty.rotation    = inParams->cdpProperty.rotation;
+	param.cdpProperty.screenScale = inParams->cdpProperty.screenScale;
 	
 	delete inParams;
 	inParams = NULL;
@@ -176,29 +176,28 @@ static void* RunFileWriteThread(void *arg)
 		return NULL;
 	}
 	
-	// Set up the rendering properties.
-	ClientDisplayPresenter::CalculateNormalSize(param.cdpProperty.mode, param.cdpProperty.layout, param.cdpProperty.gapScale, param.cdpProperty.normalWidth, param.cdpProperty.normalHeight);
-	double transformedWidth = param.cdpProperty.normalWidth;
-	double transformedHeight = param.cdpProperty.normalHeight;
-	double framebufferScale = (double)displayInfo.customWidth / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	
-	// If the scaling is 0, then calculate the scaling based on the incoming framebuffer size.
-	if (param.cdpProperty.viewScale == 0)
+	// If the scaling is close enough to 1.0, then treat it as 1.0 for simplicity.
+	if ( (param.cdpProperty.screenScale > 0.999) && (param.cdpProperty.screenScale < 1.001) )
 	{
-		param.cdpProperty.viewScale = framebufferScale;
+		param.cdpProperty.screenScale = 1.0;
 	}
 	
-	ClientDisplayPresenter::ConvertNormalToTransformedBounds(param.cdpProperty.viewScale, param.cdpProperty.rotation, transformedWidth, transformedHeight);
-	
-	param.cdpProperty.clientWidth	= transformedWidth;
-	param.cdpProperty.clientHeight	= transformedHeight;
-	param.cdpProperty.gapDistance	= (double)DS_DISPLAY_UNSCALED_GAP * param.cdpProperty.gapScale;
+	// Set up the rendering properties.
+	if (param.cdpProperty.screenScale == 0.0)
+	{
+		// If the scaling is 0, then calculate the scaling based on the incoming framebuffer size.
+		ClientDisplayPresenter::CalculateViewPropertiesWithActualViewportSizeZoomed(param.cdpProperty, (double)displayInfo.customWidth, (double)displayInfo.customHeight, 1.0);
+	}
+	else
+	{
+		ClientDisplayPresenter::CalculateViewPropertiesWithAllScalars(param.cdpProperty, param.cdpProperty.screenScale, 1.0);
+	}
 	
 	// Render the frame to an NSBitmapImageRep.
 	NSAutoreleasePool *autoreleasePool = [[NSAutoreleasePool alloc] init];
 	
-	NSUInteger w = param.cdpProperty.clientWidth;
-	NSUInteger h = param.cdpProperty.clientHeight;
+	NSUInteger w = param.cdpProperty.viewportActualWidth;
+	NSUInteger h = param.cdpProperty.viewportActualHeight;
 	
 	NSBitmapImageRep *newImageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
 																			pixelsWide:w
@@ -230,13 +229,13 @@ static void* RunFileWriteThread(void *arg)
 			return NULL;
 		}
 		
-		cdp = new MacMetalDisplayPresenter((MetalDisplayViewSharedData *)param.fetchObject->GetClientData());
+		cdp = new MacMetalDisplayPresenter((MetalDisplayViewSharedData *)param.fetchObject->GetClientData(), param.cdpProperty);
 		isUsingMetal = true;
 	}
 	else
 #endif
 	{
-		cdp = new MacOGLDisplayPresenter((MacOGLClientFetchObject *)param.fetchObject);
+		cdp = new MacOGLDisplayPresenter((MacOGLClientFetchObject *)param.fetchObject, param.cdpProperty);
 	}
 	
 	cdp->Init();
@@ -246,11 +245,10 @@ static void* RunFileWriteThread(void *arg)
 	cdp->SetupPresenterProperties();
 	cdp->SetSourceDeposterize(param.useDeposterize);
 	
-	if ( (cdp->GetViewScale() > 0.999) && (cdp->GetViewScale() < 1.001) )
+	if ( (param.cdpProperty.screenScale > 0.999) && (param.cdpProperty.screenScale < 1.001) )
 	{
 		// In the special case of capturing a native-size framebuffer at its native size, don't use any filters for the sake of accuracy.
-		if ( (param.cdpProperty.layout == ClientDisplayLayout_Vertical) || (param.cdpProperty.layout == ClientDisplayLayout_Horizontal) ||
-			 ((framebufferScale > 0.999) && (framebufferScale < 1.001)) )
+		if ( (param.cdpProperty.layout == ClientDisplayLayout_Vertical) || (param.cdpProperty.layout == ClientDisplayLayout_Horizontal) )
 		{
 			cdp->SetOutputFilter(OutputFilterTypeID_NearestNeighbor);
 		}

@@ -141,7 +141,21 @@ static id<MTLTexture> MacMetalCaptureLUTForFilter(MetalDisplayViewSharedData *sh
 	// because configuring our own pixel scaler is about to overwrite it.
 	_displayHQnxLUT = [[sharedData texCurrentHQnxLUT] retain];
 	
-	_presenter = new MacMetalDisplayPresenter(sharedData);
+	// The upstream refactor of ClientDisplayPresenterProperties removed the raw
+	// clientWidth/clientHeight, viewScale, normalWidth/normalHeight and
+	// gapDistance fields.  Every derived value is now computed from the display
+	// mode plus the actual viewport size, so fill the struct through the same
+	// helper the screenshot and display-window paths use.  The capture viewport
+	// is exactly the CVPixelBuffer size we are about to allocate.
+	ClientDisplayPresenterProperties props = ClientDisplayPresenter::GetDefaultProperties();
+	props.mode     = geometry.mode;
+	props.layout   = geometry.layout;
+	props.order    = geometry.order;
+	props.gapScale = geometry.gapScale;
+	props.rotation = geometry.rotation;
+	ClientDisplayPresenter::CalculateViewPropertiesWithActualViewportSizeZoomed(props, (double)_width, (double)_height, 1.0);
+	
+	_presenter = new MacMetalDisplayPresenter(sharedData, props);
 	_presenterObject = [_presenter->GetPresenterObject() retain];
 	
 	// Render straight into BGRA so VideoToolbox can take the frame as-is.  This
@@ -150,21 +164,6 @@ static id<MTLTexture> MacMetalCaptureLUTForFilter(MetalDisplayViewSharedData *sh
 	[_presenterObject setDrawableFormat:MTLPixelFormatBGRA8Unorm];
 	
 	_presenter->Init();
-	
-	ClientDisplayPresenterProperties props;
-	memset(&props, 0, sizeof(props));
-	props.mode         = geometry.mode;
-	props.layout       = geometry.layout;
-	props.order        = geometry.order;
-	props.gapScale     = geometry.gapScale;
-	props.rotation     = geometry.rotation;
-	props.clientWidth  = (double)_width;
-	props.clientHeight = (double)_height;
-	props.viewScale    = 1.0;
-	props.normalWidth  = 0.0;
-	props.normalHeight = 0.0;
-	props.gapDistance  = 0.0;
-	
 	_presenter->CommitPresenterProperties(props);
 	_presenter->SetupPresenterProperties();
 	

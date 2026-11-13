@@ -282,8 +282,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 // Video capture path.  Renders this presenter's already-processed displays
 // into an IOSurface-backed pixel buffer through a CVMetalTextureCache, so the
 // encoder can consume a GPU frame instead of a CPU copy.  pixelBuffer must
-// match the presenter's clientWidth/clientHeight, and this presenter must have
-// been left in the capture configuration (HUD off).
+// match the presenter's viewportActualWidth/viewportActualHeight, and this
+// presenter must have been left in the capture configuration (HUD off).
 - (BOOL) renderToPixelBuffer:(CVPixelBufferRef)pixelBuffer textureCache:(CVMetalTextureCacheRef)textureCache;
 
 // Raises the per-render-buffer semaphore count.  A capture presenter renders
@@ -369,6 +369,7 @@ protected:
 public:
 	MacMetalDisplayPresenter();
 	MacMetalDisplayPresenter(MetalDisplayViewSharedData *sharedObject);
+	MacMetalDisplayPresenter(MetalDisplayViewSharedData *sharedObject, const ClientDisplayPresenterProperties &cdpp);
 	virtual ~MacMetalDisplayPresenter();
 	
 	MacMetalDisplayPresenterObject* GetPresenterObject() const;
@@ -395,7 +396,7 @@ public:
 class MacMetalDisplayView : public MacDisplayLayeredView
 {
 private:
-	void __InstanceInit(MetalDisplayViewSharedData *sharedObject);
+	void __InstanceInit(MetalDisplayViewSharedData *sharedObject, const ClientDisplayPresenterProperties &cdpp);
 	
 protected:
 	apple_unfairlock_t _unfairlockViewNeedsFlush;
@@ -403,6 +404,7 @@ protected:
 public:
 	MacMetalDisplayView();
 	MacMetalDisplayView(MetalDisplayViewSharedData *sharedObject);
+	MacMetalDisplayView(MetalDisplayViewSharedData *sharedObject, const ClientDisplayPresenterProperties &cdpp);
 	virtual ~MacMetalDisplayView();
 	
 	virtual void Init();
