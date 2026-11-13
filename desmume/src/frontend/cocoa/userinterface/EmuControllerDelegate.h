@@ -29,6 +29,7 @@
 @class CheatWindowDelegate;
 @class DisplayWindowController;
 @class RomInfoPanel;
+@class MemoryViewerWindowController;
 @class MacScreenshotCaptureToolDelegate;
 @class MacAVCaptureToolDelegate;
 @class PreferencesWindowDelegate;
@@ -59,6 +60,8 @@ class AudioSampleBlockGenerator;
 	NSMenu *cheatDatabaseRecentsMenu;
 	
 	RomInfoPanel *romInfoPanel;
+	
+	MemoryViewerWindowController *_memoryViewerWindowController;
 	
 	NSWindow *displayRotationPanel;
 	NSWindow *displaySeparationPanel;
@@ -246,6 +249,7 @@ class AudioSampleBlockGenerator;
 // Tools Menu
 - (IBAction) toggleGPUState:(id)sender;
 - (IBAction) toggleGDBStubActivate:(id)sender;
+- (IBAction) openMemoryViewer:(id)sender;
 
 - (IBAction) autoholdSet:(id)sender;
 - (IBAction) autoholdClear:(id)sender;

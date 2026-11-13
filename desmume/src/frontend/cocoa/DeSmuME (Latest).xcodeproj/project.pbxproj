@@ -4996,6 +4996,30 @@
 		DB9BEDD8E41FA335DC00CC27 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08FED3A0E0FA8B20AAE77368 /* InterpolateCubic.cpp */; };
 		BDE01F7595605733877157A5 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 500FD057F8B92C55A1476AA8 /* InterpolateLinear.cpp */; };
 		E2CF1281040A03DC4E641D36 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */; };
+		A7E5CAFE0000000000000011 /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE0000000000000012 /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE0000000000000013 /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE0000000000000014 /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE0000000000000015 /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE0000000000000016 /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE0000000000000017 /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE0000000000000018 /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE0000000000000019 /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE000000000000001A /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE000000000000001B /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE000000000000001C /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE000000000000001D /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE000000000000001E /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE000000000000001F /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE0000000000000020 /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE0000000000000021 /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE0000000000000022 /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE0000000000000023 /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE0000000000000024 /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE0000000000000025 /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE0000000000000026 /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
+		A7E5CAFE0000000000000027 /* MemoryViewerCore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */; };
+		A7E5CAFE0000000000000028 /* MemoryViewerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -5931,6 +5955,10 @@
 		1AA73BEB1F3B6016A99F1BF4 /* InterpolateShannon.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InterpolateShannon.cpp; sourceTree = "<group>"; };
 		6772906A1DF7E3AD49D3E869 /* InterpolateShannon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InterpolateShannon.h; sourceTree = "<group>"; };
 		286465ADA8DBC07FA39221BB /* soundtouch_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = soundtouch_config.h; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000001 /* MemoryViewerCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MemoryViewerCore.h; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MemoryViewerCore.cpp; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000003 /* MemoryViewerWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MemoryViewerWindow.h; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MemoryViewerWindow.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -6697,6 +6725,10 @@
 		AB3ACB6514C2361100D7D192 /* userinterface */ = {
 			isa = PBXGroup;
 			children = (
+				A7E5CAFE0000000000000001 /* MemoryViewerCore.h */,
+				A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */,
+				A7E5CAFE0000000000000003 /* MemoryViewerWindow.h */,
+				A7E5CAFE0000000000000004 /* MemoryViewerWindow.mm */,
 				A7E500000000000000000001 /* MacMetalOSDDraw.h */,
 				A7E500000000000000000002 /* MacMetalOSDDraw.cpp */,
 				A7E500000000000000000003 /* MacMetalOSDFontData.cpp */,
@@ -10518,6 +10550,8 @@
 				2CF4F5356EEAA96C0AA48622 /* InterpolateCubic.cpp in Sources */,
 				706CB21C4F041D956ED04C1C /* InterpolateLinear.cpp in Sources */,
 				3D18CA21246A57CA59BE5FF4 /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE0000000000000011 /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE0000000000000012 /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10737,6 +10771,8 @@
 				573C0546D4A93419539EF62A /* InterpolateCubic.cpp in Sources */,
 				B0601A9012086BC4A2506074 /* InterpolateLinear.cpp in Sources */,
 				2D20AC1DA18A5212FA53EAA6 /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE0000000000000013 /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE0000000000000014 /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10955,6 +10991,8 @@
 				1659DE758D308517D3F9F8E6 /* InterpolateCubic.cpp in Sources */,
 				DC9CDB513443BC49EBB052E7 /* InterpolateLinear.cpp in Sources */,
 				627318916852E1BECA645C95 /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE0000000000000015 /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE0000000000000016 /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11197,6 +11235,8 @@
 				03598002CCFA6AE1EA4DEC9C /* InterpolateCubic.cpp in Sources */,
 				FEDF8C4917AB82BFFDC52108 /* InterpolateLinear.cpp in Sources */,
 				4A3EFF2FA75F7591E1B327C6 /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE0000000000000017 /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE0000000000000018 /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11416,6 +11456,8 @@
 				67CB6522609F6BDB03768403 /* InterpolateCubic.cpp in Sources */,
 				620F0A65B2D056F499F82A86 /* InterpolateLinear.cpp in Sources */,
 				C1D71ED03CDF957FFE5021C2 /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE0000000000000019 /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE000000000000001A /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11663,6 +11705,8 @@
 				F7ABA97C092F5887C9F60F99 /* InterpolateCubic.cpp in Sources */,
 				FF894CC3B27FF3B0FC001339 /* InterpolateLinear.cpp in Sources */,
 				B2746044DBDD066E6A83C137 /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE000000000000001B /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE000000000000001C /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11911,6 +11955,8 @@
 				8A296B3B6A941C8CF0754AFD /* InterpolateCubic.cpp in Sources */,
 				5A1BD56FBB60DA0FC0E0FAF8 /* InterpolateLinear.cpp in Sources */,
 				F2497582A3E6BADE18728A95 /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE000000000000001D /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE000000000000001E /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12158,6 +12204,8 @@
 				282AD1FCA25EBEBB861EAD0F /* InterpolateCubic.cpp in Sources */,
 				699C445385988D7CCAE05FF9 /* InterpolateLinear.cpp in Sources */,
 				ED99C277048E638009BFF8E1 /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE000000000000001F /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE0000000000000020 /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12406,6 +12454,8 @@
 				0CDFC42DAE4E1CD41D42E6C5 /* InterpolateCubic.cpp in Sources */,
 				BD871AD37A49F47B06E25D81 /* InterpolateLinear.cpp in Sources */,
 				AC04FC195081BC3823B4046F /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE0000000000000021 /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE0000000000000022 /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12591,6 +12641,8 @@
 				D8544520B73DC64FB17D1F2E /* InterpolateCubic.cpp in Sources */,
 				13B79904E242FFC11813E0EB /* InterpolateLinear.cpp in Sources */,
 				3591B83D5386ABE65E7678F7 /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE0000000000000023 /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE0000000000000024 /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12838,6 +12890,8 @@
 				3CC5A16D296060FE5414B012 /* InterpolateCubic.cpp in Sources */,
 				69201DA008BD0CBFC454DBCB /* InterpolateLinear.cpp in Sources */,
 				E5C236A218032A3EE4DC480E /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE0000000000000025 /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE0000000000000026 /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -13085,6 +13139,8 @@
 				DB9BEDD8E41FA335DC00CC27 /* InterpolateCubic.cpp in Sources */,
 				BDE01F7595605733877157A5 /* InterpolateLinear.cpp in Sources */,
 				E2CF1281040A03DC4E641D36 /* InterpolateShannon.cpp in Sources */,
+				A7E5CAFE0000000000000027 /* MemoryViewerCore.cpp in Sources */,
+				A7E5CAFE0000000000000028 /* MemoryViewerWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

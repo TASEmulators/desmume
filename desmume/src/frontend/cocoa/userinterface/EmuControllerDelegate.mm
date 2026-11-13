@@ -24,6 +24,7 @@
 #import "MacAVCaptureTool.h"
 #import "MacScreenshotCaptureTool.h"
 #import "preferencesWindowDelegate.h"
+#import "MemoryViewerWindow.h"
 
 #import "CocoaAudioController.h"
 #import "CocoaDisplayView.h"
@@ -216,6 +217,11 @@
 												 name:@"org.desmume.DeSmuME.updateCheatDatabaseRecentsMenu"
 											   object:nil];
 	
+	[[NSNotificationCenter defaultCenter] addObserver:self
+											 selector:@selector(applicationDidFinishLaunching:)
+												 name:NSApplicationDidFinishLaunchingNotification
+											   object:nil];
+	
 	return self;
 }
 
@@ -262,6 +268,8 @@
 	[windowList release];
 	
 	[audioController release];
+	
+	[_memoryViewerWindowController release];
 	
 	apple_unfairlock_destroy(_unfairlockFirmware);
 	
@@ -923,6 +931,77 @@
 	const BOOL willStart = ([cdsCore isGdbStubStarted]) ? NO : YES;
 	[cdsCore setIsGdbStubStarted:willStart];
 	[(NSButton *)sender setTitle:([cdsCore isGdbStubStarted]) ? @"Stop" : @"Start"];
+}
+
+- (IBAction) openMemoryViewer:(id)sender
+{
+	if (_memoryViewerWindowController == nil)
+	{
+		_memoryViewerWindowController = [[MemoryViewerWindowController alloc] init];
+	}
+	
+	[_memoryViewerWindowController showWindowForRegion:MEMVIEW_ARM9 address:0xFFFFFFFF];
+}
+
+- (void) installMemoryViewerMenuItem
+{
+	NSMenu *mainMenu = [NSApp mainMenu];
+	if (mainMenu == nil)
+	{
+		return;
+	}
+	
+	// The Tools menu title is localized, so fall back to locating the menu by
+	// one of its known actions when the English title is not present.
+	NSMenuItem *toolsMenuItem = [mainMenu itemWithTitle:@"Tools"];
+	if (toolsMenuItem == nil)
+	{
+		for (NSMenuItem *candidate in [mainMenu itemArray])
+		{
+			for (NSMenuItem *subItem in [[candidate submenu] itemArray])
+			{
+				if ([subItem action] == @selector(toggleGDBStubActivate:))
+				{
+					toolsMenuItem = candidate;
+					break;
+				}
+			}
+			
+			if (toolsMenuItem != nil)
+			{
+				break;
+			}
+		}
+	}
+	
+	NSMenu *toolsMenu = [toolsMenuItem submenu];
+	if (toolsMenu == nil)
+	{
+		return;
+	}
+	
+	if ([toolsMenu itemWithTitle:@"Memory Viewer..."] != nil)
+	{
+		return;
+	}
+	
+	if (([[toolsMenu itemArray] count] > 0) && ![[[toolsMenu itemArray] lastObject] isSeparatorItem])
+	{
+		[toolsMenu addItem:[NSMenuItem separatorItem]];
+	}
+	
+	NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@"Memory Viewer..."
+												  action:@selector(openMemoryViewer:)
+										   keyEquivalent:@"m"];
+	[item setKeyEquivalentModifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)];
+	[item setTarget:self];
+	[toolsMenu addItem:item];
+	[item release];
+}
+
+- (void) applicationDidFinishLaunching:(NSNotification *)notification
+{
+	[self installMemoryViewerMenuItem];
 }
 
 - (IBAction) changeRomSaveType:(id)sender
