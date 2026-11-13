@@ -31,6 +31,7 @@
 @class RomInfoPanel;
 @class MemoryViewerWindowController;
 @class RAMWatchWindowController;
+@class RAMSearchWindowController;
 @class MacScreenshotCaptureToolDelegate;
 @class MacAVCaptureToolDelegate;
 @class PreferencesWindowDelegate;
@@ -64,6 +65,7 @@ class AudioSampleBlockGenerator;
 	
 	MemoryViewerWindowController *_memoryViewerWindowController;
 	RAMWatchWindowController *_ramWatchWindowController;
+	RAMSearchWindowController *_ramSearchWindowController;
 	
 	NSWindow *displayRotationPanel;
 	NSWindow *displaySeparationPanel;
@@ -253,14 +255,16 @@ class AudioSampleBlockGenerator;
 - (IBAction) toggleGDBStubActivate:(id)sender;
 - (IBAction) openMemoryViewer:(id)sender;
 - (IBAction) openRAMWatch:(id)sender;
+- (IBAction) openRAMSearch:(id)sender;
 
-// Reusable helper for debug tool windows. The RAM Search port can add its own
-// item with one call instead of duplicating the localized-menu lookup.
+// Reusable helper for debug tool windows. startsNewGroup adds a separator
+// above the item; related tools can pass NO to stay in the same group.
 - (NSMenu *) toolsMenu;
 - (NSMenuItem *) installToolMenuItemWithTitle:(NSString *)title
                                         action:(SEL)action
                                  keyEquivalent:(NSString *)keyEquivalent
-                                 modifierMask:(NSEventModifierFlags)modifierMask;
+                                 modifierMask:(NSEventModifierFlags)modifierMask
+                               startsNewGroup:(BOOL)startsNewGroup;
 
 - (IBAction) autoholdSet:(id)sender;
 - (IBAction) autoholdClear:(id)sender;

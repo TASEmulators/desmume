@@ -15,27 +15,23 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Integration seam for the RAM Search port, deliberately created together with
-// the RAM Watch port so the second port does not need to redesign anything.
+// Frontend-independent RAM Search engine, used by the Cocoa port and ready for
+// a future GTK port. windows/ram_search.cpp keeps its legacy virtual-index
+// engine for now (its dialog is tightly coupled to that state); the low-level
+// bus reads/writes and the Add-to-Watch action are already shared with this
+// engine through RAMDebugCore and RAMWatchCore, so switching Windows over later
+// only requires replacing its result source.
 //
-// Today windows/ram_search.cpp still owns the search engine (a Win32 dialog
-// plus a set of globals: ResultCount, rs_type_size, s_activeMemoryRegions,
-// s_prevValues/s_curValues, prune(), CompactAddrs(), reset_address_info(),
-// signal_new_frame(), sizeConv(), Update_RAM_Search(), ...). When RAM Search is
-// ported, that engine moves into ram_search_core.cpp behind the interface
-// below, and every frontend only implements a result list view. The low-level
-// pieces it needs are already shared:
+// The engine walks the three NDS RAM regions (main RAM, ITCM, DTCM) through
+// the live MMU arrays, keeps a candidate vector with previous/current values
+// and a change counter, and filters it with the same search categories and
+// comparison operators as the Windows dialog:
 //
-//   * RAMDebugCore                 - bus/software reads and writes, address
-//                                   regions (kMainMemAddress, kItcmAddress,
-//                                   kDtcmAddress, kMaxRamSize), value codes
-//                                   and formatting
-//   * RAMWatchCore::InsertFromSearch - "Add to Watch List" from a result row
-//   * RAMSearchWatchBridge        - thin adapter below, so the search UI has
-//                                   no dependency on the watch UI
-//
-// Nothing here is compiled into the search yet: the declarations only pin down
-// the shape of the engine so the Cocoa/GTK work can proceed independently.
+//   rs_c 's' -> SEARCH_SPECIFIC_VALUE       rs_o '='  -> COMPARE_EQUAL
+//   rs_c 'r' -> SEARCH_RELATIVE_VALUE       rs_o '!'  -> COMPARE_NOT_EQUAL
+//   rs_c 'a' -> SEARCH_SPECIFIC_ADDRESS    rs_o '<'/'>'/'l'/'m' -> ordering
+//   rs_c 'n' -> SEARCH_NUMBER_OF_CHANGES   rs_o 'd'  -> COMPARE_DIFFERENT_BY
+//                                           rs_o '%'  -> COMPARE_MODULO
 
 #ifndef RAM_SEARCH_CORE_H
 #define RAM_SEARCH_CORE_H
@@ -64,49 +60,35 @@ public:
 	}
 };
 
-// ---------------------------------------------------------------------------
-// Interface to be implemented by ram_search_core.cpp during the RAM Search
-// port. Kept as a declaration on purpose: no frontend links against it yet.
-// ---------------------------------------------------------------------------
 class RAMSearchCore
 {
 public:
 	enum SearchType
 	{
-		SEARCH_UNKNOWN_VALUE = 0,   // Windows: "Unknown" / reset_address_info()
-		SEARCH_SPECIFIC_VALUE,      // Windows: "Specific Value"
-		SEARCH_RELATIVE_VALUE,      // Windows: "Relative" (previous values)
-		SEARCH_NUMBER_OF_CHANGES    // Windows: "Number of Changes"
+		SEARCH_SPECIFIC_VALUE = 0,  // Windows rs_c 's': current value vs typed value
+		SEARCH_RELATIVE_VALUE,      // Windows rs_c 'r': current value vs previous
+		SEARCH_SPECIFIC_ADDRESS,    // Windows rs_c 'a': address vs typed value
+		SEARCH_NUMBER_OF_CHANGES    // Windows rs_c 'n': change count vs typed value
 	};
 
 	enum CompareOperator
 	{
-		COMPARE_EQUAL = 0,
-		COMPARE_NOT_EQUAL,
-		COMPARE_GREATER_THAN,
-		COMPARE_LESS_THAN,
-		COMPARE_GREATER_OR_EQUAL,
-		COMPARE_LESS_OR_EQUAL,
-		COMPARE_DIFFERENT_BY,       // Windows: "Different By"
-		COMPARE_MODULO              // Windows: "Modulo"
+		COMPARE_EQUAL = 0,          // '='
+		COMPARE_NOT_EQUAL,          // '!'
+		COMPARE_LESS_THAN,          // '<'
+		COMPARE_GREATER_THAN,       // '>'
+		COMPARE_LESS_OR_EQUAL,      // 'l'
+		COMPARE_GREATER_OR_EQUAL,   // 'm'
+		COMPARE_DIFFERENT_BY,       // 'd'  (uses parameter as the delta)
+		COMPARE_MODULO              // '%'  (uses parameter as the modulus)
 	};
 
 	enum ValueType
 	{
-		VALUE_SIGNED = 0,           // rs_t 's'
-		VALUE_UNSIGNED,             // rs_t 'u'
-		VALUE_HEX,                  // rs_t 'h'
-		VALUE_FIXED_20_12           // rs_t 'f'
-	};
-
-	struct MemoryRegion
-	{
-		uint32_t hardwareAddress;
-		uint32_t size;
-		uint8_t *softwareAddress;   // live MMU.MAIN_MEM / ARM9_ITCM / ARM9_DTCM
-		bool isDtcm;
-		uint32_t virtualIndex;
-		uint32_t itemIndex;
+		VALUE_SIGNED = 0,           // 's'
+		VALUE_UNSIGNED,             // 'u'
+		VALUE_HEX,                  // 'h'
+		VALUE_FIXED_20_12           // 'f'
 	};
 
 	struct Result
@@ -119,24 +101,49 @@ public:
 
 	static RAMSearchCore& Get();
 
-	// Lifecycle: reset_address_info(), signal_new_frame(), signal_new_size().
+	// ---- Options --------------------------------------------------------
+
+	void SetSize(char sizeCode);          // 'b' / 'w' / 'd'
+	char Size() const;
+	void SetMisaligned(bool enabled);     // allow unaligned addresses
+	bool Misaligned() const;
+	void SetLittleEndian(bool enabled);
+	bool LittleEndian() const;
+
+	void SetSearchType(SearchType type);
+	SearchType GetSearchType() const;
+	void SetCompareOperator(CompareOperator op);
+	CompareOperator GetCompareOperator() const;
+	void SetValueType(ValueType type);
+	ValueType GetValueType() const;
+	void SetSearchValue(int32_t value);
+	int32_t SearchValue() const;
+	void SetParameter(int32_t parameter);
+	int32_t Parameter() const;
+
+	// ---- Lifecycle -------------------------------------------------------
+
+	// Enumerates every candidate address and snapshots the current values.
 	void Reset();
+	// Called once per emulated frame: refreshes current values and change counts.
 	void SignalNewFrame();
+	// Re-enumerates candidates after a size/alignment change.
 	void SignalNewSize();
 
-	// prune() / CompactAddrs() / undo.
+	// ---- Searching -------------------------------------------------------
+
+	// Filters the candidate list with the current options.
+	void Search();
 	void Prune(SearchType search, CompareOperator op, ValueType type,
 	           int32_t value, int32_t parameter);
 	void CompactAddresses();
+	bool CanUndo() const;
 	bool Undo();
 
-	// Results.
+	// ---- Results ---------------------------------------------------------
+
 	size_t ResultCount() const;
 	Result ResultAt(size_t index) const;
-	void SetSize(char sizeCode);
-	char Size() const;
-	void SetMisaligned(bool enabled);
-	void SetLittleEndian(bool enabled);
 
 	// Adds a result row to the shared watch list.
 	bool AddResultToWatchList(size_t index, char typeCode, const std::string& comment,
@@ -144,6 +151,34 @@ public:
 
 private:
 	RAMSearchCore();
+	RAMSearchCore(const RAMSearchCore&);
+	RAMSearchCore& operator=(const RAMSearchCore&);
+
+	struct Candidate
+	{
+		uint32_t address;
+		uint32_t previousValue;
+		uint32_t currentValue;
+		uint16_t changeCount;
+		uint8_t regionIndex;
+		uint8_t reserved;
+	};
+
+	static uint32_t ReadCandidate(const Candidate& candidate, int sizeInBytes, bool littleEndian);
+	static bool Compare(CompareOperator op, uint32_t x, uint32_t y, uint32_t parameter, bool signedMode);
+
+	std::vector<Candidate> _candidates;
+	std::vector<Candidate> _undoSnapshot;
+	bool _hasUndo;
+
+	char _size;
+	bool _misaligned;
+	bool _littleEndian;
+	SearchType _searchType;
+	CompareOperator _operator;
+	ValueType _valueType;
+	int32_t _searchValue;
+	int32_t _parameter;
 };
 
 #endif // RAM_SEARCH_CORE_H

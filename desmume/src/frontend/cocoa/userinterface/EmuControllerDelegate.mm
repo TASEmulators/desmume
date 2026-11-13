@@ -26,6 +26,7 @@
 #import "preferencesWindowDelegate.h"
 #import "MemoryViewerWindow.h"
 #import "RAMWatchWindow.h"
+#import "RAMSearchWindow.h"
 
 #import "CocoaAudioController.h"
 #import "CocoaDisplayView.h"
@@ -272,6 +273,7 @@
 	
 	[_memoryViewerWindowController release];
 	[_ramWatchWindowController release];
+	[_ramSearchWindowController release];
 	
 	apple_unfairlock_destroy(_unfairlockFirmware);
 	
@@ -981,6 +983,7 @@
                                         action:(SEL)action
                                  keyEquivalent:(NSString *)keyEquivalent
                                  modifierMask:(NSEventModifierFlags)modifierMask
+                               startsNewGroup:(BOOL)startsNewGroup
 {
 	NSMenu *toolsMenu = [self toolsMenu];
 	if ((toolsMenu == nil) || ([toolsMenu itemWithTitle:title] != nil))
@@ -988,7 +991,11 @@
 		return nil;
 	}
 
-	if (([[toolsMenu itemArray] count] > 0) && ![[[toolsMenu itemArray] lastObject] isSeparatorItem])
+	// Related tool windows share one group; only the first item of a group
+	// gets a separator above it.
+	if (startsNewGroup &&
+	    ([[toolsMenu itemArray] count] > 0) &&
+	    ![[[toolsMenu itemArray] lastObject] isSeparatorItem])
 	{
 		[toolsMenu addItem:[NSMenuItem separatorItem]];
 	}
@@ -1010,7 +1017,8 @@
 	[self installToolMenuItemWithTitle:@"Memory Viewer..."
 	                            action:@selector(openMemoryViewer:)
 	                     keyEquivalent:@"m"
-	                      modifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)];
+	                      modifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)
+	                    startsNewGroup:YES];
 }
 
 - (void) installRAMWatchMenuItem
@@ -1019,7 +1027,26 @@
 	[self installToolMenuItemWithTitle:@"RAM Watch..."
 	                            action:@selector(openRAMWatch:)
 	                     keyEquivalent:@"w"
-	                      modifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)];
+	                      modifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)
+	                    startsNewGroup:YES];
+}
+
+- (void) installRAMSearchMenuItem
+{
+	[self installToolMenuItemWithTitle:@"RAM Search..."
+	                            action:@selector(openRAMSearch:)
+	                     keyEquivalent:@"s"
+	                      modifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)
+	                    startsNewGroup:NO];
+}
+
+- (IBAction) openRAMSearch:(id)sender
+{
+	if (_ramSearchWindowController == nil)
+	{
+		_ramSearchWindowController = [[RAMSearchWindowController alloc] init];
+	}
+	[_ramSearchWindowController showRAMSearchWindow];
 }
 
 - (IBAction) openRAMWatch:(id)sender
@@ -1043,6 +1070,7 @@
 {
 	[self installMemoryViewerMenuItem];
 	[self installRAMWatchMenuItem];
+	[self installRAMSearchMenuItem];
 
 	// Auto-load the most recent watch list when the option is enabled. The
 	// window controller owns the preference keys and the actual loading.
