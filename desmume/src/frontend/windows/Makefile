@@ -38,7 +38,7 @@ LIBS= \
   -lgdi32 -lvfw32 -lshell32 -lddraw -lopengl32 \
   -lvfw32 -lwinmm -lopengl32 -lglu32 -lws2_32 -luser32 -lgdi32 -lshell32 \
   -lcomdlg32 -lshlwapi -lcomctl32 -lxinput -lole32 -ldinput8 -ldinput -ldxerr8 \
-  -ldxguid -ldsound -luuid
+  -ldxguid -ldsound -luuid -loleaut32
 
 LDFLAGS=$(STRIP) -Wl,--enable-stdcall-fixup -static-libgcc -static-libstdc++ -Wl,--stack,4194304
 
@@ -82,6 +82,10 @@ AGG_SRCS = \
 	agg/src/platform/win32/agg_win32_bmp.cpp \
 
 
+# Sources are listed explicitly, so new translation units have to be added here
+# as well as to the MSVC project. DPI.cpp/UiFont.cpp back the DPI-aware window
+# toolkit, and WGPURender.cpp supplies the gpu3DWGPU stub when ENABLE_WGPU is
+# off (main.cpp always lists that entry).
 SRCS = \
 	AboutBox.cpp \
 	CWindow.cpp \
@@ -104,6 +108,8 @@ SRCS = \
 	../shared/wgpu_present.cpp \
 	../shared/ram_debug_core.cpp \
 	../shared/ramwatch_core.cpp \
+	DPI.cpp \
+	UiFont.cpp \
 	fsnitroView.cpp \
 	gbaslot_config.cpp \
 	ginfo.cpp \
@@ -185,6 +191,7 @@ SRCS = \
 	../../NDSSystem.cpp \
 	../../OGLRender.cpp \
 	../../OGLRender_3_2.cpp \
+	../../WGPURender.cpp \
 	../../path.cpp \
 	../../rasterize.cpp \
 	../../readwrite.cpp \
