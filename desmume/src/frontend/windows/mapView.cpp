@@ -24,6 +24,7 @@
 #include "MMU.h"
 #include "NDSSystem.h"
 #include "debug.h"
+#include "DPI.h"
 
 #include "resource.h"
 #include "main.h"
@@ -64,6 +65,17 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 	BITMAPV4HEADER bmi;
 	u16 lg = BGLayer.size.width;
 	u16 ht = BGLayer.size.height;
+	// The map is painted at a fixed offset to the right of the info column and
+	// at one pixel per map pixel at 96 DPI.  The dialog itself is scaled by the
+	// dialog manager, so both have to be scaled here as well or the map ends up
+	// under the info column and a quarter of the size it should be.  The two
+	// axes can grow by different factors: take the position from each axis and
+	// the smaller factor for the map, so its pixels stay square.
+	const DPI_ClientScale scale = DPI_GetClientScale(hwnd, 727, 520);
+	const int mapX = (int)(200.0f * scale.x + 0.5f);
+	const int mapY = (int)(4.0f * scale.y + 0.5f);
+	const int mapW = (int)((float)lg * scale.uniform + 0.5f);
+	const int mapH = (int)((float)ht * scale.uniform + 0.5f);
 	//BGxPARMS * parms;
 
 	//CreateBitmapIndirect(&bmi);
@@ -130,17 +142,19 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 	if(win->clear)
 	{
 		RECT r; 
-		r.left = 200; 
-		r.top = 4; 
-		r.right = 200 + 1024; 
-		r.bottom = 200 + 1024;
+		r.left = mapX;
+		r.top = mapY;
+		r.right = mapX + (int)(1024.0f * scale.uniform + 0.5f);
+		r.bottom = mapY + (int)(1024.0f * scale.uniform + 0.5f);
 		HBRUSH brush = CreateSolidBrush(GetSysColor(COLOR_3DFACE));
 		FillRect(hdc, &r, brush); 
 		DeleteObject(brush);
 		win->clear = false;
 	}
 
-	SetDIBitsToDevice(hdc, 200, 4, lg, ht, 0, 0, 0, ht, win->bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+	SetStretchBltMode(hdc, COLORONCOLOR);
+	StretchDIBits(hdc, mapX, mapY, mapW, mapH,
+		0, 0, lg, ht, win->bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS, SRCCOPY);
 
 	EndPaint(hwnd, &ps);
 
@@ -158,7 +172,7 @@ BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 	case WM_INITDIALOG :
 		{
 			MapView = new mapview_struct;
-			memset(MapView, 0, sizeof(MapView));
+			memset(MapView, 0, sizeof(*MapView));
 			MapView->clear = true;
 			MapView->autoup_secs = 1;
 			MapView->layerID = GPULayerID_BG0;

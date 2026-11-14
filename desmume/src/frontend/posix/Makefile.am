@@ -1,6 +1,6 @@
 include desmume.mk
 
-AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
+AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
 
 
 
@@ -120,6 +120,23 @@ libdesmume_a_SOURCES = \
 	../../libretro-common/rthreads/rthreads.c \
 	../../libretro-common/encodings/encoding_utf.c
 
+# WebGPU. The portable presentation core, the display wrapper and the 3D
+# renderer always compile and provide stubs when wgpu-native is absent. The
+# Linux native-window adapter is only built when configure finds wgpu-native
+# (--enable-wgpu, plus CPPFLAGS/LDFLAGS or a non-system installation on the
+# link path).
+libdesmume_a_SOURCES += \
+	../../WGPURender.cpp \
+	../shared/wgpu_present.cpp \
+	shared/wgpu_display_linux.cpp
+
+if ENABLE_WGPU
+AM_CPPFLAGS += $(WGPU_CFLAGS) -I$(top_srcdir)/../../../3rdparty/wgpu
+LIBS += $(WGPU_LIBS)
+libdesmume_a_SOURCES += \
+	shared/wgpu_present_linux.cpp
+endif
+
 if HAVE_JIT
 libdesmume_a_SOURCES += \
 	../../arm_jit.h ../../instruction_attributes.h
@@ -219,15 +236,9 @@ libdesmume_a_SOURCES += \
 endif
 endif
 
-if HAVE_OPENAL
-libdesmume_a_SOURCES += shared/mic_openal.cpp
-else
-if HAVE_ALSA
-libdesmume_a_SOURCES += shared/mic_alsa.cpp
-else
-libdesmume_a_SOURCES += ../../mic.cpp
-endif
-endif
+# SDL3 is a hard dependency of the POSIX frontends, so microphone capture
+# is always available through SDL (no ALSA/OpenAL conditionals).
+libdesmume_a_SOURCES += shared/mic_sdl.cpp
 
 if HAVE_LIBSOUNDTOUCH
 libdesmume_a_SOURCES += ../../metaspu/SndOut.cpp ../../metaspu/SndOut.h ../../metaspu/Timestretcher.cpp
@@ -237,8 +248,8 @@ if HAVE_LIBAGG
 libdesmume_a_SOURCES += ../../frontend/modules/osd/agg/aggdraw.cpp ../../frontend/modules/osd/agg/aggdraw.h ../../frontend/modules/osd/agg/agg_osd.cpp
 endif
 if HAVE_LUA
-AM_CPPFLAGS += $(LUA_CFLAGS)
-libdesmume_a_SOURCES += ../../lua-engine.cpp
+AM_CPPFLAGS += -I$(top_srcdir)/../windows/lua/include
+libdesmume_a_SOURCES += ../../lua-engine.cpp ../cocoa/LuaJITApi.cpp
 endif
 if HAVE_GDB_STUB
 libdesmume_a_SOURCES += ../../gdbstub/gdbstub.cpp

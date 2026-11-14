@@ -26,18 +26,21 @@
 #include <rthreads/rthreads.h>
 #include <rthreads/rsemaphore.h>
 
-#include "utils/colorspacehandler/colorspacehandler.h"
 #include "utils/task.h"
 #include "../../SPU.h"
 
 #define VIDEO_STREAM				0
 #define AUDIO_STREAM				1
-#define MAX_CONVERT_THREADS			32
 
 #define AUDIO_STREAM_BUFFER_SIZE	((DESMUME_SAMPLE_RATE * sizeof(int16_t) * 2) / 30)	// 16-bit samples, 2 channels, 2 frames (need only 1 frame's worth, but have 2 frame's worth for safety)
 #define MAX_AVI_FILE_SIZE			(2ULL * 1024ULL * 1024ULL * 1024ULL)				// Max file size should be 2 GB due to the Video for Windows AVI limit.
-#define MAX_PENDING_BUFFER_SIZE		(1536ULL * 1024ULL * 1024ULL)						// Max pending buffer size should not exceed 1.5 GB.
-#define MAX_PENDING_FRAME_COUNT		180													// Maintain up to 180 frames in memory for current and future file writes. This is equivalent to 3 seconds worth of frames.
+
+// Depth of the write queue.  Frames are CVPixelBufferRefs handed to the
+// encoder by reference, so this only bounds latency, not memory: the real
+// memory ceiling is the capture pixel buffer pool (a handful of frames).
+// Keeping it at 3 seconds is still useful, since a slow encoder should stall
+// the display thread rather than make the recording silently drop frames.
+#define MAX_PENDING_FRAME_COUNT		180
 
 
 enum AVFileTypeContainerID
@@ -126,28 +129,22 @@ enum ClientAVCaptureError
 
 class ClientAVCaptureObject;
 
-struct VideoConvertParam
-{
-	ClientAVCaptureObject *captureObj;
-	
-	const void *src;
-	uint8_t *dst;
-	
-	size_t srcOffset;
-	size_t dstOffset;
-	
-	size_t firstLineIndex;
-	size_t lastLineIndex;
-	size_t frameWidth;
-};
-typedef struct VideoConvertParam VideoConvertParam;
-
 struct AVStreamWriteParam
 {
-	u8 *srcVideo;
 	u8 *srcAudio;
-	size_t videoBufferSize;
 	size_t audioBufferSize;
+	
+	// The finished frame.  When non-NULL this is a retained CVPixelBufferRef
+	// that already holds the frame (BGRA, produced on the GPU); NULL means the
+	// entry carries audio only (audio-only recording).  Ownership transfers to
+	// the file stream, which releases it after encoding.
+	void *srcPixelBuffer;
+	
+	// Presentation index for the GPU path: counts capture ticks, not accepted
+	// frames, so a dropped frame leaves a hole in the timeline (the previous
+	// frame simply displays longer) instead of shifting video against audio.
+	// -1 means "use the stream's own accepted-frame counter".
+	int64_t videoFrameIndex;
 };
 typedef struct AVStreamWriteParam AVStreamWriteParam;
 
@@ -193,7 +190,11 @@ public:
 	virtual void Close(FileStreamCloseAction theAction) = 0;
 	virtual bool IsValid();
 	
-	void QueueAdd(uint8_t *srcVideo, const size_t videoBufferSize, uint8_t *srcAudio, const size_t audioBufferSize);
+	// Queues one frame.  The video payload is an already-finished GPU frame:
+	// the stream takes ownership of the (retained) pixel buffer.  Passing NULL
+	// queues an audio-only entry.  frameIndex is the capture tick this frame
+	// belongs to (see AVStreamWriteParam).
+	void QueueAddFrame(void *srcPixelBuffer, int64_t frameIndex, uint8_t *srcAudio, const size_t audioBufferSize);
 	void QueueWait();
 	size_t GetQueueSize();
 	
@@ -217,22 +218,50 @@ protected:
 	
 	size_t _videoFrameWidth;
 	size_t _videoFrameHeight;
-	size_t _videoFrameSize;
 	size_t _audioBlockSize;
 	size_t _audioFrameSize;
 	
-	uint8_t *_pendingVideoBuffer;
+	// Audio-only slots.  Video never touches these: a finished frame lives in
+	// its CVPixelBuffer and is handed over by reference.
 	uint8_t *_pendingAudioBuffer;
 	size_t *_pendingAudioWriteSize;
 	size_t _pendingBufferCount;
 	size_t _currentBufferIndex;
 	
-	size_t _numThreads;
+	// Moves the audio collected since the last queued frame into dstBuffer and
+	// returns the byte count.  outRemaining optionally receives what is still
+	// left in the ring (for the diagnostic log).
+	size_t __DrainAudioRing(uint8_t *dstBuffer, size_t *outRemaining = NULL);
+	
+	// Continuous audio capture ring.  Audio is produced on the emulation core
+	// thread at the DS frame rate while video frames are queued from the
+	// display thread, so the two are not in phase.  Feeding audio through
+	// per-frame slots lost every chunk whose slot had already advanced -- about
+	// 20% of the track in practice, which is heard as sped-up audio with
+	// crackle.  Audio now lands in this ring and is drained into whichever
+	// frame is queued next, so nothing is lost and the timeline stays exact.
+	uint8_t *_audioRing;
+	size_t _audioRingCapacity;
+	size_t _audioRingReadPos;
+	size_t _audioRingCount;
+	size_t _audioRingDroppedBytes;
+	pthread_mutex_t _mutexAudioRing;
+	
 	Task *_fileWriteThread;
-	Task *_convertThread[MAX_CONVERT_THREADS];
-	VideoConvertParam _convertParam[MAX_CONVERT_THREADS];
 	
 	slock_t *_mutexCaptureFlags;
+	
+	// Guards _fs and its lifetime.  _fs is written by the UI thread
+	// (SetOutputFileStream) while the emulation core thread and the display
+	// output thread read and use it every frame.  Without this, the core can
+	// pass the "stream is valid" check and then find _fs already NULL on the
+	// very next access -- which is exactly the crash at _semQueue (+0x88).
+	// Readers take the read lock for the whole duration of their use; the
+	// writer takes the write lock, so it also waits for in-flight frames.
+	pthread_rwlock_t _rwlockStream;
+	
+private:
+	bool __IsFileStreamValidLocked();
 	
 public:
 	ClientAVCaptureObject();
@@ -247,13 +276,24 @@ public:
 	bool IsCapturingAudio();
 	
 	void StartFrame();
+	
+	// Queues an audio-only entry.  Only used when the recording has no video
+	// track; the emulation core thread calls this every frame in that case
+	// (see cocoa_core.mm), because no display frame is consumed.
 	void StreamWriteStart();
 	void StreamWriteFinish();
 	
-	void ConvertVideoSlice555Xto888(const VideoConvertParam &param);
-	void ConvertVideoSlice888Xto888(const VideoConvertParam &param);
+	// Stops capturing without touching _fs.  This is the only teardown step
+	// that is safe to run while the core thread may still hold this object:
+	// it just clears the flags under their own lock, so the next frame takes
+	// the "not capturing" branch instead of reaching into a closing stream.
+	void StopCapture();
 	
-	void CaptureVideoFrame(const void *srcVideoFrame, const size_t inFrameWidth, const size_t inFrameHeight, const NDSColorFormat colorFormat);
+	// Queues a finished frame that is already in a pixel buffer.  Takes
+	// ownership of the (retained) buffer; returns false if it was rejected, in
+	// which case the caller must release it itself.
+	bool QueuePixelBufferFrame(void *pixelBuffer, int64_t frameIndex);
+	
 	void CaptureAudioFrames(const void *srcAudioBuffer, const size_t inSampleCount);
 };
 

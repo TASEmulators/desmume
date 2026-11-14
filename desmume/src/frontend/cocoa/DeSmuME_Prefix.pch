@@ -24,15 +24,18 @@
 #define DESMUME_COCOA
 #define ENABLE_OPENGL_STANDARD
 #define HAVE_LIBZ
-//#define HAVE_LUA
-//#define HAVE_AV_CONFIG_H
-//#define EXPERIMENTAL_WIFI_COMM
+#ifdef ENABLE_LUA_COCOA
+#define HAVE_LUA
+#define LUA_USE_POSIX
+#define LUA_USE_DLOPEN
+// Cocoa has no LuaJIT import library: the entry points are resolved from a
+// dlopen()ed libluajit-5.1.dylib at runtime, the way Windows delay-loads
+// lua51.dll.  See LuaJITApi.cpp / LuaJITApiSymbols.h.
+#define DESMUME_LUA_DYNAMIC
+#endif
 
 #define FT2_BUILD_LIBRARY
 #define DARWIN_NO_CARBON
-
-#define LUA_USE_POSIX
-#define LUA_USE_DLOPEN
 
 #define GL_SILENCE_DEPRECATION
 
@@ -49,6 +52,9 @@
 	
 	#if !defined(METAL_DISABLE_FOR_BUILD_TARGET) && defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
 		#define ENABLE_APPLE_METAL
+		// Metal OSD: the AGG-free shape/glyph recorder lives in
+		// userinterface/MacMetalOSDDraw.cpp and is driven by the core frame loop.
+		#define DESMUME_COCOA_METAL_OSD
 	#endif
 #endif
 

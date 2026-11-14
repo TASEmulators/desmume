@@ -22,6 +22,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <time.h>
+#include <new>
 #include <string>
 
 #include "utils/guid.h"
@@ -76,6 +77,10 @@ bool firstReset = false;
 int currRerecordCount;
 bool movie_reset_command = false;
 //--------------
+
+// Defined with the timeline editing API at the bottom of this file; the movie
+// engine calls it whenever it rebuilds the record vector.
+static void FCEUMOV_BumpGeneration();
 
 
 void MovieData::clearRecordRange(int start, int len)
@@ -235,7 +240,8 @@ MovieData::MovieData(bool fromCurrentSettings)
 	installValueMap["guid"] = &MovieData::installGuid;
 	installValueMap["rtcStart"] = &MovieData::installRtcStart;
 	installValueMap["rtcStartNew"] = &MovieData::installRtcStartNew;
-	
+	installValueMap["recordDate"] = &MovieData::installRecordDate;
+
 	installValueMap["comment"] = &MovieData::installComment;
 	installValueMap["binary"] = &MovieData::installBinary;
 	installValueMap["useExtBios"] = &MovieData::installUseExtBios;
@@ -394,6 +400,11 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	fp.fprintf("jitBlockSize %d\n", CommonSettings.use_jit ? CommonSettings.jit_max_block_size : 0);
 
 	fp.fprintf("rtcStartNew %s\n", rtcStart.ToString().c_str());
+
+	// Optional: movies recorded before this field existed stay without it, and
+	// older builds silently ignore the key when they load the file.
+	if (!recordDate.empty())
+		fp.fprintf("recordDate %s\n", recordDate.c_str());
 
 	for (u32 i = 0; i < comments.size(); i++)
 		fp.fprintf("comment %s\n", wcstombs(comments[i]).c_str());
@@ -737,6 +748,9 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	freshMovie = true;
 	ClearAutoHold();
 
+	// The editor's column set and input usage belong to the old movie.
+	FCEUMOV_BumpGeneration();
+
 	if(movie_readonly)
 		driver->USR_InfoMessage("Replay started Read-Only.");
 	else
@@ -796,7 +810,7 @@ bool MovieData::loadSramFrom(std::vector<u8>* buf)
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
-void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart)
+void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart, const std::wstring &description)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
@@ -813,12 +827,21 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 	currMovieData = MovieData();
 	currMovieData.guid.newGuid();
 
+	FCEUMOV_BumpGeneration();
+
 	if(author != L"") currMovieData.comments.push_back(L"author " + author);
+	if(description != L"") currMovieData.comments.push_back(description);
 	currMovieData.romChecksum = gameInfo.crc;
 	currMovieData.romSerial = gameInfo.ROMserial;
 	currMovieData.romFilename = path.GetRomName();
 	currMovieData.rtcStart = rtcstart;
 	currMovieData.micSamples = ::micSamples;
+
+	// Wall-clock recording time, as a decimal Unix timestamp. Movies written by
+	// older builds have no such key; those simply leave recordDate empty.
+	char dateBuf[32];
+	snprintf(dateBuf, sizeof(dateBuf), "%lld", (long long)time(NULL));
+	currMovieData.recordDate = dateBuf;
 
 	// reset firmware (some games can write to it)
 	if (!CommonSettings.UseExtFirmware)
@@ -885,7 +908,9 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 	 if(movieMode == MOVIEMODE_PLAY)
 	 {
 		 //stop when we run out of frames
-		 if(currFrameCounter == (int)currMovieData.records.size())
+		 //(>= rather than == because the timeline editor can shorten the movie
+		 // under a frame counter that has already run past the new end)
+		 if(currFrameCounter >= (int)currMovieData.records.size())
 		 {
 			 FinishPlayback();
 		 }
@@ -1446,3 +1471,193 @@ void DesmumeInputToReplayRec(const UserInput &inInput, MovieRecord &outRecord)
 	if (inInput.mic.micButtonPressed != 0)
 		outRecord.commands |= MOVIECMD_MIC;
 }
+
+//------------------------------------------------------------------------------
+// Timeline editing (see the contract above the declarations in movie.h).
+//
+// movieGeneration is the editor's change detector: it moves whenever the record
+// vector is rebuilt, so the frontend knows its column set and its cached
+// "which inputs does this movie use" answer are stale.  Editing a single record
+// does not move it - the shape of the timeline did not change.
+//------------------------------------------------------------------------------
+static u32 movieGeneration = 0;
+
+static void FCEUMOV_BumpGeneration()
+{
+	movieGeneration++;
+}
+
+bool FCEUMOV_IsEditable()
+{
+	// Recording owns the file (it is open for appending), and without a movie
+	// there is nothing to edit.  A finished movie still has its records, and
+	// editing them is how you fix the tail of a run after playback stopped.
+	return movieMode == MOVIEMODE_PLAY || movieMode == MOVIEMODE_FINISHED;
+}
+
+u32 FCEUMOV_GetLength()
+{
+	if (movieMode == MOVIEMODE_INACTIVE)
+		return 0;
+
+	return (u32)currMovieData.records.size();
+}
+
+u32 FCEUMOV_GetGeneration()
+{
+	return movieGeneration;
+}
+
+MovieInputUsage FCEUMOV_GetInputUsage()
+{
+	MovieInputUsage usage;
+	usage.padMask = 0;
+	usage.commandMask = 0;
+	usage.touch = false;
+	usage.micSample = false;
+
+	for (size_t i = 0; i < currMovieData.records.size(); i++)
+	{
+		const MovieRecord &record = currMovieData.records[i];
+
+		usage.padMask |= record.pad;
+		usage.commandMask |= record.commands;
+
+		if (record.touch.touch != 0)
+			usage.touch = true;
+		if (record.touch.micsample != 0)
+			usage.micSample = true;
+	}
+
+	return usage;
+}
+
+bool FCEUMOV_GetRecord(u32 frame, MovieRecord &record)
+{
+	if (frame >= currMovieData.records.size())
+		return false;
+
+	record = currMovieData.records[frame];
+	return true;
+}
+
+MOVIE_EDIT_RESULT FCEUMOV_SetRecord(u32 frame, const MovieRecord &record)
+{
+	if (!FCEUMOV_IsEditable())
+		return (movieMode == MOVIEMODE_RECORD) ? MOVIE_EDIT_RECORDING : MOVIE_EDIT_NO_MOVIE;
+
+	if (frame >= currMovieData.records.size())
+		return MOVIE_EDIT_RANGE;
+
+	currMovieData.records[frame] = record;
+	freshMovie = false;
+
+	return MOVIE_EDIT_OK;
+}
+
+MOVIE_EDIT_RESULT FCEUMOV_InsertRecords(u32 at, const MovieRecord *records, u32 count)
+{
+	if (!FCEUMOV_IsEditable())
+		return (movieMode == MOVIEMODE_RECORD) ? MOVIE_EDIT_RECORDING : MOVIE_EDIT_NO_MOVIE;
+
+	if (count == 0)
+		return MOVIE_EDIT_OK;
+
+	const size_t length = currMovieData.records.size();
+	if (at > length)
+		return MOVIE_EDIT_RANGE;
+
+	try
+	{
+		if (records != NULL)
+		{
+			currMovieData.records.insert(currMovieData.records.begin() + at, records, records + count);
+		}
+		else
+		{
+			currMovieData.records.insert(currMovieData.records.begin() + at, count, MovieRecord());
+
+			// MovieRecord has no constructor of its own, so the inserted copies
+			// are only value-initialised; clear() is what makes them "nothing
+			// pressed".
+			for (u32 i = 0; i < count; i++)
+				currMovieData.records[at + i].clear();
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return MOVIE_EDIT_NO_MEMORY;
+	}
+
+	freshMovie = false;
+	movieGeneration++;
+
+	return MOVIE_EDIT_OK;
+}
+
+MOVIE_EDIT_RESULT FCEUMOV_DeleteRecords(const u32 *frames, u32 count)
+{
+	if (!FCEUMOV_IsEditable())
+		return (movieMode == MOVIEMODE_RECORD) ? MOVIE_EDIT_RECORDING : MOVIE_EDIT_NO_MOVIE;
+
+	if (count == 0)
+		return MOVIE_EDIT_OK;
+
+	if (frames[count - 1] >= currMovieData.records.size())
+		return MOVIE_EDIT_RANGE;
+
+	// One compaction for the whole selection: frames is ascending and unique,
+	// so a single read and a single write cursor walk the vector once and no
+	// frame is moved more than it has to be.
+	std::vector<MovieRecord> &records = currMovieData.records;
+
+	size_t read = frames[0];
+	size_t write = frames[0];
+
+	for (u32 i = 0; i < count; i++)
+	{
+		while (read < frames[i])
+			records[write++] = records[read++];
+		read++;	// the deleted frame
+	}
+
+	while (read < records.size())
+		records[write++] = records[read++];
+
+	records.resize(write);
+
+	// The frame counter is an index into this vector.  A delete that takes the
+	// tail away would leave it past the end, and the next playback step would
+	// read outside the movie.
+	if (currFrameCounter > (int)records.size())
+		currFrameCounter = (int)records.size();
+
+	freshMovie = false;
+	movieGeneration++;
+
+	return MOVIE_EDIT_OK;
+}
+
+MOVIE_EDIT_RESULT FCEUMOV_SaveMovie(const char *fname)
+{
+	if (movieMode == MOVIEMODE_INACTIVE)
+		return MOVIE_EDIT_NO_MOVIE;
+	if (movieMode == MOVIEMODE_RECORD)
+		return MOVIE_EDIT_RECORDING;
+
+	EMUFILE_FILE fp(fname, "wb");
+	if (!fp.is_open())
+		return MOVIE_EDIT_IO;
+
+	// The header is written from the current settings rather than from the
+	// values the file happened to carry.  That is not a loss: loading a movie
+	// applies its settings to CommonSettings, so a movie that was loaded and
+	// then saved comes back byte for byte, and a movie that was recorded in
+	// this session gets the settings it was recorded with.
+	currMovieData.dump(fp, currMovieData.binaryFlag);
+
+	freshMovie = false;
+
+	return MOVIE_EDIT_OK;
+}
+

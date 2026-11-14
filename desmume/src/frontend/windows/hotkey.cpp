@@ -23,6 +23,7 @@
 #include <windows.h>
 #include <commdlg.h>
 #include <shellapi.h>
+#include <stdlib.h>
 
 #include "hotkey.h"
 
@@ -37,6 +38,7 @@
 #include "path.h"
 #include "driver.h"
 #include "frontend/modules/ImageOut.h"
+#include "ImageWrite.h"
 
 #include "main.h"
 #include "cheatsWin.h"
@@ -159,42 +161,169 @@ void HK_ToggleCheats(int, bool justPressed)
 	WritePrivateProfileBool("General", "cheatsDisable", CommonSettings.cheatsDisable, IniName);
 }
 
+// ---------------------------------------------------------------------------
+// Screenshot output: WIC first, the bundled rpng/rbmp writers as the fallback.
+// ---------------------------------------------------------------------------
+
+static void ScreenshotLog(const char *message)
+{
+	OutputDebugStringA(message);
+	OutputDebugStringA("\n");
+}
+
+static std::string ScreenshotExtension(const std::string &file)
+{
+	const size_t slash = file.find_last_of("\\/");
+	const size_t dot   = file.rfind('.');
+	if (dot == std::string::npos || (slash != std::string::npos && dot < slash))
+		return "";
+	return file.substr(dot);
+}
+
+static std::string ReplaceScreenshotExtension(const std::string &file, const char *ext)
+{
+	const size_t slash = file.find_last_of("\\/");
+	const size_t dot   = file.rfind('.');
+	if (dot != std::string::npos && (slash == std::string::npos || dot > slash))
+		return file.substr(0, dot) + ext;
+	return file + ext;
+}
+
+static const char *SkipDot(const char *ext)
+{
+	return (ext[0] == '.') ? ext + 1 : ext;
+}
+
+static bool ExtensionIs(const std::string &ext, const char *want)
+{
+	if (ext.size() != strlen(want))
+		return false;
+	for (size_t i = 0; i < ext.size(); ++i)
+	{
+		char a = ext[i];
+		char b = want[i];
+		if (a >= 'A' && a <= 'Z') a = (char)(a - 'A' + 'a');
+		if (b >= 'A' && b <= 'Z') b = (char)(b - 'A' + 'a');
+		if (a != b) return false;
+	}
+	return true;
+}
+
+// Build a top-down 24bppBGR copy of the framebuffer.  This is the very same
+// colour conversion the bundled writers use, so WIC output stays pixel-identical
+// to the fallback.  NDSDisplayInfo::masterCustomBuffer is a tightly packed
+// customWidth * customHeight * pixelBytes buffer (GPU.cpp); unlike the VBA-style
+// display buffer in the standalone WIC writer it has NO over-read border row and
+// NO +4 byte row padding, so the image starts at byte 0 with a plain stride.
+static u8 *MakeScreenshotBGR24(const NDSDisplayInfo &dispInfo, int width, int height)
+{
+	const size_t pixelCount = (size_t)width * (size_t)height;
+
+	if (gpu_bpp == 15)
+	{
+		// Convert15To24() already returns a malloc'd BGR24 buffer with SWAP_RB.
+		return Convert15To24((const u16 *)dispInfo.masterCustomBuffer, width, height);
+	}
+
+	u32 *swapped = (u32 *)malloc_alignedCacheLine(pixelCount * sizeof(u32));
+	u8  *bgr     = (u8 *)malloc(pixelCount * 3);
+	if (swapped == NULL || bgr == NULL)
+	{
+		if (swapped != NULL) free_aligned(swapped);
+		free(bgr);
+		return NULL;
+	}
+
+	ColorspaceConvertBuffer888xTo8888Opaque<true, true>((const u32 *)dispInfo.masterCustomBuffer,
+	                                                    swapped, (u32)pixelCount);
+	for (size_t i = 0; i < pixelCount; ++i)
+	{
+		bgr[i * 3 + 0] = (u8)( swapped[i]        & 0xFF);
+		bgr[i * 3 + 1] = (u8)((swapped[i] >>  8) & 0xFF);
+		bgr[i * 3 + 2] = (u8)((swapped[i] >> 16) & 0xFF);
+	}
+
+	free_aligned(swapped);
+	return bgr;
+}
+
+// The original PNG/BMP path, kept as the fallback for when WIC is missing (XP),
+// has no encoder for the chosen extension, or fails mid-write.
+static bool DoScreenshotBundled(const char *fname, const NDSDisplayInfo &dispInfo,
+                                int width, int height, bool wantBmp)
+{
+	if (gpu_bpp == 15)
+	{
+		return wantBmp
+			? NDS_WriteBMP_15bpp(width, height, (const u16*)dispInfo.masterCustomBuffer, fname) != 0
+			: NDS_WritePNG_15bpp(width, height, (const u16*)dispInfo.masterCustomBuffer, fname) != 0;
+	}
+
+	u32* swapbuf = (u32*)malloc_alignedCacheLine((size_t)width * height * 4);
+	if (swapbuf == NULL) return false;
+	ColorspaceConvertBuffer888xTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, width * height);
+	const int ok = wantBmp
+		? NDS_WriteBMP_32bppBuffer(width, height, swapbuf, fname)
+		: NDS_WritePNG_32bppBuffer(width, height, swapbuf, fname);
+	free_aligned(swapbuf);
+	return ok != 0;
+}
+
 static void DoScreenshot(const wchar_t* fname)
 {
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	// Send WIC's per-step diagnostics to the same place as our own messages.
+	imageWriteSetLogger(ScreenshotLog);
 
-	switch(path.imageformat())
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	const int width  = (int)dispInfo.customWidth;
+	const int height = (int)dispInfo.customHeight * 2;
+	const std::string fileA = wcstombs(fname);
+	const std::string ext   = ScreenshotExtension(fileA);
+
+	bool wrote = false;
+	bool attemptedWIC = false;
+
+	if (imageWriteAvailable())
 	{
-	case PathInfo::PNG:
+		if (ext.empty() || imageCaptureSelect(ext.c_str()))
 		{
-			if(gpu_bpp == 15)
+			unsigned char *bgr = MakeScreenshotBGR24(dispInfo, width, height);
+			if (bgr != NULL)
 			{
-				NDS_WritePNG_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, wcstombs(fname).c_str());
-			}
-			else
-			{
-				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
-				ColorspaceConvertBuffer888xTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
-				NDS_WritePNG_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight*2, swapbuf, wcstombs(fname).c_str());
-				free_aligned(swapbuf);
+				attemptedWIC = true;
+				wrote = utilWriteImageBGR(fileA.c_str(), width, height, bgr, width * 3);
+				free(bgr);
 			}
 		}
-		break;
-	case PathInfo::BMP:
+		else
 		{
-			if(gpu_bpp == 15)
-			{
-				NDS_WriteBMP_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, wcstombs(fname).c_str());
-			}
-			else
-			{
-				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
-				ColorspaceConvertBuffer888xTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
-				NDS_WriteBMP_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight *2, swapbuf, wcstombs(fname).c_str());
-				free_aligned(swapbuf);
-			}
+			ScreenshotLog("ImageWrite: no WIC encoder claims this extension, using the bundled writer");
 		}
-		break;
+
+		if (!wrote)
+			ScreenshotLog(imageWriteEncoderUnavailable()
+			              ? "ImageWrite: codec missing, falling back to the bundled writer"
+			              : "ImageWrite: WIC write failed, falling back to the bundled writer");
+	}
+
+	if (!wrote)
+	{
+		// A failed WIC write may have left a partial file behind.
+		if (attemptedWIC)
+			DeleteFileA(fileA.c_str());
+
+		// The bundled writers only know PNG and BMP.  Keep the extension the user
+		// actually chose when it is one of those two; otherwise use the Path
+		// Settings default.  Either way the file name now matches its contents.
+		bool wantBmp;
+		if (ExtensionIs(ext, ".bmp"))      wantBmp = true;
+		else if (ExtensionIs(ext, ".png")) wantBmp = false;
+		else                               wantBmp = (path.imageformat() == PathInfo::BMP);
+		const char *legacyExt = wantBmp ? ".bmp" : ".png";
+		const std::string legacyFile = ReplaceScreenshotExtension(fileA, legacyExt);
+		if (legacyFile != fileA)
+			ScreenshotLog("ImageWrite: screenshot saved as PNG/BMP by the bundled writer");
+		DoScreenshotBundled(legacyFile.c_str(), dispInfo, width, height, wantBmp);
 	}
 }
 
@@ -216,15 +345,16 @@ void HK_QuickScreenShot(int param, bool justPressed)
 	if( strlen(fname) > (MAX_PATH - 4))
 		fname[MAX_PATH - 4] = '\0';
 
-	switch(path.imageformat())
-	{
-	case PathInfo::PNG:
-			strcat(fname, ".png");
-			break;
-	case PathInfo::BMP:
-			strcat(fname, ".bmp");
-			break;
-	}
+	// Use the format remembered from the last "Save Screenshot As...".  When WIC
+	// is unavailable (or that encoder has since disappeared), the bundled writers
+	// can only produce PNG/BMP, so honour the Path Settings choice instead.
+	const char *ext = path.imageextension();
+	if (!imageWriteAvailable() || !imageCaptureSelect(ext))
+		ext = (path.imageformat() == PathInfo::BMP) ? ".bmp" : ".png";
+
+	if (strlen(fname) + strlen(ext) >= MAX_PATH)
+		fname[MAX_PATH - strlen(ext) - 1] = '\0';
+	strcat(fname, ext);
 
 	DoScreenshot(mbstowcs(fname).c_str());
 }
@@ -239,41 +369,107 @@ void HK_PrintScreen(int param, bool justPressed)
 	char outFilename[MAX_PATH] = "";
 	wchar_t woutFilename[MAX_PATH] = L"";
 	
+	// Build the save filter from the encoders WIC actually reports on this
+	// machine.  With WIC missing, keep the original PNG/BMP-only filter so the
+	// bundled writers remain reachable.
+	ImageWriteFormatInfo formats[16];
+	const int formatCount = imageWriteFormats(formats, 16);
+	std::wstring filter;
+	if (formatCount > 0)
+	{
+		for (int i = 0; i < formatCount; ++i)
+		{
+			std::string label(formats[i].name);
+			std::string pattern;
+			for (const char *p = formats[i].extensions; *p != '\0'; )
+			{
+				const char *end = p;
+				while (*end != '\0' && *end != ',' && *end != ';' && *end != '|')
+					++end;
+				if (end > p)
+				{
+					if (!pattern.empty()) pattern += ";";
+					pattern += "*";
+					pattern.append(p, end - p);
+				}
+				p = (*end == '\0') ? end : end + 1;
+			}
+			if (pattern.empty()) pattern = "*.*";
+			label += " (" + pattern + ")";
+			filter += mbstowcs(label);
+			filter += (wchar_t)0;
+			filter += mbstowcs(pattern);
+			filter += (wchar_t)0;
+		}
+	}
+	else
+	{
+		filter += L"png file (*.png)";  filter += (wchar_t)0;
+		filter += L"*.png";             filter += (wchar_t)0;
+		filter += L"Bmp file (*.bmp)";  filter += (wchar_t)0;
+		filter += L"*.bmp";             filter += (wchar_t)0;
+	}
+	filter += L"Any file (*.*)"; filter += (wchar_t)0;
+	filter += L"*.*";            filter += (wchar_t)0;
+	filter += (wchar_t)0;  // OPENFILENAMEW wants a double NUL terminator
+
+	std::string currentExt = path.imageextension();
+	int defaultIndex = 1;
+	if (formatCount > 0)
+	{
+		imageCaptureSelect(currentExt.c_str());
+		const int idx = imageCaptureFormatIndex();
+		if (idx >= 0) defaultIndex = idx + 1;
+		currentExt = imageCaptureExtension();
+	}
+	else
+	{
+		currentExt   = (path.imageformat() == PathInfo::BMP) ? ".bmp" : ".png";
+		defaultIndex = (path.imageformat() == PathInfo::BMP) ? 2 : 1;
+	}
+	std::wstring defExt = mbstowcs(SkipDot(currentExt.c_str()));
+
 	OPENFILENAMEW ofn;
 	ZeroMemory(&ofn,sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = MainWindow->getHWnd();
-	ofn.lpstrFilter = L"png file (*.png)\0*.png\0Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
+	ofn.lpstrFilter = filter.c_str();
+	ofn.nFilterIndex = (DWORD)defaultIndex;
 	ofn.lpstrTitle = L"Print Screen Save As";
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrFile = woutFilename;
-	ofn.lpstrDefExt = L"png";
+	ofn.lpstrDefExt = defExt.c_str();
 	ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
 	std::wstring dir = mbstowcs(path.getpath(path.SCREENSHOTS));
 	ofn.lpstrInitialDir = dir.c_str();
 
 	path.formatname(outFilename);
-	if(path.imageformat() == PathInfo::PNG)
-	{
-		strcat(outFilename, ".png");
-		ofn.lpstrDefExt = L"png";
-		ofn.nFilterIndex = 1;
-	}
-	else if(path.imageformat() == PathInfo::BMP)
-	{
-		strcat(outFilename, ".bmp");
-		ofn.lpstrDefExt = L"bmp";
-		ofn.nFilterIndex = 2;
-	}
-
+	if (strlen(outFilename) + currentExt.size() < MAX_PATH)
+		strcat(outFilename, currentExt.c_str());
 	wcscpy(woutFilename,mbstowcs(outFilename).c_str());
 
 	if(GetSaveFileNameW(&ofn))
 	{
-		DoScreenshot(woutFilename);
+		std::wstring chosen(woutFilename);
+		std::string chosenA = wcstombs(chosen);
+		if (ScreenshotExtension(chosenA).empty())
+		{
+			chosen += L".";
+			chosen += defExt;
+			chosenA = wcstombs(chosen);
+		}
 
-		dir = mbstowcs(Path::GetFileDirectoryPath(wcstombs(woutFilename)));
+		// DoScreenshot() selects the WIC container from this extension.
+		DoScreenshot(chosen.c_str());
+
+		// Remember the format so Quick Screenshot uses it too, but do not
+		// persist an extension no encoder claims (e.g. a typed-in *.xyz).
+		const std::string chosenExt = ScreenshotExtension(chosenA);
+		if (!chosenExt.empty() && imageCaptureSelect(chosenExt.c_str()))
+			path.setimageextension(chosenExt.c_str());
+
+		dir = mbstowcs(Path::GetFileDirectoryPath(chosenA));
 		path.setpath(path.SCREENSHOTS, wcstombs(dir));
 		WritePrivateProfileStringW(LSECTION, SCREENSHOTKEY, dir.c_str(), IniNameW);
 	}

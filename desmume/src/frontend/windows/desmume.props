@@ -94,7 +94,7 @@
 
 		<ClCompile>
 
-			<AdditionalIncludeDirectories>.;..\..;lua\include;glib-2.20.1\build;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\..;lua\include;glib-2.20.1\build;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\..\libretro-common\include;..\..\..\3rdparty\wgpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 
 			<!-- universal definitions -->
 			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;WIN32_FRONTEND;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -159,6 +159,27 @@
 			<!-- desmume configuration: features we always have in windows -->
 			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;HAVE_LUA=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
+			<!-- Route 1 OSD backend: build the HUD with GDI+ instead of Agg2D.
+			     Pass /p:UseNativeOsd=false to msbuild to fall back to AGG. -->
+			<PreprocessorDefinitions Condition="'$(UseNativeOsd)' != 'false'">DESMUME_NATIVE_DRAW=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+			<!-- WebGPU renderer. wgpu-native binaries are only shipped for x64. -->
+			<PreprocessorDefinitions Condition="'$(Platform)' == 'x64'">ENABLE_WGPU=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+			<!-- Stage 1 OSD migration: blend the HUD as a second GPU texture on
+			     the WebGPU display method instead of compositing it into the
+			     frame on the CPU. Opt-in until it has been validated on real
+			     hardware: pass /p:UseGpuHudOverlay=true to msbuild. -->
+			<PreprocessorDefinitions Condition="'$(Platform)' == 'x64' AND '$(UseGpuHudOverlay)' == 'true'">DESMUME_GPU_HUD_OVERLAY=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+			<!-- Stage 2/4 OSD migration: WGPUOSDDrawTarget records the primitives
+			     agg_osd.cpp and Lua use and rasterizes them with a WGSL SDF
+			     pipeline. Stage 4 wires it into the WebGPU HUD path when this
+			     and UseGpuHudOverlay are both enabled. Pass
+			     /p:UseWgpuOsd=true /p:UseGpuHudOverlay=true.
+			     The recorder needs no libagg (wgpu-agg.md 20). -->
+			<PreprocessorDefinitions Condition="'$(Platform)' == 'x64' AND '$(UseWgpuOsd)' == 'true'">DESMUME_WGPU_OSD=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
 		</ClCompile>
 
 		<Link>
@@ -166,20 +187,34 @@
 			<ProgramDatabaseFile>$(IntDir)TargetName.pdb</ProgramDatabaseFile>
 
 			<!-- deps config for x64 -->
-			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">.\zlib128;agg;.libs;.libs\x64</AdditionalLibraryDirectories>
-			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">.\zlib128;agg;.libs;.libs\x64;..\..\..\3rdparty\libs\x64</AdditionalLibraryDirectories>
+			<!-- ddraw/dinput8/dsound/dxguid come straight from the Windows SDK.
+			     The pieces the legacy DirectX SDK also used to supply are built from
+			     source instead: dinput8.lib ships c_dfDIJoystick2 itself, and
+			     dxerr8_compat.cpp provides the dxerr8 entry points. -->
+			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;zlib-vc8-x64.lib;wgpu_native.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<!-- libagg is only needed by the legacy AGG backend (UseNativeOsd=false).
+			     DESMUME_NATIVE_DRAW draws with GDI+ and takes its bitmap fonts from
+			     RCDATA; the WebGPU OSD recorder (wgpu_osd_draw.cpp) implements the
+			     AggDrawTarget interface without instantiating Agg2D, so neither
+			     wgpu_draw.obj nor wgpu_osd_draw.obj has undefined agg::* symbols.
+			     See wgpu-agg.md 20. -->
+			<AdditionalDependencies Condition="'$(Platform)' == 'x64' AND '$(UseNativeOsd)' == 'false'">agg-2.5-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- deps config for Win32 -->
 			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">.\zlib128;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
-			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;zlib-vc8-Win32.lib;agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;zlib-vc8-Win32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies Condition="'$(Platform)' == 'Win32' AND '$(UseNativeOsd)' == 'false'">agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- special deps config for newer VS -->
 			<AdditionalDependencies Label="Configuration" Condition="'$(NDS_VSVER)' &gt;= '14'">legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- general deps config -->
-			<AdditionalDependencies>lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies>gdiplus.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
 			<!-- (and windows libs) -->
-			<AdditionalDependencies>vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<!-- ole32 covers CoInitializeEx for the Media Foundation recorder and
+			     CLSIDFromString for the codec GUIDs it remembers -->
+			<AdditionalDependencies>vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
 
@@ -262,6 +297,14 @@
 			<Output ItemName="ClCompile" TaskParameter="OutputItemList"/>
 		</UNDUPOBJ_TASK>
 	</Target>
-	<!-- ================ UNDUPOBJ ================ -->
+		<!-- ================ UNDUPOBJ ================ -->
+
+		<!-- Ship the WebGPU runtime next to the executable. -->
+	<Target Name="CopyWGPUNative" AfterTargets="Build" Condition="'$(Platform)' == 'x64'">
+		<ItemGroup>
+			<WGPUNativeFiles Include="$(MSBuildThisFileDirectory)..\..\..\3rdparty\libs\x64\wgpu_native.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(WGPUNativeFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="'@(WGPUNativeFiles)' != ''" />
+	</Target>
 
 </Project>

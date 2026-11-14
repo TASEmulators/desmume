@@ -2,21 +2,14 @@
 ///
 /// A header file for detecting the Intel MMX instructions set extension.
 ///
-/// Please see 'mmx_win.cpp', 'mmx_cpp.cpp' and 'mmx_non_x86.cpp' for the 
-/// routine implementations for x86 Windows, x86 gnu version and non-x86 
+/// Please see 'mmx_win.cpp', 'mmx_cpp.cpp' and 'mmx_non_x86.cpp' for the
+/// routine implementations for x86 Windows, x86 gnu version and non-x86
 /// platforms, respectively.
 ///
 /// Author        : Copyright (c) Olli Parviainen
 /// Author e-mail : oparviai 'at' iki.fi
 /// SoundTouch WWW: http://www.surina.net/soundtouch
 ///
-////////////////////////////////////////////////////////////////////////////////
-//
-// Last changed  : $Date: 2006/02/05 16:44:06 $
-// File revision : $Revision: 1.4 $
-//
-// $Id: cpu_detect.h,v 1.4 2006/02/05 16:44:06 Olli Exp $
-//
 ////////////////////////////////////////////////////////////////////////////////
 //
 // License :

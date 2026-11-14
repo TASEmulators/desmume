@@ -110,6 +110,13 @@ void value<std::vector<int>>::load() {
 
 template<>
 void value<std::vector<int>>::save() {
+	if (this->mData.empty()) {
+		// std::vector::data() returns NULL for an empty vector, but
+		// g_key_file_set_integer_list() asserts that the list is non-NULL.
+		// Remove the key instead so load() keeps the default empty vector.
+		g_key_file_remove_key(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), NULL);
+		return;
+	}
 	g_key_file_set_integer_list(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData.data(), this->mData.size());
 }
 

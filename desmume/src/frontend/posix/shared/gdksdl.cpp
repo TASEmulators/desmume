@@ -1,6 +1,6 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #if GTK_CHECK_VERSION(3, 0, 0)
 
@@ -25,7 +25,7 @@ int gdk_to_sdl_keycode(int gdk_key)
   case GDK_KEY_exclamdown:
    return SDLK_EXCLAIM;
   case GDK_KEY_quotedbl:
-   return SDLK_QUOTEDBL;
+   return SDLK_DBLAPOSTROPHE;
   case GDK_KEY_numbersign:
    return SDLK_HASH;
   case GDK_KEY_dollar:
@@ -33,7 +33,7 @@ int gdk_to_sdl_keycode(int gdk_key)
   case GDK_KEY_ampersand:
    return SDLK_AMPERSAND;
   case GDK_KEY_quoteright:
-   return SDLK_QUOTE;
+   return SDLK_APOSTROPHE;
   case GDK_KEY_parenleft:
    return SDLK_LEFTPAREN;
   case GDK_KEY_parenright:
@@ -95,59 +95,59 @@ int gdk_to_sdl_keycode(int gdk_key)
   case GDK_KEY_underscore:
    return SDLK_UNDERSCORE;
   case GDK_KEY_quoteleft:
-   return SDLK_BACKQUOTE;
+   return SDLK_GRAVE;
   case GDK_KEY_a:
-   return SDLK_a;
+   return SDLK_A;
   case GDK_KEY_b:
-   return SDLK_b;
+   return SDLK_B;
   case GDK_KEY_c:
-   return SDLK_c;
+   return SDLK_C;
   case GDK_KEY_d:
-   return SDLK_d;
+   return SDLK_D;
   case GDK_KEY_e:
-   return SDLK_e;
+   return SDLK_E;
   case GDK_KEY_f:
-   return SDLK_f;
+   return SDLK_F;
   case GDK_KEY_g:
-   return SDLK_g;
+   return SDLK_G;
   case GDK_KEY_h:
-   return SDLK_h;
+   return SDLK_H;
   case GDK_KEY_i:
-   return SDLK_i;
+   return SDLK_I;
   case GDK_KEY_j:
-   return SDLK_j;
+   return SDLK_J;
   case GDK_KEY_k:
-   return SDLK_k;
+   return SDLK_K;
   case GDK_KEY_l:
-   return SDLK_l;
+   return SDLK_L;
   case GDK_KEY_m:
-   return SDLK_m;
+   return SDLK_M;
   case GDK_KEY_n:
-   return SDLK_n;
+   return SDLK_N;
   case GDK_KEY_o:
-   return SDLK_o;
+   return SDLK_O;
   case GDK_KEY_p:
-   return SDLK_p;
+   return SDLK_P;
   case GDK_KEY_q:
-   return SDLK_q;
+   return SDLK_Q;
   case GDK_KEY_r:
-   return SDLK_r;
+   return SDLK_R;
   case GDK_KEY_s:
-   return SDLK_s;
+   return SDLK_S;
   case GDK_KEY_t:
-   return SDLK_t;
+   return SDLK_T;
   case GDK_KEY_u:
-   return SDLK_u;
+   return SDLK_U;
   case GDK_KEY_v:
-   return SDLK_v;
+   return SDLK_V;
   case GDK_KEY_w:
-   return SDLK_w;
+   return SDLK_W;
   case GDK_KEY_x:
-   return SDLK_x;
+   return SDLK_X;
   case GDK_KEY_y:
-   return SDLK_y;
+   return SDLK_Y;
   case GDK_KEY_z:
-   return SDLK_z;
+   return SDLK_Z;
   case GDK_KEY_Delete:
    return SDLK_DELETE;
   case GDK_KEY_KP_0:
@@ -302,7 +302,7 @@ int gdk_to_sdl_keycode(int gdk_key)
   case GDK_exclamdown:
    return SDLK_EXCLAIM;
   case GDK_quotedbl:
-   return SDLK_QUOTEDBL;
+   return SDLK_DBLAPOSTROPHE;
   case GDK_numbersign:
    return SDLK_HASH;
   case GDK_dollar:
@@ -310,7 +310,7 @@ int gdk_to_sdl_keycode(int gdk_key)
   case GDK_ampersand:
    return SDLK_AMPERSAND;
   case GDK_quoteright:
-   return SDLK_QUOTE;
+   return SDLK_APOSTROPHE;
   case GDK_parenleft:
    return SDLK_LEFTPAREN;
   case GDK_parenright:
@@ -372,59 +372,59 @@ int gdk_to_sdl_keycode(int gdk_key)
   case GDK_underscore:
    return SDLK_UNDERSCORE;
   case GDK_quoteleft:
-   return SDLK_BACKQUOTE;
+   return SDLK_GRAVE;
   case GDK_a:
-   return SDLK_a;
+   return SDLK_A;
   case GDK_b:
-   return SDLK_b;
+   return SDLK_B;
   case GDK_c:
-   return SDLK_c;
+   return SDLK_C;
   case GDK_d:
-   return SDLK_d;
+   return SDLK_D;
   case GDK_e:
-   return SDLK_e;
+   return SDLK_E;
   case GDK_f:
-   return SDLK_f;
+   return SDLK_F;
   case GDK_g:
-   return SDLK_g;
+   return SDLK_G;
   case GDK_h:
-   return SDLK_h;
+   return SDLK_H;
   case GDK_i:
-   return SDLK_i;
+   return SDLK_I;
   case GDK_j:
-   return SDLK_j;
+   return SDLK_J;
   case GDK_k:
-   return SDLK_k;
+   return SDLK_K;
   case GDK_l:
-   return SDLK_l;
+   return SDLK_L;
   case GDK_m:
-   return SDLK_m;
+   return SDLK_M;
   case GDK_n:
-   return SDLK_n;
+   return SDLK_N;
   case GDK_o:
-   return SDLK_o;
+   return SDLK_O;
   case GDK_p:
-   return SDLK_p;
+   return SDLK_P;
   case GDK_q:
-   return SDLK_q;
+   return SDLK_Q;
   case GDK_r:
-   return SDLK_r;
+   return SDLK_R;
   case GDK_s:
-   return SDLK_s;
+   return SDLK_S;
   case GDK_t:
-   return SDLK_t;
+   return SDLK_T;
   case GDK_u:
-   return SDLK_u;
+   return SDLK_U;
   case GDK_v:
-   return SDLK_v;
+   return SDLK_V;
   case GDK_w:
-   return SDLK_w;
+   return SDLK_W;
   case GDK_x:
-   return SDLK_x;
+   return SDLK_X;
   case GDK_y:
-   return SDLK_y;
+   return SDLK_Y;
   case GDK_z:
-   return SDLK_z;
+   return SDLK_Z;
   case GDK_Delete:
    return SDLK_DELETE;
   case GDK_KP_0:

@@ -1,7 +1,7 @@
 SUBDIRS = doc
 include ../desmume.mk
 
-AM_CPPFLAGS += $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
+AM_CPPFLAGS += $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
 
 Applicationsdir = $(datadir)/applications
 Applications_DATA = desmume.desktop
@@ -25,8 +25,12 @@ desmume_SOURCES = \
 	cheatsGTK.h cheatsGTK.cpp \
 	main.cpp main.h
 
+if HAVE_LUA
+desmume_SOURCES += tools/luaScriptConsole.cpp tools/luaScriptConsole.h
+endif
+
 desmume_LDADD = ../libdesmume.a \
-	$(X_LIBS) -lX11 $(SDL_LIBS) $(GTK_LIBS) $(GTHREAD_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS) $(LIBSOUNDTOUCH_LIBS)
+	$(X_LIBS) -lX11 $(SDL_LIBS) $(GTK_LIBS) $(GTHREAD_LIBS) $(LIBAGG_LIBS) $(LIBSOUNDTOUCH_LIBS)
 
 if ENABLE_OPENGL_ES
 desmume_LDADD += $(OPENGLES_LIBS)

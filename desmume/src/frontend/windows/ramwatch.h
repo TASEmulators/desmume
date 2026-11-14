@@ -2,7 +2,7 @@
 //Authors: adelikat, Upthorn, Nitsuja
 
 /*
-	Modifications Copyright (C) 2009-2010 DeSmuME team
+	Modifications Copyright (C) 2009-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,40 +20,41 @@
 
 #ifndef RAMWATCH_H
 #define RAMWATCH_H
-#include "windows.h"
-bool ResetWatches();
-void OpenRWRecentFile(int memwRFileNumber);
-extern bool AutoRWLoad;
-extern bool RWSaveWindowPos;
-#define MAX_RECENT_WATCHES 5
-extern char rw_recent_files[MAX_RECENT_WATCHES][1024];
-extern bool AskSave();
-extern int ramw_x;
-extern int ramw_y;
-extern bool RWfileChanged;
 
-// AddressWatcher is self-contained now
-struct AddressWatcher
-{
-	unsigned int Address; // hardware address
-	char Size;
-	char Type;
-	char* comment; // NULL means no comment, non-NULL means allocated comment
-	bool WrongEndian;
-	unsigned int CurValue;
-};
-#define MAX_WATCH_COUNT 256
-extern AddressWatcher rswatches[MAX_WATCH_COUNT];
-extern int WatchCount; // number of valid items in rswatches
+#include <windows.h>
 
-extern char Watch_Dir[1024];
+// All document logic (watch list, .wch files, memory reads, value formatting,
+// recent files and preference values) now lives in the frontend-independent
+// core, shared with the Cocoa port and any future GTK port. This header is the
+// Win32 adapter only: dialogs, menus, list view and file pickers.
+#include "../shared/ramwatch_core.h"
 
-bool InsertWatch(const AddressWatcher& Watch, char *Comment, int atIndex=-1);
-bool InsertWatch(const AddressWatcher& Watch, HWND parent=NULL); // asks user for comment
-void Update_RAM_Watch();
-bool Load_Watches(bool clear, const char* filename);
+typedef RAMWatchCore::Watch AddressWatcher;
+
+static const int MAX_RECENT_WATCHES = (int)RAMWatchCore::kMaxRecentFiles;
+static const int MAX_WATCH_COUNT = (int)RAMWatchCore::kMaxWatchCount;
+
+extern HWND RamWatchHWnd;
 
 LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-extern HWND RamWatchHWnd;
+
+// Fills a report-style list view with the given column headers.  Shared with
+// the RAM Search dialog, which builds its own column set on top of it.
+void init_list_box(HWND Box, const char* Strs[], int numColumns, int *columnWidths);
+
+// Host-side operations. These are thin wrappers around RAMWatchCore that also
+// drive the Win32 user interface (message boxes, file dialogs, list refresh).
+bool ResetWatches();
+void OpenRWRecentFile(int recentFileNumber);
+bool AskSave();
+
+bool InsertWatch(const AddressWatcher& watch, const char *comment, int atIndex = -1);
+bool InsertWatch(const AddressWatcher& watch, HWND parent = NULL); // asks the user for a comment
+
+void Update_RAM_Watch();
+bool Load_Watches(bool clear, const char *filename);
+bool Load_Watches(bool clear);   // opens the file dialog
+bool Save_Watches();             // Save As
+bool QuickSaveWatches();         // Save, falling back to Save As
 
 #endif

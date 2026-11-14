@@ -42,6 +42,22 @@
 #include "../../wifi.h"
 #undef BOOL
 
+#ifdef DESMUME_COCOA_METAL_OSD
+#include "userinterface/MacMetalOSDDraw.h"
+#endif
+
+// Cocoa used to amalgamate the vendored Lua 5.1.5 sources into this translation
+// unit.  It no longer does: the Lua entry points now come from a LuaJIT dylib
+// that is dlopen()ed at runtime, exactly like the Windows build's lua51.dll
+// delay-load.  See LuaJITApi.cpp for the loader and LuaJITApiSymbols.h for the
+// resolved function table.  Nothing is linked against LuaJIT at build time, so
+// the emulator still starts (with scripting disabled) when it is missing.
+#ifdef HAVE_LUA
+#include "MacLuaScriptConsole.mm"
+#include "MacLuaFrontend.mm"
+#include "../../lua-engine.cpp"
+#endif
+
 //accessed from other files
 volatile bool execute = true;
 
@@ -195,6 +211,7 @@ volatile bool execute = true;
 	newDriver->SetCoreThreadMutexLock(&threadParam.mutexThreadExecute);
 	newDriver->SetCoreExecuteRWLock(&threadParam.rwlockCoreExecute);
 	newDriver->SetExecutionControl(execControl);
+	newDriver->SetDisplayOutputManager(macDisplayOutputManager);
 	driver = newDriver;
 	
 	frameStatus = @"---";
@@ -1194,11 +1211,50 @@ static void* RunCoreThread(void *arg)
 		
 		// Execute the frame and increment the frame counter.
 		pthread_rwlock_wrlock(&param->rwlockCoreExecute);
+#ifdef HAVE_LUA
+		intptr_t queuedUid;
+		std::string queuedFilename;
+		if (((macOS_driver *)driver)->GetQueuedScript(queuedUid, queuedFilename)) {
+			RunLuaScriptFile(queuedUid, queuedFilename.c_str());
+		}
+#endif
 		cheatManager->ApplyToMaster();
 		cheatManager->ApplyPendingInternalCheatWrites();
+#ifdef DESMUME_COCOA_METAL_OSD
+		MacMetalOSD_ClearBack();
+#endif
+#ifdef HAVE_LUA
+		lua_script_clear_graphics_buffer();
+		NDS_beginProcessingInput();
+		CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+		NDS_endProcessingInput();
+#endif
 		NDS_exec<false>();
 		SPU_Emulate_user();
 		execControl->FetchOutputPostNDSExec();
+#ifdef HAVE_LUA
+		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+		// Menu clicks arrive on the main thread; run their handlers here, on the
+		// thread that actually owns the Lua states.
+		MacLua_DrainMenuCalls();
+		// Flush GUI draw calls deferred from the script body, then publish the
+		// completed overlay frame to the renderer.
+		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+		lua_script_present_graphics_buffer();
+#endif
+#ifdef DESMUME_COCOA_METAL_OSD
+#ifdef HAVE_LUA
+		// emu.message() (and any driver info message) has no OSDCLASS to live
+		// in on this port, so paint the pending one into the Metal OSD frame
+		// here, on top of whatever the script drew this frame.
+		{
+			char osdMessage[512];
+			if (MacLua_GetActiveOsdMessage(osdMessage, (int)sizeof(osdMessage)))
+				MacMetalOSD_AddFixedText(0, 8, osdMessage);
+		}
+#endif
+		MacMetalOSD_PresentBack();
+#endif
 		pthread_rwlock_unlock(&param->rwlockCoreExecute);
 		
 		// Check if an internal execution error occurred that halted the emulation.
@@ -1400,3 +1456,22 @@ static void* RunCoreThread(void *arg)
 	
 	return NULL;
 }
+
+extern "C" void macOS_PumpEvents()
+{
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	while (true)
+	{
+		NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny
+											untilDate:[NSDate dateWithTimeIntervalSinceNow:0.0]
+											   inMode:NSDefaultRunLoopMode
+											  dequeue:YES];
+		if (event == nil)
+		{
+			break;
+		}
+		[NSApp sendEvent:event];
+	}
+	[pool release];
+}
+

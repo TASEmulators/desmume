@@ -19,6 +19,9 @@
     <Filter Include="frontend\modules\osd\agg">
       <UniqueIdentifier>{7f9106f6-6228-4333-bc30-f3aa42054661}</UniqueIdentifier>
     </Filter>
+    <Filter Include="frontend\modules\osd\wgpu">
+      <UniqueIdentifier>{2b0c5f4e-6d31-4a97-8f5e-41c9a7d6e2b3}</UniqueIdentifier>
+    </Filter>
     <Filter Include="gdbstub">
       <UniqueIdentifier>{cfb7bfbc-4470-4691-a3c2-b86c388e6a52}</UniqueIdentifier>
     </Filter>
@@ -106,6 +109,9 @@
     <Filter Include="utils\colorspacehandler">
       <UniqueIdentifier>{db5dc512-2b75-4476-8cac-75fd4acfd85f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="frontend\shared">
+      <UniqueIdentifier>{7b0f4c62-1d38-4f9a-9c2e-5a6d3b8e4c11}</UniqueIdentifier>
+    </Filter>
     <Filter Include="frontend\Windows">
       <UniqueIdentifier>{56813aa6-2261-4011-8938-105c0b4b3773}</UniqueIdentifier>
     </Filter>
@@ -186,19 +192,25 @@
     <ClCompile Include="..\..\metaspu\win32\ConfigSoundtouch.cpp">
       <Filter>metaspu\win32</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\metaspu\SoundTouch\3dnow_win.cpp">
-      <Filter>metaspu\SoundTouch</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\metaspu\SoundTouch\AAFilter.cpp">
       <Filter>metaspu\SoundTouch</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\metaspu\SoundTouch\cpu_detect_x86_win.cpp">
+    <ClCompile Include="..\..\metaspu\SoundTouch\cpu_detect_x86.cpp">
       <Filter>metaspu\SoundTouch</Filter>
     </ClCompile>
     <ClCompile Include="..\..\metaspu\SoundTouch\FIFOSampleBuffer.cpp">
       <Filter>metaspu\SoundTouch</Filter>
     </ClCompile>
     <ClCompile Include="..\..\metaspu\SoundTouch\FIRFilter.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\metaspu\SoundTouch\InterpolateCubic.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\metaspu\SoundTouch\InterpolateLinear.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\metaspu\SoundTouch\InterpolateShannon.cpp">
       <Filter>metaspu\SoundTouch</Filter>
     </ClCompile>
     <ClCompile Include="..\..\metaspu\SoundTouch\mmx_optimized.cpp">
@@ -216,13 +228,25 @@
     <ClCompile Include="..\..\metaspu\SoundTouch\TDStretch.cpp">
       <Filter>metaspu\SoundTouch</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\metaspu\SoundTouch\WavFile.cpp">
-      <Filter>metaspu\SoundTouch</Filter>
-    </ClCompile>
     <ClCompile Include="AboutBox.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
     <ClCompile Include="aviout.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="mflite.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="mfvideowriter.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="recording_settings.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="record_compositor.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="videoencoders.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
     <ClCompile Include="cheatsWin.cpp">
@@ -783,6 +807,9 @@
     <ClCompile Include="..\..\frontend\modules\ImageOut.cpp">
       <Filter>frontend\modules</Filter>
     </ClCompile>
+    <ClCompile Include="ImageWrite.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\libretro-common\formats\png\rpng_encode.c">
       <Filter>libretro-common\formats\png</Filter>
     </ClCompile>
@@ -861,6 +888,15 @@
     <ClCompile Include="..\modules\osd\agg\agg_osd.cpp">
       <Filter>frontend\modules\osd\agg</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\osd\agg\native_draw.cpp">
+      <Filter>frontend\modules\osd\agg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\osd\wgpu\wgpu_draw.cpp">
+      <Filter>frontend\modules\osd\wgpu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\osd\wgpu\wgpu_osd_draw.cpp">
+      <Filter>frontend\modules\osd\wgpu</Filter>
+    </ClCompile>
     <ClCompile Include="mic-win.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -924,15 +960,52 @@
     <ClCompile Include="ddraw.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="dxerr8_compat.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="ogl_display.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
     <ClCompile Include="display.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="dsmcsv.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="dsmeditor.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="wgpu_display.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="wgpu_present_win32.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="wgpu_upscaler_win32.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\wgpu_present.cpp">
+      <Filter>frontend\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\ram_debug_core.cpp">
+      <Filter>frontend\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\ramwatch_core.cpp">
+      <Filter>frontend\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="DarkMode.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="DPI.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="UiFont.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\addons\slot2_hcv1000.cpp">
       <Filter>addons</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\WGPURender.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\utils\guid.h">
@@ -962,9 +1035,6 @@
     <ClInclude Include="..\..\metaspu\SoundTouch\AAFilter.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\metaspu\SoundTouch\BPMDetect.h">
-      <Filter>metaspu\SoundTouch</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\metaspu\SoundTouch\cpu_detect.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
@@ -972,6 +1042,15 @@
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
     <ClInclude Include="..\..\metaspu\SoundTouch\FIFOSamplePipe.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\metaspu\SoundTouch\InterpolateCubic.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\metaspu\SoundTouch\InterpolateLinear.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\metaspu\SoundTouch\InterpolateShannon.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
     <ClInclude Include="..\..\metaspu\SoundTouch\RateTransposer.h">
@@ -986,13 +1065,37 @@
     <ClInclude Include="..\..\metaspu\SoundTouch\TDStretch.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\metaspu\SoundTouch\WavFile.h">
+    <ClInclude Include="..\..\metaspu\SoundTouch\soundtouch_config.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
     <ClInclude Include="AboutBox.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
+    <ClInclude Include="ImageWrite.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
     <ClInclude Include="aviout.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="mflite.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="mfvideowriter.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="recording_settings.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="record_compositor.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="mf_build.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="video_writer.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="videoencoders.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="cheatsWin.h">
@@ -1574,6 +1677,18 @@
     <ClInclude Include="..\modules\osd\agg\agg_osd.h">
       <Filter>frontend\modules\osd\agg</Filter>
     </ClInclude>
+    <ClInclude Include="..\modules\osd\agg\native_draw.h">
+      <Filter>frontend\modules\osd\agg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\osd\wgpu\wgpu_draw.h">
+      <Filter>frontend\modules\osd\wgpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\osd\wgpu\wgpu_osd_draw.h">
+      <Filter>frontend\modules\osd\wgpu</Filter>
+    </ClInclude>
+    <ClInclude Include="osd_fonts\osd_fonts.h">
+      <Filter>frontend\Windows\resources</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\metaspu\SoundTouch\FIRFilter.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
@@ -1631,6 +1746,47 @@
     <ClInclude Include="display.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
+    <ClInclude Include="dsmcsv.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="dsmeditor.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="wgpu_display.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="wgpu_present_win32.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="wgpu_upscaler_win32.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\wgpu_present.h">
+      <Filter>frontend\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ram_debug_core.h">
+      <Filter>frontend\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ramwatch_core.h">
+      <Filter>frontend\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ram_search_core.h">
+      <Filter>frontend\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="DarkMode.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="DPI.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="UiFont.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\filter\xbrz19\xbrz.h" />
+    <ClInclude Include="..\..\filter\xbrz19\xbrz_config.h" />
+    <ClInclude Include="..\..\filter\xbrz19\xbrz_simd.h" />
+    <ClInclude Include="..\..\filter\xbrz19\xbrz_tools.h" />
+    <ClInclude Include="..\..\WGPURender.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="bitmap1.bmp">
@@ -1708,6 +1864,12 @@
     <None Include="..\modules\osd\agg\agg2d.inl">
       <Filter>frontend\modules\osd\agg</Filter>
     </None>
+    <None Include="..\modules\osd\wgpu\hud_shapes.wgsl">
+      <Filter>frontend\modules\osd\wgpu</Filter>
+    </None>
+    <None Include="..\modules\osd\wgpu\hud_text.wgsl">
+      <Filter>frontend\modules\osd\wgpu</Filter>
+    </None>
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\thumb_tabdef.inc" />
   </ItemGroup>
@@ -1715,11 +1877,11 @@
     <ResourceCompile Include="resources.rc">
       <Filter>frontend\Windows\resources</Filter>
     </ResourceCompile>
+    <ResourceCompile Include="osd_fonts\osd_fonts.rc">
+      <Filter>frontend\Windows\resources</Filter>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="directx\directx.7z">
-      <Filter>frontend\Windows\libs</Filter>
-    </CustomBuild>
     <CustomBuild Include="lua\lua.7z">
       <Filter>frontend\Windows\libs</Filter>
     </CustomBuild>

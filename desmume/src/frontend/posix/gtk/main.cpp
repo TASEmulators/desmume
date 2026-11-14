@@ -28,9 +28,19 @@
 #include <gtk/gtk.h>
 #include <gio/gapplication.h>
 #include <gdk/gdkkeysyms.h>
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <X11/Xlib.h>
 #include <vector>
+#include <set>
+#include <map>
+#include <string>
+
+#if defined(GDK_WINDOWING_X11)
+#include <gdk/gdkx.h>
+#endif
+#if defined(GDK_WINDOWING_WAYLAND)
+#include <gdk/gdkwayland.h>
+#endif
 
 #ifdef AGG2D_USE_VECTORFONTS
 #include <fontconfig/fontconfig.h>
@@ -55,6 +65,14 @@
 #include "dTool.h"
 #include "../shared/desmume_config.h"
 #include "../shared/gdksdl.cpp"
+#include "../../../WGPURender.h"
+#if defined(ENABLE_WGPU)
+#include "wgpu.h"
+#endif
+#include "../shared/wgpu_display_linux.h"
+#if defined(DESMUME_WGPU_OSD)
+#include "frontend/modules/osd/wgpu/wgpu_osd_draw.h"
+#endif
 #include "cheatsGTK.h"
 #include "frontend/modules/osd/agg/agg_osd.h"
 
@@ -72,6 +90,11 @@
 #ifdef GDB_STUB
 	#include "armcpu.h"
 	#include "gdbstub.h"
+#endif
+
+#ifdef HAVE_LUA
+	#include "tools/luaScriptConsole.h"
+	#include "lua-engine.h"
 #endif
 
 #if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
@@ -105,6 +128,54 @@
 static int draw_count;
 extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline_filter_d;
 VideoFilter* video;
+
+// WebGPU presentation. The object is a stub when the build does not include
+// wgpu-native, in which case every frame falls back to the Cairo path below.
+static WGPULinuxDisplay wgpu_display;
+#if defined(ENABLE_WGPU)
+static bool wgpu_initialization_failed = false;
+#endif
+
+#if defined(DESMUME_WGPU_OSD)
+// GPU HUD state (wgpu-agg.md 22). The target records agg_osd.cpp / Lua agg.*
+// drawing and renders it into a texture that WGPU_PresentFrame samples as a
+// second layer. sGpuHudView is what the last rendered frame left behind; it has
+// to stay alive until the Expose callback that presents that frame, and must be
+// dropped whenever the device/surface is recreated.
+static WGPUOSDDrawTarget *sGpuHudTarget = NULL;
+static bool sGpuHudFontsRegistered = false;
+static bool sGpuHudFrameActive = false;
+static void *sGpuHudView = NULL;
+static int sGpuHudViewWidth = 0;
+static int sGpuHudViewHeight = 0;
+#endif
+
+// Drops the cached HUD view. Called whenever the WebGPU surface is torn down:
+// the view belongs to a texture that is about to be destroyed.
+static void WGPU_HudInvalidateView()
+{
+#if defined(DESMUME_WGPU_OSD)
+	sGpuHudView = NULL;
+	sGpuHudViewWidth = 0;
+	sGpuHudViewHeight = 0;
+#endif
+}
+
+static void WGPU_KillDisplay()
+{
+	wgpu_display.kill();
+	WGPU_HudInvalidateView();
+}
+
+// True when PrepareHudTarget() installed the GPU recorder for this frame.
+static bool WGPU_HudFrameActive()
+{
+#if defined(DESMUME_WGPU_OSD)
+	return sGpuHudFrameActive;
+#else
+	return false;
+#endif
+}
 
 #define GPU_SCALE_FACTOR_MIN 1.0f
 #define GPU_SCALE_FACTOR_MAX 16.0f
@@ -235,6 +306,12 @@ static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void *);
 #endif
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 
+#ifdef HAVE_LUA
+static void AddLuaScript(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void CloseAllLuaScripts(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ShowAboutLuaScripting(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+#endif
+
 static const GActionEntry app_entries[] = {
     // File
     { "open",          OpenNdsDialog },
@@ -307,7 +384,12 @@ static const GActionEntry app_entries[] = {
     { "editjoyctrls",        Edit_Joystick_Controls },
 
     // Tools
-    // Populated in desmume_gtk_menu_tools().
+    // dTool entries are populated dynamically in desmume_gtk_menu_tools().
+#ifdef HAVE_LUA
+    { "addluascript",        AddLuaScript },
+    { "closealluascripts",   CloseAllLuaScripts },
+    { "aboutluascripting",   ShowAboutLuaScripting },
+#endif
 
     // Help
     { "about",         About },
@@ -365,18 +447,96 @@ SoundInterface_struct *SNDCoreList[] = {
 NULL
 };
 
-GPU3DInterface *core3DList[] = {
-	&gpu3DNull,
-	&gpu3DRasterize,
+// Filled by Build3DRendererList(). The first entries are fixed, but WebGPU
+// contributes one entry per usable backend, so the tail is dynamic.
+#define GPU3D_MAX_COUNT 16
+
+GPU3DInterface *core3DList[GPU3D_MAX_COUNT] = { NULL };
+static int wgpuFirstCoreIndex = -1;
+
+// Builds the renderer list: the fixed cores, then one entry per WebGPU backend
+// that wgpu-native reported ("WebGPU - Vulkan", ...). Software adapters are
+// filtered out by the renderer itself; SoftRasterizer stays in the list.
+static void Build3DRendererList()
+{
+	if (core3DList[0] != NULL)
+	{
+		return;
+	}
+
+	int count = 0;
+
+	core3DList[count++] = &gpu3DNull;
+	core3DList[count++] = &gpu3DRasterize;
+
 #if defined(ENABLE_OPENGL_ES)
-	&gpu3Dgl_ES_3_0,
+	core3DList[count++] = &gpu3Dgl_ES_3_0;
 #elif defined(ENABLE_OPENGL_STANDARD)
-	&gpu3Dgl,
-	&gpu3DglOld,
-	&gpu3Dgl_3_2,
+	core3DList[count++] = &gpu3Dgl;
+	core3DList[count++] = &gpu3DglOld;
+	core3DList[count++] = &gpu3Dgl_3_2;
 #endif
-	NULL
-};
+
+#if defined(ENABLE_WGPU)
+	wgpuFirstCoreIndex = count;
+
+	WGPURender_InitBackendList();
+
+	const size_t backendCount = WGPURender_GetBackendCount();
+
+	for (size_t i = 0; (i < backendCount) && (count < (GPU3D_MAX_COUNT - 2)); i++)
+	{
+		core3DList[count++] = WGPURender_GetBackendInterface(i);
+	}
+
+	// Nothing reported (no usable adapter): still offer the generic entry so the
+	// user can try, and so a config that already selected WebGPU keeps working.
+	if (backendCount == 0)
+	{
+		core3DList[count++] = &gpu3DWGPU;
+	}
+#endif
+
+	core3DList[count] = NULL;
+}
+
+// The WGPUInstanceBackend mask the WebGPU presenter should use. A mask of zero
+// asks wgpu-native for every backend it was built with, which on Linux also
+// creates a GLES instance. That instance is destroyed at process exit, after
+// GTK has already released the EGL display; eglDestroyContext() then fails
+// without an EGL error and the khronos-egl wrapper panics while unwinding
+// through wgpuInstanceRelease(), which aborts the process. Never pass zero:
+// use the backend the user picked, or the first one the renderer enumeration
+// found (its preferred backend).
+#if defined(ENABLE_WGPU)
+static uint32_t WGPU_PresentationBackendMask()
+{
+	WGPURender_InitBackendList();
+
+	const size_t backendCount = WGPURender_GetBackendCount();
+	const uint32_t requested = (uint32_t)config.presentationWGPUBackend;
+
+	if (requested != 0)
+	{
+		for (size_t i = 0; i < backendCount; i++)
+		{
+			if (WGPURender_GetBackendMask(i) == requested)
+			{
+				return requested;
+			}
+		}
+	}
+
+	if (backendCount > 0)
+	{
+		return WGPURender_GetBackendMask(0);
+	}
+
+	// No adapter was reported. Pin Vulkan rather than asking for every backend;
+	// if it cannot present, begin() fails and Cairo keeps drawing.
+	return (uint32_t)WGPUInstanceBackend_Vulkan;
+}
+#endif // ENABLE_WGPU
 
 int multisampleSizes[] = {0, 2, 4, 8, 16, 32};
 
@@ -425,6 +585,9 @@ init_configured_features( class configured_features *config	)
 {
   if(config->render3d == COMMANDLINE_RENDER3D_GL || config->render3d == COMMANDLINE_RENDER3D_OLDGL || config->render3d == COMMANDLINE_RENDER3D_AUTOGL)
     config->engine_3d = 2;
+  else if (config->render3d == COMMANDLINE_RENDER3D_WGPU)
+	  // Resolved to the first WebGPU entry once Build3DRendererList() has run.
+    config->engine_3d = -2;
   else if (config->render3d == COMMANDLINE_RENDER3D_DEFAULT)
 	  // Setting it to -1 so that common_gtk_main() will ignore it and load it from file or reconfigure it.
     config->engine_3d = -1;
@@ -578,6 +741,120 @@ struct nds_screen_t {
 struct nds_screen_t nds_screen;
 
 static guint regMainLoop = 0;
+
+#ifdef HAVE_LUA
+static void AddLuaScript(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    lua_script_open_console(GTK_WINDOW(pWindow));
+}
+static void CloseAllLuaScripts(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    lua_script_close_all();
+}
+static void ShowAboutLuaScripting(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    lua_script_show_about(GTK_WINDOW(pWindow));
+}
+
+// gui.popup() / input.popup().  Runs on the GTK main thread because scripts do;
+// the returned strings match the Windows MessageBox mapping exactly.
+static const char* GtkLua_ShowPopup(const char* message, const char* type, const char* icon)
+{
+    GtkMessageType messageType = GTK_MESSAGE_INFO;
+    if (icon && g_ascii_strcasecmp(icon, "question") == 0)
+        messageType = GTK_MESSAGE_QUESTION;
+    else if (icon && g_ascii_strcasecmp(icon, "warning") == 0)
+        messageType = GTK_MESSAGE_WARNING;
+    else if (icon && g_ascii_strcasecmp(icon, "error") == 0)
+        messageType = GTK_MESSAGE_ERROR;
+
+    GtkWidget *dialog = gtk_message_dialog_new(
+        GTK_WINDOW(pWindow),
+        (GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+        messageType, GTK_BUTTONS_NONE, "%s", message ? message : "");
+
+    // GTK has no stock Abort/Retry/Ignore response ids.
+    enum { RESPONSE_ABORT = 1, RESPONSE_RETRY, RESPONSE_IGNORE };
+
+    if (!type || g_ascii_strcasecmp(type, "ok") == 0)
+    {
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_OK", GTK_RESPONSE_OK);
+    }
+    else if (g_ascii_strcasecmp(type, "yesno") == 0)
+    {
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_No", GTK_RESPONSE_NO);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Yes", GTK_RESPONSE_YES);
+    }
+    else if (g_ascii_strcasecmp(type, "yesnocancel") == 0)
+    {
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Cancel", GTK_RESPONSE_CANCEL);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_No", GTK_RESPONSE_NO);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Yes", GTK_RESPONSE_YES);
+    }
+    else if (g_ascii_strcasecmp(type, "okcancel") == 0)
+    {
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Cancel", GTK_RESPONSE_CANCEL);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_OK", GTK_RESPONSE_OK);
+    }
+    else // abortretryignore
+    {
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Ignore", RESPONSE_IGNORE);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Retry", RESPONSE_RETRY);
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "_Abort", RESPONSE_ABORT);
+    }
+
+    const char* answer = "ok";
+    switch (gtk_dialog_run(GTK_DIALOG(dialog)))
+    {
+        case GTK_RESPONSE_YES: answer = "yes"; break;
+        case GTK_RESPONSE_NO: answer = "no"; break;
+        case GTK_RESPONSE_CANCEL: answer = "cancel"; break;
+        case RESPONSE_ABORT: answer = "abort"; break;
+        case RESPONSE_RETRY: answer = "retry"; break;
+        case RESPONSE_IGNORE: answer = "ignore"; break;
+        default: break;
+    }
+    gtk_widget_destroy(dialog);
+    return answer;
+}
+
+// emu.openscript().  A new console window is the POSIX equivalent of the
+// Windows dialog.  The script is started on the next idle, the way Windows
+// posts IDC_BUTTON_LUARUN, so emu.openscript() returns before the new script
+// runs (pcall(emu.openscript, ...) in the examples depends on that).
+static char sLuaOpenScriptError[1200];
+
+static const char* GtkLua_OpenScript(const char* filename, const char* extraDirToCheck)
+{
+    if (!filename || filename[0] == '\0')
+        return "emu.openscript: no filename given";
+
+    std::string path = filename;
+    if (path[0] != '/' && extraDirToCheck && extraDirToCheck[0])
+    {
+        // GetCurrentScriptDir() only appends a separator when the script path
+        // contained one; do not glue a bare filename onto another filename.
+        const size_t n = strlen(extraDirToCheck);
+        const char last = extraDirToCheck[n - 1];
+        if (last == '/' || last == '\\')
+        {
+            std::string candidate = std::string(extraDirToCheck) + path;
+            if (g_file_test(candidate.c_str(), G_FILE_TEST_IS_REGULAR))
+                path = candidate;
+        }
+    }
+
+    if (!g_file_test(path.c_str(), G_FILE_TEST_IS_REGULAR))
+    {
+        snprintf(sLuaOpenScriptError, sizeof(sLuaOpenScriptError),
+                 "emu.openscript: file not found: %s", path.c_str());
+        return sLuaOpenScriptError;
+    }
+
+    lua_script_open_console_with_file(GTK_WINDOW(pWindow), path.c_str());
+    return NULL;
+}
+#endif
 
 static inline void UpdateStatusBar (const char *message)
 {
@@ -1406,6 +1683,23 @@ static void ToggleSwapScreens(GSimpleAction *action, GVariant *parameter, gpoint
 
 static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
 {
+#if defined(ENABLE_WGPU)
+	if (config.presentationWGPU && (event != NULL))
+	{
+		GdkWindow *window = gtk_widget_get_window(widget);
+		const int scale = (window != NULL) ? MAX(1, gdk_window_get_scale_factor(window)) : 1;
+
+		wgpu_display.setClientSize(event->width * scale, event->height * scale, scale);
+
+		// A new size or a re-realized window is a good moment to retry a device
+		// that was not available earlier.
+		if (!wgpu_display.active)
+		{
+			wgpu_initialization_failed = false;
+		}
+	}
+#endif
+
     return TRUE;
 }
 
@@ -1504,6 +1798,571 @@ static void calc_hybrid_vertical_params(gint daW, gint daH, gint gap, gint dstSc
 	draw_params.hybridBigScreenScale = hyb_ratio2 / hyb_ratio1;
 }
 
+#if defined(ENABLE_WGPU)
+
+// ---------------------------------------------------------------------------
+// WebGPU presentation
+//
+// The composited frame is the same one the Cairo path draws: video's
+// destination buffer, main screen on top, sub screen below. The destination
+// rectangles are computed in the unrotated local image space and transformed
+// with the same matrix the Cairo path uses, so embedding, integer scaling and
+// rotation stay in sync with the window code above. WGPUPresent applies the
+// rotation to the source UVs, exactly like the OpenGL and Windows paths.
+// ---------------------------------------------------------------------------
+
+struct WGPULinuxLocalRect
+{
+	bool visible;
+	int x;
+	int y;
+	int w;
+	int h;
+};
+
+static WGPUPresentRect WGPU_TransformRect(const cairo_matrix_t *matrix, const WGPULinuxLocalRect &rect)
+{
+	WGPUPresentRect out;
+
+	if (!rect.visible || (rect.w <= 0) || (rect.h <= 0))
+	{
+		out.left = 0;
+		out.top = 0;
+		out.right = 0;
+		out.bottom = 0;
+		return out;
+	}
+
+	double x0 = rect.x;
+	double y0 = rect.y;
+	double x1 = rect.x + rect.w;
+	double y1 = rect.y + rect.h;
+
+	cairo_matrix_transform_point(matrix, &x0, &y0);
+	cairo_matrix_transform_point(matrix, &x1, &y1);
+
+	out.left   = (int)lround(MIN(x0, x1));
+	out.top    = (int)lround(MIN(y0, y1));
+	out.right  = (int)lround(MAX(x0, x1));
+	out.bottom = (int)lround(MAX(y0, y1));
+
+	return out;
+}
+
+// GTK3 reports GdkWindow dimensions and hands out Cairo coordinates in
+// application (logical) pixels, while a Vulkan/X11 swap chain and the X11
+// client-size query use device pixels. Scale the final destination rects so
+// the two agree on HiDPI displays.
+static WGPUPresentRect WGPU_ScaleRect(const WGPUPresentRect &rect, int scale)
+{
+	WGPUPresentRect out;
+
+	out.left   = rect.left * scale;
+	out.top    = rect.top * scale;
+	out.right  = rect.right * scale;
+	out.bottom = rect.bottom * scale;
+
+	return out;
+}
+
+static void WGPU_GetLocalRects(int dstW, int dstH, int gap,
+							   WGPULinuxLocalRect *mainRect,
+							   WGPULinuxLocalRect *subRect,
+							   WGPULinuxLocalRect *gapRect)
+{
+	const int screenW = dstW;
+	const int screenH = dstH / 2;
+
+	mainRect->visible = true;
+	mainRect->x = 0;
+	mainRect->y = 0;
+	mainRect->w = screenW;
+	mainRect->h = screenH;
+
+	subRect->visible = true;
+	subRect->x = 0;
+	subRect->y = 0;
+	subRect->w = screenW;
+	subRect->h = screenH;
+
+	gapRect->visible = false;
+	gapRect->x = 0;
+	gapRect->y = 0;
+	gapRect->w = 0;
+	gapRect->h = 0;
+
+	switch (nds_screen.orientation)
+	{
+		case ORIENT_VERTICAL:
+			if (nds_screen.swap)
+			{
+				mainRect->y = screenH + gap;
+			}
+			else
+			{
+				subRect->y = screenH + gap;
+			}
+
+			if (gap > 0)
+			{
+				gapRect->visible = true;
+				gapRect->x = 0;
+				gapRect->y = screenH;
+				gapRect->w = screenW;
+				gapRect->h = gap;
+			}
+			break;
+
+		case ORIENT_HORIZONTAL:
+			if (nds_screen.swap)
+			{
+				subRect->x = 0;
+				mainRect->x = screenW;
+			}
+			else
+			{
+				subRect->x = screenW;
+			}
+			break;
+
+		case ORIENT_SINGLE:
+			// Only the selected screen is shown, either at the origin.
+			if (nds_screen.swap)
+			{
+				mainRect->visible = false;
+			}
+			else
+			{
+				subRect->visible = false;
+			}
+			break;
+
+		default:
+			// Hybrid layouts need a third, differently scaled quad, which the
+			// portable presenter does not expose yet. Leave them to Cairo.
+			mainRect->visible = false;
+			subRect->visible = false;
+			break;
+	}
+}
+
+static void WGPU_SetScreenMatrix(cairo_matrix_t *matrix, const cairo_matrix_t *base, int x, int y)
+{
+	*matrix = *base;
+	cairo_matrix_translate(matrix, x, y);
+	cairo_matrix_scale(matrix, (double)draw_params.dstScale / 2.0, (double)draw_params.dstScale / 2.0);
+	cairo_matrix_invert(matrix);
+}
+
+// Position of the drawing area inside the toplevel's client area, in GTK's
+// logical pixels. GDK's Wayland backend hands out the toplevel wl_surface for
+// child windows, so the WebGPU subsurface has to be offset past the menu and
+// toolbar; on X11 the drawing area has a window of its own and this is unused.
+static void WGPU_GetDrawingAreaPosition(GtkWidget *widget, int *x, int *y)
+{
+	*x = 0;
+	*y = 0;
+
+	GtkWidget *toplevel = gtk_widget_get_toplevel(widget);
+	if ( (toplevel != NULL) && gtk_widget_get_realized(toplevel) )
+	{
+		gtk_widget_translate_coordinates(widget, toplevel, 0, 0, x, y);
+	}
+}
+
+static bool WGPU_BeginNativeWindow(GtkWidget *widget, GdkWindow *window)
+{
+#if defined(GDK_WINDOWING_X11)
+	if (GDK_IS_X11_WINDOW(window))
+	{
+		GdkDisplay *gdkDisplay = gdk_window_get_display(window);
+		return wgpu_display.beginX11(GDK_DISPLAY_XDISPLAY(gdkDisplay),
+									 (unsigned long)gdk_x11_window_get_xid(window),
+									 WGPU_PresentationBackendMask());
+	}
+#endif
+
+#if defined(GDK_WINDOWING_WAYLAND)
+	// Present through a child wl_subsurface so that wgpu and GDK own separate
+	// wl_surfaces; committing to GDK's surface directly would race GTK's own
+	// Cairo frames and make the compositor report a protocol error.
+	if (GDK_IS_WAYLAND_WINDOW(window))
+	{
+		GdkDisplay *gdkDisplay = gdk_window_get_display(window);
+		int x = 0;
+		int y = 0;
+		WGPU_GetDrawingAreaPosition(widget, &x, &y);
+		return wgpu_display.beginWayland(gdk_wayland_display_get_wl_display(gdkDisplay),
+										 gdk_wayland_window_get_wl_surface(window),
+										 x, y, WGPU_PresentationBackendMask());
+	}
+#endif
+
+	return false;
+}
+
+#if defined(DESMUME_WGPU_OSD)
+// Is there anything that should go into the HUD layer this frame?  The target
+// is only installed when something will draw, so a frame with the HUD and Lua
+// both idle keeps the old cheap path.
+static bool GtkHudNeedsDrawing()
+{
+	bool wanted = (
+		CommonSettings.hud.ShowInputDisplay ||
+		CommonSettings.hud.ShowGraphicalInputDisplay ||
+		CommonSettings.hud.FpsDisplay ||
+		CommonSettings.hud.FrameCounterDisplay ||
+		CommonSettings.hud.ShowLagFrameCounter ||
+		CommonSettings.hud.ShowMicrophone ||
+		CommonSettings.hud.ShowRTC ||
+		HudEditorMode ||
+		HudNeedsDrawStateSlots()
+	);
+
+#ifdef HAVE_LUA
+	wanted = wanted || AnyLuaActive();
+#endif
+
+	return wanted;
+}
+
+// The GPU recorder only knows the same layouts the WebGPU present path can
+// draw; a Cairo frame must keep the CPU-composited HUD, so stay off those.
+static bool WGPU_HudWanted()
+{
+	if ( !config.presentationWGPU || !config.presentationWGPUHud )
+	{
+		return false;
+	}
+
+	if ( (nds_screen.orientation == ORIENT_HYBRID_EQUAL) ||
+		 (nds_screen.orientation == ORIENT_HYBRID_VERTICAL) )
+	{
+		return false;
+	}
+
+	const int rotation = nds_screen.rotation_angle;
+	return (rotation == 0) || (rotation == 90) || (rotation == 180) || (rotation == 270);
+}
+
+// Creates the target (and the device, if the first expose has not run yet),
+// resizes it to the frame, clears it and installs it as aggDraw.hud.  Returns
+// false when the caller must fall back to the AGG target in the source buffer.
+static bool WGPU_HudPrepare(int width, int height)
+{
+	if ( (width <= 0) || (height <= 0) || !WGPU_HudWanted() || !GtkHudNeedsDrawing() )
+	{
+		return false;
+	}
+
+	if ( (pDrawingArea == NULL) || !gtk_widget_get_realized(pDrawingArea) )
+	{
+		return false;
+	}
+
+	GdkWindow *window = gtk_widget_get_window(pDrawingArea);
+	if (window == NULL)
+	{
+		return false;
+	}
+
+	// The OSD is recorded before the first Expose, so the device has to be
+	// brought up here rather than lazily in WGPU_PresentFrame().
+	if (!wgpu_display.active)
+	{
+		if (wgpu_initialization_failed)
+		{
+			return false;
+		}
+
+		if (!WGPU_BeginNativeWindow(pDrawingArea, window))
+		{
+			wgpu_initialization_failed = true;
+			return false;
+		}
+	}
+
+	if (sGpuHudTarget == NULL)
+	{
+		sGpuHudTarget = new WGPUOSDDrawTarget(width, height);
+	}
+	else
+	{
+		// Resize() releases the renderer when the size actually changed; the
+		// beginGPU() below then rebuilds it, including the glyph atlas.
+		sGpuHudTarget->setDrawTargetDims(NULL, width, height, width * 4);
+	}
+
+	if (!sGpuHudFontsRegistered)
+	{
+		std::vector<WGPUOSDFont> fonts;
+		fonts.reserve((size_t)font_Nums);
+
+		for (int i = 0; i < font_Nums; i++)
+		{
+			if (fonts_list[i].font == NULL)
+			{
+				continue;
+			}
+
+			WGPUOSDFont font;
+			font.name = fonts_list[i].name;
+			font.data = fonts_list[i].font;
+			font.size = 0;
+			fonts.push_back(font);
+		}
+
+		sGpuHudTarget->setFonts(fonts.empty() ? NULL : &fonts[0], (int)fonts.size());
+		sGpuHudFontsRegistered = true;
+	}
+
+	if (!sGpuHudTarget->beginGPU(wgpu_display.instance(), wgpu_display.device(), wgpu_display.queue()))
+	{
+		return false;
+	}
+
+	// Every frame starts from an empty HUD texture; the source buffer used to
+	// provide that reset by being overwritten with the game frame.
+	sGpuHudTarget->clear();
+
+	WGPU_HudInvalidateView();
+	Agg_setHudTarget(sGpuHudTarget);
+	sGpuHudFrameActive = true;
+
+	return true;
+}
+
+// Renders the recorded HUD into its texture and restores the default target.
+// The returned view is sampled by the WebGPU present pass of this frame.
+static bool WGPU_HudRenderFrame()
+{
+	if (!sGpuHudFrameActive)
+	{
+		return false;
+	}
+
+	sGpuHudFrameActive = false;
+	WGPU_HudInvalidateView();
+
+	const bool ok = (sGpuHudTarget != NULL) && sGpuHudTarget->render();
+
+	if (ok)
+	{
+		sGpuHudView = sGpuHudTarget->textureView();
+		sGpuHudViewWidth = sGpuHudTarget->targetWidth();
+		sGpuHudViewHeight = sGpuHudTarget->targetHeight();
+	}
+
+	Agg_setHudTarget(NULL);
+
+	return (sGpuHudView != NULL);
+}
+
+// Puts the last rendered HUD back into the CPU screenshot, which reads the
+// source buffer and therefore no longer contains it.  The texture holds
+// premultiplied BGRA; the screenshot is straight RGBA.
+static void WGPU_HudCompositeScreenshot(u8 *dst, int width, int height)
+{
+	if ( (dst == NULL) || !config.presentationWGPUHud || (sGpuHudView == NULL) ||
+		 (sGpuHudTarget == NULL) )
+	{
+		return;
+	}
+
+	const int hudWidth = sGpuHudTarget->targetWidth();
+	const int hudHeight = sGpuHudTarget->targetHeight();
+
+	if ( (hudWidth != width) || (hudHeight != height) )
+	{
+		return;
+	}
+
+	std::vector<uint8_t> hud((size_t)hudWidth * (size_t)hudHeight * 4);
+
+	if (!sGpuHudTarget->readPixels(hud.data(), hudWidth * 4))
+	{
+		return;
+	}
+
+	for (int y = 0; y < height; y++)
+	{
+		const uint8_t *src = hud.data() + (size_t)y * (size_t)hudWidth * 4;
+		uint8_t *out = dst + (size_t)y * (size_t)width * 4;
+
+		for (int x = 0; x < width; x++, src += 4, out += 4)
+		{
+			const unsigned a = src[3];
+
+			if (a == 0)
+			{
+				continue;
+			}
+
+			const unsigned inv = 255u - a;
+			const unsigned r = src[2] + (out[0] * inv + 127u) / 255u;
+			const unsigned g = src[1] + (out[1] * inv + 127u) / 255u;
+			const unsigned b = src[0] + (out[2] * inv + 127u) / 255u;
+
+			out[0] = (uint8_t)((r > 255) ? 255 : r);
+			out[1] = (uint8_t)((g > 255) ? 255 : g);
+			out[2] = (uint8_t)((b > 255) ? 255 : b);
+			out[3] = 255;
+		}
+	}
+}
+#else
+static bool WGPU_HudPrepare(int, int) { return false; }
+static bool WGPU_HudRenderFrame() { return false; }
+static void WGPU_HudCompositeScreenshot(u8 *, int, int) {}
+#endif
+
+// Returns true when WebGPU presented the frame.  False means Cairo should draw
+// it instead; a failed device or surface is torn down so the next expose can
+// retry (or keep using Cairo when the device is unavailable).
+static bool WGPU_PresentFrame(GtkWidget *widget, GdkWindow *window, gint daW, gint daH)
+{
+	if ( (nds_screen.orientation == ORIENT_HYBRID_EQUAL) ||
+		 (nds_screen.orientation == ORIENT_HYBRID_VERTICAL) )
+	{
+		return false;
+	}
+
+	if ( (nds_screen.rotation_angle != 0) && (nds_screen.rotation_angle != 90) &&
+		 (nds_screen.rotation_angle != 180) && (nds_screen.rotation_angle != 270) )
+	{
+		return false;
+	}
+
+	if (!wgpu_display.active)
+	{
+		if (wgpu_initialization_failed)
+		{
+			return false;
+		}
+
+		if (!WGPU_BeginNativeWindow(widget, window))
+		{
+			wgpu_initialization_failed = true;
+			return false;
+		}
+	}
+
+	u32 *fbuf = video->GetDstBufferPtr();
+	const int dstW = video->GetDstWidth();
+	const int dstH = video->GetDstHeight();
+
+	if ( (fbuf == NULL) || (dstW <= 0) || (dstH < 2) )
+	{
+		return false;
+	}
+
+	WGPULinuxLocalRect localMain;
+	WGPULinuxLocalRect localSub;
+	WGPULinuxLocalRect localGap;
+	WGPU_GetLocalRects(dstW, dstH, draw_params.gap, &localMain, &localSub, &localGap);
+
+	// Same transform as ExposeDrawingArea's Cairo setup. For 90/270 imgW and
+	// imgH hold the swapped bounding box, while the local image keeps the
+	// unrotated dimensions.
+	double localW = draw_params.imgW;
+	double localH = draw_params.imgH;
+
+	if ( (nds_screen.rotation_angle == 90) || (nds_screen.rotation_angle == 270) )
+	{
+		localW = draw_params.imgH;
+		localH = draw_params.imgW;
+	}
+
+	cairo_matrix_t base;
+	cairo_matrix_init_identity(&base);
+	cairo_matrix_translate(&base, daW / 2.0, daH / 2.0);
+	cairo_matrix_scale(&base, draw_params.ratio, draw_params.ratio);
+	cairo_matrix_rotate(&base, M_PI / 180.0 * nds_screen.rotation_angle);
+	cairo_matrix_translate(&base, -localW / 2.0, -localH / 2.0);
+
+	// Keep the touch/stylus mapping identical to the Cairo path, including the
+	// swapped and rotated layouts.
+	if (localMain.visible)
+	{
+		WGPU_SetScreenMatrix(&nds_screen.topscreen_matrix, &base, localMain.x, localMain.y);
+	}
+	if (localSub.visible)
+	{
+		WGPU_SetScreenMatrix(&nds_screen.touch_matrix, &base, localSub.x, localSub.y);
+	}
+
+	WGPUPresentRect dstRects[2];
+	const int scale = MAX(1, gdk_window_get_scale_factor(window));
+
+	// WGPUPresent maps srcRects to destinations according to the rotation:
+	//   0/270 : dst[0] <- main, dst[1] <- sub
+	//   90/180: dst[0] <- sub,  dst[1] <- main
+	const int rotation = nds_screen.rotation_angle;
+	const bool swapDestinationOrder = (rotation == 90) || (rotation == 180);
+
+	for (int i = 0; i < 2; i++)
+	{
+		const bool isMain = swapDestinationOrder ? (i == 1) : (i == 0);
+		dstRects[i] = WGPU_ScaleRect(WGPU_TransformRect(&base, isMain ? localMain : localSub), scale);
+	}
+
+	WGPUPresentRect srcRects[2];
+	srcRects[0].left   = 0;
+	srcRects[0].top    = 0;
+	srcRects[0].right  = dstW;
+	srcRects[0].bottom = dstH / 2;
+
+	srcRects[1].left   = 0;
+	srcRects[1].top    = dstH / 2;
+	srcRects[1].right  = dstW;
+	srcRects[1].bottom = dstH;
+
+	WGPUPresentRect gapRect = WGPU_ScaleRect(WGPU_TransformRect(&base, localGap), scale);
+	const WGPUPresentRect *gapPtr = (gapRect.right > gapRect.left && gapRect.bottom > gapRect.top) ? &gapRect : NULL;
+
+	// 0x00BBGGRR. Cairo uses 30% gray for the gap; keep the same colour.
+	const u32 gapColor = 0x004D4D4D;
+
+	// The HUD layer is only valid for the frame that rendered it; PresentFrame()
+	// clears it when the HUD render fails.
+	const WGPUPresentOverlay *overlayPtr = NULL;
+
+#if defined(DESMUME_WGPU_OSD)
+	WGPUPresentOverlay overlay;
+
+	if ( (sGpuHudView != NULL) && (sGpuHudViewWidth > 0) && (sGpuHudViewHeight > 0) )
+	{
+		memset(&overlay, 0, sizeof(overlay));
+		overlay.textureView = sGpuHudView;
+		overlay.width = sGpuHudViewWidth;
+		overlay.height = sGpuHudViewHeight;
+		overlay.premultiplied = true;
+		overlayPtr = &overlay;
+	}
+#endif
+
+	wgpu_display.setClientSize(daW * scale, daH * scale, scale);
+
+	int daX = 0;
+	int daY = 0;
+	WGPU_GetDrawingAreaPosition(widget, &daX, &daY);
+	wgpu_display.setClientPosition(daX, daY);
+
+	if (!wgpu_display.present(fbuf, dstW, dstH, srcRects, dstRects, gapPtr, rotation, gapColor, overlayPtr))
+	{
+		WGPU_KillDisplay();
+		return false;
+	}
+
+	return true;
+}
+
+#else // !ENABLE_WGPU
+static bool WGPU_HudPrepare(int, int) { return false; }
+static bool WGPU_HudRenderFrame() { return false; }
+static void WGPU_HudCompositeScreenshot(u8 *, int, int) {}
+#endif // ENABLE_WGPU
+
 /* Drawing callback */
 static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
@@ -1575,6 +2434,17 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 		draw_params.valid = true;
 	}
 
+#if defined(ENABLE_WGPU)
+	// Present the composited frame directly through WebGPU. If the device or
+	// surface is unavailable this returns false and the Cairo path below draws
+	// the frame instead, so a missing adapter never leaves a blank window.
+	if (config.presentationWGPU && WGPU_PresentFrame(widget, window, daW, daH))
+	{
+		draw_count++;
+		return TRUE;
+	}
+#endif
+
 	GdkDrawingContext *context = gdk_window_begin_draw_frame(window, gdk_window_get_clip_region(window));
 	cairo_t* cr = gdk_drawing_context_get_cairo_context(context);
 
@@ -1615,8 +2485,78 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	return TRUE;
 }
 
-static void RedrawScreen()
+// Set when a frame has been converted into the video source buffer and is
+// waiting for the Lua GUI callback and the built-in HUD before presentation.
+static bool sFramePresentPending = false;
+
+// Attach the AGG HUD/Lua draw target to the frame in the video source buffer
+// and keep the OSD scale in sync with the current framebuffer size.
+//
+// This runs as soon as a frame lands in the source buffer, before the Lua GUI
+// callback, so that agg.*/gui.* drawing ends up in the buffer that
+// PresentFrame() filters and displays.  The built-in HUD is deliberately not
+// drawn here: the Lua callback runs first and PresentFrame() overlays the HUD
+// afterwards, matching the Windows frontend's compositing order.
+static void PrepareHudTarget()
 {
+#ifdef HAVE_LIBAGG
+	// RedrawScreen() can run during UI setup before the first Agg_init(); the
+	// target only exists once the OSD has been initialised.
+	if (aggDraw.hud == NULL)
+		return;
+
+	const int w = (int)video->GetSrcWidth();
+	const int h = (int)video->GetSrcHeight();
+	const double oldGpuScaleFactor = osd->scale;
+	const double newGpuScaleFactor = ( ((double)w / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) + ((double)h / (double)(GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0)) ) / 2.0;
+
+	if ( ((newGpuScaleFactor + 0.001) < oldGpuScaleFactor) || ((newGpuScaleFactor - 0.001) > oldGpuScaleFactor) )
+	{
+#ifdef AGG2D_USE_VECTORFONTS
+		if (vectorFontFile.size() > 0)
+		{
+			aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * newGpuScaleFactor, true);
+			osd->useVectorFonts = (newGpuScaleFactor >= 1.1f);
+		}
+		else
+		{
+			osd->useVectorFonts = false;
+		}
+#endif // AGG2D_USE_VECTORFONTS
+
+		Agg_setCustomSize(w, h);
+		osd->scale = newGpuScaleFactor;
+		Hud.rescale(oldGpuScaleFactor, newGpuScaleFactor);
+		HudSaveLayout();
+	}
+
+	// Always re-attach, even when every built-in HUD element is disabled:
+	// Lua scripts draw through aggDraw.hud unconditionally, and the source
+	// buffer is the frame that is about to be presented.
+	//
+	// The GPU HUD target records the same drawing into a texture that the
+	// WebGPU present pass samples instead of compositing here.  When it is not
+	// available (disabled, unsupported layout, no device) the AGG target keeps
+	// the CPU behaviour unchanged.
+	WGPU_HudInvalidateView();
+
+	if (WGPU_HudPrepare(w, h))
+		return;
+
+	Agg_setHudTarget(NULL);
+	aggDraw.hud->setDrawTargetDims( (u8 *)video->GetSrcBufferPtr(), w, h, w * sizeof(u32) );
+#endif // HAVE_LIBAGG
+}
+
+// Overlay the built-in HUD, run the video filter (source -> destination) and
+// ask GTK to repaint.  Called after the Lua GUI callback for a freshly
+// converted frame, or directly by RedrawScreen() for non-frame redraws.
+static void PresentFrame()
+{
+	if (!sFramePresentPending)
+		return;
+	sFramePresentPending = false;
+
 	gtk3gpuEvent->VideoFetchLock();
 	
 #ifdef HAVE_LIBAGG
@@ -1630,38 +2570,41 @@ static void RedrawScreen()
 		CommonSettings.hud.ShowRTC ||
 		HudEditorMode
 	);
-	
+
+	// The GPU recorder only carries the bitmap glyph atlas, so vector-font text
+	// would be dropped.  Draw the same bitmap text the Windows frontend uses
+	// while the GPU target is active and restore the configured mode afterwards.
+	const bool gpuHudFrame = WGPU_HudFrameActive();
+	const bool savedUseVectorFonts = osd->useVectorFonts;
+
+	if (gpuHudFrame)
+		osd->useVectorFonts = false;
+
 	if (needsHUDDisplay)
 	{
-		const int w = (int)video->GetSrcWidth();
-		const int h = (int)video->GetSrcHeight();
-		const double oldGpuScaleFactor = osd->scale;
-		const double newGpuScaleFactor = ( ((double)w / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) + ((double)h / (double)(GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0)) ) / 2.0;
-		
-		if ( ((newGpuScaleFactor + 0.001) < oldGpuScaleFactor) || ((newGpuScaleFactor - 0.001) > oldGpuScaleFactor) )
-		{
-#ifdef AGG2D_USE_VECTORFONTS
-			if (vectorFontFile.size() > 0)
-			{
-				aggDraw.hud->setVectorFont(vectorFontFile, VECTOR_FONT_BASE_SIZE * newGpuScaleFactor, true);
-				osd->useVectorFonts = (newGpuScaleFactor >= 1.1f);
-			}
-			else
-			{
-				osd->useVectorFonts = false;
-			}
-#endif // AGG2D_USE_VECTORFONTS
-			
-			Agg_setCustomSize(w, h);
-			osd->scale = newGpuScaleFactor;
-			Hud.rescale(oldGpuScaleFactor, newGpuScaleFactor);
-			HudSaveLayout();
-			aggDraw.hud->setDrawTargetDims( (u8 *)video->GetSrcBufferPtr(), w, h, w * sizeof(u32) );
-		}
-		
 		osd->update();
 		DrawHUD();
 		osd->clear();
+	}
+
+	osd->useVectorFonts = savedUseVectorFonts;
+
+	// Turn the recorded agg_osd/Lua drawing into the texture overlaid by the
+	// WebGPU present pass.  If that fails, fall back to compositing the
+	// built-in HUD into the source buffer so the frame is not left without it.
+	const bool hudRendered = WGPU_HudRenderFrame();
+
+	if (gpuHudFrame && !hudRendered)
+	{
+		Agg_setHudTarget(NULL);
+		aggDraw.hud->setDrawTargetDims( (u8 *)video->GetSrcBufferPtr(), (int)video->GetSrcWidth(), (int)video->GetSrcHeight(), (int)video->GetSrcWidth() * sizeof(u32) );
+
+		if (needsHUDDisplay)
+		{
+			osd->update();
+			DrawHUD();
+			osd->clear();
+		}
 	}
 #endif // HAVE_LIBAGG
 	
@@ -1669,6 +2612,16 @@ static void RedrawScreen()
 	gtk3gpuEvent->VideoFetchUnlock();
 	
 	gtk_widget_queue_draw(pDrawingArea);
+}
+
+static void RedrawScreen()
+{
+	PrepareHudTarget();
+	// RedrawScreen() is also used outside a frame (menu actions, resize,
+	// pause), where no DidFrameEnd() ran.  Force a present so those paths
+	// still refresh the window.
+	sFramePresentPending = true;
+	PresentFrame();
 }
 
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
@@ -1924,8 +2877,836 @@ static void MenuSave(GSimpleAction *action, GVariant *parameter, gpointer user_d
     savegame(g_variant_get_uint32(parameter));
 }
 
+#ifdef HAVE_LUA
+// ---------------------------------------------------------------------------
+// input.get() / controller.get() (M2)
+//
+// GTK delivers key events to the toplevel while it has focus, so we track them
+// here instead of polling the X server: this mirrors the Windows
+// GetKeyboardState() foreground path and works on both X11 and Wayland.
+// Mouse position and buttons are queried live from the pointer device, and the
+// cairo matrices the display path already maintains convert window coordinates
+// to NDS screen pixels (including rotation, swap and hybrid layouts).
+// ---------------------------------------------------------------------------
+static std::set<guint> sLuaPressedKeys;
+
+// Writes the input.get() name for a GDK keyval into buf.  The vocabulary is
+// the same as the Windows s_keyToName[] table: uppercase letters, "leftclick",
+// "space", "numpad0", ...
+static bool GtkLua_KeyName(guint keyval, char* buf, size_t size)
+{
+    if (keyval >= GDK_KEY_a && keyval <= GDK_KEY_z)
+    {
+        snprintf(buf, size, "%c", (int)('A' + (keyval - GDK_KEY_a)));
+        return true;
+    }
+    if (keyval >= GDK_KEY_0 && keyval <= GDK_KEY_9)
+    {
+        snprintf(buf, size, "%c", (int)('0' + (keyval - GDK_KEY_0)));
+        return true;
+    }
+    // Ctrl+letter can arrive as a control character instead of the keyval.
+    if (keyval >= 0x01 && keyval <= 0x1A)
+    {
+        snprintf(buf, size, "%c", (int)('A' + (keyval - 0x01)));
+        return true;
+    }
+    if (keyval >= GDK_KEY_KP_0 && keyval <= GDK_KEY_KP_9)
+    {
+        snprintf(buf, size, "numpad%c", (int)('0' + (keyval - GDK_KEY_KP_0)));
+        return true;
+    }
+    if (keyval >= GDK_KEY_F1 && keyval <= GDK_KEY_F24)
+    {
+        snprintf(buf, size, "F%d", (int)(keyval - GDK_KEY_F1) + 1);
+        return true;
+    }
+
+    const char* name = NULL;
+    switch (keyval)
+    {
+        case GDK_KEY_BackSpace: name = "backspace"; break;
+        case GDK_KEY_Tab: case GDK_KEY_ISO_Left_Tab: name = "tab"; break;
+        case GDK_KEY_Return: case GDK_KEY_KP_Enter: name = "enter"; break;
+        case GDK_KEY_Shift_L: case GDK_KEY_Shift_R: name = "shift"; break;
+        case GDK_KEY_Control_L: case GDK_KEY_Control_R: name = "control"; break;
+        case GDK_KEY_Alt_L: case GDK_KEY_Alt_R: name = "alt"; break;
+        case GDK_KEY_Pause: case GDK_KEY_Break: name = "pause"; break;
+        case GDK_KEY_Caps_Lock: name = "capslock"; break;
+        case GDK_KEY_Escape: name = "escape"; break;
+        case GDK_KEY_space: name = "space"; break;
+        case GDK_KEY_Page_Up: case GDK_KEY_KP_Page_Up: name = "pageup"; break;
+        case GDK_KEY_Page_Down: case GDK_KEY_KP_Page_Down: name = "pagedown"; break;
+        case GDK_KEY_End: case GDK_KEY_KP_End: name = "end"; break;
+        case GDK_KEY_Home: case GDK_KEY_KP_Home: name = "home"; break;
+        case GDK_KEY_Left: case GDK_KEY_KP_Left: name = "left"; break;
+        case GDK_KEY_Up: case GDK_KEY_KP_Up: name = "up"; break;
+        case GDK_KEY_Right: case GDK_KEY_KP_Right: name = "right"; break;
+        case GDK_KEY_Down: case GDK_KEY_KP_Down: name = "down"; break;
+        case GDK_KEY_Insert: case GDK_KEY_KP_Insert: name = "insert"; break;
+        case GDK_KEY_Delete: case GDK_KEY_KP_Delete: name = "delete"; break;
+        case GDK_KEY_KP_Multiply: name = "numpad*"; break;
+        case GDK_KEY_KP_Add: name = "numpad+"; break;
+        case GDK_KEY_KP_Subtract: name = "numpad-"; break;
+        case GDK_KEY_KP_Decimal: name = "numpad."; break;
+        case GDK_KEY_KP_Divide: name = "numpad/"; break;
+        case GDK_KEY_Num_Lock: name = "numlock"; break;
+        case GDK_KEY_Scroll_Lock: name = "scrolllock"; break;
+        case GDK_KEY_semicolon: name = "semicolon"; break;
+        case GDK_KEY_plus: case GDK_KEY_equal: name = "plus"; break;
+        case GDK_KEY_comma: name = "comma"; break;
+        case GDK_KEY_minus: name = "minus"; break;
+        case GDK_KEY_period: name = "period"; break;
+        case GDK_KEY_slash: name = "slash"; break;
+        case GDK_KEY_grave: case GDK_KEY_asciitilde: name = "tilde"; break;
+        case GDK_KEY_bracketleft: case GDK_KEY_braceleft: name = "leftbracket"; break;
+        case GDK_KEY_backslash: case GDK_KEY_bar: name = "backslash"; break;
+        case GDK_KEY_bracketright: case GDK_KEY_braceright: name = "rightbracket"; break;
+        case GDK_KEY_apostrophe: case GDK_KEY_quotedbl: name = "quote"; break;
+        default: break;
+    }
+
+    if (name == NULL)
+        return false;
+    snprintf(buf, size, "%s", name);
+    return true;
+}
+
+// Convert a drawing-area position to touch-screen-relative NDS pixels.
+// Returns false when the point is outside both screens.
+static bool GtkLua_PointerToScreen(gint wx, gint wy, int* outX, int* outY)
+{
+    if (!draw_params.valid)
+        return false;
+
+    const bool hybrid = ((nds_screen.orientation == ORIENT_HYBRID_EQUAL) ||
+                         (nds_screen.orientation == ORIENT_HYBRID_VERTICAL)) &&
+                        (draw_params.hybridBigScreenScale > 0.0);
+    double devX, devY;
+
+    // Main (upper) screen.  Windows reports it as negative y, relative to the
+    // touch screen.
+    if (nds_screen.orientation != ORIENT_SINGLE || !nds_screen.swap)
+    {
+        devX = wx; devY = wy;
+        cairo_matrix_transform_point(&nds_screen.topscreen_matrix, &devX, &devY);
+        if (devX >= 0 && devX < 256 && devY >= 0 && devY < 192)
+        {
+            *outX = (int)devX;
+            *outY = (int)devY - 192;
+            return true;
+        }
+    }
+    if (hybrid && !nds_screen.swap)
+    {
+        devX = wx; devY = wy;
+        cairo_matrix_transform_point(&nds_screen.topscreen_matrix_hybrid, &devX, &devY);
+        if (devX >= 0 && devX < 256 && devY >= 0 && devY < 192)
+        {
+            *outX = (int)devX;
+            *outY = (int)devY - 192;
+            return true;
+        }
+    }
+
+    // Touch (lower) screen.
+    if (nds_screen.orientation != ORIENT_SINGLE || nds_screen.swap)
+    {
+        devX = wx; devY = wy;
+        cairo_matrix_transform_point(&nds_screen.touch_matrix, &devX, &devY);
+        if (devX >= 0 && devX < 256 && devY >= 0 && devY < 192)
+        {
+            *outX = (int)devX;
+            *outY = (int)devY;
+            return true;
+        }
+    }
+    if (hybrid && nds_screen.swap)
+    {
+        devX = wx; devY = wy;
+        cairo_matrix_transform_point(&nds_screen.touch_matrix_hybrid, &devX, &devY);
+        if (devX >= 0 && devX < 256 && devY >= 0 && devY < 192)
+        {
+            *outX = (int)devX;
+            *outY = (int)devY;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool GtkLua_GetInputStatus(LuaInputStatus* out)
+{
+    if (out == NULL)
+        return false;
+    memset(out, 0, sizeof(*out));
+
+    GdkWindow* window = (pDrawingArea != NULL) ? gtk_widget_get_window(pDrawingArea) : NULL;
+    GdkDevice* pointer = NULL;
+    GdkDisplay* display = gdk_display_get_default();
+    if (display != NULL)
+    {
+        GdkSeat* seat = gdk_display_get_default_seat(display);
+        if (seat != NULL)
+            pointer = gdk_seat_get_pointer(seat);
+    }
+
+    gint wx = 0, wy = 0;
+    GdkModifierType mask = (GdkModifierType)0;
+    if (window != NULL && pointer != NULL)
+        gdk_window_get_device_position(window, pointer, &wx, &wy, &mask);
+
+    // Mouse buttons share the keyboard namespace on Windows.
+    if (mask & GDK_BUTTON1_MASK)
+        snprintf(out->keyNames[out->keyCount++], LUA_INPUT_KEY_NAME_SIZE, "leftclick");
+    if (mask & GDK_BUTTON3_MASK)
+        snprintf(out->keyNames[out->keyCount++], LUA_INPUT_KEY_NAME_SIZE, "rightclick");
+    if (mask & GDK_BUTTON2_MASK)
+        snprintf(out->keyNames[out->keyCount++], LUA_INPUT_KEY_NAME_SIZE, "middleclick");
+
+    for (std::set<guint>::const_iterator it = sLuaPressedKeys.begin();
+         it != sLuaPressedKeys.end() && out->keyCount < LUA_INPUT_MAX_KEYS; ++it)
+    {
+        char name[LUA_INPUT_KEY_NAME_SIZE];
+        if (!GtkLua_KeyName(*it, name, sizeof(name)))
+            continue;
+
+        bool duplicate = false;
+        for (int i = 0; i < out->keyCount; i++)
+        {
+            if (strcmp(out->keyNames[i], name) == 0)
+            {
+                duplicate = true;
+                break;
+            }
+        }
+        if (!duplicate)
+            snprintf(out->keyNames[out->keyCount++], LUA_INPUT_KEY_NAME_SIZE, "%s", name);
+    }
+
+    if (window != NULL && pointer != NULL && GtkLua_PointerToScreen(wx, wy, &out->mouseX, &out->mouseY))
+        out->mouseValid = true;
+
+    return true;
+}
+
+static bool GtkLua_GetControllerStatus(unsigned int joystickID, bool returnDiagonals, LuaControllerStatus* out)
+{
+    if (out == NULL)
+        return false;
+    memset(out, 0, sizeof(*out));
+
+    struct joystick_raw_state raw;
+    if (!get_joystick_raw_state(joystickID, &raw))
+        return false;
+
+    // SDL hat bits -> the four Windows dpad directions.  Like the Windows
+    // JOY_RETURNPOV code, a diagonal reports nothing unless the script asked
+    // for diagonals.
+    if (raw.hasHat && raw.hat >= 0)
+    {
+        const int count = ((raw.hat & SDL_HAT_UP) ? 1 : 0) +
+                          ((raw.hat & SDL_HAT_RIGHT) ? 1 : 0) +
+                          ((raw.hat & SDL_HAT_DOWN) ? 1 : 0) +
+                          ((raw.hat & SDL_HAT_LEFT) ? 1 : 0);
+        if (count == 1 || returnDiagonals)
+        {
+            out->dpad[0] = (raw.hat & SDL_HAT_UP) != 0;
+            out->dpad[1] = (raw.hat & SDL_HAT_RIGHT) != 0;
+            out->dpad[2] = (raw.hat & SDL_HAT_DOWN) != 0;
+            out->dpad[3] = (raw.hat & SDL_HAT_LEFT) != 0;
+        }
+    }
+
+    out->buttonCount = raw.buttonCount;
+    for (int i = 0; i < raw.buttonCount; i++)
+        out->buttons[i] = raw.buttons[i];
+
+    out->axisCount = raw.axisCount;
+    for (int i = 0; i < raw.axisCount; i++)
+        out->axes[i] = raw.axes[i];
+
+    return true;
+}
+
+static gboolean LuaWindowFocusOut(GtkWidget *widget, GdkEventFocus *event, gpointer data)
+{
+    // GTK does not deliver key releases to an unfocused window; drop the cache
+    // so a script does not see a key as held forever.
+    sLuaPressedKeys.clear();
+    return FALSE;
+}
+#endif // HAVE_LUA
+
+#ifdef HAVE_LUA
+// ---------------------------------------------------------------------------
+// emu.addmenu() / emu.setmenuiteminfo() / emu.registermenustart().
+//
+// GTK3 has no imperative menu API, so the script's menu tree is kept here and
+// rendered into GMenu models.  Each leaf item gets its own stateful GAction:
+// a shared action could not carry per-item enabled/checked state.  GMenu has no
+// separator item, so a separator starts a new section; GtkMenuTracker draws the
+// section boundary as a separator.
+//
+// Everything runs on the GTK main thread, which is also the emulation/Lua
+// thread, so no locking is needed.  Clicks are still queued and drained at a
+// frame boundary: the action callback can fire from LuaPumpEvents() while a
+// script is executing, and re-entering that lua_State is not safe.
+// ---------------------------------------------------------------------------
+enum
+{
+    GTK_LUA_MENU_ITEM_FIRST = 40000,
+    GTK_LUA_MENU_ITEM_COUNT = 512
+};
+
+struct GtkLuaMenu;
+
+struct GtkLuaMenuEntry
+{
+    int id;
+    std::string title;
+    bool separator;
+    bool checkable; // became a toggle item once checked=true was requested
+    bool checked;
+    GtkLuaMenu* submenu;
+};
+
+struct GtkLuaAction
+{
+    GSimpleAction* action;
+    bool stateful;
+};
+
+struct GtkLuaMenu
+{
+    int id;
+    std::string title;
+    bool topLevel;
+    bool appended;
+    GMenu* model;
+    std::vector<GtkLuaMenuEntry> entries;
+};
+
+static GtkLuaMenu sLuaMenuRoot;
+static std::map<int, GtkLuaMenu*> sLuaMenus;
+static std::map<int, GtkLuaMenu*> sLuaEntryParent;
+static std::map<int, GtkLuaAction> sLuaActions;
+static bool sLuaMenuItemUsed[GTK_LUA_MENU_ITEM_COUNT];
+static GMenu* sLuaAppMenubar = NULL;
+static bool sLuaMenuInitPending = false;
+static bool sLuaMenuTimerStarted = false;
+static std::vector<int> sLuaPendingMenuClicks;
+
+static void GtkLua_DrainMenuCalls();
+static void GtkLua_RebuildAll();
+static void GtkLua_MenuItemActivated(GSimpleAction* action, GVariant* parameter, gpointer user_data);
+
+// GMenu labels use '_' for mnemonics; the Windows/macOS Lua API treats the
+// title as literal text, so escape it.
+static std::string GtkLua_EscapeLabel(const std::string& text)
+{
+    std::string out;
+    out.reserve(text.size() + 8);
+    for (size_t i = 0; i < text.size(); i++)
+    {
+        if (text[i] == '_')
+            out += "__";
+        else
+            out += text[i];
+    }
+    return out;
+}
+
+static GtkLuaMenuEntry* GtkLua_FindEntry(GtkLuaMenu* menu, int id)
+{
+    if (menu == NULL)
+        return NULL;
+    for (size_t i = 0; i < menu->entries.size(); i++)
+    {
+        if (menu->entries[i].id == id)
+            return &menu->entries[i];
+    }
+    return NULL;
+}
+
+static GSimpleAction* GtkLua_EnsureAction(int id, bool checkable, bool checked)
+{
+    std::map<int, GtkLuaAction>::iterator it = sLuaActions.find(id);
+    if (it != sLuaActions.end() && it->second.stateful == checkable)
+    {
+        if (checkable)
+            g_simple_action_set_state(it->second.action, g_variant_new_boolean(checked ? TRUE : FALSE));
+        return it->second.action;
+    }
+    if (pApp == NULL)
+        return NULL;
+
+    char name[32];
+    snprintf(name, sizeof(name), "lua%d", id);
+
+    if (it != sLuaActions.end())
+    {
+        // The item changed between a plain item and a toggle item; GtkMenuTracker
+        // picks the widget type (GtkMenuItem vs GtkCheckMenuItem) from the action,
+        // so replace it instead of keeping a checkbox on every Lua item.
+        g_action_map_remove_action(G_ACTION_MAP(pApp), name);
+        sLuaActions.erase(it);
+    }
+
+    GSimpleAction* action = checkable
+        ? g_simple_action_new_stateful(name, NULL, g_variant_new_boolean(checked ? TRUE : FALSE))
+        : g_simple_action_new(name, NULL);
+    g_signal_connect(action, "activate", G_CALLBACK(GtkLua_MenuItemActivated),
+                     GINT_TO_POINTER(id));
+    // The action map takes its own reference; we only need the borrowed
+    // pointer for set_enabled/set_state until the item is freed.
+    g_action_map_add_action(G_ACTION_MAP(pApp), G_ACTION(action));
+    g_object_unref(action);
+
+    GtkLuaAction entry;
+    entry.action = action;
+    entry.stateful = checkable;
+    sLuaActions[id] = entry;
+    return action;
+}
+
+static void GtkLua_MenuItemActivated(GSimpleAction* action, GVariant* parameter, gpointer user_data)
+{
+    sLuaPendingMenuClicks.push_back(GPOINTER_TO_INT(user_data));
+    if (!AnyLuaRunning())
+        GtkLua_DrainMenuCalls();
+}
+
+static void GtkLua_ClearModel(GMenu* model)
+{
+    while (g_menu_model_get_n_items(G_MENU_MODEL(model)) > 0)
+        g_menu_remove(model, 0);
+}
+
+static void GtkLua_RebuildMenu(GtkLuaMenu* menu)
+{
+    if (menu == NULL || menu->model == NULL)
+        return;
+
+    GtkLua_ClearModel(menu->model);
+
+    GMenu* section = g_menu_new();
+    bool sectionHasItems = false;
+
+    for (size_t i = 0; i < menu->entries.size(); i++)
+    {
+        GtkLuaMenuEntry& entry = menu->entries[i];
+
+        if (entry.separator)
+        {
+            // A section boundary is how GtkMenuTracker represents a separator.
+            if (sectionHasItems)
+            {
+                g_menu_append_section(menu->model, NULL, G_MENU_MODEL(section));
+                g_object_unref(section);
+                section = g_menu_new();
+                sectionHasItems = false;
+            }
+            continue;
+        }
+
+        std::string label = GtkLua_EscapeLabel(entry.title);
+        GMenuItem* item = g_menu_item_new(label.c_str(), NULL);
+        if (entry.submenu != NULL)
+        {
+            if (entry.submenu->model == NULL)
+                entry.submenu->model = g_menu_new();
+            g_menu_item_set_submenu(item, G_MENU_MODEL(entry.submenu->model));
+        }
+        else if (GtkLua_EnsureAction(entry.id, entry.checkable, entry.checked) != NULL)
+        {
+            char actionName[32];
+            snprintf(actionName, sizeof(actionName), "app.lua%d", entry.id);
+            g_menu_item_set_action_and_target_value(item, actionName, NULL);
+        }
+
+        g_menu_append_item(section, item);
+        g_object_unref(item);
+        sectionHasItems = true;
+    }
+
+    if (sectionHasItems)
+        g_menu_append_section(menu->model, NULL, G_MENU_MODEL(section));
+    g_object_unref(section);
+}
+
+static void GtkLua_RemoveTopLevelFromBar(GtkLuaMenu* menu)
+{
+    if (sLuaAppMenubar == NULL || menu == NULL || menu->model == NULL)
+        return;
+
+    const int count = (int)g_menu_model_get_n_items(G_MENU_MODEL(sLuaAppMenubar));
+    for (int i = count - 1; i >= 0; i--)
+    {
+        GMenuModel* link = g_menu_model_get_item_link(
+            G_MENU_MODEL(sLuaAppMenubar), i, G_MENU_LINK_SUBMENU);
+        const bool match = (link == G_MENU_MODEL(menu->model));
+        if (link != NULL)
+            g_object_unref(link);
+        if (match)
+        {
+            g_menu_remove(sLuaAppMenubar, i);
+            break;
+        }
+    }
+    menu->appended = false;
+}
+
+static void GtkLua_DestroyMenu(GtkLuaMenu* menu)
+{
+    if (menu == NULL)
+        return;
+
+    for (size_t i = 0; i < menu->entries.size(); i++)
+        GtkLua_DestroyMenu(menu->entries[i].submenu);
+    menu->entries.clear();
+
+    if (menu->topLevel)
+        GtkLua_RemoveTopLevelFromBar(menu);
+    if (menu->model != NULL)
+    {
+        g_object_unref(menu->model);
+        menu->model = NULL;
+    }
+    if (menu->id != 0)
+        sLuaMenus.erase(menu->id);
+    delete menu;
+}
+
+static void GtkLua_RebuildAll()
+{
+    // Rebuild every model first.  A parent references its child's GMenu object,
+    // which stays the same across rebuilds, so order does not matter.
+    for (std::map<int, GtkLuaMenu*>::iterator it = sLuaMenus.begin();
+         it != sLuaMenus.end(); ++it)
+    {
+        GtkLua_RebuildMenu(it->second);
+    }
+
+    if (sLuaAppMenubar == NULL)
+        return;
+
+    // Add top-level menus that are not in the bar yet, in tree order.  Menus
+    // already in the bar keep their position while their model updates.
+    for (size_t i = 0; i < sLuaMenuRoot.entries.size(); i++)
+    {
+        GtkLuaMenu* menu = sLuaMenuRoot.entries[i].submenu;
+        if (menu == NULL || menu->appended)
+            continue;
+        std::string label = GtkLua_EscapeLabel(menu->title);
+        g_menu_append_submenu(sLuaAppMenubar, label.c_str(), G_MENU_MODEL(menu->model));
+        menu->appended = true;
+    }
+}
+
+static int GtkLua_AllocItemID()
+{
+    for (int i = 0; i < GTK_LUA_MENU_ITEM_COUNT; i++)
+    {
+        if (!sLuaMenuItemUsed[i])
+        {
+            sLuaMenuItemUsed[i] = true;
+            return GTK_LUA_MENU_ITEM_FIRST + i;
+        }
+    }
+    return -1;
+}
+
+static void GtkLua_FreeItemID(int itemID)
+{
+    const int index = itemID - GTK_LUA_MENU_ITEM_FIRST;
+    if (index >= 0 && index < GTK_LUA_MENU_ITEM_COUNT)
+        sLuaMenuItemUsed[index] = false;
+
+    std::map<int, GtkLuaAction>::iterator it = sLuaActions.find(itemID);
+    if (it != sLuaActions.end())
+    {
+        if (pApp != NULL)
+        {
+            char name[32];
+            snprintf(name, sizeof(name), "lua%d", itemID);
+            g_action_map_remove_action(G_ACTION_MAP(pApp), name);
+        }
+        sLuaActions.erase(it);
+    }
+    sLuaEntryParent.erase(itemID);
+}
+
+static bool GtkLua_IsOwnedItemID(int itemID)
+{
+    const int index = itemID - GTK_LUA_MENU_ITEM_FIRST;
+    return index >= 0 && index < GTK_LUA_MENU_ITEM_COUNT && sLuaMenuItemUsed[index];
+}
+
+static LuaMenuHandle GtkLua_RootMenu()
+{
+    return &sLuaMenuRoot;
+}
+
+static LuaMenuHandle GtkLua_FindSubmenu(LuaMenuHandle handle, const char* title, int* outItemID)
+{
+    if (handle == NULL || title == NULL)
+        return NULL;
+
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    for (size_t i = 0; i < menu->entries.size(); i++)
+    {
+        GtkLuaMenuEntry& entry = menu->entries[i];
+        if (entry.submenu != NULL && entry.title == title)
+        {
+            if (outItemID != NULL)
+                *outItemID = entry.id;
+            return entry.submenu;
+        }
+    }
+    return NULL;
+}
+
+static LuaMenuHandle GtkLua_AddSubmenu(LuaMenuHandle parentHandle, const char* title, int itemID)
+{
+    if (parentHandle == NULL || title == NULL)
+        return NULL;
+
+    GtkLuaMenu* parent = static_cast<GtkLuaMenu*>(parentHandle);
+    GtkLuaMenu* menu = new GtkLuaMenu();
+    menu->id = itemID;
+    menu->title = title;
+    menu->topLevel = (parent == &sLuaMenuRoot);
+    menu->appended = false;
+    menu->model = g_menu_new();
+
+    GtkLuaMenuEntry entry;
+    entry.id = itemID;
+    entry.title = title;
+    entry.separator = false;
+    entry.checkable = false;
+    entry.checked = false;
+    entry.submenu = menu;
+    parent->entries.push_back(entry);
+
+    sLuaMenus[itemID] = menu;
+    sLuaEntryParent[itemID] = parent;
+    GtkLua_RebuildAll();
+    return menu;
+}
+
+static bool GtkLua_AddItem(LuaMenuHandle handle, int itemID, const char* title)
+{
+    if (handle == NULL || title == NULL)
+        return false;
+
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    GtkLuaMenuEntry entry;
+    entry.id = itemID;
+    entry.title = title;
+    entry.separator = false;
+    entry.checkable = false;
+    entry.checked = false;
+    entry.submenu = NULL;
+    menu->entries.push_back(entry);
+    sLuaEntryParent[itemID] = menu;
+    GtkLua_RebuildAll();
+    return true;
+}
+
+static bool GtkLua_AddSeparator(LuaMenuHandle handle, int itemID)
+{
+    if (handle == NULL)
+        return false;
+
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    GtkLuaMenuEntry entry;
+    entry.id = itemID;
+    entry.separator = true;
+    entry.checkable = false;
+    entry.checked = false;
+    entry.submenu = NULL;
+    menu->entries.push_back(entry);
+    sLuaEntryParent[itemID] = menu;
+    GtkLua_RebuildAll();
+    return true;
+}
+
+static void GtkLua_RemoveItem(LuaMenuHandle handle, int itemID)
+{
+    if (handle == NULL)
+        return;
+
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    for (size_t i = 0; i < menu->entries.size(); i++)
+    {
+        if (menu->entries[i].id != itemID)
+            continue;
+
+        GtkLuaMenu* child = menu->entries[i].submenu;
+        menu->entries.erase(menu->entries.begin() + i);
+        sLuaEntryParent.erase(itemID);
+        if (child != NULL)
+            GtkLua_DestroyMenu(child);
+        GtkLua_RebuildAll();
+        return;
+    }
+}
+
+static bool GtkLua_IsMenuEmpty(LuaMenuHandle handle)
+{
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    return menu == NULL || menu->entries.empty();
+}
+
+static void GtkLua_SetEnabled(LuaMenuHandle handle, int itemID, bool enabled)
+{
+    (void)handle;
+    std::map<int, GtkLuaAction>::iterator it = sLuaActions.find(itemID);
+    if (it != sLuaActions.end())
+        g_simple_action_set_enabled(it->second.action, enabled ? TRUE : FALSE);
+}
+
+static void GtkLua_SetChecked(LuaMenuHandle handle, int itemID, bool checked)
+{
+    (void)handle;
+
+    GtkLuaMenuEntry* entry = NULL;
+    std::map<int, GtkLuaMenu*>::iterator pit = sLuaEntryParent.find(itemID);
+    if (pit != sLuaEntryParent.end())
+        entry = GtkLua_FindEntry(pit->second, itemID);
+
+    if (entry == NULL)
+        return;
+
+    entry->checked = checked;
+
+    // The first explicit "checked" field turns the item into a toggle item,
+    // even when the value is false: the script has declared that this entry
+    // participates in check state, and doing it on the first refresh (rather
+    // than the first true value) keeps later refreshes from rebuilding the
+    // model while the menu is open.
+    if (!entry->checkable)
+    {
+        entry->checkable = true;
+        GtkLua_RebuildAll();
+        return;
+    }
+
+    std::map<int, GtkLuaAction>::iterator it = sLuaActions.find(itemID);
+    if (it != sLuaActions.end())
+        g_simple_action_set_state(it->second.action, g_variant_new_boolean(checked ? TRUE : FALSE));
+}
+
+static void GtkLua_SetTitle(LuaMenuHandle handle, int itemID, const char* title)
+{
+    if (title == NULL)
+        return;
+
+    GtkLuaMenu* menu = static_cast<GtkLuaMenu*>(handle);
+    GtkLuaMenuEntry* entry = GtkLua_FindEntry(menu, itemID);
+    if (entry == NULL)
+    {
+        // The handle can be stale if another script owns the same submenu;
+        // fall back to the parent recorded when the item was created.
+        std::map<int, GtkLuaMenu*>::iterator it = sLuaEntryParent.find(itemID);
+        if (it != sLuaEntryParent.end())
+            entry = GtkLua_FindEntry(it->second, itemID);
+    }
+    if (entry != NULL)
+    {
+        if (entry->title == title)
+            return;
+        entry->title = title;
+        GtkLua_RebuildAll();
+    }
+}
+
+static void GtkLua_QueueMenuInit()
+{
+    sLuaMenuInitPending = true;
+}
+
+static void GtkLua_DrainMenuCalls()
+{
+    // Snapshot first: a handler can queue more clicks or stop scripts.
+    std::vector<int> pending;
+    pending.swap(sLuaPendingMenuClicks);
+
+    if (sLuaMenuInitPending)
+    {
+        sLuaMenuInitPending = false;
+        // Do not rebuild the models here: setmenuiteminfo() updates the
+        // per-item actions in place, and rebuilding while the menu is open
+        // would drop the hover highlight and close an open submenu.  The tree
+        // hooks (add/remove/title) rebuild themselves when they change the
+        // model.
+        CallRegisteredLuaFunctions(LUACALL_ONINITMENU);
+    }
+
+    for (size_t i = 0; i < pending.size(); i++)
+        CallRegisteredLuaMenuHandlers((PlatformMenuItem)pending[i]);
+}
+
+// GMenuModel has no "about to show" signal, so refresh the menu state on a
+// short timer (the closest GTK equivalent of WM_INITMENUPOPUP) and before the
+// next frame when a script is running.  Only marks the request when Lua is
+// executing; the frame loop then runs it at a safe point.
+static gboolean GtkLua_MenuRefreshTimer(gpointer data)
+{
+    (void)data;
+    if (sLuaMenuRoot.entries.empty() && sLuaPendingMenuClicks.empty())
+        return G_SOURCE_CONTINUE;
+
+    sLuaMenuInitPending = true;
+    if (!AnyLuaRunning())
+        GtkLua_DrainMenuCalls();
+    return G_SOURCE_CONTINUE;
+}
+
+static void GtkLua_SetAppMenubar(GMenu* menubar)
+{
+    if (sLuaAppMenubar != NULL)
+        g_object_unref(sLuaAppMenubar);
+    sLuaAppMenubar = menubar;
+    if (sLuaAppMenubar != NULL)
+        g_object_ref(sLuaAppMenubar);
+
+    if (!sLuaMenuTimerStarted)
+    {
+        sLuaMenuTimerStarted = true;
+        g_timeout_add(250, GtkLua_MenuRefreshTimer, NULL);
+    }
+
+    GtkLua_RebuildAll();
+}
+
+static const LuaMenuHooks sGtkLuaMenuHooks = {
+    GtkLua_AllocItemID,
+    GtkLua_FreeItemID,
+    GtkLua_IsOwnedItemID,
+    GtkLua_RootMenu,
+    GtkLua_FindSubmenu,
+    GtkLua_AddSubmenu,
+    GtkLua_AddItem,
+    GtkLua_AddSeparator,
+    GtkLua_RemoveItem,
+    GtkLua_IsMenuEmpty,
+    GtkLua_SetEnabled,
+    GtkLua_SetChecked,
+    GtkLua_SetTitle,
+    GtkLua_QueueMenuInit
+};
+#endif // HAVE_LUA
+
 static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
+#ifdef HAVE_LUA
+  // Record every key, not just the ones bound to a DS button: input.get()
+  // reports raw keyboard state.
+  sLuaPressedKeys.insert(e->keyval);
+#endif
   guint mask;
   mask = gtk_accelerator_get_default_mod_mask ();
   if( (e->state & mask) == 0){
@@ -1947,6 +3728,9 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
+#ifdef HAVE_LUA
+  sLuaPressedKeys.erase(e->keyval);
+#endif
   u16 Key = lookup_key(e->keyval);
   RM_KEY( keys_latch, Key );
   return 1;
@@ -1958,11 +3742,11 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 static int ConvertSDLVolumeToSPU(int sdl_volume)
 {
 	int tmp = sdl_volume * 100;
-	if (tmp % SDL_MIX_MAXVOLUME == 0)
+	if (tmp % SNDSDL_MAX_VOLUME == 0)
 	{
-		return tmp/SDL_MIX_MAXVOLUME;
+		return tmp/SNDSDL_MAX_VOLUME;
 	}
-	return (tmp/SDL_MIX_MAXVOLUME)+1;
+	return (tmp/SNDSDL_MAX_VOLUME)+1;
 }
 
 static void CallbackSetAudioVolume(GtkWidget *scale, gpointer data)
@@ -2317,12 +4101,32 @@ static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, g
 }
 
 
+// The GPU filters are WGSL chains run by the WebGPU presenter, so the choice is
+// only meaningful while that presentation is selected. The value is kept when
+// software presentation is chosen, exactly as the Windows frontend does.
+#if defined(ENABLE_WGPU)
+static void PresentationComboChanged(GtkComboBox *combo, gpointer user_data)
+{
+	const char *id = gtk_combo_box_get_active_id(combo);
+	gtk_widget_set_sensitive(GTK_WIDGET(user_data), (id != NULL) && (strcmp(id, "software") != 0));
+}
+#endif
+
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
 	GtkDialog *dialog;
 	GtkGrid *wGrid;
-	GtkComboBox *coreCombo, *wScale, *wMultisample;
+	GtkComboBox *coreCombo, *wScale;
 	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
 	GtkSpinButton *wGPUScale;
+	GtkLabel *wMultisampleLabel;
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
+	GtkComboBox *wMultisample;
+#endif
+#if defined(ENABLE_WGPU)
+	GtkComboBox *wPresentation, *wGPUFilter;
+#endif
+
+	Build3DRendererList();
 
 	GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/graphics.ui");
 	dialog = GTK_DIALOG(gtk_builder_get_object(builder, "dialog"));
@@ -2332,27 +4136,124 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	wGPUScale = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "gpuscale"));
 	gtk_spin_button_set_range(wGPUScale, GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX);
 	gtk_spin_button_set_increments(wGPUScale, 0.5, 1.0);
+	wMultisampleLabel = GTK_LABEL(gtk_builder_get_object(builder, "multisample_label"));
+	// Only name the backends that are actually compiled into this build.
+#if (defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)) && defined(ENABLE_WGPU)
+	gtk_label_set_text(wMultisampleLabel, "Multisample Antialiasing (OpenGL/WebGPU):");
+#elif defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
+	gtk_label_set_text(wMultisampleLabel, "Multisample Antialiasing (OpenGL):");
+#elif defined(ENABLE_WGPU)
+	gtk_label_set_text(wMultisampleLabel, "Multisample Antialiasing (WebGPU):");
+#else
+	gtk_label_set_text(wMultisampleLabel, "Multisample Antialiasing:");
+#endif
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
 	wMultisample = GTK_COMBO_BOX(gtk_builder_get_object(builder, "multisample"));
+#endif
 	wPosterize = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "posterize"));
 	wSmoothing = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "smoothing"));
 	wHCInterpolate = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "hc_interpolate"));
+#if defined(ENABLE_WGPU)
+	wPresentation = GTK_COMBO_BOX(gtk_builder_get_object(builder, "presentation_combo"));
+	wGPUFilter = GTK_COMBO_BOX(gtk_builder_get_object(builder, "gpu_filter_combo"));
+#endif
 	g_object_unref(builder);
 
-#if defined(ENABLE_OPENGL_ES)
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 4);
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 3);
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 2);
-#elif defined(ENABLE_OPENGL_STANDARD)
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 5);
-#else
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 5);
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 4);
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 3);
-	gtk_combo_box_text_remove(GTK_COMBO_BOX_TEXT(coreCombo), 2);
+	// Populate the combo from the runtime renderer list so that the WebGPU
+	// entries ("WebGPU - Vulkan", ...) appear next to the built-in cores.
+	GtkComboBoxText *coreComboText = GTK_COMBO_BOX_TEXT(coreCombo);
+	gtk_combo_box_text_remove_all(coreComboText);
+	for (int i = 0; (i < GPU3D_MAX_COUNT) && (core3DList[i] != NULL); i++)
+	{
+		gtk_combo_box_text_append_text(coreComboText, core3DList[i]->name);
+	}
+
+#if !defined(ENABLE_WGPU)
+	// Screen presentation and GPU filters only exist on the WebGPU path.
+	gtk_grid_remove_row(wGrid, 7);
+	gtk_grid_remove_row(wGrid, 6);
+#endif
+#if !defined(ENABLE_OPENGL_STANDARD) && !defined(ENABLE_OPENGL_ES) && !defined(ENABLE_WGPU)
 	gtk_grid_remove_row(wGrid, 5);
-	gtk_grid_remove_row(wGrid, 4);
 #endif
 	gtk_combo_box_set_active(coreCombo, cur3DCore);
+
+#if defined(ENABLE_WGPU)
+	// Screen presentation. Like the 3D renderer list, offer one entry per
+	// usable WebGPU backend ("WebGPU - Vulkan", ...) next to the software
+	// path. The id of a WebGPU item is its WGPUInstanceBackend mask, which is
+	// what WGPULinuxDisplay pins the present instance to.
+	GtkComboBoxText *presentationComboText = GTK_COMBO_BOX_TEXT(wPresentation);
+	gtk_combo_box_text_remove_all(presentationComboText);
+
+	const size_t presentationBackendCount = WGPURender_GetBackendCount();
+
+	if (presentationBackendCount > 0)
+	{
+		for (size_t i = 0; i < presentationBackendCount; i++)
+		{
+			char id[32];
+			char label[64];
+			g_snprintf(id, sizeof(id), "%u", (unsigned)WGPURender_GetBackendMask(i));
+			g_snprintf(label, sizeof(label), "WebGPU - %s", WGPURender_GetBackendLabel(i));
+			gtk_combo_box_text_append(presentationComboText, id, label);
+		}
+	}
+	else
+	{
+		char id[32];
+		g_snprintf(id, sizeof(id), "%u", (unsigned)WGPU_PresentationBackendMask());
+		gtk_combo_box_text_append(presentationComboText, id, "WebGPU");
+	}
+
+	gtk_combo_box_text_append(presentationComboText, "software", "Software (Cairo)");
+
+	if (config.presentationWGPU)
+	{
+		char activePresentationId[32];
+		g_snprintf(activePresentationId, sizeof(activePresentationId), "%u", (unsigned)WGPU_PresentationBackendMask());
+
+		// The configured backend may have disappeared (another machine, a
+		// driver change); then the first WebGPU entry is the fallback.
+		if (!gtk_combo_box_set_active_id(wPresentation, activePresentationId))
+		{
+			gtk_combo_box_set_active(wPresentation, 0);
+		}
+	}
+	else
+	{
+		gtk_combo_box_set_active_id(wPresentation, "software");
+	}
+
+	// Populate the GPU filters from the chain table, so a filter added there
+	// shows up here without a second list to keep in step. The id of each item
+	// is its WGPUPresentUpscaler value.
+	GtkComboBoxText *filterComboText = GTK_COMBO_BOX_TEXT(wGPUFilter);
+	gtk_combo_box_text_remove_all(filterComboText);
+	gtk_combo_box_text_append(filterComboText, "0", "Off");
+
+	for (int value = WGPUPresentUpscaler_Off + 1; value < WGPUPresentUpscalerCount; value++)
+	{
+		const char *name = WGPUPresent::upscalerName(value);
+
+		if (name == NULL)
+		{
+			continue;
+		}
+
+		char id[16];
+		g_snprintf(id, sizeof(id), "%d", value);
+		gtk_combo_box_text_append(filterComboText, id, name);
+	}
+
+	int activeFilter = WGPUPresent::isUpscaler(config.gpuFilter) ? config.gpuFilter : WGPUPresentUpscaler_Off;
+	char activeFilterId[16];
+	g_snprintf(activeFilterId, sizeof(activeFilterId), "%d", activeFilter);
+	gtk_combo_box_set_active_id(wGPUFilter, activeFilterId);
+
+	gtk_widget_set_sensitive(GTK_WIDGET(wGPUFilter), config.presentationWGPU);
+	g_signal_connect(wPresentation, "changed", G_CALLBACK(PresentationComboChanged), wGPUFilter);
+#endif // ENABLE_WGPU
 
 	// The shift it work for scale up to 4. For scaling more than 4, a mapping function is required
 	gtk_combo_box_set_active(wScale, CommonSettings.GFX3D_Renderer_TextureScalingFactor >> 1);
@@ -2366,12 +4267,13 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	// 3D Texture Smoothing
 	gtk_toggle_button_set_active(wSmoothing, CommonSettings.GFX3D_Renderer_TextureSmoothing);
 
-#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
-	// OpenGL Multisample
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
+	// Multisample antialiasing. This applies to the OpenGL and WebGPU
+	// renderers, so it must not be tied to the OpenGL build options.
 	int currentMultisample = CommonSettings.GFX3D_Renderer_MultisampleSize;
 	int currentActive = 0;
 	// find smallest option that is larger than current value, i.e. round up to power of 2
-	while (multisampleSizes[currentActive] < currentMultisample && currentActive < 5) { currentActive++; }
+	while ((currentActive < 5) && (multisampleSizes[currentActive] < currentMultisample)) { currentActive++; }
 	gtk_combo_box_set_active(wMultisample, currentActive);
 #endif
 
@@ -2386,20 +4288,28 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
     {
     	int sel3DCore = gtk_combo_box_get_active(coreCombo);
 
+		if ( (sel3DCore < 0) || (sel3DCore >= GPU3D_MAX_COUNT) || (core3DList[sel3DCore] == NULL) )
+		{
+			sel3DCore = RENDERID_SOFTRASTERIZER;
+		}
+
     	// Change only if needed
 		if (sel3DCore != cur3DCore)
 		{
+			// OpenGL entries need their context callbacks selected first. The
+			// other cores (Null, SoftRasterizer, WebGPU) need none.
+#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_GLX)
+			if (sel3DCore == 2)
+			{
+	#if defined(ENABLE_EGL)
+				oglrender_init = &egl_initOpenGL_ES_3_0;
+	#else
+				oglrender_init = &sdl_initOpenGL_ES_3_0;
+	#endif
+			}
+#elif defined(ENABLE_OPENGL_STANDARD)
 			switch (sel3DCore)
 			{
-#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_GLX)
-				case 2:
-	#if defined(ENABLE_EGL)
-					oglrender_init = &egl_initOpenGL_ES_3_0;
-	#else
-					oglrender_init = &sdl_initOpenGL_ES_3_0;
-	#endif
-					break;
-#elif defined(ENABLE_OPENGL_STANDARD)
 				case 2:
 	#if defined(ENABLE_GLX)
 					oglrender_init = &glx_initOpenGL_StandardAuto;
@@ -2429,20 +4339,8 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 					oglrender_init = &sdl_initOpenGL_3_2_CoreProfile;
 	#endif
 					break;
-#endif
-				default:
-				{
-					if (sel3DCore > 0)
-					{
-						sel3DCore = RENDERID_SOFTRASTERIZER;
-					}
-					else
-					{
-						sel3DCore = RENDERID_NULL;
-					}
-					break;
-				}
 			}
+#endif
 			
 			if (GPU->Change3DRendererByID(sel3DCore))
 			{
@@ -2483,12 +4381,71 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(wSmoothing);
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
 		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(wHCInterpolate);
-#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
 		int selectedMultisample = gtk_combo_box_get_active(wMultisample);
+		if (selectedMultisample < 0)
+		{
+			selectedMultisample = 0;
+		}
 		config.multisamplingSize = multisampleSizes[selectedMultisample];
 		config.multisampling = selectedMultisample != 0;
 		CommonSettings.GFX3D_Renderer_MultisampleSize = multisampleSizes[selectedMultisample];
 #endif
+
+#if defined(ENABLE_WGPU)
+		// GPU filter. It only runs when a frame goes through the WebGPU
+		// presenter; the value is kept while software presentation is in use.
+		const char *filterId = gtk_combo_box_get_active_id(wGPUFilter);
+		int selectedFilter = (filterId != NULL) ? (int)g_ascii_strtoll(filterId, NULL, 10) : WGPUPresentUpscaler_Off;
+
+		if (!WGPUPresent::isUpscaler(selectedFilter))
+		{
+			selectedFilter = WGPUPresentUpscaler_Off;
+		}
+
+		config.gpuFilter = selectedFilter;
+		wgpu_display.setUpscaler(selectedFilter);
+
+		// Screen presentation path. The selected WebGPU backend is the id of
+		// the combo item, or "software" for Cairo. Switching either tears the
+		// WebGPU subsurface down so that Cairo can draw into GDK's surface
+		// again; the next expose recreates it with the new backend.
+		const char *presentationId = gtk_combo_box_get_active_id(wPresentation);
+		const bool useWGPUPresentation = (presentationId != NULL) && (strcmp(presentationId, "software") != 0);
+
+		uint32_t selectedPresentationBackend = (uint32_t)config.presentationWGPUBackend;
+		if (useWGPUPresentation)
+		{
+			selectedPresentationBackend = (presentationId != NULL)
+				? (uint32_t)g_ascii_strtoull(presentationId, NULL, 10)
+				: WGPU_PresentationBackendMask();
+		}
+
+		const bool presentationChanged = (useWGPUPresentation != config.presentationWGPU) ||
+			( useWGPUPresentation &&
+			  (selectedPresentationBackend != (uint32_t)config.presentationWGPUBackend) );
+
+		config.presentationWGPU = useWGPUPresentation;
+		if (useWGPUPresentation)
+		{
+			config.presentationWGPUBackend = (int)selectedPresentationBackend;
+		}
+
+		if (presentationChanged)
+		{
+			WGPU_KillDisplay();
+
+			if (useWGPUPresentation)
+			{
+				wgpu_initialization_failed = false;
+			}
+
+			if (pDrawingArea != NULL)
+			{
+				gtk_widget_queue_draw(pDrawingArea);
+			}
+		}
+#endif // ENABLE_WGPU
     }
     // End: OK Response Block
         break;
@@ -2557,6 +4514,9 @@ static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer use
 	gtk3gpuEvent->VideoFetchLock();
 	ColorspaceConvertBuffer888xTo8888Opaque<true, false>(video->GetSrcBufferPtr(), (u32 *)screenshotBuffer, videoWidth * videoHeight);
 	gtk3gpuEvent->VideoFetchUnlock();
+
+	// In GPU HUD mode the OSD lives in a texture, not in the source buffer.
+	WGPU_HudCompositeScreenshot(screenshotBuffer, videoWidth, videoHeight);
 	
 	screenshot = gdk_pixbuf_new_from_data(screenshotBuffer,
                           GDK_COLORSPACE_RGB,
@@ -2827,6 +4787,66 @@ static inline void _updateDTools()
 
 /////////////////////////////// MAIN EMULATOR LOOP ///////////////////////////////
 
+// False while a core frame is executing.  Declared outside HAVE_LUA because
+// EMU_IsAtFrameBoundary() is always part of GtkDriver.
+static bool sLuaInFrame = false;
+
+#ifdef HAVE_LUA
+// One emulated frame for the Lua-driven path (emu.frameadvance() and friends).
+// Mirrors the body of EmuLoop() without its FPS/frameskip bookkeeping: while a
+// script drives emulation, the script owns the frame cadence.
+static void EmuStepFrame()
+{
+    if(!in_joy_config_mode)
+        process_joystick_events(&keys_latch);
+    update_keypad(keys_latch);
+    if(touchpad.down) {
+        NDS_setTouchPos(touchpad.x * 256, touchpad.y * 192);
+        touchpad.down = 2;
+    }
+    if(touchpad.click) {
+        NDS_releaseTouch();
+        touchpad.click = 0;
+    }
+
+    NDS_beginProcessingInput();
+    CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+    NDS_endProcessingInput();
+
+    sLuaInFrame = true;
+    desmume_cycle();
+    sLuaInFrame = false;
+
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+    // Menu clicks and emu.registermenustart() refresh requests are drained on
+    // the Lua/emulation thread at a frame boundary, as on macOS.
+    GtkLua_DrainMenuCalls();
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+
+    // Composite the Lua overlay and the built-in HUD into the frame now that
+    // the script has had its chance to draw.
+    PresentFrame();
+}
+
+// Pumps pending GTK events while a script blocks the main loop.  Throttled so
+// a fast-forward loop does not repaint thousands of times per second, but
+// often enough that Stop and window close stay responsive.
+static gint64 sLuaLastEventPump = 0;
+
+static void LuaPumpEvents(bool force)
+{
+    const gint64 now = g_get_monotonic_time();
+    if (!force && now - sLuaLastEventPump < 16000)
+        return;
+    sLuaLastEventPump = now;
+
+    // Bounded so a source that keeps re-queueing itself cannot livelock the
+    // frame.  EmuLoop is removed for the duration, so it is not one of them.
+    for (int i = 0; i < 256 && gtk_events_pending(); i++)
+        gtk_main_iteration_do(FALSE);
+}
+#endif
+
 class GtkDriver : public BaseDriver
 {
 public:
@@ -2838,8 +4858,34 @@ public:
             gtk_main_iteration();
     }
 
+    // emu.frameadvance() asks for a repaint before its first frame so GUI
+    // drawing from the script body is visible.
+    virtual void USR_RefreshScreen()
+    {
+        RedrawScreen();
+    }
+
+    virtual void EMU_PauseEmulation(bool pause)
+    {
+        if(pause)
+            desmume_pause();
+        else
+            desmume_resume();
+    }
+
 	// HUD uses this to show pause state
 	virtual bool EMU_IsEmulationPaused() { return !desmume_running(); }
+
+	virtual bool EMU_HasEmulationStarted() { return gameInfo.fROM != NULL; }
+
+	// False while a core frame is executing, so emu.frameadvance() called from
+	// a before/after-emulation callback falls back to emu.wait() instead of
+	// recursively stepping the core.
+	virtual bool EMU_IsAtFrameBoundary() { return !sLuaInFrame; }
+
+#ifdef HAVE_LUA
+	virtual eStepMainLoopResult EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore);
+#endif
 
 	virtual bool AVI_IsRecording()
 	{
@@ -2851,21 +4897,51 @@ public:
 	}
 };
 
-static void DoQuit(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+static bool sQuitRequested = false;
+
+// Shared by File > Quit and by the window manager closing the main window.
+// Script consoles are independent toplevels (not GtkApplication windows), so
+// they have to be closed explicitly or they keep the process alive.
+static void QuitApplication()
 {
     emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
     if (regMainLoop) {
         g_source_remove(regMainLoop);
         regMainLoop = 0;
     }
-    gtk_window_close(GTK_WINDOW(pWindow));
+#ifdef HAVE_LUA
+    lua_script_close_all();
+#endif
+    if (pApp != NULL)
+        g_application_quit(G_APPLICATION(pApp));
+}
+
+static void DoQuit(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    if (sQuitRequested)
+        return;
+    sQuitRequested = true;
+
+    QuitApplication();
+    if (pWindow != NULL)
+        gtk_window_close(GTK_WINDOW(pWindow));
+}
+
+static void OnMainWindowDestroy(GtkWidget *widget, gpointer user_data)
+{
+    if (sQuitRequested)
+        return;
+    sQuitRequested = true;
+    QuitApplication();
 }
 
 
 gboolean EmuLoop(gpointer data)
 {
-    static Uint32 fps_SecStart, next_fps_SecStart, fps_FrameCount, skipped_frames;
-    static unsigned next_frame_time;
+    /* SDL3's SDL_GetTicks() returns Uint64 milliseconds. */
+    static Uint64 fps_SecStart, next_fps_SecStart;
+    static Uint32 fps_FrameCount, skipped_frames;
+    static Uint64 next_frame_time;
     static int frame_mod3;
     unsigned int i;
     gchar Title[50];
@@ -2946,7 +5022,25 @@ gboolean EmuLoop(gpointer data)
         touchpad.click = 0;
     }
 
+#ifdef HAVE_LUA
+    NDS_beginProcessingInput();
+    CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+    NDS_endProcessingInput();
+#endif
+
     desmume_cycle();    /* Emule ! */
+
+#ifdef HAVE_LUA
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+    // See EmuStepFrame(): menu handlers run at a frame boundary, never from
+    // the GTK action callback.
+    GtkLua_DrainMenuCalls();
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+#endif
+
+    // The Lua GUI callback (if any) has drawn into the source buffer; overlay
+    // the built-in HUD, filter, and present the finished frame.
+    PresentFrame();
 
     _updateDTools();
 
@@ -2979,9 +5073,9 @@ gboolean EmuLoop(gpointer data)
                 next_frame_time += (frame_mod3 == 0) ? 16 : 17;
             }
         }
-        unsigned this_tick = SDL_GetTicks();
+        Uint64 this_tick = SDL_GetTicks();
         if (this_tick < next_frame_time) {
-            unsigned timeleft = next_frame_time - this_tick;
+            Uint64 timeleft = next_frame_time - this_tick;
             usleep((timeleft - 1) * 1000);
             while (SDL_GetTicks() < next_frame_time);
             this_tick = SDL_GetTicks();
@@ -3017,6 +5111,90 @@ gboolean EmuLoop(gpointer data)
 
     return TRUE;
 }
+
+#ifdef HAVE_LUA
+BaseDriver::eStepMainLoopResult GtkDriver::EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore)
+{
+    // The script runs synchronously on the GTK main thread.  Take the idle
+    // source that normally drives emulation out of the loop; otherwise pumping
+    // events below would run a second frame on top of this one.  It is put back
+    // before returning, so normal emulation resumes as soon as the script ends.
+    const bool hadMainLoop = (regMainLoop != 0);
+    if (hadMainLoop)
+    {
+        g_source_remove(regMainLoop);
+        regMainLoop = 0;
+    }
+
+    // Paused: keep the UI alive so Run/Stop still work, and let StepEmulation()
+    // call us again.  This is the same contract as Windows' StepRunLoop_Paused.
+    if (!desmume_running() && allowPause)
+    {
+        LuaPumpEvents(true);
+        g_usleep(10000);
+        if (hadMainLoop && regMainLoop == 0 && desmume_running())
+            regMainLoop = g_idle_add_full(EMULOOP_PRIO, &EmuLoop, pWindow, NULL);
+        return ESTEP_CALL_AGAIN;
+    }
+
+    if (!disableCore && gameInfo.fROM != NULL)
+    {
+        // frameSkip only suppresses rendering; the core still executes exactly
+        // one frame per call, matching Windows' StepRunLoop_Throttle().
+        static int sLuaSkipCounter = 0;
+        const int skipRate = (frameSkip < 0) ? (int)Frameskip : frameSkip;
+        if (skipRate > 0)
+        {
+            if (sLuaSkipCounter > 0)
+            {
+                NDS_SkipNextFrame();
+                sLuaSkipCounter--;
+            }
+            else
+            {
+                sLuaSkipCounter = skipRate;
+            }
+        }
+        else
+        {
+            sLuaSkipCounter = 0;
+        }
+
+        EmuStepFrame();
+    }
+
+    if (!disableUser)
+        _updateDTools();
+
+    // Pace only when the script asked for normal speed.  Pump events while
+    // waiting so Stop and repainting keep working even during the sleep.
+    static gint64 sLuaNextFrame = 0;
+    const bool throttle = allowSleep && config.fpslimiter && !(keys_latch & KEYMASK_(KEY_BOOST - 1));
+    if (throttle && !disableCore)
+    {
+        const gint64 now = g_get_monotonic_time();
+        if (sLuaNextFrame == 0 || sLuaNextFrame < now - 100000)
+            sLuaNextFrame = now;
+        sLuaNextFrame += 16667;
+
+        while (g_get_monotonic_time() < sLuaNextFrame)
+        {
+            LuaPumpEvents(false);
+            g_usleep(1000);
+        }
+    }
+    else
+    {
+        sLuaNextFrame = 0;
+        LuaPumpEvents(false);
+    }
+
+    if (hadMainLoop)
+        regMainLoop = g_idle_add_full(EMULOOP_PRIO, &EmuLoop, pWindow, NULL);
+
+    return ESTEP_DONE;
+}
+#endif
 
 GMenuModel *savestates_menu;
 GMenuModel *loadstates_menu;
@@ -3350,7 +5528,37 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 	config.load();
 
+#if !defined(ENABLE_WGPU)
+	// A config written by a WebGPU build may still request the WebGPU
+	// presenter or one of its GPU filters. Neither exists in this build.
+	config.presentationWGPU = false;
+	config.gpuFilter = WGPUPresentUpscaler_Off;
+#endif
+
+	// The GPU filter belongs to the WebGPU presentation path. Nothing is
+	// compiled here: the chain of the selected filter is built on the first
+	// frame presented with it selected. A value left over from another build
+	// falls back to the plain blit.
+	if (!WGPUPresent::isUpscaler(config.gpuFilter))
+	{
+		config.gpuFilter = WGPUPresentUpscaler_Off;
+	}
+	wgpu_display.setUpscaler(config.gpuFilter);
+
+	// Must exist before any renderer index is validated or shown in the UI.
+	Build3DRendererList();
+
     driver = new GtkDriver();
+
+#ifdef HAVE_LUA
+    // Give the engine the UI hooks that need a real frontend.  Without these,
+    // gui.popup() returns a fixed answer and emu.openscript() does nothing.
+    SetLuaPopupHandler(GtkLua_ShowPopup);
+    SetLuaOpenScriptHandler(GtkLua_OpenScript);
+    SetLuaInputStatusHandler(GtkLua_GetInputStatus);
+    SetLuaGetControllerStatusHandler(GtkLua_GetControllerStatus);
+    SetLuaMenuHooks(&sGtkLuaMenuHooks);
+#endif
 
     SDL_TimerID limiter_timer = 0;
 
@@ -3422,7 +5630,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
      * Perhaps it needs a "window" to catch events...? */
     SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,"1");
-    if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO|SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER) == -1) {
+    if(!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_JOYSTICK|SDL_INIT_GAMEPAD)) {
         g_printerr("Error trying to initialize SDL: %s\n",
                     SDL_GetError());
         // TODO: return a non-zero exit status.
@@ -3448,12 +5656,15 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     /* Init the hud / osd stuff */
 #ifdef HAVE_LIBAGG
-	SDL_DisplayMode cur_mode;
-	if(!SDL_GetCurrentDisplayMode(0, &cur_mode))
-		aggDraw.screenBytesPerPixel = SDL_BYTESPERPIXEL(cur_mode.format);
+	/* SDL3 returns a const pointer and takes a display ID rather than
+	   filling in a caller-provided struct. */
+	const SDL_DisplayMode *cur_mode = SDL_GetCurrentDisplayMode(SDL_GetPrimaryDisplay());
+	if(cur_mode != NULL)
+		aggDraw.screenBytesPerPixel = SDL_BYTESPERPIXEL(cur_mode->format);
 	
     Desmume_InitOnce();
     Hud.reset();
+    HudLoadLayout();
     osd = new OSDCLASS(-1);
 	
 #ifdef AGG2D_USE_VECTORFONTS
@@ -3543,9 +5754,12 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(pWindow));
 
-    g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(DoQuit), NULL);
+    g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(OnMainWindowDestroy), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
+#ifdef HAVE_LUA
+    g_signal_connect(G_OBJECT(pWindow), "focus-out-event", G_CALLBACK(LuaWindowFocusOut), NULL);
+#endif
 
     /* Update audio toggle status */
     if (my_config->disable_sound || !config.audio_enabled) {
@@ -3872,7 +6086,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 #ifdef HAVE_LIBSOUNDTOUCH
     GMenu *audio_sync_menu = G_MENU(gtk_builder_get_object(builder, "audio-synchronisation"));
-    GMenuItem *sync_p = g_menu_item_new("Synchronous (_P)", "app.spu_mode(\"sync-p\")");
+    GMenuItem *sync_p = g_menu_item_new("_P: Time-stretch (keeps pitch)", "app.spu_mode(\"sync-p\")");
     g_menu_append_item(audio_sync_menu, sync_p);
 #endif
 
@@ -3894,6 +6108,10 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_object_unref(builder);
 
     pApp = GTK_APPLICATION(app);
+
+    // The app menubar is alive now (the application holds it after
+    // gtk_application_set_menubar).  Top-level Lua menus are appended here.
+    GtkLua_SetAppMenubar(G_MENU(menubar));
 
     GtkRecentManager *manager = gtk_recent_manager_get_default();
     GList *items = gtk_recent_manager_get_items(manager);
@@ -4010,37 +6228,42 @@ common_gtk_main(GApplication *app, gpointer user_data)
     int core = my_config->engine_3d;
     // setup the gdk 3D emulation;
 
-    // Check if commandLine argument was passed or not
-    if (core == -1)
+    if (core == -2)
+    {
+    	// --3d-render=wgpu: resolve to the first usable WebGPU entry.
+    	core = (wgpuFirstCoreIndex >= 0) ? wgpuFirstCoreIndex : RENDERID_SOFTRASTERIZER;
+    	my_config->engine_3d = core;
+    }
+    else if (core == -1)
 	{
     	// If it was not passed, then get the Renderer config from the file
     	core = config.core3D;
-
-    	// Check if it is valid
-#if defined(ENABLE_OPENGL_ES)
-    	if (!(core >= 0 && core <= 2))
-#elif defined(ENABLE_OPENGL_STANDARD)
-		if (!(core >= 0 && core <= 4))
-#endif
-		{
-    		// If it is invalid, reset it to SoftRasterizer
-    		core = 1;
-    	}
-    	//Set this too for clarity
         my_config->engine_3d = core;
     }
 
+	// Check that the index still exists in the runtime renderer list (WebGPU
+	// contributes a variable number of entries, and the build options may have
+	// changed since the config was written).
+	if ( (core < 0) || (core >= GPU3D_MAX_COUNT) || (core3DList[core] == NULL) )
+	{
+		core = RENDERID_SOFTRASTERIZER;
+		my_config->engine_3d = core;
+	}
+
+	// OpenGL entries need their context callbacks selected first. The other
+	// cores (Null, SoftRasterizer, WebGPU) need none.
+#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_GLX)
+	if (core == 2)
+	{
+	#if defined(ENABLE_EGL)
+		oglrender_init = &egl_initOpenGL_ES_3_0;
+	#else
+		oglrender_init = &sdl_initOpenGL_ES_3_0;
+	#endif
+	}
+#elif defined(ENABLE_OPENGL_STANDARD)
 	switch (core)
 	{
-#if defined(ENABLE_OPENGL_ES) && !defined(ENABLE_GLX)
-		case 2:
-	#if defined(ENABLE_EGL)
-			oglrender_init = &egl_initOpenGL_ES_3_0;
-	#else
-			oglrender_init = &sdl_initOpenGL_ES_3_0;
-	#endif
-			break;
-#elif defined(ENABLE_OPENGL_STANDARD)
 		case 2:
 	#if defined(ENABLE_GLX)
 			oglrender_init = &glx_initOpenGL_StandardAuto;
@@ -4070,20 +6293,8 @@ common_gtk_main(GApplication *app, gpointer user_data)
 			oglrender_init = &sdl_initOpenGL_3_2_CoreProfile;
 	#endif
 			break;
-#endif
-		default:
-		{
-			if (core > 0)
-			{
-				core = RENDERID_SOFTRASTERIZER;
-			}
-			else
-			{
-				core = RENDERID_NULL;
-			}
-			break;
-		}
 	}
+#endif
 
 	if (!GPU->Change3DRendererByID(core)) {
 		GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
@@ -4148,7 +6359,13 @@ static void Teardown() {
 #ifdef HAVE_LIBAGG
 	HudSaveLayout();
 #endif
-	
+
+	// Release the WebGPU instance while the native window and the toolkit's
+	// EGL/Vulkan state are still alive. The static destructor would otherwise
+	// do it after exit() has started tearing down GTK and the display
+	// connection, which is too late for the graphics drivers.
+	WGPU_KillDisplay();
+
     delete video;
     
 	config.save();
@@ -4395,7 +6612,12 @@ void Gtk3GPUEventHandler::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo 
 	
 	slock_unlock(this->_mutexFramebufferPage[this->_latestBufferIndex]);
 	
-	RedrawScreen();
+	// The frame is now in the source buffer.  Attach the HUD/Lua target and
+	// mark the frame pending; the caller presents it after the Lua GUI
+	// callback has drawn, so Lua pixels reach the filtered destination buffer
+	// that the display actually reads.
+	PrepareHudTarget();
+	sFramePresentPending = true;
 }
 
 void Gtk3GPUEventHandler::DidApplyGPUSettingsBegin()

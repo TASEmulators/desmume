@@ -36,6 +36,7 @@
 #include <commdlg.h>
 #include <tchar.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -53,6 +54,7 @@
 #include "GPU.h"
 #include "SPU.h"
 #include "OGLRender_3_2.h"
+#include "WGPURender.h"
 #include "rasterize.h"
 #include "gfx3d.h"
 #include "render3D.h"
@@ -71,6 +73,10 @@
 #include "recentroms.h"
 #include "resource.h"
 #include "CWindow.h"
+#include "DPI.h"
+#include "DarkMode.h"
+#include "UiFont.h"
+#include "dsmeditor.h"
 #include "version.h"
 #include "inputdx.h"
 #include "console.h"
@@ -114,6 +120,10 @@
 #include "ramwatch.h"
 #include "ram_search.h"
 #include "aviout.h"
+#if DESMUME_ENABLE_MF
+#include "recording_settings.h"
+#include "videoencoders.h"
+#endif
 #include "soundView.h"
 #include "importSave.h"
 #include "fsnitroView.h"
@@ -374,11 +384,13 @@ int WndY = 0;
 extern HWND RamSearchHWnd;
 static bool lostFocusPause = true;
 static bool lastPauseFromLostFocus = false;
+static bool useModernFont = true;	// system UI font instead of the bitmap one
 bool FrameLimit = true;
 extern bool allowBackgroundInput;
 
 std::vector<HWND> LuaScriptHWnds;
 LRESULT CALLBACK LuaScriptProc(HWND, UINT, WPARAM, LPARAM);
+void LuaConsole_ShowEngineInfo(HWND hWndOwner);
 
 bool autoLoadLua;
 #define MAX_RECENT_SCRIPTS 15 // must match value in luaconsole.cpp (belongs in a header, but I didn't want to create one just for this)
@@ -434,13 +446,255 @@ SoundInterface_struct *SNDCoreList[] = {
 	NULL
 };
 
-GPU3DInterface *core3DList[] = {
-	&gpu3DNull,
-	&gpu3Dgl_3_2,
-	&gpu3DRasterize,
-	&gpu3DglOld,
-	NULL
-};
+// Filled by Build3DRendererList() at startup. The first entries are fixed, but
+// WebGPU contributes one entry per usable backend, so the tail is dynamic.
+GPU3DInterface *core3DList[GPU3D_MAX_COUNT] = { NULL };
+
+// Builds the renderer list: the fixed cores, then one entry per WebGPU backend
+// that wgpu-native reported ("WebGPU - D3D12", "WebGPU - Vulkan", ...). Software
+// adapters are filtered out by the renderer itself; the emulator's own
+// SoftRasterizer stays in the list.
+static void Build3DRendererList()
+{
+	int count = 0;
+
+	core3DList[count++] = &gpu3DNull;
+	core3DList[count++] = &gpu3Dgl_3_2;
+	core3DList[count++] = &gpu3DRasterize;
+	core3DList[count++] = &gpu3DglOld;
+
+#if defined(ENABLE_WGPU)
+	WGPURender_InitBackendList();
+
+	const size_t backendCount = WGPURender_GetBackendCount();
+
+	for (size_t i = 0; (i < backendCount) && (count < (GPU3D_MAX_COUNT - 2)); i++)
+	{
+		core3DList[count++] = WGPURender_GetBackendInterface(i);
+	}
+
+	// Nothing reported (no usable adapter): still offer the generic entry so the
+	// user can try, and so a config that already selected WebGPU keeps working.
+	if (backendCount == 0)
+	{
+		core3DList[count++] = &gpu3DWGPU;
+	}
+#else
+	core3DList[count++] = &gpu3DWGPU;
+#endif
+
+	core3DList[count] = NULL;
+}
+
+// ---------------------------------------------------------------------------
+// GPU filters
+// ---------------------------------------------------------------------------
+//
+// The chains live in src/frontend/shared/wgpu_present.cpp and their names come
+// from there; this side only records which one is selected. Selecting a filter
+// compiles nothing: its WGSL is fetched out of the resources and built into
+// pipelines when a frame is next presented with it selected, so a filter that
+// is never picked is never read, let alone compiled.
+static void SetDisplayGPUFilter(int filter)
+{
+	// A value from an older ini, or an entry left over from a build with more
+	// chains, falls back to the plain blit rather than to nothing at all.
+	if (!WGPUPresent::isUpscaler(filter))
+	{
+		filter = WGPUPresentUpscaler_Off;
+	}
+
+	displayGPUFilter = filter;
+	wgpudisplay.setUpscaler(filter);
+
+	WritePrivateProfileInt("Video", "Display Method GPU Filter", filter, IniName);
+}
+
+#if defined(ENABLE_WGPU)
+// ---------------------------------------------------------------------------
+// WebGPU display method: one menu entry per backend
+// ---------------------------------------------------------------------------
+//
+// The 3D renderer list already carries one entry per backend wgpu-native reported
+// for this machine ("WebGPU - D3D12", "WebGPU - Vulkan", ...). The display method
+// offers the same choice through a "WebGPU" submenu: the resource only holds
+// "Automatic", the per-backend entries are appended once the list above exists,
+// so a backend that cannot run here never shows up in either place.
+
+// Defined further down, next to PopulateLuaSubmenu(). Declared here because the
+// submenu lookup below needs it before that point.
+static HMENU GetMenuItemParent(UINT itemId, HMENU hMenu);
+
+// Index in the renderer backend list for an instance backend mask, or -1.
+static int WGPUBackendIndexFromMask(const u32 mask)
+{
+	const size_t backendCount = WGPURender_GetBackendCount();
+
+	for (size_t i = 0; i < backendCount; i++)
+	{
+		if (WGPURender_GetBackendMask(i) == mask)
+		{
+			return (int)i;
+		}
+	}
+
+	return -1;
+}
+
+// Appends one entry per available backend under the "WebGPU" submenu. Called once
+// the main window -- and with it the menu -- exists.
+static void BuildDisplayMethodBackendMenu()
+{
+	HMENU webgpuMenu = GetMenuItemParent(ID_DISPLAYMETHOD_WGPU, mainMenu);
+	const size_t backendCount = WGPURender_GetBackendCount();
+
+	if ( (webgpuMenu == NULL) || (backendCount == 0) )
+	{
+		return;
+	}
+
+	AppendMenuW(webgpuMenu, MF_SEPARATOR, 0, NULL);
+
+	for (size_t i = 0; (i < backendCount) && ((ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST + i) < ID_DISPLAYMETHOD_WGPU_BACKEND_LAST); i++)
+	{
+		const char *label = WGPURender_GetBackendLabel(i);
+
+		if (label == NULL)
+		{
+			continue;
+		}
+
+		AppendMenuA(webgpuMenu, MF_STRING, ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST + (UINT)i, label);
+	}
+}
+
+// Keeps the check marks of the "WebGPU" submenu in step with the live display
+// method. Both the automatic entry (mask 0) and the per-backend ones are covered.
+static void UpdateDisplayMethodMenuChecks()
+{
+	const bool isWGPU = (displayMethod == DISPMETHOD_WGPU);
+	const size_t backendCount = WGPURender_GetBackendCount();
+
+	MainWindow->checkMenu(ID_DISPLAYMETHOD_WGPU, isWGPU && (displayWGPUBackend == 0));
+
+	for (size_t i = 0; (i < backendCount) && ((ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST + i) < ID_DISPLAYMETHOD_WGPU_BACKEND_LAST); i++)
+	{
+		MainWindow->checkMenu(ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST + (UINT)i,
+							  isWGPU && (displayWGPUBackend == WGPURender_GetBackendMask(i)));
+	}
+}
+
+// Appends one entry per GPU filter under the "GPU Filter" submenu. Only "Off"
+// lives in the resource: the names come from the chain table in
+// src/frontend/shared/wgpu_present.cpp, so a filter added there shows up here
+// without a second list to keep in step, and a build without the WGSL offers
+// none of them.
+static void BuildDisplayMethodGpuFilterMenu()
+{
+	HMENU filterMenu = GetMenuItemParent(ID_DISPLAYMETHOD_GPUFILTER_OFF, mainMenu);
+
+	if (filterMenu == NULL)
+	{
+		return;
+	}
+
+	// The enum, not the table count: a value without a row is simply skipped,
+	// and the block of IDs has room for every value there is.
+	for (int value = WGPUPresentUpscaler_Off + 1; value < WGPUPresentUpscalerCount; value++)
+	{
+		if ( (ID_DISPLAYMETHOD_GPUFILTER_FIRST + value) >= ID_DISPLAYMETHOD_GPUFILTER_LAST )
+		{
+			break;
+		}
+
+		const char *label = WGPUPresent::upscalerName(value);
+
+		if (label == NULL)
+		{
+			continue;
+		}
+
+		AppendMenuA(filterMenu, MF_STRING, ID_DISPLAYMETHOD_GPUFILTER_FIRST + (UINT)value, label);
+	}
+}
+
+// Switches the display method to WebGPU on `instanceBackends` (WGPUInstanceBackend
+// bits; zero lets wgpu-native pick) for window `target`. Returns false when the
+// window cannot host WebGPU any more, in which case the current method is left
+// untouched.
+static bool SwitchToWGPUDisplay(HWND target, const u32 instanceBackends)
+{
+	// The OpenGL display method spends this window for every other graphics API
+	// (see _glPresentedHwnd in display.cpp), and the failure mode is a fatal
+	// wgpuSurfaceConfigure() panic, so refuse the switch while the window still
+	// belongs to the OpenGL presentation path. Rebuilding the main window would
+	// drag the toolbar, the menus, the DPI state and every cached HWND along with
+	// it, so asking for a restart is the cheaper answer. Going the other way
+	// (WebGPU -> OpenGL) is fine.
+	if (DisplayWindowUsedByOpenGL(target))
+	{
+		MessageBox(target,
+			"The WebGPU display method cannot be used in this window.\n"
+			"\n"
+			"The OpenGL display method has already drawn into this window, and after "
+			"that Windows will not let another graphics API take the window over. "
+			"Switching the display method cannot undo it.\n"
+			"\n"
+			"Please restart DeSmuME and choose WebGPU again. Within a single session "
+			"the switch only works one way: WebGPU to OpenGL is fine, OpenGL to "
+			"WebGPU needs a restart.",
+			DESMUME_NAME, MB_OK | MB_ICONINFORMATION);
+
+		return false;
+	}
+
+	displayWGPUBackend = instanceBackends;
+	displayMethod = DISPMETHOD_WGPU;
+
+	WritePrivateProfileInt("Video", "Display Method", DISPMETHOD_WGPU, IniName);
+	WritePrivateProfileInt("Video", "Display Method Backend", (int)instanceBackends, IniName);
+
+	// Drop the surface so the next frame builds one for the chosen backend.
+	wgpudisplay.kill();
+	SetDisplayNeedsBufferUpdates();
+
+	return true;
+}
+#endif
+
+static void Select3DCoreComboItem(HWND hDlg, const int coreIndex)
+{
+	const HWND hCombo = GetDlgItem(hDlg, IDC_3DCORE);
+	const int itemCount = ComboBox_GetCount(hCombo);
+
+	for (int i = 0; i < itemCount; i++)
+	{
+		if ( (int)ComboBox_GetItemData(hCombo, i) == coreIndex )
+		{
+			ComboBox_SetCurSel(hCombo, i);
+			return;
+		}
+	}
+
+	if (itemCount > 0)
+	{
+		ComboBox_SetCurSel(hCombo, 0);
+	}
+}
+
+static int GetSelected3DCore(HWND hDlg)
+{
+	const HWND hCombo = GetDlgItem(hDlg, IDC_3DCORE);
+	const int selected = ComboBox_GetCurSel(hCombo);
+
+	if (selected < 0)
+	{
+		return cur3DCore;
+	}
+
+	const LRESULT coreIndex = ComboBox_GetItemData(hCombo, selected);
+	return (coreIndex == CB_ERR) ? cur3DCore : (int)coreIndex;
+}
 
 bool autoframeskipenab=1;
 bool continuousframeAdvancing = false;
@@ -645,7 +899,10 @@ void ScaleScreen(float factor, bool user)
 				defw = defh*w1x/h1x;
 		}
 
-		MainWindow->setClientSize(defw, defh);
+		// defw/defh are logical (96 DPI) sizes; the client area is in physical
+		// pixels now that the process is per-monitor DPI aware.
+		HWND hwnd = MainWindow->getHWnd();
+		MainWindow->setClientSize(DPI_ScaleForWindow(defw, hwnd), DPI_ScaleForWindow(defh, hwnd));
 	}
 	else
 	{
@@ -654,25 +911,32 @@ void ScaleScreen(float factor, bool user)
 		else if(factor==kScale2point5x)
 			factor = 2.5f;
 
+		HWND hwnd = MainWindow->getHWnd();
+		const int clientWidth  = DPI_ScaleForWindow((int)(video.rotatedwidthgap()  * factor), hwnd);
+		const int clientHeight = DPI_ScaleForWindow((int)(video.rotatedheightgap() * factor), hwnd);
+
 		if (video.layout == 0)
-			MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor));
+			MainWindow->setClientSize(clientWidth, clientHeight);
 		else
 			if (video.layout == 1)
 			{
-				MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor * 2 / screenSizeRatio), (int)(video.rotatedheightgap() * factor / 2));
+				MainWindow->setClientSize(DPI_ScaleForWindow((int)(video.rotatedwidthgap() * factor * 2 / screenSizeRatio), hwnd),
+				                          DPI_ScaleForWindow((int)(video.rotatedheightgap() * factor / 2), hwnd));
 			}
 			else
 				if (video.layout == 2)
-					MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor / 2));
+					MainWindow->setClientSize(clientWidth, DPI_ScaleForWindow((int)(video.rotatedheightgap() * factor / 2), hwnd));
 	}
 }
 
 void SetMinWindowSize()
 {
+	HWND hwnd = (MainWindow != NULL) ? MainWindow->getHWnd() : NULL;
+
 	if(ForceRatio)
-		MainWindow->setMinSize(video.rotatedwidth(), video.rotatedheight());
+		MainWindow->setMinSize(DPI_ScaleForWindow(video.rotatedwidth(), hwnd), DPI_ScaleForWindow(video.rotatedheight(), hwnd));
 	else
-		MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
+		MainWindow->setMinSize(DPI_ScaleForWindow(video.rotatedwidthgap(), hwnd), DPI_ScaleForWindow(video.rotatedheightgap(), hwnd));
 }
 
 void UnscaleScreenCoords(s32& x, s32& y)
@@ -895,10 +1159,10 @@ void RestoreWindow(HWND hwnd)
 		RECT rc;
 		rc.left = WndX;
 		rc.top = WndY;
-		rc.right = rc.left + GetPrivateProfileInt("Video", "Window width", GPU_FRAMEBUFFER_NATIVE_WIDTH, IniName);
-		rc.bottom = rc.top + GetPrivateProfileInt("Video", "Window height", GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, IniName);
+		rc.right = rc.left + DPI_ScaleForWindow(GetPrivateProfileInt("Video", "Window width", GPU_FRAMEBUFFER_NATIVE_WIDTH, IniName), hwnd);
+		rc.bottom = rc.top + DPI_ScaleForWindow(GetPrivateProfileInt("Video", "Window height", GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, IniName), hwnd);
 
-		AdjustWindowRect(&rc, GetWindowLong(hwnd, GWL_STYLE), true);
+		DPI_AdjustWindowRectEx(&rc, (DWORD)GetWindowLong(hwnd, GWL_STYLE), TRUE, (DWORD)GetWindowLong(hwnd, GWL_EXSTYLE), hwnd);
 		SetWindowPos(hwnd, 0, WndX, WndY, rc.right - rc.left, rc.bottom - rc.top, SWP_NOOWNERZORDER | SWP_NOZORDER);
 	}
 	else
@@ -950,6 +1214,33 @@ static HMENU GetMenuItemParent(UINT itemId, HMENU hMenu = mainMenu)
 			if(HMENU innerResult = GetMenuItemParent(itemId, mii.hSubMenu))
 				return innerResult;
 	}
+	return NULL;
+}
+
+// The VFW AVI writer and the WAV recorders predate the Media Foundation path
+// and now live in their own submenu so the File menu only shows the recorder
+// people are meant to use.  A classic MENU resource cannot give a popup an
+// identifier, so the submenu is found by the ID of its first item.
+static HMENU GetLegacyRecordingMenu()
+{
+	HMENU fileMenu = GetSubMenu(mainMenu, 0);
+	if (fileMenu == NULL)
+		return NULL;
+
+	const int itemCount = GetMenuItemCount(fileMenu);
+	for (int i = 0; i < itemCount; i++)
+	{
+		HMENU subMenu = GetSubMenu(fileMenu, i);
+		if (subMenu == NULL)
+			continue;
+
+		MENUITEMINFO mii = {sizeof(MENUITEMINFO)};
+		mii.fMask = MIIM_ID;
+
+		if (GetMenuItemInfo(subMenu, 0, TRUE, &mii) && mii.wID == IDM_FILE_RECORDAVI)
+			return subMenu;
+	}
+
 	return NULL;
 }
 
@@ -1200,6 +1491,10 @@ void CheckMessages()
 					SendMessage(RamWatchHWnd, msg.message, msg.wParam, msg.lParam);
 				continue;
 			}
+			// The DSM Editor is modeless too: without this, Tab, Enter and the
+			// arrow keys never reach it.
+			if (DSMEditorGetHwnd() && IsDialogMessage(DSMEditorGetHwnd(), &msg))
+				continue;
 			if (SoundView_GetHWnd() && IsDialogMessage(SoundView_GetHWnd(), &msg))
 				continue;
 
@@ -1268,6 +1563,16 @@ static void StepRunLoop_Core()
 
 	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
 	ServiceDisplayThreadInvocations();
+
+	// Pause at the frame requested by the Play Movie dialog. The core's own
+	// pauseframe is assigned on load but never read, so the Windows loop owns
+	// the one-shot check. It runs after NDS_exec, when the frame counter has
+	// already advanced, and only while a movie is actually playing.
+	if (moviePauseFrame >= 0 && movieMode == MOVIEMODE_PLAY && currFrameCounter >= moviePauseFrame)
+	{
+		moviePauseFrame = -1;
+		Pause();
+	}
 }
 
 static void StepRunLoop_Paused()
@@ -1555,7 +1860,7 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 		lagframecounter=0;
 		UpdateRecentRoms(logicalName);
 		osd->setRotate(video.rotation);
-		if (AutoRWLoad)
+		if (RAMWatchCore::Get().AutoLoad())
 		{
 			//Open Ram Watch if its auto-load setting is checked
 			OpenRWRecentFile(0);	
@@ -1644,8 +1949,24 @@ int MenuInit()
 
 #ifndef DEVELOPER_MENU_ITEMS
 	// menu items that are only useful for desmume developers (maybe)
-	HMENU fileMenu = GetSubMenu(mainMenu, 0);
-	DeleteMenu(fileMenu, IDM_FILE_RECORDUSERSPUWAV, MF_BYCOMMAND);
+	HMENU legacyRecordMenu = GetLegacyRecordingMenu();
+	if (legacyRecordMenu != NULL)
+	{
+		DeleteMenu(legacyRecordMenu, IDM_FILE_RECORDUSERSPUWAV, MF_BYCOMMAND);
+	}
+#endif
+
+#if !DESMUME_ENABLE_MF
+	// The Media Foundation entries are in the resource script for every build,
+	// but a build without MF has no command handler behind them.
+	{
+		HMENU fileMenu = GetSubMenu(mainMenu, 0);
+		if (fileMenu != NULL)
+		{
+			DeleteMenu(fileMenu, IDM_FILE_RECORDVIDEO, MF_BYCOMMAND);
+			DeleteMenu(fileMenu, IDM_FILE_PAUSERECORDING, MF_BYCOMMAND);
+		}
+	}
 #endif
 
 	//zero 27-mar-2015 - removing this.. its just glitchy and rarely maintained.
@@ -1881,6 +2202,10 @@ static BOOL OpenCoreSystemCP(const char* filename_syscp)
 DWORD wmTimerRes;
 int _main()
 {
+	// Before the first dialog is created: this is where the system UI font is
+	// picked up and the hook that applies it to every dialog is installed.
+	uiFont::init();
+
 	//7zip initialization
 	InitDecoder();
 
@@ -1962,10 +2287,40 @@ int _main()
 	
 	bool useOutputFilter = GetPrivateProfileBool("Video","Display Method Filter", false, IniName);
 	gldisplay.setUseOutputFilter(useOutputFilter);
+	wgpudisplay.setUseOutputFilter(useOutputFilter);
+
+	// The GPU filter of the WebGPU display method. Nothing is compiled here:
+	// the chain of the selected filter is built the first time a frame is
+	// presented with it selected, and a filter that is never selected is never
+	// read out of the resources, let alone compiled.
+	displayGPUFilter = GetPrivateProfileInt("Video", "Display Method GPU Filter", WGPUPresentUpscaler_Off, IniName);
+	if (!WGPUPresent::isUpscaler(displayGPUFilter))
+	{
+		displayGPUFilter = WGPUPresentUpscaler_Off;
+	}
+	wgpudisplay.setUpscaler(displayGPUFilter);
 
 	if(GetPrivateProfileBool("Video","VSync", false, IniName))
 		style |= DWS_VSYNC;
 	displayMethod = GetPrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
+#if !defined(ENABLE_WGPU)
+	// WebGPU presentation is only built for x64. Never start with a method that
+	// this build cannot provide.
+	if (displayMethod == DISPMETHOD_WGPU)
+		displayMethod = DISPMETHOD_DDRAW_HW;
+#else
+	// Backend the WebGPU display method is pinned to, as WGPUInstanceBackend bits
+	// (zero = let wgpu-native pick). A value this machine can no longer run -- new
+	// driver, different GPU, backend dropped from the build -- falls back to
+	// automatic instead of leaving the emulator on a display method that never
+	// draws.
+	displayWGPUBackend = (u32)GetPrivateProfileInt("Video", "Display Method Backend", 0, IniName);
+	if ( (displayWGPUBackend != 0) && (WGPUBackendIndexFromMask(displayWGPUBackend) < 0) )
+	{
+		printf("WGPU: ignoring saved display backend mask %u, it is not available\n", displayWGPUBackend);
+		displayWGPUBackend = 0;
+	}
+#endif
 
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	video.rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
@@ -2016,17 +2371,32 @@ int _main()
 	gpu_bpp = GetValid3DIntSetting("GpuBpp", 18, possibleBPP, 3);
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
 
-	//Get Ram-Watch values
-	RWSaveWindowPos = GetPrivateProfileBool("RamWatch", "SaveWindowPos", false, IniName);
-	ramw_x = GetPrivateProfileInt("RamWatch", "RWWindowPosX", 0, IniName);
-	ramw_y = GetPrivateProfileInt("RamWatch", "RWWindowPosY", 0, IniName);
-	AutoRWLoad = GetPrivateProfileBool("RamWatch", "Auto-load", false, IniName);
+	// The modern UI font is the default; the menu entry exists so that the 2005
+	// era look can be brought back if a dialog does not fit on the user's font.
+	useModernFont = GetPrivateProfileBool("UI", "ModernFont", true, IniName);
+	uiFont::setModern(useModernFont);
+
+	// RAM Watch preferences and recent files are owned by the shared core;
+	// the INI file is just this frontend's persistence mechanism for them.
+	RAMWatchCore& rwDoc = RAMWatchCore::Get();
+	rwDoc.SetSaveWindowPos(GetPrivateProfileBool("RamWatch", "SaveWindowPos", false, IniName));
+	rwDoc.SetWindowPosition(GetPrivateProfileInt("RamWatch", "RWWindowPosX", 0, IniName),
+	                        GetPrivateProfileInt("RamWatch", "RWWindowPosY", 0, IniName));
+	rwDoc.SetAutoLoad(GetPrivateProfileBool("RamWatch", "Auto-load", false, IniName));
+
+	std::vector<std::string> recentWatches;
 	for(int i = 0; i < MAX_RECENT_WATCHES; i++)
 	{
 		char str[256];
+		char value[1024] = "";
 		sprintf(str, "Recent Watch %d", i+1);
-		GetPrivateProfileString("Watches", str, "", &rw_recent_files[i][0], 1024, IniName);
+		GetPrivateProfileString("Watches", str, "", value, sizeof(value), IniName);
+		if (value[0] != '\0')
+		{
+			recentWatches.push_back(value);
+		}
 	}
+	rwDoc.SetRecentFiles(recentWatches);
 
 	autoLoadLua = GetPrivateProfileBool("Scripting", "AutoLoad", false, IniName);
 
@@ -2101,7 +2471,17 @@ int _main()
 	SetDisplayNeedsBufferUpdates();
 
 	MainWindow = new WINCLASS(L"DeSmuME", hAppInst);
-	if (!MainWindow->createW(boffo, WndX, WndY, video.width,video.height+video.screengap,
+
+	// Open at the size the window will keep once ScaleScreen() runs, using the
+	// DPI of the monitor the saved position points at. Without this the first
+	// frame is drawn into a native-size window and then jumps.
+	int startupDPI = DPI_GetSystem();
+	if ( (WndX > -10000) && (WndY > -10000) )
+	{
+		startupDPI = DPI_GetForPoint(WndX, WndY);
+	}
+
+	if (!MainWindow->createW(boffo, WndX, WndY, DPI_Scale(video.width, startupDPI), DPI_Scale(video.height+video.screengap, startupDPI),
 		WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 		NULL))
 	{
@@ -2110,9 +2490,14 @@ int _main()
 		exit(-1);
 	}
 
+	// The HWND exists but is not shown yet: this is the right moment for the
+	// DWM attribute and for the menu bar subclass to take effect.
+	darkMode::applyFrame(MainWindow->getHWnd());
+
 	switch (displayMethod)
 	{
 		case DISPMETHOD_OPENGL:
+		case DISPMETHOD_WGPU:
 			break;
 
 		case DISPMETHOD_DDRAW_HW:
@@ -2151,6 +2536,17 @@ int _main()
 		delete MainWindow;
 		exit(-1);
 	}
+
+#if defined(ENABLE_WGPU)
+	// The menu exists now, so the per-backend WebGPU entries can be added under
+	// the "WebGPU" submenu. This needs Build3DRendererList() to have run, which
+	// happened before _main().
+	BuildDisplayMethodBackendMenu();
+
+	// The GPU filters come from the chain table, which exists in every build
+	// that has the WebGPU display method at all.
+	BuildDisplayMethodGpuFilterMenu();
+#endif
 
 	SetStyle(style);
 
@@ -2386,6 +2782,7 @@ int _main()
 	if(cmdline.render3d == COMMANDLINE_RENDER3D_OLDGL) cur3DCore = GPU3D_OPENGL_OLD;
 	if(cmdline.render3d == COMMANDLINE_RENDER3D_GL) cur3DCore = GPU3D_OPENGL_3_2; //no way of forcing it, at least not right now. I dont care.
 	if(cmdline.render3d == COMMANDLINE_RENDER3D_AUTOGL) cur3DCore = GPU3D_OPENGL_3_2; //this will fallback i guess
+	if(cmdline.render3d == COMMANDLINE_RENDER3D_WGPU) cur3DCore = GPU3D_WGPU;
 
 	CommonSettings.GFX3D_HighResolutionInterpolateColor = GetPrivateProfileBool("3D", "HighResolutionInterpolateColor", 1, IniName);
 	CommonSettings.GFX3D_EdgeMark = GetPrivateProfileBool("3D", "EnableEdgeMark", 1, IniName);
@@ -2579,7 +2976,29 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 {
 //	testelf();
 
+	// Must happen before any window exists. The manifest already requests
+	// PerMonitorV2; this covers builds that do not embed it.
+	DPI_EnablePerMonitorAwareness();
+
+	// Also before any window exists: the app mode is a process wide setting
+	// and the common controls have to be initialised before the toolbar.
+	darkMode::init();
+
+#if defined(ENABLE_WGPU)
+	// Headless development hook: render a reference scene through the WebGPU
+	// renderer and exit. Used to validate the backend without a ROM.
+	const char *wgpuSelfTestPath = getenv("DESMUME_WGPU_SELFTEST");
+	if (wgpuSelfTestPath != NULL)
+	{
+		return WGPURender_SelfTest(wgpuSelfTestPath);
+	}
+#endif
+
     CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
+
+	// Build the renderer list first: it probes wgpu for its available backends,
+	// and the settings loaded below validate the saved renderer index against it.
+	Build3DRendererList();
 
 	TIMECAPS tc;
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS))== TIMERR_NOERROR)
@@ -2769,8 +3188,32 @@ void SetRotate(HWND hwnd, int rot, bool user)
 		case 270: cwid = IDC_ROTATE0; ccwid = IDC_ROTATE180; break;
 	}
 
-	MainWindowToolbar->ChangeButtonID(4, ccwid);
-	MainWindowToolbar->ChangeButtonID(5, cwid);
+	// Retag the two rotation buttons.  Their toolbar index is no longer fixed
+	// (Stop / Frame Advance / Reset are inserted before them), so find them by
+	// their current rotation command id instead of a hard-coded index.  The
+	// first one found in index order (CCW) gets ccwid, the second (CW) gets cwid.
+	{
+		HWND tb = MainWindowToolbar->GetHWnd();
+		int rotIdx[2] = { -1, -1 };
+		const int n = (int)SendMessage(tb, TB_BUTTONCOUNT, 0, 0);
+		for (int i = 0; i < n && (rotIdx[0] < 0 || rotIdx[1] < 0); i++)
+		{
+			TBBUTTON btn;
+			if (SendMessage(tb, TB_GETBUTTON, i, (LPARAM)&btn))
+			{
+				switch (btn.idCommand)
+				{
+				case IDC_ROTATE0: case IDC_ROTATE90:
+				case IDC_ROTATE180: case IDC_ROTATE270:
+					if (rotIdx[0] < 0) rotIdx[0] = i;
+					else if (rotIdx[1] < 0) rotIdx[1] = i;
+					break;
+				}
+			}
+		}
+		if (rotIdx[0] >= 0) MainWindowToolbar->ChangeButtonID(rotIdx[0], ccwid);
+		if (rotIdx[1] >= 0) MainWindowToolbar->ChangeButtonID(rotIdx[1], cwid);
+	}
 
 	WritePrivateProfileInt("Video","Window Rotate",video.rotation,IniName);
 	if(user)
@@ -2875,6 +3318,114 @@ void AviRecordTo()
 
 	NDS_UnPause();
 }
+
+#if DESMUME_ENABLE_MF
+// Picks an encoder, then a file name, then starts writing through Media
+// Foundation.  Unlike the AVI path there is no codec dialog on top of the save
+// dialog: the encoder was chosen before, and the sink writer just uses it.
+void RecordVideoTo()
+{
+	NDS_Pause();
+
+	RecordParams params;
+	LoadRecordingParams(&params);
+
+	if (!ShowRecordingSettings(MainWindow->getHWnd(), &params))
+	{
+		NDS_UnPause();
+		return;
+	}
+
+	SaveRecordingParams(params);
+
+	const RecordContainer *container = videoEncoders::containerFor(params.videoSubtype, params.audioSubtype);
+	if (container == NULL)
+	{
+		NDS_UnPause();
+		return;
+	}
+
+	// The file type follows from the encoder pair, so the extension cannot
+	// disagree with what the writer is about to mux.
+	char extension[16] = "";
+	WideCharToMultiByte(CP_ACP, 0, container->extension + 1, -1, extension, sizeof(extension) - 1, NULL, NULL);
+
+	std::string filter;
+	filter += container->description;
+	filter += " (*.";
+	filter += extension;
+	filter += ")";
+	filter.push_back('\0');
+	filter += "*.";
+	filter += extension;
+	filter.push_back('\0');
+	filter.push_back('\0');
+
+	char outFilename[MAX_PATH] = "";
+	OPENFILENAME ofn;
+	memset(&ofn, 0, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = MainWindow->getHWnd();
+	ofn.lpstrFilter = filter.c_str();
+	ofn.lpstrDefExt = extension;
+	ofn.lpstrTitle = "Save Recording as";
+
+	std::string dir = path.getpath(path.AVI_FILES);
+	ofn.lpstrInitialDir = dir.c_str();
+	path.formatname(outFilename);
+	ofn.lpstrFile = outFilename;
+
+	const int len = strlen(outFilename);
+	if (len + (int)dir.length() + 8 > MAX_PATH)
+		outFilename[MAX_PATH - dir.length() - 8] = '\0';
+
+	strcat(outFilename, ".");
+	strcat(outFilename, extension);
+
+	ofn.nMaxFile = MAX_PATH;
+	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
+
+	if (GetSaveFileName(&ofn))
+	{
+		if (AVI_IsRecording())
+		{
+			DRV_AviEnd();
+		}
+
+		// "Record at the window size" means the window as it is at this
+		// instant: the size is frozen for the whole recording, because the
+		// encoder was told what it is and cannot be told again.
+		RECT client;
+		if (GetClientRect(MainWindow->getHWnd(), &client))
+		{
+			params.pictureWidth	 = client.right - client.left;
+			params.pictureHeight = client.bottom - client.top;
+		}
+
+		if (DRV_AviBeginEx(outFilename, params))
+		{
+			LOG("Recording started.");
+			driver->AddLine("Recording started.");
+		}
+
+		dir = Path::GetFileDirectoryPath(outFilename);
+		path.setpath(path.AVI_FILES, dir);
+		WritePrivateProfileStringW(LSECTION, AVIKEY, mbstowcs(dir).c_str(), IniNameW);
+	}
+
+	NDS_UnPause();
+}
+
+void RecordVideoPause()
+{
+	if (!DRV_AviCanPause())
+	{
+		return;
+	}
+
+	DRV_AviPause(!DRV_AviIsPaused());
+}
+#endif // DESMUME_ENABLE_MF
 
 void WavEnd()
 {
@@ -3051,6 +3602,7 @@ static BOOL OpenCore(const char* filename)
 		MainWindowToolbar->EnableButton(IDM_PAUSE, true);
 		MainWindowToolbar->EnableButton(IDM_CLOSEROM, true);
 		MainWindowToolbar->EnableButton(IDM_RESET, true);
+		MainWindowToolbar->EnableButton(IDC_FRAMEADVANCE, true);
 		MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PAUSE);
 
 		// Warn the user if the battery save won't be written to an actual file on disk.
@@ -3163,6 +3715,7 @@ void CloseRom()
 	MainWindowToolbar->EnableButton(IDM_PAUSE, false);
 	MainWindowToolbar->EnableButton(IDM_CLOSEROM, false);
 	MainWindowToolbar->EnableButton(IDM_RESET, false);
+	MainWindowToolbar->EnableButton(IDC_FRAMEADVANCE, false);
 	MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PLAY);
 }
 
@@ -3521,9 +4074,20 @@ void SaveWindowSize(HWND hwnd)
 	if(IsZoomed(hwnd) || fsWindow) return;
 	RECT rc;
 	GetClientRect(hwnd, &rc);
-	rc.top += MainWindowToolbar->GetHeight();
-	WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
-	WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
+
+	// setClientSize() adds the toolbar height back on, so store the height of
+	// the screen area only, not the whole client area.
+	rc.bottom -= MainWindowToolbar->GetHeight();
+	if (rc.bottom <= 0)
+	{
+		return;
+	}
+
+	// Stored in 96 DPI units so the window keeps its apparent size when the
+	// settings are reused on a monitor with a different scaling factor.
+	const int dpi = DPI_GetForWindow(hwnd);
+	WritePrivateProfileInt("Video", "Window width", DPI_Unscale(rc.right - rc.left, dpi), IniName);
+	WritePrivateProfileInt("Video", "Window height", DPI_Unscale(rc.bottom - rc.top, dpi), IniName);
 }
 
 void SaveWindowPos(HWND hwnd)
@@ -3538,6 +4102,56 @@ static void ShowToolWindow(HWND hwnd)
 {
 	ShowWindow(hwnd,SW_NORMAL);
 	SetForegroundWindow(hwnd);
+}
+
+
+
+// SetRotate() retags the two rotate buttons with the command id of the angle
+// they will switch to.  The tooltip therefore has to be derived from the
+// difference between that target and the current rotation, not from the id
+// alone.
+static const char *RotateToolTipText(int commandID)
+{
+	int target;
+	switch (commandID)
+	{
+	case IDC_ROTATE0:   target = 0;   break;
+	case IDC_ROTATE90:  target = 90;  break;
+	case IDC_ROTATE180: target = 180; break;
+	case IDC_ROTATE270: target = 270; break;
+	default: return NULL;
+	}
+
+	const int delta = (target - video.rotation + 360) % 360;
+	if (delta == 90)
+		return "Rotate screen 90 degrees clockwise";
+	if (delta == 270)
+		return "Rotate screen 90 degrees counter-clockwise";
+	return "Rotate screen";
+}
+
+// comctl32 asks a toolbar for help text in two different ways, and each of
+// them has an ANSI and a Unicode variant.  A version 6 toolbar sends
+// TBN_GETINFOTIP and expects the text copied into its own buffer; the older
+// tooltip path sends TTN_NEEDTEXT and expects a string pointer.  Measured on
+// Windows 11 (comctl32 6.0.26100.9843), this MultiByte build receives the
+// *Unicode* variant TBN_GETINFOTIPW (-719), not TBN_GETINFOTIPA (-718), so
+// all four are wired up below and share this one lookup.
+static const char *ToolBarTipText(int commandID)
+{
+	switch (commandID)
+	{
+	case IDM_OPEN:
+		return RecentRoms.empty()
+			? "Open a ROM"
+			: "Open a ROM\nClick the arrow to open a recent ROM";
+	case IDM_PAUSE:
+		return paused ? "Resume emulation" : "Pause emulation";
+	case IDM_CLOSEROM: return "Stop emulation";
+	case IDM_RESET:    return "Reset emulation";
+	case IDC_FRAMEADVANCE: return "Frame advance";
+	default:           return RotateToolTipText(commandID);
+	}
 }
 
 //========================================================================================
@@ -3570,15 +4184,26 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MENUITEMINFOW mii;
 			WCHAR menuItemString[256];
 			ZeroMemory(&mii, sizeof(MENUITEMINFOW));
+			//The legacy recorders sit in their own submenu, so their text and
+			//enable state has to be set through that submenu, not the menu bar.
+			HMENU legacyMenu = GetLegacyRecordingMenu();
 			//Check if AVI is recording
 			mii.cbSize = sizeof(MENUITEMINFOW);
 			mii.fMask = MIIM_STRING;
 			LoadStringW(hAppInst, !AVI_IsRecording() ? IDM_FILE_RECORDAVI : IDM_FILE_STOPAVI, menuItemString, 256);
 			mii.dwTypeData = menuItemString;
-			SetMenuItemInfoW(mainMenu, IDM_FILE_RECORDAVI, FALSE, &mii);
+			SetMenuItemInfoW(legacyMenu, IDM_FILE_RECORDAVI, FALSE, &mii);
 			//Check if WAV is recording
 			LoadStringW(hAppInst, !WAV_IsRecording() ? IDM_FILE_RECORDWAV : IDM_FILE_STOPWAV, menuItemString, 256);
-			SetMenuItemInfoW(mainMenu, IDM_FILE_RECORDWAV, FALSE, &mii);
+			SetMenuItemInfoW(legacyMenu, IDM_FILE_RECORDWAV, FALSE, &mii);
+#if DESMUME_ENABLE_MF
+			//Check if the Media Foundation recorder is running
+			LoadStringW(hAppInst, !AVI_IsRecording() ? IDM_FILE_RECORDVIDEO : IDM_FILE_STOPVIDEO, menuItemString, 256);
+			SetMenuItemInfoW(mainMenu, IDM_FILE_RECORDVIDEO, FALSE, &mii);
+			//Pause only exists for the Media Foundation writer; VFW has no such state
+			LoadStringW(hAppInst, !DRV_AviIsPaused() ? IDM_FILE_PAUSERECORDING : IDM_FILE_RESUMERECORDING, menuItemString, 256);
+			SetMenuItemInfoW(mainMenu, IDM_FILE_PAUSERECORDING, FALSE, &mii);
+#endif
 
 			//Menu items dependent on a ROM loaded
 			DesEnableMenuItem(mainMenu, IDM_GAME_INFO,         romloaded);
@@ -3588,8 +4213,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_STATE_LOAD,        romloaded);
 			DesEnableMenuItem(mainMenu, IDM_PRINTSCREEN,       romloaded);
 			DesEnableMenuItem(mainMenu, IDM_QUICK_PRINTSCREEN, romloaded);
-			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    romloaded);
-			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDWAV,    romloaded);
+			DesEnableMenuItem(legacyMenu, IDM_FILE_RECORDAVI,    romloaded);
+			DesEnableMenuItem(legacyMenu, IDM_FILE_RECORDWAV,    romloaded);
+#if DESMUME_ENABLE_MF
+			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDVIDEO,  romloaded);
+			DesEnableMenuItem(mainMenu, IDM_FILE_PAUSERECORDING, romloaded && DRV_AviCanPause());
+#endif
 			DesEnableMenuItem(mainMenu, IDM_RESET,             romloaded && !(movieMode == MOVIEMODE_PLAY && movie_readonly));
 			DesEnableMenuItem(mainMenu, IDM_CLOSEROM,          romloaded);
 			DesEnableMenuItem(mainMenu, IDM_SHUT_UP,           romloaded);
@@ -3597,13 +4226,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,     romloaded);
 			//DesEnableMenuItem(mainMenu, IDM_WIFISETTINGS,      romloaded);
 #ifdef DEVELOPER_MENU_ITEMS
-			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDUSERSPUWAV,    romloaded && !WAV_IsRecording());
+			DesEnableMenuItem(legacyMenu, IDM_FILE_RECORDUSERSPUWAV,    romloaded && !WAV_IsRecording());
 #endif
 
 
 			DesEnableMenuItem(mainMenu, IDM_RECORD_MOVIE,      (romloaded /*&& movieMode == MOVIEMODE_INACTIVE*/));
 			DesEnableMenuItem(mainMenu, IDM_PLAY_MOVIE,        (romloaded /*&& movieMode == MOVIEMODE_INACTIVE*/));
 			DesEnableMenuItem(mainMenu, IDM_STOPMOVIE,         (romloaded && movieMode != MOVIEMODE_INACTIVE));
+			DesEnableMenuItem(mainMenu, IDM_DSM_EDITOR,        romloaded);
 
 			DesEnableMenuItem(mainMenu, ID_RAM_WATCH,          romloaded);
 			DesEnableMenuItem(mainMenu, ID_RAM_SEARCH,         romloaded);
@@ -3754,10 +4384,40 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, displayMethod == DISPMETHOD_DDRAW_HW);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, displayMethod == DISPMETHOD_DDRAW_SW);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_OPENGL, displayMethod == DISPMETHOD_OPENGL);
+#if defined(ENABLE_WGPU)
+			// Covers the automatic entry and one entry per backend.
+			UpdateDisplayMethodMenuChecks();
+#else
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_WGPU, displayMethod == DISPMETHOD_WGPU);
+#endif
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_FILTER, gldisplay.useOutputFilter());
+
+			// The GPU filters are WGSL chains, so only the WebGPU display
+			// method can run one. The choice is kept while another method is
+			// active -- the stored filter applies again on the way back --
+			// but the entries are greyed out so that picking one never looks
+			// like it did something it did not.
+			{
+				const bool gpuFiltersUsable = (displayMethod == DISPMETHOD_WGPU);
+
+				MainWindow->checkMenu(ID_DISPLAYMETHOD_GPUFILTER_OFF, displayGPUFilter == WGPUPresentUpscaler_Off);
+				MainWindow->enableMenu(ID_DISPLAYMETHOD_GPUFILTER_OFF, gpuFiltersUsable);
+
+				for (int value = WGPUPresentUpscaler_Off + 1; value < WGPUPresentUpscalerCount; value++)
+				{
+					if ( (ID_DISPLAYMETHOD_GPUFILTER_FIRST + value) >= ID_DISPLAYMETHOD_GPUFILTER_LAST )
+					{
+						break;
+					}
+
+					MainWindow->checkMenu(ID_DISPLAYMETHOD_GPUFILTER_FIRST + (UINT)value, displayGPUFilter == value);
+					MainWindow->enableMenu(ID_DISPLAYMETHOD_GPUFILTER_FIRST + (UINT)value, gpuFiltersUsable);
+				}
+			}
 
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
 			MainWindow->checkMenu(IDC_BACKGROUNDINPUT, allowBackgroundInput);
+			MainWindow->checkMenu(IDM_USE_MODERN_FONT, useModernFont);
 
 			MainWindow->checkMenu(IDM_CHEATS_DISABLE, CommonSettings.cheatsDisable == true);
 
@@ -3812,32 +4472,27 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindowToolbar->AppendButton(IDM_OPEN, IDB_OPEN, TBSTATE_ENABLED, false);
 			MainWindowToolbar->AppendSeparator();
 			MainWindowToolbar->AppendButton(IDM_PAUSE, IDB_PLAY, 0, false);
+			MainWindowToolbar->AppendButton(IDM_CLOSEROM, IDB_STOP, 0, false);
+			MainWindowToolbar->AppendButton(IDC_FRAMEADVANCE, IDB_FRAMEADVANCE, 0, false);
+			MainWindowToolbar->AppendButton(IDM_RESET, IDB_RESET, 0, false);
 			MainWindowToolbar->AppendSeparator();
 
-			//zero 03-feb-2013 - this isnt necessary, since the SetRotate function gets called eventually
-			//int cwid, ccwid;
-			//switch (video.rotation)
-			//{
-			//	case 0: cwid = IDC_ROTATE90; ccwid = IDC_ROTATE270; break;
-			//	case 90: cwid = IDC_ROTATE180; ccwid = IDC_ROTATE0; break;
-			//	case 180: cwid = IDC_ROTATE270; ccwid = IDC_ROTATE90; break;
-			//	case 270: cwid = IDC_ROTATE0; ccwid = IDC_ROTATE180; break;
-			//}
-
+			// SetRotate() retags the two rotation buttons later, but it returns
+			// early for a layout other than a single screen.  Give them their
+			// rotation-0 command ids right away so they are always distinct:
+			// EnableButton() and the tooltips both address them by command id.
+			// SetRotate now locates them by command id rather than a hard-coded
+			// index, so the Stop / Frame Advance / Reset buttons inserted before
+			// them do not shift the rotation mapping.
 			DWORD rotstate = (video.layout == 0) ? TBSTATE_ENABLED : 0;
-			MainWindowToolbar->AppendButton(0, IDB_ROTATECCW, rotstate, false);
-			MainWindowToolbar->AppendButton(0, IDB_ROTATECW, rotstate, false);
-
-			//we WANT it to be hard to do these operations. accidents would be bad. lets not use these buttons
-			//MainWindowToolbar->AppendSeparator();
-			//MainWindowToolbar->AppendSeparator();
-			//MainWindowToolbar->AppendSeparator();
-			//MainWindowToolbar->AppendButton(IDM_CLOSEROM, IDB_STOP, 0, false);
-			//MainWindowToolbar->AppendButton(IDM_RESET, IDB_RESET, 0, false);
+			MainWindowToolbar->AppendButton(IDC_ROTATE270, IDB_ROTATECCW, rotstate, false);
+			MainWindowToolbar->AppendButton(IDC_ROTATE90,  IDB_ROTATECW,  rotstate, false);
 
 
 			bool showtb = GetPrivateProfileBool("Display", "Show Toolbar", true, IniName);
 			MainWindowToolbar->Show(showtb);
+
+			
 
 			return 0;
 		}
@@ -3862,17 +4517,21 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 				WritePrivateProfileInt("Display", "ScreenGap", video.screengap, IniName);
 
-				//Save Ram Watch information
-				WritePrivateProfileInt("RamWatch", "SaveWindowPos", RWSaveWindowPos, IniName);
-				WritePrivateProfileInt("RamWatch", "RWWindowPosX", ramw_x, IniName);
-				WritePrivateProfileInt("RamWatch", "RWWindowPosY", ramw_y, IniName);
-				WritePrivateProfileInt("RamWatch", "Auto-load", AutoRWLoad, IniName);
+				//Save Ram Watch information (state lives in the shared core)
+				const RAMWatchCore& rwDoc = RAMWatchCore::Get();
+				WritePrivateProfileInt("RamWatch", "SaveWindowPos", rwDoc.SaveWindowPos(), IniName);
+				WritePrivateProfileInt("RamWatch", "RWWindowPosX", rwDoc.WindowX(), IniName);
+				WritePrivateProfileInt("RamWatch", "RWWindowPosY", rwDoc.WindowY(), IniName);
+				WritePrivateProfileInt("RamWatch", "Auto-load", rwDoc.AutoLoad(), IniName);
 
+				const std::vector<std::string>& recentWatches = rwDoc.RecentFiles();
 				for(int i = 0; i < MAX_RECENT_WATCHES; i++)
 				{
 					char str[256];
 					sprintf(str, "Recent Watch %d", i+1);
-					WritePrivateProfileString("Watches", str, &rw_recent_files[i][0], IniName);	
+					WritePrivateProfileString("Watches", str,
+					                          (i < (int)recentWatches.size()) ? recentWatches[i].c_str() : "",
+					                          IniName);
 				}
 
 				for(int i = 0; i < MAX_RECENT_SCRIPTS; i++)
@@ -3915,6 +4574,41 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		UpdateWndRects(hwnd);
 		return 0;
 	}
+
+	case WM_DPICHANGED:
+		{
+			// The window landed on a monitor with a different scaling factor.
+			// Windows suggests a rect that keeps the apparent size; accept it,
+			// then re-derive the layout with the new DPI so the presets and the
+			// toolbar keep matching.
+			const RECT * const suggested = (const RECT *)lParam;
+
+			SetWindowPos(hwnd, NULL, suggested->left, suggested->top,
+			             suggested->right - suggested->left, suggested->bottom - suggested->top,
+			             SWP_NOZORDER | SWP_NOACTIVATE);
+
+			if (MainWindowToolbar != NULL)
+			{
+				MainWindowToolbar->SetDPI(DPI_GetForWindow(hwnd));
+			}
+
+			// The menu bar font is built for the old DPI; rebuild it the next
+			// time the bar is painted.
+			darkMode::resetFont();
+
+			SetMinWindowSize();
+
+			if ( !IsZoomed(hwnd) && !fsWindow && (windowSize != 0) )
+			{
+				ScaleScreen(windowSize, false);
+			}
+			else
+			{
+				UpdateWndRects(hwnd);
+			}
+
+			return 0;
+		}
 
 	case WM_KILLFOCUS:
 		if(lostFocusPause) {
@@ -3977,20 +4671,22 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				int minX = 0;
 				int minY = 0;
 
+				// Min sizes are compared against the window rect, which is in
+				// physical pixels, so the logical DS sizes need scaling first.
 				if (video.layout == 0)
 				{
-					minX = video.rotatedwidthgap();
-					minY = video.rotatedheightgap();
+					minX = DPI_ScaleForWindow(video.rotatedwidthgap(), hwnd);
+					minY = DPI_ScaleForWindow(video.rotatedheightgap(), hwnd);
 				}
 				else if (video.layout == 1)
 				{
-					minX = video.rotatedwidthgap() * 2;
-					minY = video.rotatedheightgap() * screenSizeRatio / 2;
+					minX = DPI_ScaleForWindow(video.rotatedwidthgap() * 2, hwnd);
+					minY = DPI_ScaleForWindow(video.rotatedheightgap() * screenSizeRatio / 2, hwnd);
 				}
 				else if (video.layout == 2)
 				{
-					minX = video.rotatedwidthgap();
-					minY = video.rotatedheightgap() / 2;
+					minX = DPI_ScaleForWindow(video.rotatedwidthgap(), hwnd);
+					minY = DPI_ScaleForWindow(video.rotatedheightgap() / 2, hwnd);
 				}
 
 				if(verticalDrag && !sideways && SeparationBorderDrag && video.layout == 0)
@@ -4538,6 +5234,21 @@ DOKEYDOWN:
 			else
 				AviRecordTo();
 			break;
+#if DESMUME_ENABLE_MF
+		case IDM_FILE_RECORDVIDEO:
+			if (AVI_IsRecording())
+			{
+				AviEnd();
+			}
+			else
+			{
+				RecordVideoTo();
+			}
+			break;
+		case IDM_FILE_PAUSERECORDING:
+			RecordVideoPause();
+			break;
+#endif
 		case IDM_FILE_RECORDWAV:
 			if (WAV_IsRecording())
 				WAV_End();
@@ -4933,6 +5644,9 @@ DOKEYDOWN:
 		case IDM_STOPMOVIE:
 			FCEUI_StopMovie();
 			return 0;
+		case IDM_DSM_EDITOR:
+			DSMEditorOpen(hwnd);
+			return 0;
 
 		case ID_LCDS_VERTICAL:
 			if (video.layout == 0) return 0;
@@ -5080,6 +5794,12 @@ DOKEYDOWN:
 				ShowToolWindow(RamWatchHWnd);
 			return 0;
 
+		case IDM_USE_MODERN_FONT:
+			useModernFont = !useModernFont;
+			uiFont::setModern(useModernFont);
+			WritePrivateProfileBool("UI", "ModernFont", useModernFont, IniName);
+			return 0;
+
 		case IDC_BACKGROUNDPAUSE:
 			lostFocusPause = !lostFocusPause;
 			allowBackgroundInput &= !lostFocusPause;
@@ -5116,7 +5836,22 @@ DOKEYDOWN:
 		case ID_DISPLAYMETHOD_OPENGL:
 			displayMethod = DISPMETHOD_OPENGL;
 			WritePrivateProfileInt("Video","Display Method", DISPMETHOD_OPENGL, IniName);
+			wgpudisplay.kill();
 			SetDisplayNeedsBufferUpdates();
+			break;
+
+		case ID_DISPLAYMETHOD_WGPU:
+#if defined(ENABLE_WGPU)
+			// "Automatic": no backend pinned, which is also how a settings file
+			// written before the per-backend entries existed reads.
+			if (!SwitchToWGPUDisplay(hwnd, 0))
+			{
+				// Nothing changed, so put the check marks back where they were.
+				UpdateDisplayMethodMenuChecks();
+			}
+#else
+			MessageBox(hwnd, "This build does not include the WebGPU display method.", DESMUME_NAME, MB_OK | MB_ICONINFORMATION);
+#endif
 			break;
 
 		case ID_DISPLAYMETHOD_FILTER:
@@ -5124,13 +5859,39 @@ DOKEYDOWN:
 			bool useOutputFilter = gldisplay.useOutputFilter();
 			useOutputFilter = !useOutputFilter;
 			gldisplay.setUseOutputFilter(useOutputFilter);
+			wgpudisplay.setUseOutputFilter(useOutputFilter);
 			WritePrivateProfileInt("Video", "Display Method Filter", gldisplay.useOutputFilter() ? 1 : 0, IniName);
 			break;
 		}
 
+		case ID_DISPLAYMETHOD_GPUFILTER_OFF:
+			SetDisplayGPUFilter(WGPUPresentUpscaler_Off);
+			break;
+
 		case IDM_RESET:
 			ResetGame();
 			return 0;
+
+		case IDC_FRAMEADVANCE:
+			if (romloaded)
+			{
+				if (!emu_paused)
+				{
+					// running: pause at the next frame boundary
+					Pause();
+				}
+				else
+				{
+					// already paused: step exactly one frame. The main loop
+					// consumes frameAdvance and halts again after one frame
+					// (see StepRunLoop_Throttle), so no button-release event
+					// is needed.
+					NDS_OmitFrameSkip();
+					execute = TRUE;
+					frameAdvance = true;
+				}
+			}
+			break;
 
 		case ID_STREAMFROMDISK:
 			CommonSettings.loadToMemory = false;
@@ -5205,6 +5966,9 @@ DOKEYDOWN:
 		case IDC_CLOSE_LUA_SCRIPTS:
 			for(int i=(int)LuaScriptHWnds.size()-1; i>=0; i--)
 				SendMessage(LuaScriptHWnds[i], WM_CLOSE, 0,0);
+			break;
+		case IDC_LUA_ABOUT:
+			LuaConsole_ShowEngineInfo(MainWindow->getHWnd());
 			break;
 	
 
@@ -5451,7 +6215,7 @@ DOKEYDOWN:
 			{
 				OpenConsole();			// Init debug console
 				ConsoleAlwaysTop(gConsoleTopmost);
-			}
+							}
 			else
 			{
 				CloseConsole();
@@ -5535,6 +6299,30 @@ DOKEYDOWN:
 				{
 					backup_setManualBackupType(id-IDC_SAVETYPE);
 				}
+				// One entry per GPU filter, sharing a contiguous ID block for the
+				// same reason as the backends below: the entries are built at run
+				// time from the chain table. Entry N of the block is the
+				// WGPUPresentUpscaler value N.
+				if ( (id >= ID_DISPLAYMETHOD_GPUFILTER_FIRST) && (id < ID_DISPLAYMETHOD_GPUFILTER_LAST) )
+				{
+					SetDisplayGPUFilter((int)(id - ID_DISPLAYMETHOD_GPUFILTER_FIRST));
+				}
+#if defined(ENABLE_WGPU)
+				// One entry per WebGPU display backend. They share a contiguous ID
+				// block because the set is built at run time, so there is no case
+				// label for each of them.
+				if ( (id >= ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST) && (id < ID_DISPLAYMETHOD_WGPU_BACKEND_LAST) )
+				{
+					const u32 backendMask = WGPURender_GetBackendMask((size_t)(id - ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST));
+
+					// A menu entry outliving the list it came from would land here with
+					// a zero mask; treat that as "nothing selected" and resync the marks.
+					if ( (backendMask == 0) || !SwitchToWGPUDisplay(hwnd, backendMask) )
+					{
+						UpdateDisplayMethodMenuChecks();
+					}
+				}
+#endif
 				return 0;
 			}
 		}
@@ -5545,6 +6333,17 @@ DOKEYDOWN:
 				NMHDR nmhdr = *(NMHDR*)lParam;
 				switch (nmhdr.code)
 				{
+				case NM_CUSTOMDRAW:
+					// The main window only has one custom drawn child: the
+					// toolbar.  Its background and hot/pressed faces are painted
+					// with the dark chrome colours.
+					if (MainWindowToolbar != NULL &&
+						nmhdr.hwndFrom == MainWindowToolbar->GetHWnd())
+					{
+						return darkMode::toolBarCustomDraw(lParam);
+					}
+					return 0;
+
 				case TBN_DROPDOWN:
 					{
 						NMTOOLBAR nmtb = *(NMTOOLBAR*)lParam;
@@ -5569,39 +6368,66 @@ DOKEYDOWN:
 					}
 					return 0;
 
-				case TTN_NEEDTEXT:
+				case TBN_GETINFOTIPA:
 					{
-						TOOLTIPTEXT* ttt = (TOOLTIPTEXT*)lParam;
-						ttt->hinst = hAppInst;
-
-						switch (ttt->hdr.idFrom)
-						{
-						case IDM_OPEN:
-							if (RecentRoms.empty()) ttt->lpszText = "Open a ROM";
-							else ttt->lpszText = "Open a ROM\nClick the arrow to open a recent ROM"; break;
-
-						case IDM_PAUSE:
-							if (paused) ttt->lpszText = "Resume emulation";
-							else ttt->lpszText = "Pause emulation"; break;
-
-						case IDM_CLOSEROM: ttt->lpszText = "Stop emulation"; break;
-						case IDM_RESET: ttt->lpszText = "Reset emulation"; break;
-
-						case IDC_ROTATE0:
-							if (video.rotation == 90) ttt->lpszText = "Rotate CCW";
-							else if (video.rotation == 270) ttt->lpszText = "Rotate CW"; break;
-						case IDC_ROTATE90:
-							if (video.rotation == 180) ttt->lpszText = "Rotate CCW";
-							else if (video.rotation == 0) ttt->lpszText = "Rotate CW"; break;
-						case IDC_ROTATE180:
-							if (video.rotation == 270) ttt->lpszText = "Rotate CCW";
-							else if (video.rotation == 90) ttt->lpszText = "Rotate CW"; break;
-						case IDC_ROTATE270:
-							if (video.rotation == 0) ttt->lpszText = "Rotate CCW";
-							else if (video.rotation == 180) ttt->lpszText = "Rotate CW"; break;
-						}
+						// iItem is the button command id; pszText is a buffer
+						// owned by the control.
+						NMTBGETINFOTIPA *info = (NMTBGETINFOTIPA*)lParam;
+						const char *text = ToolBarTipText(info->iItem);
+						if (text == NULL)
+							info->pszText[0] = '\0';
+						else
+							lstrcpynA(info->pszText, text, info->cchTextMax);
+												return 0;
 					}
-					return 0;
+
+				case TBN_GETINFOTIPW:
+					{
+						// v6 controls are Unicode internally even when the
+						// host was built as MultiByte, so both variants are
+						// needed.  Convert the ASCII menu wording on the fly.
+						NMTBGETINFOTIPW *info = (NMTBGETINFOTIPW*)lParam;
+						const char *text = ToolBarTipText(info->iItem);
+						wchar_t wide[256];
+						if (text == NULL)
+							wide[0] = L'\0';
+						else
+							MultiByteToWideChar(CP_ACP, 0, text, -1, wide, 256);
+						lstrcpynW(info->pszText, wide, info->cchTextMax);
+						return 0;
+					}
+
+				case TTN_NEEDTEXTA:
+					{
+						// The text is a literal string, not a string resource,
+						// so hinst must be NULL or comctl32 tries to
+						// LoadString() the pointer as a resource id.
+						TOOLTIPTEXTA *ttt = (TOOLTIPTEXTA*)lParam;
+						ttt->hinst = NULL;
+						const char *text = ToolBarTipText((int)ttt->hdr.idFrom);
+						ttt->lpszText = (text == NULL) ? NULL : const_cast<char*>(text);
+												return 0;
+					}
+
+				case TTN_NEEDTEXTW:
+					{
+						TOOLTIPTEXTW *ttt = (TOOLTIPTEXTW*)lParam;
+						ttt->hinst = NULL;
+						const char *text = ToolBarTipText((int)ttt->hdr.idFrom);
+						// The control reads this pointer after the notification
+						// returns, so the buffer must outlive this call.
+						static wchar_t wide[256];
+						if (text == NULL)
+						{
+							ttt->lpszText = NULL;
+						}
+						else
+						{
+							MultiByteToWideChar(CP_ACP, 0, text, -1, wide, 256);
+							ttt->lpszText = wide;
+						}
+												return 0;
+					}
 				}
 			}
 			return 0;
@@ -5613,7 +6439,7 @@ void Change3DCoreWithFallbackAndSave(int newCore)
 {
 	printf("Attempting change to 3d core to: %s\n",core3DList[newCore]->name);
 
-	if (newCore >= 4)
+	if (newCore < 0 || newCore >= GPU3D_MAX_COUNT || core3DList[newCore] == NULL)
 	{
 		printf("DeSmuME: Invalid 3D renderer chosen; falling back to SoftRasterizer. (core3DList index = %i)\n", newCore);
 		newCore = GPU3D_SWRAST;
@@ -5745,12 +6571,30 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 				}
 			}
 
-			// Generate the 3D Rendering Engine pop-up menu
-			for (int i = 0; core3DList[i] != NULL; i++)
+			// Generate the 3D Rendering Engine pop-up menu. Each entry stores its
+			// core3DList index in the item data, since the tail of the list is
+			// built at runtime (one entry per available WebGPU backend).
 			{
-				ComboBox_AddString(GetDlgItem(hw, IDC_3DCORE), core3DList[i]->name);
+				const HWND h3DCoreCombo = GetDlgItem(hw, IDC_3DCORE);
+
+				for (int i = 0; (i < GPU3D_MAX_COUNT) && (core3DList[i] != NULL); i++)
+				{
+					const int item = ComboBox_AddString(h3DCoreCombo, core3DList[i]->name);
+					if (item >= 0)
+					{
+						ComboBox_SetItemData(h3DCoreCombo, item, (LPARAM)i);
+					}
+				}
+
+				if ( (cur3DCore >= 0) && (cur3DCore < GPU3D_MAX_COUNT) && (core3DList[cur3DCore] != NULL) )
+				{
+					Select3DCoreComboItem(hw, cur3DCore);
+				}
+				else
+				{
+					Select3DCoreComboItem(hw, GPU3D_DEFAULT);
+				}
 			}
-			ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), cur3DCore);
 		}
 		return TRUE;
 	case WM_COMMAND:
@@ -5783,7 +6627,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					}
 
 					WinGPUEvent->SetFramebufferDimensionsByScaleFactorInteger(newPrescaleHD);
-					Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
+					Change3DCoreWithFallbackAndSave(GetSelected3DCore(hw));
 					SyncGpuBpp();
 
 					WritePrivateProfileBool("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor, IniName);
@@ -5810,7 +6654,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 				return TRUE;
 			case IDC_DEFAULT:
 				{
-					ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), GPU3D_DEFAULT);
+					Select3DCoreComboItem(hw, GPU3D_DEFAULT);
 					//CommonSettings.gfx3d_flushMode = 0;
 					//WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}
@@ -6640,7 +7484,7 @@ const char* MakeScriptPathAbsolute(const char* filename, const char* extraDirToC
 	return filename;
 }
 
-extern void RequestAbortLuaScript(int uid, const char* message);
+extern void RequestAbortLuaScript(intptr_t uid, const char* message);
 
 const char* OpenLuaScript(const char* filename, const char* extraDirToCheck, bool makeSubservient)
 {
@@ -6664,12 +7508,7 @@ const char* OpenLuaScript(const char* filename, const char* extraDirToCheck, boo
 		}
 		else
 		{
-		#pragma warning( push )  
-			//'type cast': pointer truncation from 'HWND' to 'int'
-			//it's just a hash key. it's probably safe
-			#pragma warning( disable : 4311 )  
-			RequestAbortLuaScript((int)scriptHWnd, "terminated to restart because of a call to emu.openscript");
-		#pragma warning( pop )  
+			RequestAbortLuaScript((intptr_t)scriptHWnd, "terminated to restart because of a call to emu.openscript");
 
 			SendMessage(scriptHWnd, WM_COMMAND, IDC_BUTTON_LUARUN, 0);
 		}
@@ -6736,4 +7575,5 @@ void SetStyle(u32 dws)
 
 	gldisplay.setvsync(!!(GetStyle()&DWS_VSYNC));
 	ddraw.vSync = GetStyle()&DWS_VSYNC;
+	wgpudisplay.setvsync(!!(GetStyle()&DWS_VSYNC));
 }

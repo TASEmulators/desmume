@@ -58,6 +58,14 @@ OPT(frameskip, int, 0, Config, Frameskip)
 OPT(use_jit,bool,false,Config,JIT_Enabled)
 OPT(jit_max_block_size,int,100,Config,JITBlockSize)
 OPT(core3D, int, 1, Config, Core3D)
+OPT(presentationWGPU, bool, true, Config, PresentationWGPU)
+OPT(presentationWGPUBackend, int, 0, Config, PresentationWGPUBackend)
+/* Record the OSD/Lua agg.* layer with WGPUOSDDrawTarget and sample it as a
+ * second texture instead of compositing it into the CPU frame.  Only used
+ * while WGPU presentation is active; set to false to get the old AGG -> CPU
+ * composite path back byte for byte. */
+OPT(presentationWGPUHud, bool, true, Config, PresentationWGPUHud)
+OPT(gpuFilter, int, 0, Config, GPUFilter)
 OPT(textureDeposterize, bool, false, Config, 3DTextureDeposterization)
 OPT(textureSmoothing, bool, false, Config, 3DTextureSmoothing)
 OPT(textureUpscale, int, 1, Config, 3DTextureUpscaling)

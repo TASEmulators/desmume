@@ -30,6 +30,8 @@
 
 #include "utilities.h"
 
+#include "../../WGPURender.h"
+
 #import "CocoaDisplayView.h"
 #import "MacOGLDisplayView.h"
 
@@ -162,6 +164,23 @@ void MacGraphicsControl::Set3DEngineByID(int engineID)
 			this->_3DEngineCallbackStruct = gpu3Dgl_3_2;
 			break;
 			
+		case RENDERID_WGPU:
+			// WGPURender.cpp is only part of the Universal target's sources, and
+			// it only defines gpu3DWGPU when built with ENABLE_WGPU.  Every
+			// other target used to reference the symbol unconditionally and
+			// failed to link with "_gpu3DWGPU, referenced from
+			// MacGraphicsControl::Set3DEngineByID(int)".  Without a WGPU
+			// backend there is nothing to select, so fall back like any other
+			// unavailable engine.
+#if defined(ENABLE_WGPU)
+			this->_3DEngineCallbackStruct = gpu3DWGPU;
+#else
+			puts("DeSmuME: The WebGPU renderer is not built into this target; falling back to SoftRasterizer.");
+			engineID = RENDERID_SOFTRASTERIZER;
+			this->_3DEngineCallbackStruct = gpu3DRasterize;
+#endif
+			break;
+			
 		default:
 			puts("DeSmuME: Invalid 3D renderer chosen; falling back to SoftRasterizer.");
 			engineID = RENDERID_SOFTRASTERIZER;
@@ -204,6 +223,10 @@ void MacGraphicsControl::SetEngine3DClientIndex(int clientListIndex)
 			engineID = RENDERID_OPENGL_3_2;
 			break;
 			
+		case CORE3DLIST_WGPU:
+			engineID = RENDERID_WGPU;
+			break;
+			
 		default:
 			puts("DeSmuME: Invalid 3D renderer chosen; falling back to SoftRasterizer.");
 			engineID = RENDERID_NULL;
@@ -238,6 +261,10 @@ int MacGraphicsControl::GetEngine3DClientIndex()
 			
 		case RENDERID_OPENGL_3_2:
 			clientListIndex = RENDERID_OPENGL_3_2;
+			break;
+			
+		case RENDERID_WGPU:
+			clientListIndex = CORE3DLIST_WGPU;
 			break;
 			
 		default:

@@ -473,7 +473,7 @@
 		AB2A9A5C1725F00F0062C1A1 /* DisplayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB700DDD16CDE4C300FBD336 /* DisplayWindowController.mm */; };
 		AB2A9A5D1725F00F0062C1A1 /* InputManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5A795716D5A56000ED84B7 /* InputManager.mm */; };
 		AB2A9A5E1725F00F0062C1A1 /* AAFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2A16F55C64002E07CD /* AAFilter.cpp */; };
-		AB2A9A5F1725F00F0062C1A1 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86_gcc.cpp */; };
+		AB2A9A5F1725F00F0062C1A1 /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86.cpp */; };
 		AB2A9A601725F00F0062C1A1 /* FIFOSampleBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2C16F55C64002E07CD /* FIFOSampleBuffer.cpp */; };
 		AB2A9A611725F00F0062C1A1 /* FIRFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2D16F55C64002E07CD /* FIRFilter.cpp */; };
 		AB2A9A621725F00F0062C1A1 /* mmx_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2E16F55C64002E07CD /* mmx_optimized.cpp */; };
@@ -481,7 +481,6 @@
 		AB2A9A641725F00F0062C1A1 /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3016F55C64002E07CD /* SoundTouch.cpp */; };
 		AB2A9A651725F00F0062C1A1 /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3116F55C64002E07CD /* sse_optimized.cpp */; };
 		AB2A9A661725F00F0062C1A1 /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3216F55C64002E07CD /* TDStretch.cpp */; };
-		AB2A9A671725F00F0062C1A1 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3316F55C64002E07CD /* WavFile.cpp */; };
 		AB2A9A681725F00F0062C1A1 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F56EF1704C86900E28885 /* utilities.c */; };
 		AB2A9A691725F00F0062C1A1 /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
 		AB2A9A6A1725F00F0062C1A1 /* audiosamplegenerator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB2145221714DFF4006DDB0F /* audiosamplegenerator.cpp */; };
@@ -715,7 +714,7 @@
 		AB4B5A24217E47E400381363 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */; };
 		AB4B5A25217E47E400381363 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */; };
 		AB4C4C3F16F55C64002E07CD /* AAFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2A16F55C64002E07CD /* AAFilter.cpp */; };
-		AB4C4C4016F55C64002E07CD /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86_gcc.cpp */; };
+		AB4C4C4016F55C64002E07CD /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86.cpp */; };
 		AB4C4C4116F55C64002E07CD /* FIFOSampleBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2C16F55C64002E07CD /* FIFOSampleBuffer.cpp */; };
 		AB4C4C4216F55C64002E07CD /* FIRFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2D16F55C64002E07CD /* FIRFilter.cpp */; };
 		AB4C4C4316F55C64002E07CD /* mmx_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2E16F55C64002E07CD /* mmx_optimized.cpp */; };
@@ -723,9 +722,8 @@
 		AB4C4C4516F55C64002E07CD /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3016F55C64002E07CD /* SoundTouch.cpp */; };
 		AB4C4C4616F55C64002E07CD /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3116F55C64002E07CD /* sse_optimized.cpp */; };
 		AB4C4C4716F55C64002E07CD /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3216F55C64002E07CD /* TDStretch.cpp */; };
-		AB4C4C4816F55C64002E07CD /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3316F55C64002E07CD /* WavFile.cpp */; };
 		AB4C4C4916F55C64002E07CD /* AAFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2A16F55C64002E07CD /* AAFilter.cpp */; };
-		AB4C4C4A16F55C64002E07CD /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86_gcc.cpp */; };
+		AB4C4C4A16F55C64002E07CD /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86.cpp */; };
 		AB4C4C4B16F55C64002E07CD /* FIFOSampleBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2C16F55C64002E07CD /* FIFOSampleBuffer.cpp */; };
 		AB4C4C4C16F55C64002E07CD /* FIRFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2D16F55C64002E07CD /* FIRFilter.cpp */; };
 		AB4C4C4D16F55C64002E07CD /* mmx_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2E16F55C64002E07CD /* mmx_optimized.cpp */; };
@@ -733,9 +731,8 @@
 		AB4C4C4F16F55C64002E07CD /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3016F55C64002E07CD /* SoundTouch.cpp */; };
 		AB4C4C5016F55C64002E07CD /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3116F55C64002E07CD /* sse_optimized.cpp */; };
 		AB4C4C5116F55C64002E07CD /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3216F55C64002E07CD /* TDStretch.cpp */; };
-		AB4C4C5216F55C64002E07CD /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3316F55C64002E07CD /* WavFile.cpp */; };
 		AB4C4C5316F55C64002E07CD /* AAFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2A16F55C64002E07CD /* AAFilter.cpp */; };
-		AB4C4C5416F55C64002E07CD /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86_gcc.cpp */; };
+		AB4C4C5416F55C64002E07CD /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86.cpp */; };
 		AB4C4C5516F55C64002E07CD /* FIFOSampleBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2C16F55C64002E07CD /* FIFOSampleBuffer.cpp */; };
 		AB4C4C5616F55C64002E07CD /* FIRFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2D16F55C64002E07CD /* FIRFilter.cpp */; };
 		AB4C4C5716F55C64002E07CD /* mmx_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2E16F55C64002E07CD /* mmx_optimized.cpp */; };
@@ -743,9 +740,8 @@
 		AB4C4C5916F55C64002E07CD /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3016F55C64002E07CD /* SoundTouch.cpp */; };
 		AB4C4C5A16F55C64002E07CD /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3116F55C64002E07CD /* sse_optimized.cpp */; };
 		AB4C4C5B16F55C64002E07CD /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3216F55C64002E07CD /* TDStretch.cpp */; };
-		AB4C4C5C16F55C64002E07CD /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3316F55C64002E07CD /* WavFile.cpp */; };
 		AB4C4C5D16F55C64002E07CD /* AAFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2A16F55C64002E07CD /* AAFilter.cpp */; };
-		AB4C4C5E16F55C64002E07CD /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86_gcc.cpp */; };
+		AB4C4C5E16F55C64002E07CD /* cpu_detect_x86.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86.cpp */; };
 		AB4C4C5F16F55C64002E07CD /* FIFOSampleBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2C16F55C64002E07CD /* FIFOSampleBuffer.cpp */; };
 		AB4C4C6016F55C64002E07CD /* FIRFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2D16F55C64002E07CD /* FIRFilter.cpp */; };
 		AB4C4C6116F55C64002E07CD /* mmx_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2E16F55C64002E07CD /* mmx_optimized.cpp */; };
@@ -753,7 +749,6 @@
 		AB4C4C6316F55C64002E07CD /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3016F55C64002E07CD /* SoundTouch.cpp */; };
 		AB4C4C6416F55C64002E07CD /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3116F55C64002E07CD /* sse_optimized.cpp */; };
 		AB4C4C6516F55C64002E07CD /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3216F55C64002E07CD /* TDStretch.cpp */; };
-		AB4C4C6616F55C64002E07CD /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C3316F55C64002E07CD /* WavFile.cpp */; };
 		AB4C808D17C5D7780024D479 /* slot1_retail_auto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C808717C5D7780024D479 /* slot1_retail_auto.cpp */; };
 		AB4C808E17C5D7780024D479 /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C808817C5D7780024D479 /* slot1_retail_mcrom.cpp */; };
 		AB4C808F17C5D7780024D479 /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C808917C5D7780024D479 /* slot1comp_mc.cpp */; };
@@ -1987,6 +1982,21 @@
 		ABFE151314C92FF5005D6699 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150014C92FF5005D6699 /* hq4x.cpp */; };
 		ABFE151514C92FF5005D6699 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
 		ABFE151614C92FF5005D6699 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
+		CA6BBABB13B5B82403A92A59 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9C81DAAA8724DFCE75EF1C14 /* InterpolateCubic.cpp */; };
+		324F96766853AB5083575974 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D18BB88F1D7F0B9B03FABC34 /* InterpolateLinear.cpp */; };
+		07E3AD428FBDA984E11FD481 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C9F23AA619649A78FE94754 /* InterpolateShannon.cpp */; };
+		8967AF4F24D0E539638BA0D6 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9C81DAAA8724DFCE75EF1C14 /* InterpolateCubic.cpp */; };
+		B2F4F55F9AD442744A5F92F1 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D18BB88F1D7F0B9B03FABC34 /* InterpolateLinear.cpp */; };
+		431DA00858D77EE04C4EC20F /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C9F23AA619649A78FE94754 /* InterpolateShannon.cpp */; };
+		B1E124C637C6EB9A644C4A87 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9C81DAAA8724DFCE75EF1C14 /* InterpolateCubic.cpp */; };
+		63DC90D0C64FF1A6F2A715A5 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D18BB88F1D7F0B9B03FABC34 /* InterpolateLinear.cpp */; };
+		F663CD69FD66CE3564312278 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C9F23AA619649A78FE94754 /* InterpolateShannon.cpp */; };
+		CC98A3EA525DBD1DC4457E38 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9C81DAAA8724DFCE75EF1C14 /* InterpolateCubic.cpp */; };
+		39E579AA3826EA724C9313AC /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D18BB88F1D7F0B9B03FABC34 /* InterpolateLinear.cpp */; };
+		D67C6545245EF2AB49B544C5 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C9F23AA619649A78FE94754 /* InterpolateShannon.cpp */; };
+		AC620A092712BE71BB8C0311 /* InterpolateCubic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9C81DAAA8724DFCE75EF1C14 /* InterpolateCubic.cpp */; };
+		3BD5EB7B342E996B70D42433 /* InterpolateLinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D18BB88F1D7F0B9B03FABC34 /* InterpolateLinear.cpp */; };
+		8E38C947084CB1C4471CA445 /* InterpolateShannon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C9F23AA619649A78FE94754 /* InterpolateShannon.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -2362,7 +2372,7 @@
 		AB4B5A1F217E47E400381363 /* WifiSettingsPanel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WifiSettingsPanel.h; sourceTree = "<group>"; };
 		AB4B5A20217E47E400381363 /* WifiSettingsPanel.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = WifiSettingsPanel.mm; sourceTree = "<group>"; };
 		AB4C4C2A16F55C64002E07CD /* AAFilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AAFilter.cpp; sourceTree = "<group>"; };
-		AB4C4C2B16F55C64002E07CD /* cpu_detect_x86_gcc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cpu_detect_x86_gcc.cpp; sourceTree = "<group>"; };
+		AB4C4C2B16F55C64002E07CD /* cpu_detect_x86.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cpu_detect_x86.cpp; sourceTree = "<group>"; };
 		AB4C4C2C16F55C64002E07CD /* FIFOSampleBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FIFOSampleBuffer.cpp; sourceTree = "<group>"; };
 		AB4C4C2D16F55C64002E07CD /* FIRFilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FIRFilter.cpp; sourceTree = "<group>"; };
 		AB4C4C2E16F55C64002E07CD /* mmx_optimized.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mmx_optimized.cpp; sourceTree = "<group>"; };
@@ -2370,9 +2380,7 @@
 		AB4C4C3016F55C64002E07CD /* SoundTouch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SoundTouch.cpp; sourceTree = "<group>"; };
 		AB4C4C3116F55C64002E07CD /* sse_optimized.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sse_optimized.cpp; sourceTree = "<group>"; };
 		AB4C4C3216F55C64002E07CD /* TDStretch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TDStretch.cpp; sourceTree = "<group>"; };
-		AB4C4C3316F55C64002E07CD /* WavFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WavFile.cpp; sourceTree = "<group>"; };
 		AB4C4C3416F55C64002E07CD /* AAFilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AAFilter.h; sourceTree = "<group>"; };
-		AB4C4C3516F55C64002E07CD /* BPMDetect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BPMDetect.h; sourceTree = "<group>"; };
 		AB4C4C3616F55C64002E07CD /* cpu_detect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cpu_detect.h; sourceTree = "<group>"; };
 		AB4C4C3716F55C64002E07CD /* FIFOSampleBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FIFOSampleBuffer.h; sourceTree = "<group>"; };
 		AB4C4C3816F55C64002E07CD /* FIFOSamplePipe.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FIFOSamplePipe.h; sourceTree = "<group>"; };
@@ -2381,7 +2389,6 @@
 		AB4C4C3B16F55C64002E07CD /* SoundTouch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SoundTouch.h; sourceTree = "<group>"; };
 		AB4C4C3C16F55C64002E07CD /* STTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = STTypes.h; sourceTree = "<group>"; };
 		AB4C4C3D16F55C64002E07CD /* TDStretch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TDStretch.h; sourceTree = "<group>"; };
-		AB4C4C3E16F55C64002E07CD /* WavFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WavFile.h; sourceTree = "<group>"; };
 		AB4C808717C5D7780024D479 /* slot1_retail_auto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_auto.cpp; sourceTree = "<group>"; };
 		AB4C808817C5D7780024D479 /* slot1_retail_mcrom.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_mcrom.cpp; sourceTree = "<group>"; };
 		AB4C808917C5D7780024D479 /* slot1comp_mc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_mc.cpp; sourceTree = "<group>"; };
@@ -2852,6 +2859,13 @@
 		ABFE150414C92FF5005D6699 /* lq2x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = lq2x.cpp; sourceTree = "<group>"; };
 		ABFE150514C92FF5005D6699 /* lq2x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lq2x.h; sourceTree = "<group>"; };
 		ABFE150614C92FF5005D6699 /* scanline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scanline.cpp; sourceTree = "<group>"; };
+		9C81DAAA8724DFCE75EF1C14 /* InterpolateCubic.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InterpolateCubic.cpp; sourceTree = "<group>"; };
+		E9B51AF50F87F961E930F649 /* InterpolateCubic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InterpolateCubic.h; sourceTree = "<group>"; };
+		D18BB88F1D7F0B9B03FABC34 /* InterpolateLinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InterpolateLinear.cpp; sourceTree = "<group>"; };
+		67BB7F14D9308649BBABABDA /* InterpolateLinear.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InterpolateLinear.h; sourceTree = "<group>"; };
+		0C9F23AA619649A78FE94754 /* InterpolateShannon.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InterpolateShannon.cpp; sourceTree = "<group>"; };
+		F5ABF93657AB1C3A6986D6CB /* InterpolateShannon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InterpolateShannon.h; sourceTree = "<group>"; };
+		E84FB3FDA625ACFF77BF38D5 /* soundtouch_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = soundtouch_config.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -4140,7 +4154,7 @@
 			isa = PBXGroup;
 			children = (
 				AB4C4C2A16F55C64002E07CD /* AAFilter.cpp */,
-				AB4C4C2B16F55C64002E07CD /* cpu_detect_x86_gcc.cpp */,
+				AB4C4C2B16F55C64002E07CD /* cpu_detect_x86.cpp */,
 				AB4C4C2C16F55C64002E07CD /* FIFOSampleBuffer.cpp */,
 				AB4C4C2D16F55C64002E07CD /* FIRFilter.cpp */,
 				AB4C4C2E16F55C64002E07CD /* mmx_optimized.cpp */,
@@ -4148,9 +4162,7 @@
 				AB4C4C3016F55C64002E07CD /* SoundTouch.cpp */,
 				AB4C4C3116F55C64002E07CD /* sse_optimized.cpp */,
 				AB4C4C3216F55C64002E07CD /* TDStretch.cpp */,
-				AB4C4C3316F55C64002E07CD /* WavFile.cpp */,
 				AB4C4C3416F55C64002E07CD /* AAFilter.h */,
-				AB4C4C3516F55C64002E07CD /* BPMDetect.h */,
 				AB4C4C3616F55C64002E07CD /* cpu_detect.h */,
 				AB4C4C3716F55C64002E07CD /* FIFOSampleBuffer.h */,
 				AB4C4C3816F55C64002E07CD /* FIFOSamplePipe.h */,
@@ -4159,7 +4171,13 @@
 				AB4C4C3B16F55C64002E07CD /* SoundTouch.h */,
 				AB4C4C3C16F55C64002E07CD /* STTypes.h */,
 				AB4C4C3D16F55C64002E07CD /* TDStretch.h */,
-				AB4C4C3E16F55C64002E07CD /* WavFile.h */,
+				9C81DAAA8724DFCE75EF1C14 /* InterpolateCubic.cpp */,
+				E9B51AF50F87F961E930F649 /* InterpolateCubic.h */,
+				D18BB88F1D7F0B9B03FABC34 /* InterpolateLinear.cpp */,
+				67BB7F14D9308649BBABABDA /* InterpolateLinear.h */,
+				0C9F23AA619649A78FE94754 /* InterpolateShannon.cpp */,
+				F5ABF93657AB1C3A6986D6CB /* InterpolateShannon.h */,
+				E84FB3FDA625ACFF77BF38D5 /* soundtouch_config.h */,
 			);
 			path = SoundTouch;
 			sourceTree = "<group>";
@@ -5562,7 +5580,7 @@
 				AB2A9A5C1725F00F0062C1A1 /* DisplayWindowController.mm in Sources */,
 				AB2A9A5D1725F00F0062C1A1 /* InputManager.mm in Sources */,
 				AB2A9A5E1725F00F0062C1A1 /* AAFilter.cpp in Sources */,
-				AB2A9A5F1725F00F0062C1A1 /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB2A9A5F1725F00F0062C1A1 /* cpu_detect_x86.cpp in Sources */,
 				AB2A9A601725F00F0062C1A1 /* FIFOSampleBuffer.cpp in Sources */,
 				AB2A9A611725F00F0062C1A1 /* FIRFilter.cpp in Sources */,
 				AB2A9A621725F00F0062C1A1 /* mmx_optimized.cpp in Sources */,
@@ -5570,7 +5588,6 @@
 				AB2A9A641725F00F0062C1A1 /* SoundTouch.cpp in Sources */,
 				AB2A9A651725F00F0062C1A1 /* sse_optimized.cpp in Sources */,
 				AB2A9A661725F00F0062C1A1 /* TDStretch.cpp in Sources */,
-				AB2A9A671725F00F0062C1A1 /* WavFile.cpp in Sources */,
 				AB2A9A681725F00F0062C1A1 /* utilities.c in Sources */,
 				AB2A9A691725F00F0062C1A1 /* InputProfileController.mm in Sources */,
 				AB2A9A6A1725F00F0062C1A1 /* audiosamplegenerator.cpp in Sources */,
@@ -5658,6 +5675,9 @@
 				AB1E6DA72E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
 				AB6A1F6E2F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */,
 				AB6A1F752F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */,
+				CA6BBABB13B5B82403A92A59 /* InterpolateCubic.cpp in Sources */,
+				324F96766853AB5083575974 /* InterpolateLinear.cpp in Sources */,
+				07E3AD428FBDA984E11FD481 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5766,7 +5786,7 @@
 				AB700DDF16CDE4C300FBD336 /* DisplayWindowController.mm in Sources */,
 				AB5A795B16D5A56000ED84B7 /* InputManager.mm in Sources */,
 				AB4C4C4916F55C64002E07CD /* AAFilter.cpp in Sources */,
-				AB4C4C4A16F55C64002E07CD /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB4C4C4A16F55C64002E07CD /* cpu_detect_x86.cpp in Sources */,
 				AB4C4C4B16F55C64002E07CD /* FIFOSampleBuffer.cpp in Sources */,
 				AB4C4C4C16F55C64002E07CD /* FIRFilter.cpp in Sources */,
 				AB4C4C4D16F55C64002E07CD /* mmx_optimized.cpp in Sources */,
@@ -5774,7 +5794,6 @@
 				AB4C4C4F16F55C64002E07CD /* SoundTouch.cpp in Sources */,
 				AB4C4C5016F55C64002E07CD /* sse_optimized.cpp in Sources */,
 				AB4C4C5116F55C64002E07CD /* TDStretch.cpp in Sources */,
-				AB4C4C5216F55C64002E07CD /* WavFile.cpp in Sources */,
 				AB2F56F11704C86900E28885 /* utilities.c in Sources */,
 				AB213D46170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145241714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
@@ -5862,6 +5881,9 @@
 				AB1E6DA82E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
 				AB6A1F6F2F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */,
 				AB6A1F762F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */,
+				8967AF4F24D0E539638BA0D6 /* InterpolateCubic.cpp in Sources */,
+				B2F4F55F9AD442744A5F92F1 /* InterpolateLinear.cpp in Sources */,
+				431DA00858D77EE04C4EC20F /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5999,7 +6021,7 @@
 				AB700DE116CDE4C300FBD336 /* DisplayWindowController.mm in Sources */,
 				AB5A795916D5A56000ED84B7 /* InputManager.mm in Sources */,
 				AB4C4C3F16F55C64002E07CD /* AAFilter.cpp in Sources */,
-				AB4C4C4016F55C64002E07CD /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB4C4C4016F55C64002E07CD /* cpu_detect_x86.cpp in Sources */,
 				AB4C4C4116F55C64002E07CD /* FIFOSampleBuffer.cpp in Sources */,
 				AB4C4C4216F55C64002E07CD /* FIRFilter.cpp in Sources */,
 				AB4C4C4316F55C64002E07CD /* mmx_optimized.cpp in Sources */,
@@ -6007,7 +6029,6 @@
 				AB4C4C4516F55C64002E07CD /* SoundTouch.cpp in Sources */,
 				AB4C4C4616F55C64002E07CD /* sse_optimized.cpp in Sources */,
 				AB4C4C4716F55C64002E07CD /* TDStretch.cpp in Sources */,
-				AB4C4C4816F55C64002E07CD /* WavFile.cpp in Sources */,
 				AB2F56F01704C86900E28885 /* utilities.c in Sources */,
 				AB213D48170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145261714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
@@ -6096,6 +6117,9 @@
 				AB1E6DAA2E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
 				AB6A1F712F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */,
 				AB6A1F782F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */,
+				B1E124C637C6EB9A644C4A87 /* InterpolateCubic.cpp in Sources */,
+				63DC90D0C64FF1A6F2A715A5 /* InterpolateLinear.cpp in Sources */,
+				F663CD69FD66CE3564312278 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -6234,7 +6258,7 @@
 				AB700DDE16CDE4C300FBD336 /* DisplayWindowController.mm in Sources */,
 				AB5A795A16D5A56000ED84B7 /* InputManager.mm in Sources */,
 				AB4C4C5D16F55C64002E07CD /* AAFilter.cpp in Sources */,
-				AB4C4C5E16F55C64002E07CD /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB4C4C5E16F55C64002E07CD /* cpu_detect_x86.cpp in Sources */,
 				AB4C4C5F16F55C64002E07CD /* FIFOSampleBuffer.cpp in Sources */,
 				AB4C4C6016F55C64002E07CD /* FIRFilter.cpp in Sources */,
 				AB4C4C6116F55C64002E07CD /* mmx_optimized.cpp in Sources */,
@@ -6242,7 +6266,6 @@
 				AB4C4C6316F55C64002E07CD /* SoundTouch.cpp in Sources */,
 				AB4C4C6416F55C64002E07CD /* sse_optimized.cpp in Sources */,
 				AB4C4C6516F55C64002E07CD /* TDStretch.cpp in Sources */,
-				AB4C4C6616F55C64002E07CD /* WavFile.cpp in Sources */,
 				AB2F56F31704C86900E28885 /* utilities.c in Sources */,
 				AB213D45170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145251714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
@@ -6330,6 +6353,9 @@
 				AB1E6DA92E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
 				AB6A1F702F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */,
 				AB6A1F772F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */,
+				CC98A3EA525DBD1DC4457E38 /* InterpolateCubic.cpp in Sources */,
+				39E579AA3826EA724C9313AC /* InterpolateLinear.cpp in Sources */,
+				D67C6545245EF2AB49B544C5 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -6438,7 +6464,7 @@
 				AB700DE016CDE4C300FBD336 /* DisplayWindowController.mm in Sources */,
 				AB5A795816D5A56000ED84B7 /* InputManager.mm in Sources */,
 				AB4C4C5316F55C64002E07CD /* AAFilter.cpp in Sources */,
-				AB4C4C5416F55C64002E07CD /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB4C4C5416F55C64002E07CD /* cpu_detect_x86.cpp in Sources */,
 				AB4C4C5516F55C64002E07CD /* FIFOSampleBuffer.cpp in Sources */,
 				AB4C4C5616F55C64002E07CD /* FIRFilter.cpp in Sources */,
 				AB4C4C5716F55C64002E07CD /* mmx_optimized.cpp in Sources */,
@@ -6446,7 +6472,6 @@
 				AB4C4C5916F55C64002E07CD /* SoundTouch.cpp in Sources */,
 				AB4C4C5A16F55C64002E07CD /* sse_optimized.cpp in Sources */,
 				AB4C4C5B16F55C64002E07CD /* TDStretch.cpp in Sources */,
-				AB4C4C5C16F55C64002E07CD /* WavFile.cpp in Sources */,
 				AB2F56F21704C86900E28885 /* utilities.c in Sources */,
 				AB213D47170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145231714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
@@ -6534,6 +6559,9 @@
 				AB1E6DA62E7C63420057B8C9 /* cgl_3Demu.cpp in Sources */,
 				AB6A1F6D2F0E77BE007BA44D /* ClientGraphicsControl.cpp in Sources */,
 				AB6A1F742F0E77DB007BA44D /* CocoaGraphicsController.mm in Sources */,
+				AC620A092712BE71BB8C0311 /* InterpolateCubic.cpp in Sources */,
+				3BD5EB7B342E996B70D42433 /* InterpolateLinear.cpp in Sources */,
+				8E38C947084CB1C4471CA445 /* InterpolateShannon.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

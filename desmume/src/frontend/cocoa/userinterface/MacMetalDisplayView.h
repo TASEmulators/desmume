@@ -20,6 +20,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
+#import <CoreVideo/CoreVideo.h>
 #include "../utilities.h"
 
 #include <mach/task.h>
@@ -32,6 +33,7 @@
 #import "../cocoa_GPU.h"
 #import "../cocoa_util.h"
 #include "../ClientDisplayView.h"
+#import "MacMetalOSDRenderer.h"
 
 #ifdef BOOL
 #undef BOOL
@@ -192,6 +194,14 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
 	id<MTLComputePipelineState> pixelScalePipeline;
 	id<MTLRenderPipelineState> outputDrawablePipeline;
+#ifdef HAVE_LUA
+	id<MTLRenderPipelineState> luaOverlayPipeline;
+	id<MTLTexture> texLuaOverlay[2];
+	BOOL isLuaOverlayTexCreated;
+#endif
+#ifdef DESMUME_COCOA_METAL_OSD
+	MacMetalOSDRenderer *osdRenderer;
+#endif
 	MTLPixelFormat drawableFormat;
 	
 	id<MTLBuffer> _hudVtxPositionBuffer[RENDER_BUFFER_COUNT];
@@ -232,6 +242,9 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
 @property (retain) id<MTLComputePipelineState> pixelScalePipeline;
 @property (retain) id<MTLRenderPipelineState> outputDrawablePipeline;
+#ifdef HAVE_LUA
+@property (retain) id<MTLRenderPipelineState> luaOverlayPipeline;
+#endif
 @property (assign) MTLPixelFormat drawableFormat;
 @property (retain) id<MTLBuffer> bufCPUFilterDstMain;
 @property (retain) id<MTLBuffer> bufCPUFilterDstTouch;
@@ -265,6 +278,18 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 - (ClientDisplayBufferState) renderBufferStateAtIndex:(uint8_t)index;
 - (void) setRenderBufferState:(ClientDisplayBufferState)bufferState index:(uint8_t)index;
 - (void) renderToBuffer:(Color4u8 *)dstBuffer;
+
+// Video capture path.  Renders this presenter's already-processed displays
+// into an IOSurface-backed pixel buffer through a CVMetalTextureCache, so the
+// encoder can consume a GPU frame instead of a CPU copy.  pixelBuffer must
+// match the presenter's viewportActualWidth/viewportActualHeight, and this
+// presenter must have been left in the capture configuration (HUD off).
+- (BOOL) renderToPixelBuffer:(CVPixelBufferRef)pixelBuffer textureCache:(CVMetalTextureCacheRef)textureCache;
+
+// Raises the per-render-buffer semaphore count.  A capture presenter renders
+// back-to-back frames and must be able to keep more than one in flight, which
+// the default capacity of 1 (one presented drawable at a time) forbids.
+- (void) setRenderBufferingCapacity:(long)capacity;
 
 @end
 

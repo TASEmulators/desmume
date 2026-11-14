@@ -19,8 +19,7 @@
  * Boston, MA 02111-1307, USA.
  */
 #include <X11/Xlib.h>
-#include <SDL.h>
-#include <SDL_thread.h>
+#include <SDL3/SDL.h>
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
@@ -90,8 +89,8 @@ static SDL_Window * window;
 static SDL_Renderer * renderer;
 static SDL_Texture *screen[2];
 
-/* Flags to pass to SDL_SetVideoMode */
-static int sdl_videoFlags;
+/* SDL3 window flags (a Uint64 bitmask), passed to SDL_CreateWindow(). */
+static SDL_WindowFlags sdl_videoFlags = 0;
 
 SoundInterface_struct *SNDCoreList[] = {
   &SNDDummy,
@@ -122,20 +121,20 @@ const char * save_type_names[] = {
 /* Please note that m is used for fake microphone */
 const u32 cli_kb_cfg[NB_KEYS] =
   { 
-    SDLK_x,         // A
-    SDLK_z,         // B
+    SDLK_X,         // A
+    SDLK_Z,         // B
     SDLK_RSHIFT,    // select
     SDLK_RETURN,    // start
     SDLK_RIGHT,     // Right
     SDLK_LEFT,      // Left
     SDLK_UP,        // Up
     SDLK_DOWN,      // Down
-    SDLK_w,         // R
-    SDLK_q,         // L
-    SDLK_s,         // X
-    SDLK_a,         // Y
-    SDLK_p,         // DEBUG
-    SDLK_o,         // BOOST
+    SDLK_W,         // R
+    SDLK_Q,         // L
+    SDLK_S,         // X
+    SDLK_A,         // Y
+    SDLK_P,         // DEBUG
+    SDLK_O,         // BOOST
     SDLK_BACKSPACE, // Lid
   };
 
@@ -276,13 +275,14 @@ static void Draw(class configured_features *cfg) {
 	const size_t pixCount = w * h;
 	ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Main],  pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
 	ColorspaceApplyIntensityToBuffer16<false, false>(displayInfo.nativeBuffer16[NDSDisplayID_Touch], pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
-	const SDL_Rect destrect_v[2] = {
-		{ 0, 0 , ws, hs},
-		{ 0, hs, ws, hs},
+	/* SDL3's SDL_RenderTexture() takes float rectangles. */
+	const SDL_FRect destrect_v[2] = {
+		{ 0, 0 , (float)ws, (float)hs},
+		{ 0, (float)hs, (float)ws, (float)hs},
 	};
-	const SDL_Rect destrect_h[2] = {
-		{ 0, 0 , ws, hs},
-		{ ws, 0, ws, hs},
+	const SDL_FRect destrect_h[2] = {
+		{ 0, 0 , (float)ws, (float)hs},
+		{ (float)ws, 0, (float)ws, (float)hs},
 	};
 	unsigned i, off = 0, n = pixCount*2;
 	for(i = 0; i < 2; ++i) {
@@ -291,7 +291,7 @@ static void Draw(class configured_features *cfg) {
 		SDL_LockTexture(screen[i], NULL, &p, &pitch);
 		memcpy(p, ((char*)displayInfo.masterNativeBuffer16)+off, n);
 		SDL_UnlockTexture(screen[i]);
-		SDL_RenderCopy(renderer, screen[i], NULL, cfg->horizontal ? &destrect_h[i] : &destrect_v[i]);
+		SDL_RenderTexture(renderer, screen[i], NULL, cfg->horizontal ? &destrect_h[i] : &destrect_v[i]);
 		off += n;
 	}
 	SDL_RenderPresent(renderer);
@@ -306,8 +306,8 @@ static void desmume_cycle(struct ctrls_event_config * cfg)
 
     /* Look for queued events and update keypad status */
     /* IMPORTANT: Reenable joystick events iif needed. */
-    if(SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE)
-      SDL_JoystickEventState(SDL_ENABLE);
+    if(!SDL_JoystickEventsEnabled())
+      SDL_SetJoystickEventsEnabled(true);
 
     /* There's an event waiting to be processed? */
     while ( !cfg->sdl_quit &&
@@ -493,7 +493,9 @@ int main(int argc, char ** argv) {
       fprintf(stderr, "Warning: X11 not thread-safe\n");
     }
 
-  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK| SDL_INIT_GAMECONTROLLER) == -1)
+  /* SDL3 removed SDL_INIT_TIMER and renamed the game controller subsystem;
+     SDL_Init() now returns bool. */
+  if(!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD))
     {
       fprintf(stderr, "Error trying to initialize SDL: %s\n",
               SDL_GetError());
@@ -505,8 +507,8 @@ int main(int argc, char ** argv) {
     unsigned width = 256 + my_config.horizontal*256;
     unsigned height = 192 + 192 * !my_config.horizontal;
     sdl_videoFlags |= SDL_WINDOW_OPENGL;
-    window = SDL_CreateWindow( "Desmume SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-	width*my_config.scale, height*my_config.scale, sdl_videoFlags );
+    window = SDL_CreateWindow( "Desmume SDL",
+	(int)(width*my_config.scale), (int)(height*my_config.scale), sdl_videoFlags );
 
     if ( !window ) {
       fprintf( stderr, "Window creation failed: %s\n", SDL_GetError( ) );
@@ -514,9 +516,9 @@ int main(int argc, char ** argv) {
     }
     ctrls_cfg.window = window;
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    renderer = SDL_CreateRenderer(window, NULL);
 
-    uint32_t desmume_pixelformat = SDL_MasksToPixelFormatEnum(16, 0x001F, 0x03E0, 0x7C00, 0);
+    SDL_PixelFormat desmume_pixelformat = SDL_GetPixelFormatForMasks(16, 0x001F, 0x03E0, 0x7C00, 0);
 
     for(i = 0; i < 2; ++i)
       screen[i] = SDL_CreateTexture(renderer, desmume_pixelformat, SDL_TEXTUREACCESS_STREAMING,
@@ -574,11 +576,11 @@ int main(int argc, char ** argv) {
     }
 
 #ifdef DISPLAY_FPS
-    now = SDL_GetTicks();
+    now = (int)SDL_GetTicks();
 #endif
     if ( !my_config.disable_limiter && !(ctrls_cfg.keypad & KEYMASK_(KEY_BOOST - 1))) {
 #ifndef DISPLAY_FPS
-      now = SDL_GetTicks();
+      now = (int)SDL_GetTicks();
 #endif
       int delay =  (limiter_tick0 + limiter_frame_counter*1000/FPS_LIMITER_FPS) - now;
       if (delay < -500 || delay > 100) { // reset if we fall too far behind don't want to run super fast until we catch up

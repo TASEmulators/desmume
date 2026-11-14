@@ -46,11 +46,33 @@
 #include "frontend/modules/osd/agg/agg_osd.h"
 #endif
 
+// Cocoa has no libagg.  When the Metal OSD backend is active, the agg.* Lua
+// calls below are recorded by an AGG-free target that feeds the Metal SDF and
+// glyph pipelines instead of a CPU rasterizer.
+#if defined(DESMUME_COCOA_METAL_OSD) && !defined(HAVE_LIBAGG)
+#include "frontend/cocoa/userinterface/MacMetalOSDDraw.h"
+#define OSD_HUD_TARGET  MacMetalOSD_BackTarget()
+#else
+#define OSD_HUD_TARGET  aggDraw.hud
+#endif
+
+// Popups, script launching, menus, input state and game controllers are all
+// frontend work.  Windows implements them inline below against HWND/HMENU/
+// joyGetPosEx; cocoa gets the same operations through this C API.
+#if defined(DESMUME_COCOA)
+#include "frontend/cocoa/MacLuaFrontend.h"
+#endif
+
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include <cmath>
 #include <vector>
 #include <map>
 #include <string>
 #include <algorithm>
+#include <mutex>
+#include <thread>
 
 #include "armcpu.h"
 #include "movie.h"
@@ -80,12 +102,71 @@ static bool IsHardwareAddressValid(u32 address) {
 // actual lua engine follows
 // adapted from gens-rr, nitsuja + upthorn
 
+// Only Lua's public C API is used here.  LuaJIT keeps lua_State opaque and does
+// not ship the internal headers (lstate.h/lobject.h), so nothing below may touch
+// lua_State fields, Proto or luaconf.h-internal macros such as lua_number2int.
+//
+// The Cocoa build has to spell the path out.  Xcode generates a header map from
+// every header file that is referenced by the project and consults it before
+// the -I paths, so a plain #include "lua.h" resolved to the vendored Lua 5.1.5
+// sources that are still in the tree for the MinGW makefile - the dialog
+// reported "Headers: Lua 5.1.5" while the Windows build compiles against
+// LuaJIT.  Naming the LuaJIT headers here keeps the two front ends on the same
+// declarations and makes LUAJIT_VERSION visible below.
 extern "C" {
+#ifdef DESMUME_LUA_DYNAMIC
+	#include "frontend/windows/lua/include/lua.h"
+	#include "frontend/windows/lua/include/lauxlib.h"
+	#include "frontend/windows/lua/include/lualib.h"
+	#include "frontend/windows/lua/include/luajit.h"
+#else
 	#include "lua.h"
 	#include "lauxlib.h"
 	#include "lualib.h"
-	#include "lstate.h"
+#endif
 };
+
+// Cocoa and the POSIX frontends have no import library and do not ship
+// LuaJIT, so the entry points above are resolved from a dlopen()ed shared
+// library instead (see LuaJITApi.cpp).  The header turns each lua* name into a
+// lookup in that table, which is the equivalent of the Windows build's
+// DelayLoadDLLs=lua51.dll.  It must come after the declarations above - it
+// rewrites the very names they introduce.
+#ifdef DESMUME_LUA_DYNAMIC
+	#include "frontend/cocoa/LuaJITApi.h"
+	#include "frontend/cocoa/LuaJITApiSymbols.h"
+#endif
+
+// Lua 5.1's lua_number2int() is an internal luaconf.h macro and LuaJIT does
+// not provide it.  Both engines use a double lua_Number here and the macro
+// rounds to nearest, so lround() reproduces the same result portably.
+static inline int LuaNumberToInt(lua_Number value)
+{
+	return (int)std::lround((double)value);
+}
+
+// Creates a state, or returns NULL and fills reason with a one-line
+// explanation.  On the statically linked platforms this can only fail for lack
+// of memory; on the dlopen()ed ones it also covers "the LuaJIT library was not
+// found", which is by far the most likely reason scripting does nothing.
+static lua_State* LuaEngineNewState(char* reason, size_t reasonSize)
+{
+#ifdef DESMUME_LUA_DYNAMIC
+	if (!LuaJIT_LoadLibrary())
+	{
+		snprintf(reason, reasonSize, "The Lua engine could not be loaded: %s", LuaJIT_LoadError());
+		return NULL;
+	}
+#else
+	(void)reason;
+	(void)reasonSize;
+#endif
+
+	lua_State* L = luaL_newstate();
+	if (L == NULL)
+		snprintf(reason, reasonSize, "Could not create a Lua state (out of memory?).");
+	return L;
+}
 
 enum SpeedMode
 {
@@ -154,15 +235,60 @@ struct LuaContextInfo {
 	LuaGUIData guiData;
 	LuaMenuData menuData;
 	// callbacks into the lua window... these don't need to exist per context the way I'm using them, but whatever
-	void(*print)(int uid, const char* str);
-	void(*onstart)(int uid);
-	void(*onstop)(int uid, bool statusOK);
+	void(*print)(intptr_t uid, const char* str);
+	void(*onstart)(intptr_t uid);
+	void(*onstop)(intptr_t uid, bool statusOK);
+	// Cross-thread teardown requests.  See the comment above LuaProcessRequests().
+	bool stopRequested;   // a UI thread asked for this script to be stopped
+	bool closeRequested;  // a UI thread asked for this context to be destroyed
+	bool inStop;          // StopLuaScript() is running on the engine thread right now
 };
-std::map<int, LuaContextInfo*> luaContextInfo;
+std::map<intptr_t, LuaContextInfo*> luaContextInfo;
 std::map<lua_State*, uintptr_t> luaStateToUIDMap;
 int g_numScriptsStarted = 0;
 bool g_anyScriptsHighSpeed = false;
 bool g_stopAllScriptsEnabled = true;
+
+// ---------------------------------------------------------------------------
+// Thread ownership of the Lua states
+//
+// Scripts run on the emulation core thread, but Stop/Close come from the
+// front end's UI thread, and the Lua console can close its window while a
+// script is being torn down.  Two rules keep that from corrupting memory:
+//
+//   1. Only the thread that ran a script may touch its lua_State.  A stop from
+//      anywhere else just raises a flag.
+//   2. Only that thread may insert into or delete from luaContextInfo, because
+//      it walks the map every frame while dispatching callbacks.  Contexts
+//      created on a UI thread are parked in sPendingContexts until then.
+//
+// Violating either one used to free the LuaContextInfo under StopLuaScript (the
+// console window closes itself from -onScriptStopped, which is posted *during*
+// that very call), so the map cleanup at the end walked a freed std::map.
+// ---------------------------------------------------------------------------
+static std::mutex sContextRequestMutex;
+static std::thread::id sLuaEngineThreadId;
+static bool sLuaEngineThreadKnown = false;
+static bool sDrainingRequests = false;
+static std::vector<LuaContextInfo*> sPendingContexts;
+static std::vector<intptr_t> sPendingContextUids;
+
+static void MarkLuaEngineThread()
+{
+	sLuaEngineThreadId = std::this_thread::get_id();
+	sLuaEngineThreadKnown = true;
+}
+
+static bool OnLuaEngineThread()
+{
+	// Before the first script runs there is no owner yet, and nothing can be
+	// executing, so treat whoever asks as safe.
+	return !sLuaEngineThreadKnown || sLuaEngineThreadId == std::this_thread::get_id();
+}
+
+// Adds contexts parked by a UI thread and performs the stop/close requests it
+// left behind.  Must run on the engine thread; see its definition for why.
+void LuaProcessRequests(void);
 
 #define USE_INFO_STACK
 #ifdef USE_INFO_STACK
@@ -170,8 +296,21 @@ bool g_stopAllScriptsEnabled = true;
 	#define GetCurrentInfo() (*infoStack.front()) // should be faster but relies on infoStack correctly being updated to always have the current info in the first element
 #else
 	std::map<lua_State*, LuaContextInfo*> luaStateToContextMap;
-	#define GetCurrentInfo() (*luaStateToContextMap[L->l_G->mainthread]) // should always work but might be slower
+	#define GetCurrentInfo() (*luaStateToContextMap[L]) // should always work but might be slower
 #endif
+
+// LuaJIT does not call debug hooks from inside JIT-compiled traces, so the
+// count hook by itself cannot guarantee that a "stop script" request takes
+// effect in a tight Lua loop.  Calling this from hot Lua C entry points gives
+// a reliable C-side abort path: TAS scripts reach emu.frameadvance() or
+// emu.wait() once per iteration.  CallExitFunction() temporarily clears panic,
+// so the exit callback is never interrupted by this check.
+static void CheckLuaAbort(lua_State* L)
+{
+	LuaContextInfo& info = GetCurrentInfo();
+	if(info.panic)
+		luaL_error(L, "%s", info.panicMessage[0] ? info.panicMessage : "terminated by user");
+}
 
 //#define ASK_USER_ON_FREEZE // dialog on freeze is disabled now because it seems to be unnecessary, but this can be re-defined to enable it
 
@@ -248,7 +387,7 @@ static const char* luaMemHookTypeStrings [] =
 //make Sure We Have The Right Number Of Strings 2
 CTASSERT(ARRAY_SIZE(luaMemHookTypeStrings) == LUAMEMHOOK_COUNT);
 
-void StopScriptIfFinished(int uid, bool justReturned = false);
+void StopScriptIfFinished(intptr_t uid, bool justReturned = false);
 void SetSaveKey(LuaContextInfo& info, const char* key);
 void SetLoadKey(LuaContextInfo& info, const char* key);
 void RefreshScriptStartedStatus();
@@ -262,7 +401,7 @@ static void CalculateMemHookRegions(LuaMemHookType hookType);
 static int memory_registerHook(lua_State* L, LuaMemHookType hookType, int defaultSize)
 {
 	// get first argument: address
-	unsigned int addr = luaL_checkinteger(L,1);
+	unsigned int addr = (unsigned int)luaL_checkinteger(L,1);
 	//if((addr & ~0xFFFFFF) == ~0xFFFFFF)
 	//	addr &= 0xFFFFFF;
 
@@ -271,7 +410,7 @@ static int memory_registerHook(lua_State* L, LuaMemHookType hookType, int defaul
 	int funcIdx = 2;
 	if(lua_isnumber(L,2))
 	{
-		size = luaL_checkinteger(L,2);
+		size = (int)luaL_checkinteger(L,2);
 		if(size < 0)
 		{
 			size = -size;
@@ -314,13 +453,17 @@ static int memory_registerHook(lua_State* L, LuaMemHookType hookType, int defaul
 	// re-cache regions of hooked memory across all scripts
 	CalculateMemHookRegions(hookType);
 
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 0;
 }
 
 LuaMemHookType MatchHookTypeToCPU(lua_State* L, LuaMemHookType hookType)
 {
+	// Neither of these is read any more: CPU selection is stubbed out and the
+	// switch that used them is commented out below.  Keep them so the intended
+	// 68k wiring stays visible, but mark them used.
 	int cpuID = 0;
+	(void)cpuID;
 
 	int cpunameIndex = 0;
 	if(lua_type(L,2) == LUA_TSTRING)
@@ -331,6 +474,7 @@ LuaMemHookType MatchHookTypeToCPU(lua_State* L, LuaMemHookType hookType)
 	if(cpunameIndex)
 	{
 		const char* cpuName = lua_tostring(L, cpunameIndex);
+		(void)cpuName; // only the commented-out match below would read it
 //		if(!stricmp(cpuName, "sub") || !stricmp(cpuName, "s68k"))
 //			cpuID = 1;
 		lua_remove(L, cpunameIndex);
@@ -382,7 +526,7 @@ DEFINE_LUA_FUNCTION(emu_registerbefore, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEMULATION]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEMULATION]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(emu_registerafter, "func")
@@ -393,7 +537,7 @@ DEFINE_LUA_FUNCTION(emu_registerafter, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATION]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATION]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(emu_registerexit, "func")
@@ -404,7 +548,7 @@ DEFINE_LUA_FUNCTION(emu_registerexit, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEXIT]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEXIT]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(emu_registerstart, "func") // TODO: use call registered LUACALL_ONSTART functions on reset
@@ -418,7 +562,7 @@ DEFINE_LUA_FUNCTION(emu_registerstart, "func") // TODO: use call registered LUAC
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_ONSTART]);
 	if (!lua_isnil(L,-1) && driver->EMU_HasEmulationStarted())
 		lua_call(L,0,0); // call the function now since the game has already started and this start function hasn't been called yet
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(gui_register, "func")
@@ -429,7 +573,7 @@ DEFINE_LUA_FUNCTION(gui_register, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATIONGUI]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATIONGUI]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(state_registersave, "func[,savekey]")
@@ -442,7 +586,7 @@ DEFINE_LUA_FUNCTION(state_registersave, "func[,savekey]")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFORESAVE]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFORESAVE]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(state_registerload, "func[,loadkey]")
@@ -455,13 +599,13 @@ DEFINE_LUA_FUNCTION(state_registerload, "func[,loadkey]")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTERLOAD]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTERLOAD]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 
 DEFINE_LUA_FUNCTION(input_registerhotkey, "keynum,func")
 {
-	int hotkeyNumber = luaL_checkinteger(L,1);
+	int hotkeyNumber = (int)luaL_checkinteger(L,1);
 	if(hotkeyNumber < 1 || hotkeyNumber > 16)
 	{
 		luaL_error(L, "input.registerhotkey(n,func) requires 1 <= n <= 16, but got n = %d.", hotkeyNumber);
@@ -476,9 +620,40 @@ DEFINE_LUA_FUNCTION(input_registerhotkey, "keynum,func")
 			luaL_checktype(L, 2, LUA_TFUNCTION);
 		lua_settop(L,2);
 		lua_setfield(L, LUA_REGISTRYINDEX, key);
-		StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+		StopScriptIfFinished(luaStateToUIDMap[L]);
 		return 1;
 	}
+}
+
+static LuaPopupHandler sPopupHandler = NULL;
+static LuaOpenScriptHandler sOpenScriptHandler = NULL;
+static LuaGetInputStatusHandler sInputStatusHandler = NULL;
+static LuaGetControllerStatusHandler sControllerStatusHandler = NULL;
+static const LuaMenuHooks* sMenuHooks = NULL;
+
+void SetLuaPopupHandler(LuaPopupHandler handler)
+{
+	sPopupHandler = handler;
+}
+
+void SetLuaOpenScriptHandler(LuaOpenScriptHandler handler)
+{
+	sOpenScriptHandler = handler;
+}
+
+void SetLuaInputStatusHandler(LuaGetInputStatusHandler handler)
+{
+	sInputStatusHandler = handler;
+}
+
+void SetLuaGetControllerStatusHandler(LuaGetControllerStatusHandler handler)
+{
+	sControllerStatusHandler = handler;
+}
+
+void SetLuaMenuHooks(const LuaMenuHooks* hooks)
+{
+	sMenuHooks = hooks;
 }
 
 static int doPopup(lua_State* L, const char* deftype, const char* deficon)
@@ -512,13 +687,13 @@ static int doPopup(lua_State* L, const char* deftype, const char* deficon)
 	assert(iicon >= 0 && iicon <= 3);
 	if(!(iicon >= 0 && iicon <= 3)) iicon = 0;
 
-	static const char * const titles [] = {"Notice", "Question", "Warning", "Error"};
 	const char* answer = "ok";
 #if defined(WIN32_FRONTEND)
+	static const char * const titles [] = {"Notice", "Question", "Warning", "Error"};
 	static const int etypes [] = {MB_OK, MB_YESNO, MB_YESNOCANCEL, MB_OKCANCEL, MB_ABORTRETRYIGNORE};
 	static const int eicons [] = {MB_ICONINFORMATION, MB_ICONQUESTION, MB_ICONWARNING, MB_ICONERROR};
 //	DialogsOpen++;
-	uintptr_t uid = luaStateToUIDMap[L->l_G->mainthread];
+	uintptr_t uid = luaStateToUIDMap[L];
 	EnableWindow(MainWindow->getHWnd(), false);
 //	if (Full_Screen)
 //	{
@@ -538,13 +713,28 @@ static int doPopup(lua_State* L, const char* deftype, const char* deficon)
 		case IDYES: answer = "yes"; break;
 		case IDNO: answer = "no"; break;
 	}
+#elif defined(DESMUME_COCOA)
+	// NSAlert, on the main thread, with the same button set and order as the
+	// Win32 MessageBox so scripts that switch on the answer behave identically.
+	answer = MacLua_ShowPopup(str, type, icon);
 #else
-	// NYI (assume first answer for now)
-	switch(itype)
+	if (sPopupHandler)
 	{
-		case 0: case 3: answer = "ok"; break;
-		case 1: case 2: answer = "yes"; break;
-		case 4: answer = "abort"; break;
+		// The frontend runs this on its UI thread and returns a static answer
+		// string, so it stays valid until the next popup.
+		answer = sPopupHandler(str, type, icon);
+		if (answer == NULL)
+			answer = "ok";
+	}
+	else
+	{
+		// NYI (assume first answer for now)
+		switch(itype)
+		{
+			case 0: case 3: answer = "ok"; break;
+			case 1: case 2: answer = "yes"; break;
+			case 4: answer = "abort"; break;
+		}
 	}
 #endif
 
@@ -646,7 +836,7 @@ static char* ConstructScriptSaveDataPath(char* output, int bufferSize, LuaContex
 // also, if you change the default value that will reset the variable to the new default.
 DEFINE_LUA_FUNCTION(emu_persistglobalvariables, "variabletable")
 {
-	int uid = luaStateToUIDMap[L->l_G->mainthread];
+	intptr_t uid = luaStateToUIDMap[L];
 	LuaContextInfo& info = GetCurrentInfo();
 
 	// construct a path we can load the persistent variables from
@@ -720,7 +910,7 @@ DEFINE_LUA_FUNCTION(emu_persistglobalvariables, "variabletable")
 			// keep track of the variable name for later
 			const char* varName = lua_tostring(L, varNameIndex);
 			info.persistVars.push_back(varName);
-			unsigned int varNameCRC = crc32(0, (const unsigned char*)varName, strlen(varName));
+			unsigned int varNameCRC = (unsigned int)crc32(0, (const unsigned char*)varName, (uInt)strlen(varName));
 			info.newDefaultData.SaveRecordPartial(uid, varNameCRC, defaultIndex);
 
 			// load the previous default value for this variable if it exists.
@@ -771,10 +961,21 @@ void DeferFunctionCall(lua_State* L, const char* idstring)
 
 	int num = lua_gettop(L);
 
-	// get the C function pointer
-	//lua_CFunction cf = lua_tocfunction(L, -(num+1));
-	lua_CFunction cf = (L->ci->func)->value.gc->cl.c.f;
-	assert(cf);
+	// get the C function pointer through the debug API.  LuaJIT keeps lua_State
+	// opaque, so the old ci->func access is gone; "f" pushes the function that
+	// is running at the given stack level, which we pop again immediately.
+	lua_Debug frame;
+	lua_CFunction cf = NULL;
+	if(lua_getstack(L, 0, &frame) && lua_getinfo(L, "f", &frame))
+	{
+		cf = lua_tocfunction(L, -1);
+		lua_pop(L, 1);
+	}
+	if(!cf)
+	{
+		info.numDeferredFuncs--; // nothing was actually deferred
+		return;
+	}
 	lua_pushcfunction(L,cf);
 
 	// make a list of the function and its arguments (and also pop those arguments from the stack)
@@ -786,7 +987,7 @@ void DeferFunctionCall(lua_State* L, const char* idstring)
 	// put the list into a global array
 	lua_getfield(L, LUA_REGISTRYINDEX, idstring);
 	lua_insert(L, 1);
-	int curSize = lua_objlen(L, 1);
+	int curSize = (int)lua_objlen(L, 1);
 	lua_rawseti(L, 1, curSize+1);
 
 	// clean the stack
@@ -798,7 +999,7 @@ static const char* refStashString = "refstash";
 void CallDeferredFunctions(lua_State* L, const char* idstring)
 {
 	lua_getfield(L, LUA_REGISTRYINDEX, idstring);
-	int numCalls = lua_objlen(L, -1);
+	int numCalls = (int)lua_objlen(L, -1);
 	if(numCalls > 0)
 	{
 		// save and pop any extra things that were on the stack
@@ -822,7 +1023,7 @@ void CallDeferredFunctions(lua_State* L, const char* idstring)
 		for(int i = 1; i <= numCalls; i++)
 		{
 			lua_rawgeti(L, 1, i);  // get the function+arguments list
-			int listSize = lua_objlen(L, 2);
+			int listSize = (int)lua_objlen(L, 2);
 
 			// push the arguments and the function
 			for(int j = 1; j <= listSize; j++)
@@ -911,8 +1112,6 @@ static void toCStringConverter(lua_State* L, int i, char*& ptr, int& remaining)
 	if(remaining <= 0)
 		return;
 
-	const char* str = ptr; // for debugging
-
 	// if there is a __tostring metamethod then call it
 	int usedMeta = luaL_callmeta(L, i, "__tostring");
 	if(usedMeta)
@@ -937,10 +1136,11 @@ static void toCStringConverter(lua_State* L, int i, char*& ptr, int& remaining)
 		case LUA_TBOOLEAN: APPENDPRINT lua_toboolean(L,i) ? "true" : "false" END break;
 		case LUA_TSTRING: APPENDPRINT "%s",lua_tostring(L,i) END break;
 		case LUA_TNUMBER: APPENDPRINT "%.12g",lua_tonumber(L,i) END break;
-		case LUA_TFUNCTION: 
-			if((L->base + i-1)->value.gc->cl.c.isC)
+		case LUA_TFUNCTION:
+		{
+			lua_CFunction func = lua_tocfunction(L, i);
+			if(func)
 			{
-				lua_CFunction func = lua_tocfunction(L, i);
 				std::map<lua_CFunction, const char*>::iterator iter = s_cFuncInfoMap.find(func);
 				if(iter == s_cFuncInfoMap.end())
 					goto defcase;
@@ -948,19 +1148,21 @@ static void toCStringConverter(lua_State* L, int i, char*& ptr, int& remaining)
 			}
 			else
 			{
-				APPENDPRINT "function(" END 
-				Proto* p = (L->base + i-1)->value.gc->cl.l.p;
-				int numParams = p->numparams + (p->is_vararg?1:0);
-				for (int n=0; n<p->numparams; n++)
+				// LuaJIT does not expose Lua 5.1's Proto internals, so a Lua
+				// function is reported by source location instead of by its
+				// parameter-name list.  (">S" pops the pushed function.)
+				lua_Debug ar;
+				lua_pushvalue(L, i);
+				if(lua_getinfo(L, ">S", &ar) && ar.what && ar.what[0] != 'C')
 				{
-					APPENDPRINT "%s", getstr(p->locvars[n].varname) END 
-					if(n != numParams-1)
-						APPENDPRINT "," END
+					APPENDPRINT "function(%s:%d)", ar.short_src, ar.linedefined END
 				}
-				if(p->is_vararg)
-					APPENDPRINT "..." END
-				APPENDPRINT ")" END
+				else
+				{
+					goto defcase;
+				}
 			}
+		}
 			break;
 defcase:default: APPENDPRINT "%s:%p",luaL_typename(L,i),lua_topointer(L,i) END break;
 		case LUA_TTABLE:
@@ -977,7 +1179,7 @@ defcase:default: APPENDPRINT "%s:%p",luaL_typename(L,i),lua_topointer(L,i) END b
 			std::vector<const void*>::const_iterator foundCycleIter = std::find(s_tableAddressStack.begin(), s_tableAddressStack.end(), lua_topointer(L,i));
 			if(foundCycleIter != s_tableAddressStack.end())
 			{
-				int parentNum = s_tableAddressStack.end() - foundCycleIter;
+				int parentNum = (int)(s_tableAddressStack.end() - foundCycleIter);
 				if(parentNum > 1)
 					APPENDPRINT "%s:parent^%d",luaL_typename(L,i),parentNum END
 				else
@@ -1013,18 +1215,22 @@ defcase:default: APPENDPRINT "%s:%p",luaL_typename(L,i),lua_topointer(L,i) END b
 						bool keyIsString = (lua_type(L, keyIndex) == LUA_TSTRING);
 						bool invalidLuaIdentifier = (!keyIsString || !isalphaorunderscore(*lua_tostring(L, keyIndex)));
 						if(invalidLuaIdentifier)
+						{
 							if(keyIsString)
 								APPENDPRINT "['" END
 							else
 								APPENDPRINT "[" END
+						}
 
 						toCStringConverter(L, keyIndex, ptr, remaining); // key
 
 						if(invalidLuaIdentifier)
+						{
 							if(keyIsString)
 								APPENDPRINT "']=" END
 							else
 								APPENDPRINT "]=" END
+						}
 						else
 							APPENDPRINT "=" END
 					}
@@ -1143,7 +1349,7 @@ DEFINE_LUA_FUNCTION(print, "...")
 {
 	const char* str = toCString(L);
 
-	int uid = luaStateToUIDMap[L->l_G->mainthread];
+	intptr_t uid = luaStateToUIDMap[L];
 	LuaContextInfo& info = GetCurrentInfo();
 
 	if(info.print)
@@ -1184,7 +1390,7 @@ DEFINE_LUA_FUNCTION(copytable, "origtable")
 		return 1;
 	}
 	
-	lua_createtable(L, lua_objlen(L,1), 0);
+	lua_createtable(L, (int)lua_objlen(L,1), 0);
 	int copyIndex = lua_gettop(L);
 
 	lua_pushnil(L); // first key
@@ -1347,7 +1553,7 @@ DEFINE_LUA_FUNCTION(bit_tohex, "x [,n]")
   return 1;
 }
 
-static const struct luaL_Reg bit_funcs[] = {
+static const struct luaL_Reg  bit_funcs[] = {
   { "tobit",	bit_tobit },
   { "bnot",	bit_bnot },
   { "band",	bit_band },
@@ -1396,7 +1602,7 @@ bool luabitop_validate(lua_State *L) // originally named as luaopen_bit
 
 DEFINE_LUA_FUNCTION(bitshift, "num,shift")
 {
-	int shift = luaL_checkinteger(L,2);
+	int shift = (int)luaL_checkinteger(L,2);
 	if (shift < 0) {
 		lua_pushinteger(L, -shift);
 		lua_replace(L, 2);
@@ -1411,7 +1617,7 @@ DEFINE_LUA_FUNCTION(bitbit, "whichbit")
 	int rv = 0;
 	int numArgs = lua_gettop(L);
 	for(int i = 1; i <= numArgs; i++) {
-		int where = luaL_checkinteger(L,i);
+		int where = (int)luaL_checkinteger(L,i);
 		if (where >= 0 && where < 32)
 			rv |= (1 << where);
 	}
@@ -1436,7 +1642,7 @@ void indicateBusy(lua_State* L, bool busy)
 		va_end(argp);
 		lua_concat(L, 2);
 		LuaContextInfo& info = GetCurrentInfo();
-		int uid = luaStateToUIDMap[L->l_G->mainthread];
+		intptr_t uid = luaStateToUIDMap[L];
 		if(info.print)
 		{
 			info.print(uid, lua_tostring(L,-1));
@@ -1450,7 +1656,7 @@ void indicateBusy(lua_State* L, bool busy)
 	}
 */
 #if defined(WIN32_FRONTEND)
-	uintptr_t uid = luaStateToUIDMap[L->l_G->mainthread];
+	uintptr_t uid = luaStateToUIDMap[L];
 	HWND hDlg = (HWND)uid;
 	char str [1024];
 	GetWindowText(hDlg, str, 1000);
@@ -1475,6 +1681,12 @@ void indicateBusy(lua_State* L, bool busy)
 #define MAX_WORRY_COUNT 6000
 void LuaRescueHook(lua_State* L, lua_Debug *dbg)
 {
+	// RequestAbortLuaScript re-arms the count hook with a count of 1 so this
+	// runs at the next VM instruction.  Restore the normal cadence right away
+	// (setting a hook from inside a hook is allowed) so an abort does not make
+	// every later bytecode run through the hook.
+	lua_sethook(L, LuaRescueHook, LUA_MASKCOUNT, HOOKCOUNT);
+
 	LuaContextInfo& info = GetCurrentInfo();
 
 	info.worryCount++;
@@ -1525,8 +1737,21 @@ void LuaRescueHook(lua_State* L, lua_Debug *dbg)
 		if(stoprunning)
 		{
 			//lua_sethook(L, NULL, 0, 0);
-			assert(L->errfunc || L->errorJmp);
-			luaL_error(L, info.panic ? info.panicMessage : "terminated by user");
+			// No errfunc/errorJmp probe: LuaJIT keeps lua_State opaque.  This hook
+			// only ever runs from inside a protected call (luaL_dofile/lua_pcall),
+			// so raising the error here is safe on both engines.
+			if(info.panic && info.panicMessage[0] == 0)
+			{
+				// RequestAbortLuaScript() raised the flag from the UI thread and
+				// could not ask Lua where it was; do it here, where the stack is
+				// ours and we are inside the VM.
+				luaL_where(L, 1);
+				const char* whereString = lua_tostring(L, -1);
+				snprintf(info.panicMessage, sizeof(info.panicMessage), "%sscript terminated",
+					whereString ? whereString : "");
+				lua_pop(L, 1);
+			}
+			luaL_error(L, "%s", info.panic ? info.panicMessage : "terminated by user");
 		}
 
 		info.panic = false;
@@ -1550,15 +1775,23 @@ void printfToOutput(const char* fmt, ...)
 {
 	va_list list;
 	va_start(list, fmt);
+	// vscprintf() only measures; it does not consume list (the POSIX fallback
+	// above works on a va_copy, and _vscprintf never advances the cursor), so
+	// the same list can be formatted afterwards.
 	int len = vscprintf(fmt, list);
-	char* str = new char[len+1];
-	vsprintf(str, fmt, list);
+	if(len < 0)
+	{
+		va_end(list);
+		return;
+	}
+	char* str = new char[(size_t)len + 1];
+	vsnprintf(str, (size_t)len + 1, fmt, list);
 	va_end(list);
 	LuaContextInfo& info = GetCurrentInfo();
 	if(info.print)
 	{
 		lua_State* L = info.L;
-		int uid = luaStateToUIDMap[L->l_G->mainthread];
+		intptr_t uid = luaStateToUIDMap[L];
 		info.print(uid, str);
 		info.print(uid, "\r\n");
 		worry(L,300);
@@ -1679,6 +1912,7 @@ int StepEmulationAtSpeed(lua_State* L, SpeedMode speedMode, bool allowPause)
 // acts similar to normal emulation update
 DEFINE_LUA_FUNCTION(emu_emulateframe, "")
 {
+	CheckLuaAbort(L);
 	if(FailVerifyAtFrameBoundary(L, "emu.emulateframe", 0,1))
 		return 0;
 
@@ -1688,6 +1922,7 @@ DEFINE_LUA_FUNCTION(emu_emulateframe, "")
 // acts as a fast-forward emulation update that still renders every frame
 DEFINE_LUA_FUNCTION(emu_emulateframefastnoskipping, "")
 {
+	CheckLuaAbort(L);
 	if(FailVerifyAtFrameBoundary(L, "emu.emulateframefastnoskipping", 0,1))
 		return 0;
 
@@ -1697,6 +1932,7 @@ DEFINE_LUA_FUNCTION(emu_emulateframefastnoskipping, "")
 // acts as a fast-forward emulation update
 DEFINE_LUA_FUNCTION(emu_emulateframefast, "")
 {
+	CheckLuaAbort(L);
 	if(FailVerifyAtFrameBoundary(L, "emu.emulateframefast", 0,1))
 		return 0;
 
@@ -1707,6 +1943,7 @@ DEFINE_LUA_FUNCTION(emu_emulateframefast, "")
 // that also doesn't render any graphics or generate any sounds
 DEFINE_LUA_FUNCTION(emu_emulateframeinvisible, "")
 {
+	CheckLuaAbort(L);
 	if(FailVerifyAtFrameBoundary(L, "emu.emulateframeinvisible", 0,1))
 		return 0;
 
@@ -1744,6 +1981,7 @@ DEFINE_LUA_FUNCTION(emu_speedmode, "mode")
 // (e.g. a savestate could possibly get loaded before emu.wait() returns)
 DEFINE_LUA_FUNCTION(emu_wait, "")
 {
+	CheckLuaAbort(L);
 	LuaContextInfo& info = GetCurrentInfo();
 	StepEmulationOnce(false, false, -1, true, true);
 	dontworry(info);
@@ -1756,10 +1994,10 @@ DEFINE_LUA_FUNCTION(emu_wait, "")
 
 DEFINE_LUA_FUNCTION(emu_frameadvance, "")
 {
+	CheckLuaAbort(L);
 	if(FailVerifyAtFrameBoundary(L, "emu.frameadvance", 0,1))
 		return emu_wait(L);
 
-	int uid = luaStateToUIDMap[L->l_G->mainthread];
 	LuaContextInfo& info = GetCurrentInfo();
 
 	if(!info.ranFrameAdvance)
@@ -1801,7 +2039,6 @@ DEFINE_LUA_FUNCTION(emu_pause, "")
 
 DEFINE_LUA_FUNCTION(emu_unpause, "")
 {
-	LuaContextInfo& info = GetCurrentInfo();
 	driver->EMU_PauseEmulation(false);
 	return 0;
 }
@@ -1817,7 +2054,7 @@ DEFINE_LUA_FUNCTION(emu_redraw, "")
 
 DEFINE_LUA_FUNCTION(memory_readbyte, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	unsigned char value = (unsigned char)(_MMU_read08<ARMCPU_ARM9>(address) & 0xFF);
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1825,7 +2062,7 @@ DEFINE_LUA_FUNCTION(memory_readbyte, "address")
 }
 DEFINE_LUA_FUNCTION(memory_readbytesigned, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	signed char value = (signed char)(_MMU_read08<ARMCPU_ARM9>(address) & 0xFF);
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1833,7 +2070,7 @@ DEFINE_LUA_FUNCTION(memory_readbytesigned, "address")
 }
 DEFINE_LUA_FUNCTION(vram_readword, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	u16 value = T1ReadWord(MMU.ARM9_LCD,address);
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1841,7 +2078,7 @@ DEFINE_LUA_FUNCTION(vram_readword, "address")
 }
 DEFINE_LUA_FUNCTION(memory_readword, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	unsigned short value = (unsigned short)(_MMU_read16<ARMCPU_ARM9>(address) & 0xFFFF);
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1849,7 +2086,7 @@ DEFINE_LUA_FUNCTION(memory_readword, "address")
 }
 DEFINE_LUA_FUNCTION(memory_readwordsigned, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	signed short value = (signed short)(_MMU_read16<ARMCPU_ARM9>(address) & 0xFFFF);
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1857,7 +2094,7 @@ DEFINE_LUA_FUNCTION(memory_readwordsigned, "address")
 }
 DEFINE_LUA_FUNCTION(memory_readdword, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	unsigned long value = (unsigned long)(_MMU_read32<ARMCPU_ARM9>(address));
 	lua_settop(L,0);
 	lua_pushnumber(L, value); // can't use pushinteger in this case (out of range)
@@ -1865,7 +2102,7 @@ DEFINE_LUA_FUNCTION(memory_readdword, "address")
 }
 DEFINE_LUA_FUNCTION(memory_readdwordsigned, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	signed long value = (signed long)(_MMU_read32<ARMCPU_ARM9>(address));
 	lua_settop(L,0);
 	lua_pushinteger(L, value);
@@ -1874,37 +2111,37 @@ DEFINE_LUA_FUNCTION(memory_readdwordsigned, "address")
 
 DEFINE_LUA_FUNCTION(memory_writebyte, "address,value")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	unsigned char value = (unsigned char)(luaL_checkinteger(L,2) & 0xFF);
 	_MMU_write08<ARMCPU_ARM9>(address, value);
 	return 0;
 }
 DEFINE_LUA_FUNCTION(memory_writeword, "address,value")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	unsigned short value = (unsigned short)(luaL_checkinteger(L,2) & 0xFFFF);
 	_MMU_write16<ARMCPU_ARM9>(address, value);
 	return 0;
 }
 DEFINE_LUA_FUNCTION(vram_writeword, "address,value")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	u16 value = (u16)(luaL_checkinteger(L,2) & 0xFFFF);
 	T1WriteWord(MMU.ARM9_LCD,address,value);
 	return 0;
 }
 DEFINE_LUA_FUNCTION(memory_writedword, "address,value")
 {
-	int address = luaL_checkinteger(L,1);
-	unsigned long value = (unsigned long)(luaL_checkinteger(L,2));
+	int address = (int)luaL_checkinteger(L,1);
+	u32 value = (u32)luaL_checkinteger(L,2);
 	_MMU_write32<ARMCPU_ARM9>(address, value);
 	return 0;
 }
 
 DEFINE_LUA_FUNCTION(memory_readbyterange, "address,length")
 {
-	int address = luaL_checkinteger(L,1);
-	int length = luaL_checkinteger(L,2);
+	int address = (int)luaL_checkinteger(L,1);
+	int length = (int)luaL_checkinteger(L,2);
 
 	if(length < 0)
 	{
@@ -1932,7 +2169,7 @@ DEFINE_LUA_FUNCTION(memory_readbyterange, "address,length")
 
 DEFINE_LUA_FUNCTION(memory_isvalid, "address")
 {
-	int address = luaL_checkinteger(L,1);
+	int address = (int)luaL_checkinteger(L,1);
 	lua_settop(L,0);
 	lua_pushboolean(L, IsHardwareAddressValid(address));
 	return 1;
@@ -2012,7 +2249,7 @@ DEFINE_LUA_FUNCTION(memory_getregister, "cpu_dot_registername_string")
 	for(int cpu = 0; cpu < sizeof(cpuToRegisterMaps)/sizeof(*cpuToRegisterMaps); cpu++)
 	{
 		cpuToRegisterMap ctrm = cpuToRegisterMaps[cpu];
-		int cpuNameLen = strlen(ctrm.cpuName);
+		int cpuNameLen = (int)strlen(ctrm.cpuName);
 		if(!strnicmp(qualifiedRegisterName, ctrm.cpuName, cpuNameLen))
 		{
 			qualifiedRegisterName += cpuNameLen;
@@ -2045,7 +2282,7 @@ DEFINE_LUA_FUNCTION(memory_setregister, "cpu_dot_registername_string,value")
 	for(int cpu = 0; cpu < sizeof(cpuToRegisterMaps)/sizeof(*cpuToRegisterMaps); cpu++)
 	{
 		cpuToRegisterMap ctrm = cpuToRegisterMaps[cpu];
-		int cpuNameLen = strlen(ctrm.cpuName);
+		int cpuNameLen = (int)strlen(ctrm.cpuName);
 		if(!strnicmp(qualifiedRegisterName, ctrm.cpuName, cpuNameLen))
 		{
 			qualifiedRegisterName += cpuNameLen;
@@ -2058,7 +2295,7 @@ DEFINE_LUA_FUNCTION(memory_setregister, "cpu_dot_registername_string,value")
 					{ default:
 					case 1: *(unsigned char*)rpm.pointer = (unsigned char)(value & 0xFF); break;
 					case 2: *(u16*)rpm.pointer = (u16)(value & 0xFFFF); break;
-					case 4: *(u32*)rpm.pointer = value; break;
+					case 4: *(u32*)rpm.pointer = (u32)value; break;
 					}
 					return 0;
 				}
@@ -2115,7 +2352,7 @@ DEFINE_LUA_FUNCTION(state_save, "location[,option]")
 		case LUA_TNUMBER: // numbered save file
 		default:
 		{
-			int stateNumber = luaL_checkinteger(L,1);
+			int stateNumber = (int)luaL_checkinteger(L,1);
 			savestate_slot(stateNumber);
 		}	return 0;
 		case LUA_TUSERDATA: // in-memory save slot
@@ -2168,7 +2405,7 @@ DEFINE_LUA_FUNCTION(state_load, "location[,option]")
 			//LuaContextInfo& info = GetCurrentInfo();
 			//if(info.rerecordCountingDisabled)
 			//	SkipNextRerecordIncrement = true;
-			int stateNumber = luaL_checkinteger(L,1);
+			int stateNumber = (int)luaL_checkinteger(L,1);
 			loadstate_slot(stateNumber);
 		}	return 0;
 		case LUA_TUSERDATA: // in-memory save slot
@@ -2228,7 +2465,7 @@ DEFINE_LUA_FUNCTION(state_loadscriptdata, "location")
 			//		saveData.ImportRecords(luaSaveFile);
 			//		fclose(luaSaveFile);
 
-			//		int uid = luaStateToUIDMap[L->l_G->mainthread];
+			//		intptr_t uid = luaStateToUIDMap[L];
 			//		LuaContextInfo& info = GetCurrentInfo();
 
 			//		lua_settop(L, 0);
@@ -2278,7 +2515,7 @@ public:
 					{
 						const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 						char temp [256];
-						sprintf(temp, " " /*"mismatch at "*/ "byte %d(0x%X at %p): %d(0x%X) != %d(0x%X)\n", i, i, dst, *src,*src, *dst,*dst);
+						snprintf(temp, sizeof(temp), " " /*"mismatch at "*/ "byte %d(0x%X at %p): %d(0x%X) != %d(0x%X)\n", i, i, dst, *src,*src, *dst,*dst);
 
 						if(ptr == dispInfo.masterNativeBuffer16 || ptr == dispInfo.masterCustomBuffer || ptr == CurrentRenderer->GetFramebuffer32()) // ignore screen-only differences since frame skipping can cause them and it's probably ok
 							break;
@@ -2526,7 +2763,7 @@ inline int getcolor_unmodified(lua_State *L, int idx, int defaultColor)
 	{
 		case LUA_TNUMBER:
 		{
-			return lua_tointeger(L,idx);
+			return (int)lua_tointeger(L,idx);
 		}	break;
 		case LUA_TSTRING:
 		{
@@ -2535,7 +2772,7 @@ inline int getcolor_unmodified(lua_State *L, int idx, int defaultColor)
 			{
 				int color;
 				sscanf(str+1, "%X", &color);
-				int len = strlen(str+1);
+				int len = (int)strlen(str+1);
 				int missing = std::max(0, 8-len);
 				color <<= missing << 2;
 				if(missing >= 2) color |= 0xFF;
@@ -2555,13 +2792,12 @@ inline int getcolor_unmodified(lua_State *L, int idx, int defaultColor)
 			lua_pushnil(L); // first key
 			int keyIndex = lua_gettop(L);
 			int valueIndex = keyIndex + 1;
-			bool first = true;
 			while(lua_next(L, idx))
 			{
 				bool keyIsString = (lua_type(L, keyIndex) == LUA_TSTRING);
 				bool keyIsNumber = (lua_type(L, keyIndex) == LUA_TNUMBER);
-				int key = keyIsString ? tolower(*lua_tostring(L, keyIndex)) : (keyIsNumber ? lua_tointeger(L, keyIndex) : 0);
-				int value = lua_tointeger(L, valueIndex);
+				int key = (int)(keyIsString ? tolower(*lua_tostring(L, keyIndex)) : (keyIsNumber ? lua_tointeger(L, keyIndex) : 0));
+				int value = (int)lua_tointeger(L, valueIndex);
 				if(value < 0) value = 0;
 				if(value > 255) value = 255;
 				switch(key)
@@ -2649,6 +2885,17 @@ static LuaGUIData curGuiData;
 static void prepare_drawing()
 {
 	curGuiData = GetCurrentInfo().guiData;
+
+#ifdef HAVE_LIBAGG
+	// Follow whichever target the frontend installed. The WebGPU display path
+	// swaps aggDraw.hud for the frame, so gui.* pixels land in the buffer that is
+	// actually presented instead of the default AGG HUD buffer.
+	if ((aggDraw.hud != NULL) && (aggDraw.hud->buf().buf() != NULL))
+	{
+		curGuiData.data = (u32*)aggDraw.hud->buf().buf();
+		curGuiData.stridePix = aggDraw.hud->buf().stride_abs() / 4;
+	}
+#endif
 }
 static void prepare_reading()
 {
@@ -3023,7 +3270,7 @@ static int strlinelen(const char* string)
 		s++;
 	if(*s)
 		s++;
-	return s - string;
+	return (int)(s - string);
 }
 
 static void LuaDisplayString (const char *str, int x, int y, u32 color, u32 outlineColor)
@@ -3033,7 +3280,7 @@ static void LuaDisplayString (const char *str, int x, int y, u32 color, u32 outl
 
 #if 1
 	//if(rotate == 0)
-		PutTextInternal<1,1,0,0>(str, strlen(str), x, y, color, outlineColor);
+		PutTextInternal<1,1,0,0>(str, (int)strlen(str), x, y, color, outlineColor);
 	//else if(rotate == 90)
 	//	PutTextInternal<0,0,1,-1>(str, strlen(str), x, y, color, outlineColor);
 	//else if
@@ -3081,8 +3328,8 @@ static void LuaDisplayString (const char *str, int x, int y, u32 color, u32 outl
 
 DEFINE_LUA_FUNCTION(gui_text, "x,y,str[,color=\"white\"[,outline=\"black\"]]")
 {
-	int x = luaL_checkinteger(L,1); // have to check for errors before deferring
-	int y = luaL_checkinteger(L,2);
+	int x = (int)(luaL_checkinteger(L,1)); // have to check for errors before deferring
+	int y = (int)luaL_checkinteger(L,2);
 
 	if(DeferGUIFuncIfNeeded(L))
 		return 0; // we have to wait until later to call this function because we haven't emulated the next frame yet
@@ -3106,10 +3353,10 @@ DEFINE_LUA_FUNCTION(gui_text, "x,y,str[,color=\"white\"[,outline=\"black\"]]")
 
 DEFINE_LUA_FUNCTION(gui_box, "x1,y1,x2,y2[,fill[,outline]]")
 {
-	int x1 = luaL_checkinteger(L,1); // have to check for errors before deferring
-	int y1 = luaL_checkinteger(L,2);
-	int x2 = luaL_checkinteger(L,3);
-	int y2 = luaL_checkinteger(L,4);
+	int x1 = (int)(luaL_checkinteger(L,1)); // have to check for errors before deferring
+	int y1 = (int)luaL_checkinteger(L,2);
+	int x2 = (int)luaL_checkinteger(L,3);
+	int y2 = (int)luaL_checkinteger(L,4);
 
 	if(DeferGUIFuncIfNeeded(L))
 		return 0;
@@ -3183,8 +3430,8 @@ DEFINE_LUA_FUNCTION(gui_box, "x1,y1,x2,y2[,fill[,outline]]")
 //   or it can be a preset color like 'red', 'orange', 'blue', 'white', etc.
 DEFINE_LUA_FUNCTION(gui_pixel, "x,y[,color=\"white\"]")
 {
-	int x = luaL_checkinteger(L,1); // have to check for errors before deferring
-	int y = luaL_checkinteger(L,2);
+	int x = (int)(luaL_checkinteger(L,1)); // have to check for errors before deferring
+	int y = (int)luaL_checkinteger(L,2);
 
 	if(DeferGUIFuncIfNeeded(L))
 		return 0;
@@ -3204,8 +3451,8 @@ DEFINE_LUA_FUNCTION(gui_getpixel, "x,y")
 {
 	prepare_reading();
 
-	int x = luaL_checkinteger(L,1);
-	int y = luaL_checkinteger(L,2);
+	int x = (int)luaL_checkinteger(L,1);
+	int y = (int)luaL_checkinteger(L,2);
 
 	u32 color = gui_adjust_coord_and_getpixel(x,y);
 
@@ -3221,10 +3468,10 @@ DEFINE_LUA_FUNCTION(gui_getpixel, "x,y")
 }
 DEFINE_LUA_FUNCTION(gui_line, "x1,y1,x2,y2[,color=\"white\"[,skipfirst=false]]")
 {
-	int x1 = luaL_checkinteger(L,1); // have to check for errors before deferring
-	int y1 = luaL_checkinteger(L,2);
-	int x2 = luaL_checkinteger(L,3);
-	int y2 = luaL_checkinteger(L,4);
+	int x1 = (int)(luaL_checkinteger(L,1)); // have to check for errors before deferring
+	int y1 = (int)luaL_checkinteger(L,2);
+	int x2 = (int)luaL_checkinteger(L,3);
+	int y2 = (int)luaL_checkinteger(L,4);
 
 	if(DeferGUIFuncIfNeeded(L))
 		return 0;
@@ -3260,8 +3507,7 @@ DEFINE_LUA_FUNCTION(gui_setopacity, "alpha_0_to_1")
 	lua_Number opacF = luaL_checknumber(L,1);
 	opacF *= 255.0;
 	if(opacF < 0) opacF = 0;
-	int opac;
-	lua_number2int(opac, opacF);
+	int opac = LuaNumberToInt(opacF);
 	LuaContextInfo& info = GetCurrentInfo();
 	info.transparencyModifier = opac;
 	return 0;
@@ -3279,8 +3525,7 @@ DEFINE_LUA_FUNCTION(gui_settransparency, "transparency_4_to_0")
 	lua_Number opacF = 4 - transp;
 	opacF *= 255.0 / 4.0;
 	if(opacF < 0) opacF = 0;
-	int opac;
-	lua_number2int(opac, opacF);
+	int opac = LuaNumberToInt(opacF);
 	LuaContextInfo& info = GetCurrentInfo();
 	info.transparencyModifier = opac;
 	return 0;
@@ -3289,14 +3534,36 @@ DEFINE_LUA_FUNCTION(gui_settransparency, "transparency_4_to_0")
 // gui.setlayermask(int main, int sub)
 // enables or disables display layers for each GPU according to the bitfields provided
 // e.g. 31 (11111) shows all layers; 0 (00000) hides all layers; 16 (10000) shows only the object layer (layer 4)
-// this function is only supported by the windows frontend.
 DEFINE_LUA_FUNCTION(gui_setlayermask, "main,sub")
 {
+	// The layer enable state lives in CommonSettings.dispLayers and is applied
+	// by GPUEngineBase::ApplySettings() on the next frame, so this works on
+	// every frontend.  Only the menu-bar checkmarks are Windows-specific.
+	lua_Integer mainMask = luaL_checkint(L, 1);
+	lua_Integer subMask = luaL_checkint(L, 2);
+
+	for (int core = 0; core < 2; core++)
+	{
+		GPUEngineBase *gpu = (core == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain()
+														: (GPUEngineBase *)GPU->GetEngineSub();
+		const int mask = (core == 0) ? (int)mainMask : (int)subMask;
+		for (size_t layer = 0; layer < 5; layer++)
+		{
+			const bool newLayerState = ((mask >> layer) & 0x01) != 0;
+			if (newLayerState != CommonSettings.dispLayers[core][layer])
+			{
+				gpu->SetLayerEnableState(layer, newLayerState);
 #if defined(WIN32_FRONTEND)
-	lua_Integer main = luaL_checkint(L, 1);
-	lua_Integer sub = luaL_checkint(L, 2);
-	SetLayerMasks(main, sub);
+				static const UINT ctlids[2][5] = {
+					{IDM_MBG0, IDM_MBG1, IDM_MBG2, IDM_MBG3, IDM_MOBJ},
+					{IDM_SBG0, IDM_SBG1, IDM_SBG2, IDM_SBG3, IDM_SOBJ},
+				};
+				MainWindow->checkMenu(ctlids[core][layer], newLayerState);
 #endif
+			}
+		}
+	}
+
 	return 0;
 }
 
@@ -3310,7 +3577,7 @@ DEFINE_LUA_FUNCTION(gui_gdscreenshot, "[whichScreen='both']")
 	if(lua_isboolean(L, 1))
 		selectedScreen = lua_toboolean(L, 1) ? 1 : -1;
 	else if(lua_isnumber(L, 1))
-		selectedScreen = lua_tointeger(L, 1);
+		selectedScreen = (int)lua_tointeger(L, 1);
 	else if(lua_isstring(L, 1))
 	{
 		const char* str = lua_tostring(L, 1);
@@ -3374,9 +3641,9 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[dx=0,dy=0,]gdimage[,sx=0,sy=0,width,height]
 	int index = 1;
 	if(lua_type(L,index) == LUA_TNUMBER)
 	{
-		xStartDst = lua_tointeger(L,index++);
+		xStartDst = (int)lua_tointeger(L,index++);
 		if(lua_type(L,index) == LUA_TNUMBER)
-			yStartDst = lua_tointeger(L,index++);
+			yStartDst = (int)lua_tointeger(L,index++);
 	}
 
 	luaL_checktype(L,index,LUA_TSTRING); // have to check for errors before deferring
@@ -3388,10 +3655,10 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[dx=0,dy=0,]gdimage[,sx=0,sy=0,width,height]
 
 	const bool defSrcRect = ((numArgs - index + 1) < 2);
 	if (!defSrcRect) {
-		xStartSrc = luaL_checkinteger(L, index++);
-		yStartSrc = luaL_checkinteger(L, index++);
-		width = luaL_checkinteger(L, index++);
-		height = luaL_checkinteger(L, index++);
+		xStartSrc = (int)luaL_checkinteger(L, index++);
+		yStartSrc = (int)luaL_checkinteger(L, index++);
+		width = (int)luaL_checkinteger(L, index++);
+		height = (int)luaL_checkinteger(L, index++);
 	}
 
 	LuaContextInfo& info = GetCurrentInfo();
@@ -3438,10 +3705,12 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[dx=0,dy=0,]gdimage[,sx=0,sy=0,width,height]
 		colorsTotal = *ptr++ << 8;
 		colorsTotal |= *ptr++;
 	}
+	(void)colorsTotal; // only advances ptr; the value itself is not used
 	int transparent = *ptr++ << 24;
 	transparent |= *ptr++ << 16;
 	transparent |= *ptr++ << 8;
 	transparent |= *ptr++;
+	(void)transparent; // likewise
 	struct { int r, g, b, a; } pal[256];
 	if (!trueColor) for (int i = 0; i < 256; i++) {
 		pal[i].r = *ptr++;
@@ -3530,6 +3799,24 @@ DEFINE_LUA_FUNCTION(emu_openscript, "filename")
 	const char* errorMsg = OpenLuaScript(filename, curScriptDir, true);
 	if(errorMsg)
 		luaL_error(L, errorMsg);
+#elif defined(DESMUME_COCOA)
+	// Each script gets its own console window, so "subservient" is implicit:
+	// the new script runs in its own state and stopping it does not touch the
+	// caller.  Relative paths resolve next to the calling script first.
+	const char* filename = lua_isstring(L,1) ? lua_tostring(L,1) : NULL;
+	char curScriptDir[1024]; GetCurrentScriptDir(curScriptDir, 1024);
+	const char* errorMsg = MacLua_OpenScript(filename, curScriptDir);
+	if(errorMsg)
+		luaL_error(L, errorMsg);
+#else
+	if (sOpenScriptHandler)
+	{
+		const char* filename = lua_isstring(L,1) ? lua_tostring(L,1) : NULL;
+		char curScriptDir[1024]; GetCurrentScriptDir(curScriptDir, 1024);
+		const char* errorMsg = sOpenScriptHandler(filename, curScriptDir);
+		if (errorMsg)
+			luaL_error(L, "%s", errorMsg);
+	}
 #endif
     return 0;
 }
@@ -3547,8 +3834,11 @@ static bool IsLuaMenuItem(PlatformMenuItem menuItem)
 {
 #if defined(WIN32_FRONTEND)
 	return (menuItem >= IDC_LUAMENU_RESERVE_START && menuItem <= IDC_LUAMENU_RESERVE_END);
+#elif defined(DESMUME_COCOA)
+	return MacLua_MenuIsOwnedID((int)menuItem);
 #else
-	return false;
+	return sMenuHooks != NULL && sMenuHooks->isOwnedItemID != NULL &&
+		sMenuHooks->isOwnedItemID((int)menuItem);
 #endif
 }
 
@@ -3569,8 +3859,21 @@ static bool SearchFreeMenuItem(PlatformMenu menu, PlatformMenuItem& menuItem)
 		}
 	}
 	return false;
+#elif defined(DESMUME_COCOA)
+	// Ids come from the frontend's own pool; there is no menu to interrogate.
+	const int allocated = MacLua_MenuAllocID();
+	if (allocated < 0)
+		return false;
+	menuItem = (PlatformMenuItem)allocated;
+	return true;
 #else
-	return false;
+	if (sMenuHooks == NULL || sMenuHooks->allocItemID == NULL)
+		return false;
+	const int allocated = sMenuHooks->allocItemID();
+	if (allocated < 0)
+		return false;
+	menuItem = (PlatformMenuItem)allocated;
+	return true;
 #endif
 }
 
@@ -3627,21 +3930,112 @@ static PlatformMenu AddSubMenu(PlatformMenu topMenu, PlatformMenu menu, const ch
 	}
 	info.menuData.subMenuData.push_back(LuaSubMenuData(menu, mii.hSubMenu, subMenuId));
 	return mii.hSubMenu;
+#elif defined(DESMUME_COCOA)
+	// Reuse an existing menu with this name, otherwise add one at the end of
+	// the app's menu bar.
+	LuaContextInfo& info = GetCurrentInfo();
+	int existingId = 0;
+	PlatformMenu existing = (PlatformMenu)MacLua_MenuFindSubmenu(menu, menuName, &existingId);
+	if (existing != NULL)
+	{
+		if (IsLuaMenuItem((PlatformMenuItem)existingId))
+			info.menuData.subMenuData.push_back(LuaSubMenuData(menu, existing, (PlatformMenuItem)existingId));
+		return existing;
+	}
+
+	PlatformMenuItem subMenuId;
+	if (!SearchFreeMenuItem(topMenu, subMenuId))
+		return NULL;
+
+	PlatformMenu subMenu = (PlatformMenu)MacLua_MenuAddSubmenu(menu, menuName, (int)subMenuId);
+	if (subMenu == NULL)
+	{
+		MacLua_MenuFreeID((int)subMenuId);
+		return NULL;
+	}
+
+	info.menuData.subMenuData.push_back(LuaSubMenuData(menu, subMenu, subMenuId));
+	return subMenu;
 #else
-	return 0;
+	// GTK3 (and any other frontend that installs menu hooks).  Reuse a Lua menu
+	// with this name in the same parent, otherwise add one at the end.
+	if (sMenuHooks == NULL || sMenuHooks->findSubmenu == NULL ||
+		sMenuHooks->addSubmenu == NULL || sMenuHooks->freeItemID == NULL)
+	{
+		return NULL;
+	}
+
+	LuaContextInfo& info = GetCurrentInfo();
+	int existingId = 0;
+	PlatformMenu existing = (PlatformMenu)sMenuHooks->findSubmenu(menu, menuName, &existingId);
+	if (existing != NULL)
+	{
+		if (IsLuaMenuItem((PlatformMenuItem)existingId))
+			info.menuData.subMenuData.push_back(LuaSubMenuData(menu, existing, (PlatformMenuItem)existingId));
+		return existing;
+	}
+
+	PlatformMenuItem subMenuId;
+	if (!SearchFreeMenuItem(topMenu, subMenuId))
+		return NULL;
+
+	PlatformMenu subMenu = (PlatformMenu)sMenuHooks->addSubmenu(menu, menuName, (int)subMenuId);
+	if (subMenu == NULL)
+	{
+		sMenuHooks->freeItemID((int)subMenuId);
+		return NULL;
+	}
+
+	info.menuData.subMenuData.push_back(LuaSubMenuData(menu, subMenu, subMenuId));
+	return subMenu;
+#endif
+}
+
+static bool PlatformAddMenuSeparator(PlatformMenu menu, PlatformMenuItem menuItem)
+{
+#if defined(WIN32_FRONTEND)
+	MENUITEMINFO mii;
+	ZeroMemory(&mii, sizeof(MENUITEMINFO));
+	mii.cbSize = sizeof(MENUITEMINFO);
+	mii.fMask = MIIM_ID | MIIM_FTYPE;
+	mii.wID = menuItem;
+	mii.fType = MFT_SEPARATOR;
+	return InsertMenuItem(menu, menuItem, FALSE, &mii) != 0;
+#elif defined(DESMUME_COCOA)
+	return MacLua_MenuAddSeparator(menu, (int)menuItem);
+#else
+	return sMenuHooks != NULL && sMenuHooks->addSeparator != NULL &&
+		sMenuHooks->addSeparator(menu, (int)menuItem);
+#endif
+}
+
+static bool PlatformAddMenuItem(PlatformMenu menu, PlatformMenuItem menuItem, const char* menuName)
+{
+#if defined(WIN32_FRONTEND)
+	MENUITEMINFO mii;
+	ZeroMemory(&mii, sizeof(MENUITEMINFO));
+	mii.cbSize = sizeof(MENUITEMINFO);
+	mii.fMask = MIIM_ID | MIIM_STRING;
+	mii.wID = menuItem;
+	mii.dwTypeData = (char*) menuName;
+	return InsertMenuItem(menu, menuItem, FALSE, &mii) != 0;
+#elif defined(DESMUME_COCOA)
+	return MacLua_MenuAddItem(menu, (int)menuItem, menuName);
+#else
+	return sMenuHooks != NULL && sMenuHooks->addItem != NULL &&
+		sMenuHooks->addItem(menu, (int)menuItem, menuName);
 #endif
 }
 
 bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 {
-#if defined(WIN32_FRONTEND)
 	LuaContextInfo& info = GetCurrentInfo();
 	lua_State* L = info.L;
 	luaL_checktype(L, -1, LUA_TTABLE);
 	luaL_checkstack(L, 6, "");
 
 	// for index = 1, #menuEntries
-	unsigned int count = lua_objlen(L, -1);
+	unsigned int count = (unsigned int)lua_objlen(L, -1);
 	for (unsigned int index = 1; index <= count; index++)
 	{
 		// switch(type(menuEntries[index]))
@@ -3655,13 +4049,7 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 				return false;
 			}
 
-			MENUITEMINFO mii;
-			ZeroMemory(&mii, sizeof(MENUITEMINFO));
-			mii.cbSize = sizeof(MENUITEMINFO);
-			mii.fMask = MIIM_ID | MIIM_FTYPE;
-			mii.wID = menuItem;
-			mii.fType = MFT_SEPARATOR;
-			if (!InsertMenuItem(menu, menuItem, FALSE, &mii))
+			if (!PlatformAddMenuSeparator(menu, menuItem))
 			{
 				luaL_error(L, "menu item addition failed");
 				return false;
@@ -3685,13 +4073,7 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 					return false;
 				}
 
-				MENUITEMINFO mii;
-				ZeroMemory(&mii, sizeof(MENUITEMINFO));
-				mii.cbSize = sizeof(MENUITEMINFO);
-				mii.fMask = MIIM_ID | MIIM_STRING;
-				mii.wID = menuItem;
-				mii.dwTypeData = (char*) menuName;
-				if (!InsertMenuItem(menu, menuItem, FALSE, &mii))
+				if (!PlatformAddMenuItem(menu, menuItem, menuName))
 				{
 					luaL_error(L, "menu item addition failed");
 					return false;
@@ -3700,13 +4082,13 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 
 				lua_getfield(L, LUA_REGISTRYINDEX, menuCallbackIDString);
 				lua_insert(L, -2);
-				lua_rawseti(L, -2, menuItem);
+				lua_rawseti(L, -2, (int)menuItem);
 
 				lua_pop(L, 3);
 			}
 			else if (lua_istable(L, -1))
 			{
-				HMENU subMenu = AddSubMenu(topMenu, menu, menuName);
+				PlatformMenu subMenu = AddSubMenu(topMenu, menu, menuName);
 				if (subMenu == NULL)
 				{
 					luaL_error(L, "menu item addition failed");
@@ -3731,14 +4113,10 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 		}
 	}
 	return true;
-#else
-	return false;
-#endif
 }
 
 DEFINE_LUA_FUNCTION(emu_addmenu, "menuName, menuEntries")
 {
-#if defined(WIN32_FRONTEND)
 	int nargs = lua_gettop(L);
 	if (nargs > 1 && !lua_isnil(L, 1))
 	{
@@ -3746,12 +4124,26 @@ DEFINE_LUA_FUNCTION(emu_addmenu, "menuName, menuEntries")
 		luaL_checktype(L, 2, LUA_TTABLE);
 		lua_settop(L, 2); // drop redundant args
 
+#if defined(WIN32_FRONTEND)
 		HMENU menu = mainMenu;
-		HMENU subMenu = AddSubMenu(menu, menu, menuName);
+#elif defined(DESMUME_COCOA)
+		// Cocoa: a new top-level menu in the menu bar, reused if a menu with
+		// the same name is already there.
+		PlatformMenu menu = (PlatformMenu)MacLua_MenuRoot();
+#else
+		// GTK3: the app menubar, exposed through the frontend hooks.  Without
+		// hooks (CLI, GTK2) the whole API stays a no-op.
+		if (sMenuHooks == NULL || sMenuHooks->rootMenu == NULL)
+			return 0;
+		PlatformMenu menu = (PlatformMenu)sMenuHooks->rootMenu();
+#endif
+		PlatformMenu subMenu = AddSubMenu(menu, menu, menuName);
 		if (subMenu != NULL)
 		{
 			AddMenuEntries(menu, subMenu);
+#if defined(WIN32_FRONTEND)
 			DrawMenuBar(MainWindow->getHWnd());
+#endif
 		}
 		else
 		{
@@ -3766,8 +4158,37 @@ DEFINE_LUA_FUNCTION(emu_addmenu, "menuName, menuEntries")
 		//lua_settop(L, index); // drop redundant args
 		//AddMenuEntries(menu, menu);
 	}
-#endif
 	return 0;
+}
+
+static void PlatformMenuSetEnabled(PlatformMenu menu, PlatformMenuItem menuItem, bool enabled)
+{
+#if defined(DESMUME_COCOA)
+	MacLua_MenuSetEnabled(menu, (int)menuItem, enabled);
+#else
+	if (sMenuHooks != NULL && sMenuHooks->setEnabled != NULL)
+		sMenuHooks->setEnabled(menu, (int)menuItem, enabled);
+#endif
+}
+
+static void PlatformMenuSetChecked(PlatformMenu menu, PlatformMenuItem menuItem, bool checked)
+{
+#if defined(DESMUME_COCOA)
+	MacLua_MenuSetChecked(menu, (int)menuItem, checked);
+#else
+	if (sMenuHooks != NULL && sMenuHooks->setChecked != NULL)
+		sMenuHooks->setChecked(menu, (int)menuItem, checked);
+#endif
+}
+
+static void PlatformMenuSetTitle(PlatformMenu menu, PlatformMenuItem menuItem, const char* title)
+{
+#if defined(DESMUME_COCOA)
+	MacLua_MenuSetTitle(menu, (int)menuItem, title);
+#else
+	if (sMenuHooks != NULL && sMenuHooks->setTitle != NULL)
+		sMenuHooks->setTitle(menu, (int)menuItem, title);
+#endif
 }
 
 DEFINE_LUA_FUNCTION(emu_setmenuiteminfo, "menuItem, infoTable")
@@ -3853,6 +4274,78 @@ DEFINE_LUA_FUNCTION(emu_setmenuiteminfo, "menuItem, infoTable")
 		lua_pop(L, 1);
 		it++;
 	}
+#else
+	// Same contract as the Win32 version: find the item whose registered
+	// callback is the function in argument 1, then apply name/enabled/checked.
+	// The three fields are parsed up front because the table is read at fixed
+	// stack slots instead of inside the item loop.
+	bool hasEnabled = false, enableValue = false;
+	bool hasChecked = false, checkedValue = false;
+	const char* newName = NULL;
+
+	lua_getfield(L, 2, "enabled");
+	if (lua_isboolean(L, -1))
+	{
+		hasEnabled = true;
+		enableValue = lua_toboolean(L, -1) != 0;
+	}
+	else if (!lua_isnil(L, -1))
+	{
+		luaL_where(L, 0);
+		luaL_error(L, "%s bad argument \"enabled\" (boolean expected, got %s)",
+			luaL_optstring(L, -1, ""), luaL_typename(L, -2));
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, 2, "checked");
+	if (lua_isboolean(L, -1))
+	{
+		hasChecked = true;
+		checkedValue = lua_toboolean(L, -1) != 0;
+	}
+	else if (!lua_isnil(L, -1))
+	{
+		luaL_where(L, 0);
+		luaL_error(L, "%s bad argument \"checked\" (boolean expected, got %s)",
+			luaL_optstring(L, -1, ""), luaL_typename(L, -2));
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, 2, "name");
+	if (lua_isstring(L, -1))
+	{
+		newName = lua_tostring(L, -1);
+	}
+	else if (!lua_isnil(L, -1))
+	{
+		luaL_where(L, 0);
+		luaL_error(L, "%s bad argument \"name\" (string expected, got %s)",
+			luaL_optstring(L, -1, ""), luaL_typename(L, -2));
+	}
+	lua_pop(L, 1);
+
+	LuaContextInfo& info = GetCurrentInfo();
+	map<PlatformMenuItem, PlatformMenu>::iterator it = info.menuData.menuItemMap.begin();
+	while(it != info.menuData.menuItemMap.end())
+	{
+		PlatformMenu menu = (*it).second;
+		PlatformMenuItem menuItem = (*it).first;
+		lua_getfield(L, LUA_REGISTRYINDEX, menuCallbackIDString);
+		lua_rawgeti(L, -1, (int)menuItem);
+		const bool matches = (lua_rawequal(L, 1, -1) != 0);
+		lua_pop(L, 2);
+		if (matches)
+		{
+			if (hasEnabled)
+				PlatformMenuSetEnabled(menu, menuItem, enableValue);
+			if (hasChecked)
+				PlatformMenuSetChecked(menu, menuItem, checkedValue);
+			if (newName != NULL)
+				PlatformMenuSetTitle(menu, menuItem, newName);
+			break;
+		}
+		it++;
+	}
 #endif
 	return 0;
 }
@@ -3865,7 +4358,19 @@ DEFINE_LUA_FUNCTION(emu_registermenustart, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_ONINITMENU]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_ONINITMENU]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+#if defined(DESMUME_COCOA)
+	// The handler only runs when Cocoa tells us a Lua menu is opening, and that
+	// arrives on the main thread.  Ask for one refresh now so the first open
+	// already shows the state this handler sets.
+	MacLua_QueueMenuInit();
+#elif !defined(WIN32_FRONTEND)
+	// GTK3 has no "menu about to show" signal on a GMenuModel.  The frontend
+	// runs the handler on a short timer and before the next frame instead; ask
+	// for one run now so the first open already sees the right state.
+	if (sMenuHooks != NULL && sMenuHooks->queueMenuInit != NULL)
+		sMenuHooks->queueMenuInit();
+#endif
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 
@@ -3874,7 +4379,7 @@ DEFINE_LUA_FUNCTION(emu_set3dtransform, "mode, matrix")
 	extern int freelookMode;
 	extern s32 freelookMatrix[16];
 
-	int mode = luaL_checkinteger(L,1);
+	int mode = (int)luaL_checkinteger(L,1);
 	freelookMode = mode;
 	if(mode == 2 || mode == 3)
 	{
@@ -3897,7 +4402,7 @@ DEFINE_LUA_FUNCTION(emu_register3devent, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_REGISTER3DEVENT]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_REGISTER3DEVENT]);
-	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	StopScriptIfFinished(luaStateToUIDMap[L]);
 	return 1;
 }
 
@@ -3958,7 +4463,7 @@ DEFINE_LUA_FUNCTION(movie_rerecordcount, "")
 }
 DEFINE_LUA_FUNCTION(movie_setrerecordcount, "")
 {
-	currMovieData.rerecordCount = luaL_checkinteger(L, 1);
+	currMovieData.rerecordCount = (int)luaL_checkinteger(L, 1);
 	return 0;
 }
 DEFINE_LUA_FUNCTION(emu_rerecordcounting, "[enabled]")
@@ -4242,8 +4747,51 @@ DEFINE_LUA_FUNCTION(input_getcurrentinputstatus, "")
 	}
 
 	worry(L,10);
+#elif defined(DESMUME_COCOA)
+	// Keyboard and mouse come from the frontend, which polls the same global
+	// event state Windows reads with GetAsyncKeyState().
+	MacLuaInputStatus status;
+	MacLua_GetInputStatus(&status);
+
+	for (int i = 0; i < status.keyCount; i++)
+	{
+		lua_pushboolean(L, true);
+		lua_setfield(L, -2, status.keyNames[i]);
+	}
+
+	if (status.mouseValid)
+	{
+		lua_pushinteger(L, status.mouseX);
+		lua_setfield(L, -2, "xmouse");
+		lua_pushinteger(L, status.mouseY);
+		lua_setfield(L, -2, "ymouse");
+	}
+
+	worry(L,10);
 #else
-	// NYI (well, return an empty table)
+	// POSIX frontends install a handler; without one this stays an empty
+	// table (the CLI and the retired GTK2 frontend).
+	if (sInputStatusHandler != NULL)
+	{
+		LuaInputStatus status;
+		if (sInputStatusHandler(&status))
+		{
+			const int keyCount = (status.keyCount > LUA_INPUT_MAX_KEYS) ? LUA_INPUT_MAX_KEYS : status.keyCount;
+			for (int i = 0; i < keyCount; i++)
+			{
+				lua_pushboolean(L, true);
+				lua_setfield(L, -2, status.keyNames[i]);
+			}
+
+			if (status.mouseValid)
+			{
+				lua_pushinteger(L, status.mouseX);
+				lua_setfield(L, -2, "xmouse");
+				lua_pushinteger(L, status.mouseY);
+				lua_setfield(L, -2, "ymouse");
+			}
+		}
+	}
 #endif
 
 	return 1;
@@ -4266,7 +4814,7 @@ int dontworry(LuaContextInfo& info)
 //agg basic shapes
 //TODO polygon and polyline, maybe the overloads for roundedRect and curve
 
-#ifdef HAVE_LIBAGG
+#if defined(HAVE_LIBAGG) || defined(DESMUME_COCOA_METAL_OSD)
 
 static int line(lua_State *L) {
 
@@ -4276,7 +4824,7 @@ static int line(lua_State *L) {
 	x2 = luaL_checknumber(L,3) + 0.5;
 	y2 = luaL_checknumber(L,4) + 0.5;
 
-	aggDraw.hud->line(x1, y1, x2, y2);
+	OSD_HUD_TARGET->line(x1, y1, x2, y2);
 
 	return 0;
 }
@@ -4291,7 +4839,7 @@ static int triangle(lua_State *L) {
 	x3 = luaL_checknumber(L,5) + 0.5;
 	y3 = luaL_checknumber(L,6) + 0.5;
 
-	aggDraw.hud->triangle(x1, y1, x2, y2, x3, y3);
+	OSD_HUD_TARGET->triangle(x1, y1, x2, y2, x3, y3);
 
 	return 0;
 }
@@ -4304,7 +4852,7 @@ static int rectangle(lua_State *L) {
 	x2 = luaL_checknumber(L,3) + 0.5;
 	y2 = luaL_checknumber(L,4) + 0.5;
 
-	aggDraw.hud->rectangle(x1, y1, x2, y2);
+	OSD_HUD_TARGET->rectangle(x1, y1, x2, y2);
 
 	return 0;
 }
@@ -4318,7 +4866,7 @@ static int roundedRect(lua_State *L) {
 	y2 = luaL_checknumber(L,4) + 0.5;
 	r  = luaL_checknumber(L,5);
 
-	aggDraw.hud->roundedRect(x1, y1, x2, y2, r);
+	OSD_HUD_TARGET->roundedRect(x1, y1, x2, y2, r);
 
 	return 0;
 }
@@ -4331,7 +4879,7 @@ static int ellipse(lua_State *L) {
 	rx = luaL_checknumber(L,3);
 	ry = luaL_checknumber(L,4);
 
-	aggDraw.hud->ellipse(cx, cy, rx, ry);
+	OSD_HUD_TARGET->ellipse(cx, cy, rx, ry);
 
 	return 0;
 }
@@ -4346,7 +4894,7 @@ static int arc(lua_State *L) {
 	start = luaL_checknumber(L,5);
 	sweep = luaL_checknumber(L,6);
 
-	aggDraw.hud->arc(cx, cy,rx, ry, start, sweep);
+	OSD_HUD_TARGET->arc(cx, cy,rx, ry, start, sweep);
 
 	return 0;
 }
@@ -4360,9 +4908,9 @@ static int star(lua_State *L) {
 	r1 = luaL_checknumber(L,3);
 	r2 = luaL_checknumber(L,4);
 	startAngle = luaL_checknumber(L,5);
-	numRays = luaL_checkinteger(L,6);
+	numRays = (int)luaL_checkinteger(L,6);
 
-	aggDraw.hud->star(cx, cy, r1, r2, startAngle, numRays);
+	OSD_HUD_TARGET->star(cx, cy, r1, r2, startAngle, numRays);
 
 	return 0;
 }
@@ -4377,7 +4925,7 @@ static int curve(lua_State *L) {
 	x3 = luaL_checknumber(L,5) + 0.5;
 	y3 = luaL_checknumber(L,6) + 0.5;
 
-	aggDraw.hud->curve(x1, y1, x2, y2, x3, y3);
+	OSD_HUD_TARGET->curve(x1, y1, x2, y2, x3, y3);
 
 	return 0;
 }
@@ -4426,7 +4974,7 @@ static int curve(lua_State *L)
 
 #endif
 
-static const struct luaL_reg aggbasicshapes [] =
+static const struct luaL_Reg aggbasicshapes [] =
 {
 	{"line", line},
 	{"triangle", triangle},
@@ -4456,28 +5004,28 @@ static void getColorForAgg(lua_State *L, int&r,int&g,int&b,int&a)
 	}
 	else
 	{
-		r = luaL_optinteger(L,1,255);
-		g = luaL_optinteger(L,2,255);
-		b = luaL_optinteger(L,3,255);
-		a = luaL_optinteger(L,4,255);
+		r = (int)luaL_optinteger(L,1,255);
+		g = (int)luaL_optinteger(L,2,255);
+		b = (int)luaL_optinteger(L,3,255);
+		a = (int)luaL_optinteger(L,4,255);
 	}
 }
 
-#ifdef HAVE_LIBAGG
+#if defined(HAVE_LIBAGG) || defined(DESMUME_COCOA_METAL_OSD)
 
 static int fillColor(lua_State *L) {
 
 	int r,g,b,a;
 	getColorForAgg(L, r,g,b,a);
 
-	aggDraw.hud->fillColor(r, g, b, a);
+	OSD_HUD_TARGET->fillColor(r, g, b, a);
 
 	return 0;
 }
 
 static int noFill(lua_State *L) {
 
-	aggDraw.hud->noFill();
+	OSD_HUD_TARGET->noFill();
 	return 0;
 }
 
@@ -4486,14 +5034,14 @@ static int lineColor(lua_State *L) {
 	int r,g,b,a;
 	getColorForAgg(L, r,g,b,a);
 
-	aggDraw.hud->lineColor(r, g, b, a);
+	OSD_HUD_TARGET->lineColor(r, g, b, a);
 
 	return 0;
 }
 
 static int noLine(lua_State *L) {
 
-	aggDraw.hud->noLine();
+	OSD_HUD_TARGET->noLine();
 	return 0;
 }
 
@@ -4502,7 +5050,7 @@ static int lineWidth(lua_State *L) {
 	double w;
 	w = luaL_checknumber(L,1);
 
-	aggDraw.hud->lineWidth(w);
+	OSD_HUD_TARGET->lineWidth(w);
 
 	return 0;
 }
@@ -4536,7 +5084,7 @@ static int lineWidth(lua_State *L)
 
 #endif
 
-static const struct luaL_reg agggeneralattributes [] =
+static const struct luaL_Reg agggeneralattributes [] =
 {
 //	{"blendMode", blendMode},
 //	{"imageBlendMode", imageBlendMode},
@@ -4559,14 +5107,14 @@ static const struct luaL_reg agggeneralattributes [] =
 	{NULL, NULL}
 };
 
-#ifdef HAVE_LIBAGG
+#if defined(HAVE_LIBAGG) || defined(DESMUME_COCOA_METAL_OSD)
 
 static int setFont(lua_State *L) {
 
 	const char *choice;
 	choice = luaL_checkstring(L,1);
 
-	aggDraw.hud->setFont(choice);
+	OSD_HUD_TARGET->setFont(choice);
 	return 0;
 }
 
@@ -4574,11 +5122,11 @@ static int text(lua_State *L) {
 	int x, y;
 	const char *choice;
 
-	x = luaL_checkinteger(L, 1);
-	y = luaL_checkinteger(L, 2);
+	x = (int)luaL_checkinteger(L, 1);
+	y = (int)luaL_checkinteger(L, 2);
 	choice = luaL_checkstring(L,3);
 
-	aggDraw.hud->renderTextDropshadowed(x,y,choice);
+	OSD_HUD_TARGET->renderTextDropshadowed(x,y,choice);
 	return 0;
 }
 
@@ -4596,7 +5144,7 @@ static int text(lua_State *L)
 
 #endif
 
-static const struct luaL_reg aggcustom [] =
+static const struct luaL_Reg aggcustom [] =
 {
 	{"setFont", setFont},
 	{"text", text},
@@ -4611,8 +5159,8 @@ static const struct luaL_reg aggcustom [] =
 //
 static int gui_osdtext(lua_State *L)
 {
-	int x = luaL_checkinteger(L,1); // have to check for errors before deferring
-	int y = luaL_checkinteger(L,2);
+	int x = (int)(luaL_checkinteger(L,1)); // have to check for errors before deferring
+	int y = (int)luaL_checkinteger(L,2);
 
 	if(DeferGUIFuncIfNeeded(L))
 		return 0; // we have to wait until later to call this function because we haven't emulated the next frame yet
@@ -4622,6 +5170,9 @@ static int gui_osdtext(lua_State *L)
 
 #ifdef HAVE_LIBAGG
 	osd->addFixed(x, y, "%s", msg);
+#elif defined(DESMUME_COCOA_METAL_OSD)
+	// Cocoa has no OSDCLASS; record the text directly into the Metal OSD frame.
+	MacMetalOSD_AddFixedText(x, y, msg);
 #endif
 	
 	return 0;
@@ -4679,12 +5230,12 @@ DEFINE_LUA_FUNCTION(stylus_write, "table")
 
 	lua_getfield(L, index, "x");
 	if (!lua_isnil(L,-1))
-		touch.touchX = toTouchValue(lua_tointeger(L, -1), 256);
+		touch.touchX = toTouchValue((int)lua_tointeger(L, -1), 256);
 	lua_pop(L, 1);
 
 	lua_getfield(L, index, "y");
 	if (!lua_isnil(L,-1))
-		touch.touchY = toTouchValue(lua_tointeger(L, -1), 192);
+		touch.touchY = toTouchValue((int)lua_tointeger(L, -1), 192);
 	lua_pop(L, 1);
 
 	lua_getfield(L, index, "touch");
@@ -4807,11 +5358,106 @@ DEFINE_LUA_FUNCTION(controller_get, "[joystickID = 0 [,returnDiagonals = false]]
 	}
 
 	return 1; // return the table
+#elif defined(DESMUME_COCOA)
+	unsigned int i_joystickID = 0;
+	bool f_returnDiagonals = false;
+	switch (lua_gettop(L))
+	{
+		case 1:
+			i_joystickID = (unsigned int)lua_tonumber(L,1);
+			break;
+		case 2:
+			i_joystickID = (unsigned int)lua_tonumber(L,1);
+			if (lua_isboolean(L,2))
+				f_returnDiagonals = lua_toboolean(L,2) != 0;
+			break;
+	}
+
+	lua_newtable(L);
+
+	MacLuaControllerStatus status;
+	if (!MacLua_GetControllerStatus(i_joystickID, f_returnDiagonals, &status))
+		return 1; // no such pad: empty table, same as the Windows version
+
+	static const char* const dpadNames[4] = {"up", "right", "down", "left"};
+	for (int i = 0; i < 4; i++)
+	{
+		lua_pushboolean(L, status.dpad[i]);
+		lua_setfield(L, -2, dpadNames[i]);
+	}
+
+	// Button keys are "1".."n", matching s_buttonNames[] on Windows.
+	for (int i = 1; i <= status.buttonCount; i++)
+	{
+		char name[8];
+		snprintf(name, sizeof(name), "%d", i);
+		lua_pushboolean(L, status.buttons[i-1]);
+		lua_setfield(L, -2, name);
+	}
+
+	static const char* const axisNames[6] = {"x", "y", "z", "r", "u", "v"};
+	for (int i = 0; i < status.axisCount && i < 6; i++)
+	{
+		lua_pushnumber(L, status.axes[i]);
+		lua_setfield(L, -2, axisNames[i]);
+	}
+
+	return 1;
 #else
-    return 0;
+	// POSIX frontends install a handler; without one this stays an empty
+	// table, so `controller.get().x` is a nil index instead of an error on a
+	// nil value, matching what Windows and macOS do for a missing pad.
+	unsigned int i_joystickID = 0;
+	bool f_returnDiagonals = false;
+	switch (lua_gettop(L))
+	{
+		case 1:
+			i_joystickID = (unsigned int)lua_tonumber(L,1);
+			break;
+		case 2:
+			i_joystickID = (unsigned int)lua_tonumber(L,1);
+			if (lua_isboolean(L,2))
+				f_returnDiagonals = lua_toboolean(L,2) != 0;
+			break;
+	}
+
+	lua_newtable(L);
+
+	if (sControllerStatusHandler != NULL)
+	{
+		LuaControllerStatus status;
+		if (sControllerStatusHandler(i_joystickID, f_returnDiagonals, &status))
+		{
+			static const char* const dpadNames[4] = {"up", "right", "down", "left"};
+			for (int i = 0; i < 4; i++)
+			{
+				lua_pushboolean(L, status.dpad[i]);
+				lua_setfield(L, -2, dpadNames[i]);
+			}
+
+			// Button keys are "1".."n", matching s_buttonNames[] on Windows.
+			const int buttonCount = (status.buttonCount > LUA_CONTROLLER_MAX_BUTTONS) ? LUA_CONTROLLER_MAX_BUTTONS : status.buttonCount;
+			for (int i = 1; i <= buttonCount; i++)
+			{
+				char name[8];
+				snprintf(name, sizeof(name), "%d", i);
+				lua_pushboolean(L, status.buttons[i-1]);
+				lua_setfield(L, -2, name);
+			}
+
+			static const char* const axisNames[6] = {"x", "y", "z", "r", "u", "v"};
+			for (int i = 0; i < status.axisCount && i < 6; i++)
+			{
+				lua_pushnumber(L, status.axes[i]);
+				lua_setfield(L, -2, axisNames[i]);
+			}
+		}
+	}
+
+	return 1;
 #endif
 }
-static const struct luaL_reg controllerlib [] = {
+static const struct luaL_Reg controllerlib [] = {
 	{"get", controller_get},
 	{"read", controller_get},
 	{NULL, NULL}
@@ -4826,7 +5472,7 @@ static int gcEMUFILE_MEMORY(lua_State *L)
 }
 
 
-static const struct luaL_reg styluslib [] =
+static const struct luaL_Reg styluslib [] =
 {
 	{"get", stylus_read},
 	{"peek", stylus_peek},
@@ -4837,7 +5483,7 @@ static const struct luaL_reg styluslib [] =
 	{NULL, NULL}
 };
 
-static const struct luaL_reg emulib [] =
+static const struct luaL_Reg emulib [] =
 {
 	{"frameadvance", emu_frameadvance},
 	{"gamecode", emu_gamecode},
@@ -4875,7 +5521,7 @@ static const struct luaL_reg emulib [] =
 //	{"openrom", emu_loadrom},
 	{NULL, NULL}
 };
-static const struct luaL_reg guilib [] =
+static const struct luaL_Reg guilib [] =
 {
 	{"register", gui_register},
 	{"text", gui_text},
@@ -4906,7 +5552,7 @@ static const struct luaL_reg guilib [] =
 	{"image", gui_gdoverlay},
 	{NULL, NULL}
 };
-static const struct luaL_reg statelib [] =
+static const struct luaL_Reg statelib [] =
 {
 	{"create", state_create},
 	{"save", state_save},
@@ -4921,7 +5567,7 @@ static const struct luaL_reg statelib [] =
 	//{"registerload", state_registerload},
 	{NULL, NULL}
 };
-static const struct luaL_reg memorylib [] =
+static const struct luaL_Reg memorylib [] =
 {
 	{"readbyte", memory_readbyte},
 	{"readbytesigned", memory_readbytesigned},
@@ -4963,7 +5609,7 @@ static const struct luaL_reg memorylib [] =
 
 	{NULL, NULL}
 };
-static const struct luaL_reg joylib [] =
+static const struct luaL_Reg joylib [] =
 {
 	{"get", joy_get},
 	{"getdown", joy_getdown},
@@ -4979,7 +5625,7 @@ static const struct luaL_reg joylib [] =
 	{"readup", joy_getup},
 	{NULL, NULL}
 };
-static const struct luaL_reg inputlib [] =
+static const struct luaL_Reg inputlib [] =
 {
 	{"get", input_getcurrentinputstatus},
 	{"registerhotkey", input_registerhotkey},
@@ -4988,7 +5634,7 @@ static const struct luaL_reg inputlib [] =
 	{"read", input_getcurrentinputstatus},
 	{NULL, NULL}
 };
-static const struct luaL_reg movielib [] =
+static const struct luaL_Reg movielib [] =
 {
 	{"active", movie_isactive},
 	{"recording", movie_isrecording},
@@ -5017,7 +5663,7 @@ static const struct luaL_reg movielib [] =
 	{"getreadonly", movie_getreadonly},
 	{NULL, NULL}
 };
-static const struct luaL_reg soundlib [] =
+static const struct luaL_Reg soundlib [] =
 {
 	{"clear", sound_clear},
 	{NULL, NULL}
@@ -5167,9 +5813,34 @@ cFuncInfo [] = // this info is stored here to avoid having to change all of Lua'
 	{"_LOADLIB", "__gc", "", true},
 };
 
+// LuaJIT never calls debug hooks from JIT-compiled traces.  Measured with the
+// shipped LuaJIT 2.1.1792588164: a 3,000,000-iteration pure Lua loop fired a
+// LUA_MASKCOUNT hook 0 times with JIT on, 1464 times with jit.off().  Since
+// LuaRescueHook is both the "stop script" and the infinite-loop safeguard,
+// leave the trace compiler off by default (LuaJIT's interpreter is still
+// faster than stock Lua 5.1).  Define LUAENGINE_ENABLE_JIT=1 to opt in, or a
+// script can call jit.on() itself; in either case a pure-Lua tight loop then
+// becomes unstoppable from the GUI, so CheckLuaAbort() is the only safety net.
+#ifndef LUAENGINE_ENABLE_JIT
+#define LUAENGINE_ENABLE_JIT 0
+#endif
+
 void registerLibs(lua_State* L)
 {
 	luaL_openlibs(L);
+
+#if !LUAENGINE_ENABLE_JIT
+	lua_getglobal(L, "jit");
+	if(lua_istable(L, -1))
+	{
+		lua_getfield(L, -1, "off");
+		if(lua_isfunction(L, -1))
+			lua_call(L, 0, 0); // jit.off(): no arguments turns compilation off globally
+		else
+			lua_pop(L, 1);
+	}
+	lua_pop(L, 1);
+#endif
 
 	luaL_register(L, "emu", emulib);
 	luaL_register(L, "gui", guilib);
@@ -5180,7 +5851,15 @@ void registerLibs(lua_State* L)
 	luaL_register(L, "input", inputlib); // for user input
 	luaL_register(L, "movie", movielib);
 	luaL_register(L, "sound", soundlib);
-	luaL_register(L, "bit", bit_funcs); // LuaBitOp library
+
+	// LuaJIT opens the bit library itself and JIT-compiles bit.* calls, so do
+	// not overwrite that table with the ported LuaBitOp implementation.  Stock
+	// Lua 5.1 has no bit table at all and must keep using the ported one.
+	lua_getglobal(L, "bit");
+	const bool engineHasBitLib = lua_istable(L, -1);
+	lua_pop(L, 1);
+	if(!engineHasBitLib)
+		luaL_register(L, "bit", bit_funcs); // LuaBitOp library (Lua 5.1 only)
 
 	luaL_register(L, "agg", aggbasicshapes);
 	luaL_register(L, "agg", agggeneralattributes);
@@ -5204,7 +5883,11 @@ void registerLibs(lua_State* L)
 	lua_register(L, "SHIFT", bitshift);
 	lua_register(L, "BIT", bitbit);
 
-	luabitop_validate(L);
+	// The self-test validates the *ported* LuaBitOp number-punning (and its
+	// dependency on the host FPU control word).  It is meaningless when the
+	// engine's own bit library is in use.
+	if(!engineHasBitLib)
+		luabitop_validate(L);
 
 	// populate s_cFuncInfoMap the first time
 	static bool once = true;
@@ -5301,13 +5984,22 @@ void ResetInfo(LuaContextInfo& info)
 	info.numMemHooks = 0;
 	info.persistVars.clear();
 	info.newDefaultData.ClearRecords();
+	info.stopRequested = false;
+	info.closeRequested = false;
+	info.inStop = false;
 #ifdef HAVE_LIBAGG
 	info.guiData.data = (u32*)aggDraw.hud->buf().buf();
 	info.guiData.stridePix = aggDraw.hud->buf().stride_abs() / 4;
 #else
+#ifdef DESMUME_COCOA
+	extern uint32_t* lua_script_get_graphics_buffer(void);
+	info.guiData.data = (u32*)lua_script_get_graphics_buffer();
+	info.guiData.stridePix = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+#else
 	static u32 dummyBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2];
 	info.guiData.data = dummyBuffer;
 	info.guiData.stridePix = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+#endif
 #endif
 	info.guiData.xMin = 0;
 	info.guiData.xMax = 256;
@@ -5317,18 +6009,36 @@ void ResetInfo(LuaContextInfo& info)
 	info.guiData.yOrigin = 192;
 }
 
-void OpenLuaContext(int uid, void(*print)(int uid, const char* str), void(*onstart)(int uid), void(*onstop)(int uid, bool statusOK))
+void OpenLuaContext(intptr_t uid, void(*print)(intptr_t uid, const char* str), void(*onstart)(intptr_t uid), void(*onstop)(intptr_t uid, bool statusOK))
 {
 	LuaContextInfo* newInfo = new LuaContextInfo();
 	ResetInfo(*newInfo);
 	newInfo->print = print;
 	newInfo->onstart = onstart;
 	newInfo->onstop = onstop;
-	luaContextInfo[uid] = newInfo;
+
+	// luaContextInfo is walked by the engine thread on every frame, so a UI
+	// thread that opened a console only hands the context over; it is added to
+	// the map at the start of the next frame.  Nothing can run this context in
+	// between, because starting a script is queued the same way.
+	if (OnLuaEngineThread())
+	{
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		luaContextInfo[uid] = newInfo;
+	}
+	else
+	{
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		sPendingContextUids.push_back(uid);
+		sPendingContexts.push_back(newInfo);
+	}
 }
 
-void RunLuaScriptFile(int uid, const char* filenameCStr)
+void RunLuaScriptFile(intptr_t uid, const char* filenameCStr)
 {
+	MarkLuaEngineThread();
+	LuaProcessRequests();
+
 	if(luaContextInfo.find(uid) == luaContextInfo.end())
 		return;
 	StopLuaScript(uid);
@@ -5364,7 +6074,34 @@ void RunLuaScriptFile(int uid, const char* filenameCStr)
 	{
 		std::string filename = info.nextFilename;
 
-		lua_State* L = lua_open();
+		char reason[512];
+		lua_State* L = LuaEngineNewState(reason, sizeof(reason));
+		if (L == NULL)
+		{
+			// Nothing to run on.  Report through the console rather than
+			// leaving the window sitting there with an empty script list.
+			info.started = false;
+			info.running = false;
+			if(info.print)
+			{
+				info.print(uid, reason);
+				info.print(uid, "\r\n");
+#ifdef DESMUME_LUA_DYNAMIC
+#ifdef __APPLE__
+				info.print(uid, "Install LuaJIT (\"brew install luajit\"), or set "
+					"DESMUME_LUAJIT_DYLIB to a libluajit-5.1.dylib.\r\n");
+#else
+				info.print(uid, "Install LuaJIT or Lua 5.1, or set "
+					"DESMUME_LUAJIT_DYLIB to a libluajit-5.1.so.\r\n");
+#endif
+#endif
+			}
+			else
+			{
+				fprintf(stderr, "%s\n", reason);
+			}
+			return;
+		}
 #ifndef USE_INFO_STACK
 		luaStateToContextMap[L] = &info;
 #endif
@@ -5425,7 +6162,7 @@ void RunLuaScriptFile(int uid, const char* filenameCStr)
 	} while(info.restart);
 }
 
-void StopScriptIfFinished(int uid, bool justReturned)
+void StopScriptIfFinished(intptr_t uid, bool justReturned)
 {
 	LuaContextInfo& info = *luaContextInfo[uid];
 	if(!info.returned)
@@ -5472,42 +6209,49 @@ void StopScriptIfFinished(int uid, bool justReturned)
 	}
 }
 
-void RequestAbortLuaScript(int uid, const char* message)
+// Raises the panic flag on a context the caller knows is still alive.  Touches
+// no Lua API: see RequestAbortLuaScript() for why.
+static void RaiseAbortRequest(LuaContextInfo& info, const char* message)
 {
-	if(luaContextInfo.find(uid) == luaContextInfo.end())
+	if(!info.L)
 		return;
-	LuaContextInfo& info = *luaContextInfo[uid];
-	lua_State* L = info.L;
-	if(L)
+
+	if(message)
 	{
-		// this probably isn't the right way to do it
-		// but calling luaL_error here is positively unsafe
-		// (it seemingly works fine but sometimes corrupts the emulation state in colorful ways)
-		// and this works pretty well and is definitely safe, so screw it
-		info.L->hookcount = 1; // run hook function as soon as possible
-		info.panic = true; // and call luaL_error once we're inside the hook function
-		if(message)
-		{
-			strncpy(info.panicMessage, message, sizeof(info.panicMessage));
-			info.panicMessage[sizeof(info.panicMessage)-1] = 0;
-		}
-		else
-		{
-			// attach file/line info because this is the case where it's most necessary to see that,
-			// and often it won't be possible for the later luaL_error call to retrieve it otherwise.
-			// this means sometimes printing multiple file/line numbers if luaL_error does find something,
-			// but that's fine since more information is probably better anyway.
-			luaL_where(L,0); // should be 0 and not 1 here to get useful (on force stop) messages
-			const char* whereString = lua_tostring(L,-1);
-			snprintf(info.panicMessage, sizeof(info.panicMessage), "%sscript terminated", whereString);
-			lua_pop(L,1);
-		}
+		strncpy(info.panicMessage, message, sizeof(info.panicMessage));
+		info.panicMessage[sizeof(info.panicMessage)-1] = 0;
 	}
+	else
+	{
+		// Filled in with file/line by LuaRescueHook, which can safely ask Lua
+		// where it is.
+		info.panicMessage[0] = 0;
+	}
+	info.panic = true;
+}
+
+void RequestAbortLuaScript(intptr_t uid, const char* message)
+{
+	// This is called from the front end's UI thread while the emulation thread
+	// is executing the script, so it may not touch the lua_State at all.
+	// lua_sethook()/luaL_where()/lua_pop() would write to the live stack and
+	// allocate from the live heap underneath the running VM; that corrupts it
+	// and the damage surfaces later, far away - as a walk over a std::map that
+	// had already been freed, for instance.
+	//
+	// So: only raise the panic flag.  LuaRescueHook (engine thread, inside the
+	// protected call) reads it at its next invocation - one per HOOKCOUNT VM
+	// instructions - and raises the error from there.
+	std::lock_guard<std::mutex> lock(sContextRequestMutex);
+	std::map<intptr_t, LuaContextInfo*>::iterator it = luaContextInfo.find(uid);
+	if(it == luaContextInfo.end() || it->second == NULL)
+		return;
+	RaiseAbortRequest(*it->second, message);
 }
 
 void SetSaveKey(LuaContextInfo& info, const char* key)
 {
-	info.dataSaveKey = crc32(0, (const unsigned char*)key, strlen(key));
+	info.dataSaveKey = (unsigned int)crc32(0, (const unsigned char*)key, (uInt)strlen(key));
 
 	if(!info.dataSaveLoadKeySet)
 	{
@@ -5517,7 +6261,7 @@ void SetSaveKey(LuaContextInfo& info, const char* key)
 }
 void SetLoadKey(LuaContextInfo& info, const char* key)
 {
-	info.dataLoadKey = crc32(0, (const unsigned char*)key, strlen(key));
+	info.dataLoadKey = (unsigned int)crc32(0, (const unsigned char*)key, (uInt)strlen(key));
 
 	if(!info.dataSaveLoadKeySet)
 	{
@@ -5526,28 +6270,30 @@ void SetLoadKey(LuaContextInfo& info, const char* key)
 	}
 }
 
-void HandleCallbackError(lua_State* L, LuaContextInfo& info, int uid, bool stopScript)
+void HandleCallbackError(lua_State* L, LuaContextInfo& info, intptr_t uid, bool stopScript)
 {
+	// Every caller invokes this right after lua_pcall() returned an error, so
+	// there is no active protected frame left to rethrow into.  LuaJIT keeps
+	// lua_State opaque, so the old errfunc/errorJmp probe is gone; always report
+	// directly instead of risking luaL_error() hitting the panic function.
 	info.crashed = true;
-	if(L->errfunc || L->errorJmp)
-		luaL_error(L, lua_tostring(L,-1));
+	const char* errmsg = lua_tostring(L,-1);
+	if(!errmsg)
+		errmsg = "(error object is not a string)";
+	if(info.print)
+	{
+		info.print(uid, errmsg);
+		info.print(uid, "\r\n");
+	}
 	else
 	{
-		if(info.print)
-		{
-			info.print(uid, lua_tostring(L,-1));
-			info.print(uid, "\r\n");
-		}
-		else
-		{
-			fprintf(stderr, "%s\n", lua_tostring(L,-1));
-		}
-		if(stopScript)
-			StopLuaScript(uid);
+		fprintf(stderr, "%s\n", errmsg);
 	}
+	if(stopScript)
+		StopLuaScript(uid);
 }
 
-void CallExitFunction(int uid)
+void CallExitFunction(intptr_t uid)
 {
 	LuaContextInfo& info = *luaContextInfo[uid];
 	lua_State* L = info.L;
@@ -5593,13 +6339,12 @@ void CallExitFunction(int uid)
 			// gather the final value of the variables we're supposed to persist
 			LuaSaveData newExitData;
 			{
-				int numPersistVars = info.persistVars.size();
+				int numPersistVars = (int)info.persistVars.size();
 				for(int i = 0; i < numPersistVars; i++)
 				{
 					const char* varName = info.persistVars[i].c_str();
 					lua_getfield(L, LUA_GLOBALSINDEX, varName);
-					int type = lua_type(L,-1);
-					unsigned int varNameCRC = crc32(0, (const unsigned char*)varName, strlen(varName));
+					unsigned int varNameCRC = (unsigned int)crc32(0, (const unsigned char*)varName, (uInt)strlen(varName));
 					newExitData.SaveRecordPartial(uid, varNameCRC, -1);
 					lua_pop(L,1);
 				}
@@ -5639,8 +6384,27 @@ void CallExitFunction(int uid)
 	}
 }
 
-void StopLuaScript(int uid)
+void StopLuaScript(intptr_t uid)
 {
+	const bool foreignThread = !OnLuaEngineThread();
+
+	if(foreignThread)
+	{
+		// Called from the front end's UI thread.  It may not touch the Lua state
+		// (see RequestAbortLuaScript) and may not start the teardown either,
+		// because the engine thread could be in the middle of one.  Leave the
+		// request behind and let LuaProcessRequests() act on it.
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		std::map<intptr_t, LuaContextInfo*>::iterator it = luaContextInfo.find(uid);
+		if(it == luaContextInfo.end() || it->second == NULL)
+			return;
+		LuaContextInfo& info = *it->second;
+		info.stopRequested = true;
+		if(info.running)
+			RaiseAbortRequest(info, NULL);
+		return;
+	}
+
 	LuaContextInfo* infoPtr = luaContextInfo[uid];
 	if(!infoPtr)
 		return;
@@ -5651,9 +6415,13 @@ void StopLuaScript(int uid)
 	{
 		// if it's currently running then we can't stop it now without crashing
 		// so the best we can do is politely request for it to go kill itself
-		RequestAbortLuaScript(uid);
+		info.stopRequested = true;
+		RaiseAbortRequest(info, NULL);
 		return;
 	}
+
+	info.stopRequested = false;
+	info.inStop = true;
 
 	lua_State* L = info.L;
 	if(L)
@@ -5715,17 +6483,179 @@ void StopLuaScript(int uid)
 			}
 			info.menuData.subMenuData.clear();
 			DrawMenuBar(MainWindow->getHWnd());
+#elif defined(DESMUME_COCOA)
+			// remove items
+			map<PlatformMenuItem, PlatformMenu>::iterator it = info.menuData.menuItemMap.begin();
+			while(it != info.menuData.menuItemMap.end())
+			{
+				MacLua_MenuRemoveItem((*it).second, (int)(*it).first);
+				MacLua_MenuFreeID((int)(*it).first);
+				it++;
+			}
+			info.menuData.menuItemMap.clear();
+
+			// remove submenus, deepest first, but only if the script left them
+			// empty - another script may have added to the same menu.
+			vector<LuaSubMenuData>::reverse_iterator rit = info.menuData.subMenuData.rbegin();
+			while(rit != info.menuData.subMenuData.rend())
+			{
+				PlatformMenu menu = (*rit).menu;
+				PlatformMenuItem menuItem = (*rit).menuItem;
+				PlatformMenu subMenu = (*rit).subMenu;
+				if (MacLua_MenuIsEmpty(subMenu))
+				{
+					MacLua_MenuRemoveItem(menu, (int)menuItem);
+					MacLua_MenuFreeID((int)menuItem);
+				}
+				rit++;
+			}
+			info.menuData.subMenuData.clear();
+#else
+			// GTK3 and any other frontend that installed menu hooks.
+			if (sMenuHooks != NULL)
+			{
+				// remove items
+				map<PlatformMenuItem, PlatformMenu>::iterator it = info.menuData.menuItemMap.begin();
+				while(it != info.menuData.menuItemMap.end())
+				{
+					if (sMenuHooks->removeItem != NULL)
+						sMenuHooks->removeItem((*it).second, (int)(*it).first);
+					if (sMenuHooks->freeItemID != NULL)
+						sMenuHooks->freeItemID((int)(*it).first);
+					it++;
+				}
+				info.menuData.menuItemMap.clear();
+
+				// remove submenus, deepest first, but only if the script left them
+				// empty - another script may have added to the same menu.
+				vector<LuaSubMenuData>::reverse_iterator rit = info.menuData.subMenuData.rbegin();
+				while(rit != info.menuData.subMenuData.rend())
+				{
+					PlatformMenu menu = (*rit).menu;
+					PlatformMenuItem menuItem = (*rit).menuItem;
+					PlatformMenu subMenu = (*rit).subMenu;
+					bool empty = (sMenuHooks->isMenuEmpty != NULL) ? sMenuHooks->isMenuEmpty(subMenu) : true;
+					if (empty)
+					{
+						if (sMenuHooks->removeItem != NULL)
+							sMenuHooks->removeItem(menu, (int)menuItem);
+						if (sMenuHooks->freeItemID != NULL)
+							sMenuHooks->freeItemID((int)menuItem);
+					}
+					rit++;
+				}
+				info.menuData.subMenuData.clear();
+			}
 #endif
 		}
 		RefreshScriptStartedStatus();
 	}
+
+	info.inStop = false;
 }
 
-void CloseLuaContext(int uid)
+// Drops a context that a UI thread opened but the engine thread has not adopted
+// yet, and reports whether it was still pending.  Safe to call from any thread:
+// until LuaProcessRequests() adopts it, the engine thread has never seen it.
+static bool DropPendingContext(intptr_t uid)
 {
+	std::lock_guard<std::mutex> lock(sContextRequestMutex);
+	for (size_t i = 0; i < sPendingContextUids.size(); i++)
+	{
+		if (sPendingContextUids[i] == uid)
+		{
+			delete sPendingContexts[i];
+			sPendingContextUids.erase(sPendingContextUids.begin() + i);
+			sPendingContexts.erase(sPendingContexts.begin() + i);
+			return true;
+		}
+	}
+	return false;
+}
+
+void CloseLuaContext(intptr_t uid)
+{
+	if(DropPendingContext(uid))
+		return;
+
+	if(!OnLuaEngineThread())
+	{
+		// Deleting the context here would free the very object the engine
+		// thread may still be walking (it is what StopLuaScript() runs in).
+		// Leave a note; LuaProcessRequests() destroys it on the engine thread,
+		// right after StopLuaScript() has finished there.
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		std::map<intptr_t, LuaContextInfo*>::iterator it = luaContextInfo.find(uid);
+		if(it == luaContextInfo.end() || it->second == NULL)
+			return;
+		LuaContextInfo& info = *it->second;
+		info.closeRequested = true;
+		info.stopRequested = true;
+		if(info.running)
+			RaiseAbortRequest(info, NULL);
+		return;
+	}
+
 	StopLuaScript(uid);
-	delete luaContextInfo[uid];
-	luaContextInfo.erase(uid);
+
+	// Drop it from the map before freeing it: once it is gone from there, no
+	// request from another thread can reach the freed object.
+	LuaContextInfo* infoPtr = NULL;
+	{
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		std::map<intptr_t, LuaContextInfo*>::iterator it = luaContextInfo.find(uid);
+		if(it != luaContextInfo.end())
+		{
+			infoPtr = it->second;
+			luaContextInfo.erase(it);
+		}
+	}
+	delete infoPtr;
+}
+
+// Runs on the engine thread, once per frame.  Adopts the contexts a UI thread
+// opened, then honours the stop/close requests it left behind.  Everything is
+// collected before anything is acted on, because StopLuaScript() and
+// CloseLuaContext() erase from luaContextInfo themselves.
+void LuaProcessRequests(void)
+{
+	if(sDrainingRequests || !OnLuaEngineThread())
+		return;
+	sDrainingRequests = true;
+
+	{
+		std::lock_guard<std::mutex> lock(sContextRequestMutex);
+		for (size_t i = 0; i < sPendingContexts.size(); i++)
+			luaContextInfo[sPendingContextUids[i]] = sPendingContexts[i];
+		sPendingContexts.clear();
+		sPendingContextUids.clear();
+	}
+
+	std::vector<intptr_t> toStop;
+	std::vector<intptr_t> toClose;
+	std::map<intptr_t, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	for (; iter != end; ++iter)
+	{
+		LuaContextInfo& info = *iter->second;
+		if(info.inStop)
+		{
+			// Already being torn down on this thread (an exit callback can get
+			// back here through emu.frameadvance); the request is redundant.
+			info.stopRequested = false;
+			continue;
+		}
+		if(info.closeRequested)
+			toClose.push_back(iter->first);
+		else if(info.stopRequested)
+			toStop.push_back(iter->first);
+	}
+	for (size_t i = 0; i < toStop.size(); i++)
+		StopLuaScript(toStop[i]);
+	for (size_t i = 0; i < toClose.size(); i++)
+		CloseLuaContext(toClose[i]);
+
+	sDrainingRequests = false;
 }
 
 
@@ -5739,8 +6669,8 @@ TieredRegion hookedRegions [LUAMEMHOOK_COUNT];
 static void CalculateMemHookRegions(LuaMemHookType hookType)
 {
 	std::vector<unsigned int> hookedBytes;
-	std::map<int, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
 		LuaContextInfo& info = *iter->second;
@@ -5756,7 +6686,7 @@ static void CalculateMemHookRegions(LuaMemHookType hookType)
 				{
 					if(lua_isfunction(L, -1))
 					{
-						unsigned int addr = lua_tointeger(L, -2);
+						unsigned int addr = (unsigned int)lua_tointeger(L, -2);
 						hookedBytes.push_back(addr);
 					}
 					lua_pop(L, 1);
@@ -5776,8 +6706,8 @@ static void CalculateMemHookRegions(LuaMemHookType hookType)
 
 void CallRegisteredLuaMemHook_LuaMatch(unsigned int address, int size, unsigned int value, LuaMemHookType hookType)
 {
-	std::map<int, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
 		LuaContextInfo& info = *iter->second;
@@ -5807,7 +6737,7 @@ void CallRegisteredLuaMemHook_LuaMatch(unsigned int address, int size, unsigned 
 						RefreshScriptSpeedStatus();
 						if (errorcode)
 						{
-							int uid = iter->first;
+							intptr_t uid = iter->first;
 							HandleCallbackError(L,info,uid,true);
 						}
 						break;
@@ -5828,8 +6758,8 @@ void CallRegisteredLuaMemHook_LuaMatch(unsigned int address, int size, unsigned 
 
 void CallRegisteredLuaMenuHandlers(PlatformMenuItem menuItem)
 {
-	std::map<int, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
 		LuaContextInfo& info = *iter->second;
@@ -5842,7 +6772,7 @@ void CallRegisteredLuaMenuHandlers(PlatformMenuItem menuItem)
 #endif
 			int top = lua_gettop(L);
 			lua_getfield(L, LUA_REGISTRYINDEX, menuCallbackIDString);
-			lua_rawgeti(L, -1, menuItem);
+			lua_rawgeti(L, -1, (int)menuItem);
 			if (lua_isfunction(L, -1))
 			{
 				bool wasRunning = info.running;
@@ -5853,7 +6783,7 @@ void CallRegisteredLuaMenuHandlers(PlatformMenuItem menuItem)
 				RefreshScriptSpeedStatus();
 				if (errorcode)
 				{
-					int uid = iter->first;
+					intptr_t uid = iter->first;
 					HandleCallbackError(L,info,uid,true);
 				}
 				break;
@@ -5872,12 +6802,26 @@ void CallRegisteredLuaMenuHandlers(PlatformMenuItem menuItem)
 
 bool AnyLuaActive()
 {
-	std::map<int, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
 		LuaContextInfo& info = *iter->second;
 		if(info.started)
+			return true;
+		++iter;
+	}
+	return false;
+}
+
+bool AnyLuaRunning()
+{
+	std::map<intptr_t, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	while(iter != end)
+	{
+		LuaContextInfo& info = *iter->second;
+		if(info.running)
 			return true;
 		++iter;
 	}
@@ -5889,11 +6833,11 @@ void _CallRegisteredLuaFunctions(LuaCallID calltype, int (*beforeCallback)(lua_S
 	assert((unsigned int)calltype < (unsigned int)LUACALL_COUNT);
 	const char* idstring = luaCallIDStrings[calltype];
 
-	std::map<int, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
-		int uid = iter->first;
+		intptr_t uid = iter->first;
 		LuaContextInfo& info = *iter->second;
 		lua_State* L = info.L;
 		if(L && (!info.panic || calltype == LUACALL_BEFOREEXIT))
@@ -5949,6 +6893,10 @@ void _CallRegisteredLuaFunctions(LuaCallID calltype, int (*beforeCallback)(lua_S
 
 void CallRegisteredLuaFunctions(LuaCallID calltype)
 {
+	// Every front end pumps this at least once per frame, which makes it the
+	// natural place to adopt contexts opened by the UI thread and to act on the
+	// stops and closes it asked for.  No-op on any other thread.
+	LuaProcessRequests();
 	_CallRegisteredLuaFunctions(calltype, NULL, NULL);
 }
 
@@ -5990,11 +6938,11 @@ void CallRegisteredLuaSaveFunctions(int savestateNumber, LuaSaveData& saveData)
 {
 	const char* idstring = luaCallIDStrings[LUACALL_BEFORESAVE];
 
-	std::map<int, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
-		int uid = iter->first;
+		intptr_t uid = iter->first;
 		LuaContextInfo& info = *iter->second;
 		lua_State* L = info.L;
 		if(L)
@@ -6037,11 +6985,11 @@ void CallRegisteredLuaLoadFunctions(int savestateNumber, const LuaSaveData& save
 {
 	const char* idstring = luaCallIDStrings[LUACALL_AFTERLOAD];
 
-	std::map<int, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
-		int uid = iter->first;
+		intptr_t uid = iter->first;
 		LuaContextInfo& info = *iter->second;
 		lua_State* L = info.L;
 		if(L)
@@ -6060,12 +7008,12 @@ void CallRegisteredLuaLoadFunctions(int savestateNumber, const LuaSaveData& save
 				info.running = true;
 				RefreshScriptSpeedStatus();
 
-				// since the scriptdata can be very expensive to load
-				// (e.g. the registered save function returned some huge tables)
-				// check the number of parameters the registered load function expects
-				// and don't bother loading the parameters it wouldn't receive anyway
-				int numParamsExpected = (L->top - 1)->value.gc->cl.l.p->numparams;
-				if(numParamsExpected) numParamsExpected--; // minus one for the savestate number we always pass in
+			// LuaJIT keeps lua_State opaque, so the callback's Proto::numparams
+			// is no longer reachable through the public C API.  Load every saved
+			// item instead: Lua simply discards arguments the callback does not
+			// declare.  This loses only the old "skip expensive data" shortcut,
+			// not correctness ((unsigned)-1 is also what the load-all path uses).
+			int numParamsExpected = -1;
 
 				int prevGarbage = lua_gc(L, LUA_GCCOUNT, 0);
 
@@ -6119,7 +7067,7 @@ void PushBinaryItem(T item, std::vector<unsigned char>& output)
 	for(int i = sizeof(T); i; i--)
 		output.push_back(*buf++);
 #else
-	int vecsize = output.size();
+	int vecsize = (int)output.size();
 	for(int i = sizeof(T); i; i--)
 		output.insert(output.begin() + vecsize, *buf++);
 #endif
@@ -6198,8 +7146,8 @@ static void LuaStackToBinaryConverter(lua_State* L, int i, std::vector<unsigned 
 				if(info.print)
 				{
 					char errmsg [1024];
-					sprintf(errmsg, "values of type \"%s\" are not allowed to be returned from registered save functions.\r\n", luaL_typename(L,i));
-					info.print(luaStateToUIDMap[L->l_G->mainthread], errmsg);
+					snprintf(errmsg, sizeof(errmsg), "values of type \"%s\" are not allowed to be returned from registered save functions.\r\n", luaL_typename(L,i));
+					info.print(luaStateToUIDMap[L], errmsg);
 				}
 				else
 				{
@@ -6266,7 +7214,7 @@ static void LuaStackToBinaryConverter(lua_State* L, int i, std::vector<unsigned 
 			// then a Lua value per array entry, then a (key,value) pair of Lua values per hashed entry
 			// note that the structure of table references are not faithfully serialized (yet)
 		{
-			int outputTypeIndex = output.size() - 1;
+			int outputTypeIndex = (int)(output.size() - 1);
 			int arraySize = 0;
 			int hashSize = 0;
 
@@ -6277,7 +7225,7 @@ static void LuaStackToBinaryConverter(lua_State* L, int i, std::vector<unsigned 
 
 				bool wasnil = false;
 				int nilcount = 0;
-				arraySize = lua_objlen(L, i);
+				arraySize = (int)lua_objlen(L, i);
 				int arrayValIndex = lua_gettop(L) + 1;
 				for(int j = 1; j <= arraySize; j++)
 				{
@@ -6370,10 +7318,10 @@ void BinaryToLuaStackConverter(lua_State* L, const unsigned char*& data, unsigne
 				{
 					char errmsg [1024];
 					if(type <= 10 && type != LUA_TTABLE)
-						sprintf(errmsg, "values of type \"%s\" are not allowed to be loaded into registered load functions. The save state's Lua save data file might be corrupted.\r\n", lua_typename(L,type));
+						snprintf(errmsg, sizeof(errmsg), "values of type \"%s\" are not allowed to be loaded into registered load functions. The save state's Lua save data file might be corrupted.\r\n", lua_typename(L,type));
 					else
-						sprintf(errmsg, "The save state's Lua save data file seems to be corrupted.\r\n");
-					info.print(luaStateToUIDMap[L->l_G->mainthread], errmsg);
+						snprintf(errmsg, sizeof(errmsg), "The save state's Lua save data file seems to be corrupted.\r\n");
+					info.print(luaStateToUIDMap[L], errmsg);
 				}
 				else
 				{
@@ -6392,7 +7340,7 @@ void BinaryToLuaStackConverter(lua_State* L, const unsigned char*& data, unsigne
 			break;
 		case LUA_TSTRING:
 			lua_pushstring(L, (const char*)data);
-			AdvanceByteStream(data, remaining, strlen((const char*)data) + 1);
+			AdvanceByteStream(data, remaining, (int)(strlen((const char*)data) + 1));
 			break;
 		case LUA_TNUMBER:
 			lua_pushnumber(L, AdvanceByteStream<double>(data, remaining));
@@ -6491,7 +7439,7 @@ unsigned char* LuaStackToBinary(lua_State* L, unsigned int& size)
 
 	unsigned char* rv = new unsigned char [output.size()];
 	memcpy(rv, &output.front(), output.size());
-	size = output.size();
+	size = (int)output.size();
 	return rv;
 }
 
@@ -6511,7 +7459,7 @@ void BinaryToLuaStack(lua_State* L, const unsigned char* data, unsigned int size
 }
 
 // saves Lua stack into a record and pops it
-void LuaSaveData::SaveRecord(int uid, unsigned int key)
+void LuaSaveData::SaveRecord(intptr_t uid, unsigned int key)
 {
 	LuaContextInfo& info = *luaContextInfo[uid];
 	lua_State* L = info.L;
@@ -6541,7 +7489,7 @@ void LuaSaveData::SaveRecord(int uid, unsigned int key)
 }
 
 // pushes a record's data onto the Lua stack
-void LuaSaveData::LoadRecord(int uid, unsigned int key, unsigned int itemsToLoad) const
+void LuaSaveData::LoadRecord(intptr_t uid, unsigned int key, unsigned int itemsToLoad) const
 {
 	LuaContextInfo& info = *luaContextInfo[uid];
 	lua_State* L = info.L;
@@ -6563,7 +7511,7 @@ void LuaSaveData::LoadRecord(int uid, unsigned int key, unsigned int itemsToLoad
 }
 
 // saves part of the Lua stack (at the given index) into a record and does NOT pop anything
-void LuaSaveData::SaveRecordPartial(int uid, unsigned int key, int idx)
+void LuaSaveData::SaveRecordPartial(intptr_t uid, unsigned int key, int idx)
 {
 	LuaContextInfo& info = *luaContextInfo[uid];
 	lua_State* L = info.L;
@@ -6587,7 +7535,7 @@ void LuaSaveData::SaveRecordPartial(int uid, unsigned int key, int idx)
 
 		unsigned char* rv = new unsigned char [output.size()];
 		memcpy(rv, &output.front(), output.size());
-		cur->size = output.size();
+		cur->size = (int)output.size();
 		cur->data = rv;
 	}
 
@@ -6698,8 +7646,8 @@ void LuaSaveData::ClearRecords()
 
 void DontWorryLua() // everything's going to be OK
 {
-	std::map<int, LuaContextInfo*>::const_iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::const_iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::const_iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::const_iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
 		dontworry(*iter->second);
@@ -6717,11 +7665,11 @@ void StopAllLuaScripts()
 	if(!g_stopAllScriptsEnabled)
 		return;
 
-	std::map<int, LuaContextInfo*>::const_iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::const_iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::const_iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::const_iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
-		int uid = iter->first;
+		intptr_t uid = iter->first;
 		LuaContextInfo& info = *iter->second;
 		bool wasStarted = info.started;
 		StopLuaScript(uid);
@@ -6735,11 +7683,11 @@ void RestartAllLuaScripts()
 	if(!g_stopAllScriptsEnabled)
 		return;
 
-	std::map<int, LuaContextInfo*>::const_iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::const_iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::const_iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::const_iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
-		int uid = iter->first;
+		intptr_t uid = iter->first;
 		LuaContextInfo& info = *iter->second;
 		if(info.restartLater || info.started)
 		{
@@ -6755,8 +7703,8 @@ void RefreshScriptStartedStatus()
 {
 	int numScriptsStarted = 0;
 
-	std::map<int, LuaContextInfo*>::const_iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::const_iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::const_iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::const_iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
 		LuaContextInfo& info = *iter->second;
@@ -6774,8 +7722,8 @@ void RefreshScriptSpeedStatus()
 {
 	g_anyScriptsHighSpeed = false;
 
-	std::map<int, LuaContextInfo*>::const_iterator iter = luaContextInfo.begin();
-	std::map<int, LuaContextInfo*>::const_iterator end = luaContextInfo.end();
+	std::map<intptr_t, LuaContextInfo*>::const_iterator iter = luaContextInfo.begin();
+	std::map<intptr_t, LuaContextInfo*>::const_iterator end = luaContextInfo.end();
 	while(iter != end)
 	{
 		LuaContextInfo& info = *iter->second;
@@ -6784,5 +7732,114 @@ void RefreshScriptSpeedStatus()
 				g_anyScriptsHighSpeed = true;
 		++iter;
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Engine identification for the Lua Script window's "About" button.
+//
+// As in vba-rerecording's VBALuaEngineVersion(), the engine is asked what it
+// is instead of trusting the headers: _VERSION comes from the loaded
+// implementation and the "jit" table only exists in LuaJIT.  A fresh temporary
+// state is used because a script may be mid-execution on the emulator's thread
+// while the user opens the dialog.  Only public Lua 5.1 C API is used, so this
+// works with both the vendored Lua 5.1.5 and LuaJIT 2.1.
+// ---------------------------------------------------------------------------
+bool GetLuaEngineInfo(LuaEngineInfo* out)
+{
+	if(!out)
+		return false;
+
+	LuaEngineInfo blank = {};
+	*out = blank;
+#ifdef LUAJIT_VERSION
+	// The headers ship the LuaJIT version next to the Lua 5.1 compatibility
+	// level; reporting both makes it obvious when the runtime dylib is a
+	// different LuaJIT build than the headers (which is fine, same ABI).
+	snprintf(out->headers, sizeof(out->headers), "%s (%s)", LUA_RELEASE, LUAJIT_VERSION);
+#else
+	strncpy(out->headers, LUA_RELEASE, sizeof(out->headers) - 1);
+#endif
+
+	char reason[512];
+	lua_State* L = LuaEngineNewState(reason, sizeof(reason));
+	if(!L)
+	{
+		// "did not start" used to hardcode lua51.dll, which is nonsense on the
+		// platforms that do not have one; LuaEngineNewState() knows better.
+		strncpy(out->version, "Lua engine did not start", sizeof(out->version) - 1);
+		strncpy(out->jit, reason, sizeof(out->jit) - 1);
+		return false;
+	}
+	luaL_openlibs(L);
+
+	char language[64] = "";
+	lua_getglobal(L, "_VERSION");
+	if(lua_isstring(L, -1))
+		strncpy(language, lua_tostring(L, -1), sizeof(language) - 1);
+	lua_pop(L, 1);
+
+	char engine[96] = "", arch[32] = "", osName[32] = "";
+	lua_getglobal(L, "jit");
+	if(lua_istable(L, -1))
+	{
+		out->isLuaJIT = true;
+
+		lua_getfield(L, -1, "version");
+		if(lua_isstring(L, -1))
+			strncpy(engine, lua_tostring(L, -1), sizeof(engine) - 1);
+		lua_pop(L, 1);
+
+		lua_getfield(L, -1, "arch");
+		if(lua_isstring(L, -1))
+			strncpy(arch, lua_tostring(L, -1), sizeof(arch) - 1);
+		lua_pop(L, 1);
+
+		lua_getfield(L, -1, "os");
+		if(lua_isstring(L, -1))
+			strncpy(osName, lua_tostring(L, -1), sizeof(osName) - 1);
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 1);
+	lua_close(L);
+
+	if(engine[0])
+		snprintf(out->version, sizeof(out->version), "%s (%s)",
+			engine, language[0] ? language : "Lua 5.1");
+	else if(language[0])
+		snprintf(out->version, sizeof(out->version), "%s (no LuaJIT)", language);
+	else
+		strncpy(out->version, "no version reported", sizeof(out->version) - 1);
+
+	if(out->isLuaJIT)
+	{
+		snprintf(out->platform, sizeof(out->platform), "%s / %s",
+			arch[0] ? arch : "?", osName[0] ? osName : "?");
+		snprintf(out->jit, sizeof(out->jit), "%s (LUAENGINE_ENABLE_JIT=%d)",
+			LUAENGINE_ENABLE_JIT ? "enabled" : "off by default", (int)LUAENGINE_ENABLE_JIT);
+	}
+	else
+		strncpy(out->jit, "n/a (not LuaJIT)", sizeof(out->jit) - 1);
+
+	return true;
+}
+
+void GetLuaEngineLibraryPath(char* out, size_t outSize)
+{
+	if(!out || outSize == 0)
+		return;
+	out[0] = '\0';
+
+#if defined(DESMUME_LUA_DYNAMIC)
+	// Idempotent: GetLuaEngineInfo() has usually loaded it already, and the
+	// path is still useful when the load failed.
+	if(LuaJIT_LoadLibrary() && LuaJIT_IsLoaded())
+		snprintf(out, outSize, "%s", LuaJIT_LibraryPath());
+#elif defined(WIN32_FRONTEND)
+	HMODULE mod = GetModuleHandleA("lua51.dll");
+	if(mod)
+		GetModuleFileNameA(mod, out, (DWORD)outSize);
+#else
+	snprintf(out, outSize, "(linked at build time)");
+#endif
 }
 

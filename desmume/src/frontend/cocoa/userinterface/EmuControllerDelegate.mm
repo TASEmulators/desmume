@@ -24,6 +24,9 @@
 #import "MacAVCaptureTool.h"
 #import "MacScreenshotCaptureTool.h"
 #import "preferencesWindowDelegate.h"
+#import "MemoryViewerWindow.h"
+#import "RAMWatchWindow.h"
+#import "RAMSearchWindow.h"
 
 #import "CocoaAudioController.h"
 #import "CocoaDisplayView.h"
@@ -38,6 +41,11 @@
 #import "cocoa_input.h"
 #import "cocoa_rom.h"
 #import "cocoa_slot2.h"
+
+#ifdef HAVE_LUA
+#import "../MacLuaScriptConsole.h"
+#import "../MacLuaFrontend.h"
+#endif
 
 #if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
 	#import <AVFoundation/AVFoundation.h>
@@ -211,6 +219,11 @@
 												 name:@"org.desmume.DeSmuME.updateCheatDatabaseRecentsMenu"
 											   object:nil];
 	
+	[[NSNotificationCenter defaultCenter] addObserver:self
+											 selector:@selector(applicationDidFinishLaunching:)
+												 name:NSApplicationDidFinishLaunchingNotification
+											   object:nil];
+	
 	return self;
 }
 
@@ -257,6 +270,10 @@
 	[windowList release];
 	
 	[audioController release];
+	
+	[_memoryViewerWindowController release];
+	[_ramWatchWindowController release];
+	[_ramSearchWindowController release];
 	
 	apple_unfairlock_destroy(_unfairlockFirmware);
 	
@@ -920,6 +937,157 @@
 	[(NSButton *)sender setTitle:([cdsCore isGdbStubStarted]) ? @"Stop" : @"Start"];
 }
 
+- (IBAction) openMemoryViewer:(id)sender
+{
+	if (_memoryViewerWindowController == nil)
+	{
+		_memoryViewerWindowController = [[MemoryViewerWindowController alloc] init];
+	}
+	
+	[_memoryViewerWindowController showWindowForRegion:MEMVIEW_ARM9 address:0xFFFFFFFF];
+}
+
+- (NSMenu *) toolsMenu
+{
+	NSMenu *mainMenu = [NSApp mainMenu];
+	if (mainMenu == nil)
+	{
+		return nil;
+	}
+
+	// The Tools menu title is localized, so fall back to locating the menu by
+	// one of its known actions when the English title is not present.
+	NSMenuItem *toolsMenuItem = [mainMenu itemWithTitle:@"Tools"];
+	if (toolsMenuItem == nil)
+	{
+		for (NSMenuItem *candidate in [mainMenu itemArray])
+		{
+			for (NSMenuItem *subItem in [[candidate submenu] itemArray])
+			{
+				if ([subItem action] == @selector(toggleGDBStubActivate:))
+				{
+					toolsMenuItem = candidate;
+					break;
+				}
+			}
+			if (toolsMenuItem != nil)
+			{
+				break;
+			}
+		}
+	}
+	return [toolsMenuItem submenu];
+}
+
+- (NSMenuItem *) installToolMenuItemWithTitle:(NSString *)title
+                                        action:(SEL)action
+                                 keyEquivalent:(NSString *)keyEquivalent
+                                 modifierMask:(NSEventModifierFlags)modifierMask
+                               startsNewGroup:(BOOL)startsNewGroup
+{
+	NSMenu *toolsMenu = [self toolsMenu];
+	if ((toolsMenu == nil) || ([toolsMenu itemWithTitle:title] != nil))
+	{
+		return nil;
+	}
+
+	// Related tool windows share one group; only the first item of a group
+	// gets a separator above it.
+	if (startsNewGroup &&
+	    ([[toolsMenu itemArray] count] > 0) &&
+	    ![[[toolsMenu itemArray] lastObject] isSeparatorItem])
+	{
+		[toolsMenu addItem:[NSMenuItem separatorItem]];
+	}
+
+	NSMenuItem *item = [[[NSMenuItem alloc] initWithTitle:title
+	                                               action:action
+	                                        keyEquivalent:keyEquivalent] autorelease];
+	[item setTarget:self];
+	if (modifierMask != 0)
+	{
+		[item setKeyEquivalentModifierMask:modifierMask];
+	}
+	[toolsMenu addItem:item];
+	return item;
+}
+
+- (void) installMemoryViewerMenuItem
+{
+	[self installToolMenuItemWithTitle:@"Memory Viewer..."
+	                            action:@selector(openMemoryViewer:)
+	                     keyEquivalent:@"m"
+	                      modifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)
+	                    startsNewGroup:YES];
+}
+
+- (void) installRAMWatchMenuItem
+{
+	// The RAM Search port only needs one more installToolMenuItem... call.
+	[self installToolMenuItemWithTitle:@"RAM Watch..."
+	                            action:@selector(openRAMWatch:)
+	                     keyEquivalent:@"w"
+	                      modifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)
+	                    startsNewGroup:YES];
+}
+
+- (void) installRAMSearchMenuItem
+{
+	[self installToolMenuItemWithTitle:@"RAM Search..."
+	                            action:@selector(openRAMSearch:)
+	                     keyEquivalent:@"s"
+	                      modifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)
+	                    startsNewGroup:NO];
+}
+
+- (IBAction) openRAMSearch:(id)sender
+{
+	if (_ramSearchWindowController == nil)
+	{
+		_ramSearchWindowController = [[RAMSearchWindowController alloc] init];
+	}
+	[_ramSearchWindowController showRAMSearchWindow];
+}
+
+- (IBAction) openRAMWatch:(id)sender
+{
+	if (_ramWatchWindowController == nil)
+	{
+		_ramWatchWindowController = [[RAMWatchWindowController alloc] init];
+	}
+
+	// Suggest "<ROM name>.wch" in the Save As panel, like the Windows port.
+	NSURL *romURL = [[self currentRom] fileURL];
+	if (romURL != nil)
+	{
+		[_ramWatchWindowController setRomFileName:[[romURL lastPathComponent] stringByDeletingPathExtension]];
+	}
+
+	[_ramWatchWindowController showRAMWatchWindow];
+}
+
+- (void) applicationDidFinishLaunching:(NSNotification *)notification
+{
+	[self installMemoryViewerMenuItem];
+	[self installRAMWatchMenuItem];
+	[self installRAMSearchMenuItem];
+
+	// RAM Search's Add Watch action is delivered as a notification that only
+	// RAM Watch observes. Create the controller up front so the action still
+	// works when RAM Watch was never opened from the Tools menu.
+	if (_ramWatchWindowController == nil)
+	{
+		_ramWatchWindowController = [[RAMWatchWindowController alloc] init];
+	}
+
+	// Auto-load the most recent watch list when the option is enabled. The
+	// window controller owns the preference keys and the actual loading.
+	if ([RAMWatchWindowController shouldAutoLoadOnLaunch])
+	{
+		[self openRAMWatch:self];
+	}
+}
+
 - (IBAction) changeRomSaveType:(id)sender
 {
 	const NSInteger saveTypeID = [CocoaDSUtil getIBActionSenderTag:sender];
@@ -1104,6 +1272,27 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore generateFirmwareMACAddress];
+}
+
+- (IBAction) addLuaScript:(id)sender
+{
+#ifdef HAVE_LUA
+	lua_script_open_console();
+#endif
+}
+
+- (IBAction) closeAllLuaScripts:(id)sender
+{
+#ifdef HAVE_LUA
+	lua_script_close_all();
+#endif
+}
+
+- (IBAction) showLuaAbout:(id)sender
+{
+#ifdef HAVE_LUA
+	MacLua_ShowAboutDialog();
+#endif
 }
 
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender

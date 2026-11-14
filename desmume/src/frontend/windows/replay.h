@@ -21,4 +21,9 @@
 void Replay_LoadMovie();
 void MovieRecordTo();
 
+// Frame at which a movie started from the Play Movie dialog should pause, or
+// -1 for no pause. Consumed once by the Windows frame loop; it lives here so
+// the loop does not need to know about the core's (currently unused) pauseframe.
+extern int moviePauseFrame;
+
 #endif

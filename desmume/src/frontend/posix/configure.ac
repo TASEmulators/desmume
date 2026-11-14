@@ -20,6 +20,12 @@ AM_INIT_AUTOMAKE([1.10 subdir-objects tar-pax foreign])
 dnl -- make sure we have a c++ compiler
 AC_PROG_CXX
 
+dnl -- types.h uses std::atomic / std::memory_order_*, which needs C++11 at
+dnl    minimum.  Meson builds the POSIX frontends with cpp_std=c++14, so use
+dnl    the same standard here; otherwise autotools silently falls back to the
+dnl    compiler's (possibly C++98) default and the CLI/GTK2 build fails.
+CXXFLAGS="$CXXFLAGS -std=c++14"
+
 dnl -- use ranlib for libraries
 AC_PROG_RANLIB
 
@@ -59,16 +65,35 @@ AC_CHECK_LIB(zzip, zzip_open, [
 dnl - Check for X11
 AC_PATH_X
 
-dnl - Check for SDL2
-AC_PATH_PROGS(SDLCONFIG, [sdl2-config])
-if test ! "x$SDLCONFIG" = "x" ; then
-  SDL_CFLAGS=`$SDLCONFIG --cflags`
-  SDL_LIBS=`$SDLCONFIG --libs`
-  AC_SUBST(SDL_CFLAGS)
-  AC_SUBST(SDL_LIBS)
-else
-  AC_MSG_ERROR([sdl is required to build desmume])
+dnl - optional WebGPU presentation layer (wgpu-native)
+AC_ARG_ENABLE([wgpu],
+               [AC_HELP_STRING([--enable-wgpu], [Build the WebGPU presentation layer (requires wgpu-native)])],
+               [wgpu=$enableval],
+               [wgpu=no])
+have_wgpu=no
+if test "x$wgpu" = "xyes" ; then
+    AC_CHECK_HEADERS([webgpu.h], [have_wgpu=yes], [have_wgpu=no])
+    if test "x$have_wgpu" = "xyes" ; then
+        AC_CHECK_LIB([wgpu_native], [wgpuCreateInstance], [
+            WGPU_LIBS="-lwgpu_native"
+            WGPU_CFLAGS="-DENABLE_WGPU -DWGPU_PRESENT_LINUX"
+            AC_CHECK_HEADERS([X11/Xlib.h], [WGPU_CFLAGS="$WGPU_CFLAGS -DWGPU_PRESENT_X11"])
+            AC_SUBST(WGPU_CFLAGS)
+            AC_SUBST(WGPU_LIBS)
+        ], [have_wgpu=no])
+    fi
+    if test "x$have_wgpu" = "xyes" ; then
+        AC_MSG_NOTICE([WebGPU presentation enabled])
+    else
+        AC_MSG_WARN([Cannot build with WebGPU -- wgpu-native headers or library not found.])
+    fi
 fi
+AM_CONDITIONAL([ENABLE_WGPU], [test "x$have_wgpu" = "xyes"])
+
+dnl - Check for SDL3.  SDL3 ships no sdl3-config tool, so pkg-config is the
+dnl   supported way to get SDL_CFLAGS / SDL_LIBS.  The variable names are
+dnl   unchanged so the Makefile.am files need no edits.
+PKG_CHECK_MODULES(SDL, [sdl3])
 
 dnl - if --enable-opengl is used, check for it
 AC_ARG_ENABLE([opengl],
@@ -169,23 +194,11 @@ AC_ARG_ENABLE([hud],
               [AC_HELP_STRING([--enable-hud], [Enable HUD rendering, requires libagg])],
               [libagg=yes])
 
-HAVE_OPENAL=no
-dnl - openal support
-AC_ARG_ENABLE(openal,
-	      [AC_HELP_STRING(--enable-openal, enable experimental OpenAL microphone input)],
-	      [openal=yes])
-
-if test "x$openal" = "xyes" ; then
-	AC_CHECK_LIB([openal], [main],[
-                HAVE_OPENAL=yes
-		LIBS="$LIBS -lopenal"
-	])
-fi
-AM_CONDITIONAL([HAVE_OPENAL], [test "${HAVE_OPENAL}" = "yes"])
+dnl - Microphone capture uses SDL3 (shared/mic_sdl.cpp), which this frontend
+dnl   already requires for sound output and input.  No ALSA/OpenAL detection.
 
 dnl - Check for GTK
 FOUND_GLIB=no
-HAVE_ALSA=no
 GLIB_VER=2.8
 GTK_VER=2.14
 
@@ -211,26 +224,24 @@ AC_SUBST(GTHREAD_LIBS)
 
 AC_PATH_PROG(UPDATEDESKTOP, [update-desktop-database])
 
-# Need check for both lua and lua5.1 to run on debian, see mysql bug #29945
-PKG_CHECK_MODULES(LUA,
-                  lua >= 5.1,
-                  HAVE_LUA=yes,
-                  HAVE_LUA=no)
-PKG_CHECK_MODULES(LUA,
-                  lua5.1 >= 5.1,
-                  HAVE_LUA=yes,
-                  HAVE_LUA=no)
+# Lua scripting is loaded with dlopen() at runtime, exactly like the macOS
+# frontend.  No Lua development package is required: lua-engine.cpp compiles
+# against the vendored LuaJIT headers (which describe the Lua 5.1 ABI), and
+# either LuaJIT or a Lua 5.1 shared library is opened when a script starts.
+# Keeping the frontends enabled even when no library is installed lets the
+# script console explain why scripting is unavailable.
+HAVE_LUA=yes
+AC_DEFINE([HAVE_LUA], [1], [Lua scripting support])
+AC_DEFINE([DESMUME_LUA_DYNAMIC], [1], [Resolve Lua from a shared library at runtime])
+LUA_CFLAGS=
+LUA_LIBS=
 AC_SUBST(LUA_CFLAGS)
 AC_SUBST(LUA_LIBS)
-dnl -- force lua disabled
-AM_CONDITIONAL([HAVE_LUA], [test "${HAVE_LUA}x" = "yes"])
+AM_CONDITIONAL([HAVE_LUA], [true])
 
-if test ! "x$HAVE_OPENAL" = "xyes" ; then
-  PKG_CHECK_MODULES(ALSA, alsa >= 1.0, HAVE_ALSA=yes, HAVE_ALSA=no)
-  AC_SUBST(ALSA_CFLAGS)
-  AC_SUBST(ALSA_LIBS)
-fi
-AM_CONDITIONAL([HAVE_ALSA], [test "${HAVE_ALSA}" = "yes"])
+# dlopen() lives in libdl on older glibc and in libc on most other systems.
+AC_SEARCH_LIBS([dlopen], [dl], [],
+               [AC_MSG_ERROR([dlopen() is required for Lua scripting])])
 
 PKG_CHECK_MODULES(LIBAGG, libagg >= 2.4.0, FOUND_LIBAGG=yes, FOUND_LIBAGG=no)
 AM_CONDITIONAL([HAVE_LIBAGG], [test "x$libagg" = "xyes" -a "${FOUND_LIBAGG}" = "yes"])
@@ -252,12 +263,6 @@ if test "x$HAVE_LIBSOUNDTOUCH" = "xyes"; then
    AC_DEFINE([HAVE_LIBSOUNDTOUCH])
 else
    AC_MSG_WARN([SoundTouch library not found, pcsx2 resampler will be disabled])
-fi
-
-if test "x$HAVE_ALSA" = "xno"; then
-   if test "x$HAVE_OPENAL" = "xno"; then
-      AC_DEFINE([FAKE_MIC])
-   fi
 fi
 
 dnl - Determine which UIs to build
@@ -291,11 +296,8 @@ case $host in
     UI_DIR="windows"
     ;;
   *darwin*)
-    dnl - openal is required on mac os x and we are not able to figure out if it's installed or not
-    AC_DEFINE(HAVE_OPENAL)
-    LIBS="$LIBS -framework OpenGL -framework OpenAL"
-    CPPFLAGS="$CPPFLAGS -I/System/Library/Frameworks/OpenAL.framework/Headers"
-	AC_SUBST(CPPFLAGS)
+    dnl - OpenGL is a system framework; microphone capture now goes through SDL3.
+    LIBS="$LIBS -framework OpenGL"
     dnl - extra hackery needed for X includes
     AC_PATH_XTRA
     ;;

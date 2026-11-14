@@ -647,18 +647,18 @@
               <attribute name='target'>dual-async</attribute>
             </item>
             <item>
-              <attribute name='label' translatable='yes'>Synchronous (_N)</attribute>
+              <attribute name='label' translatable='yes'>_N: Crossfade resampler (low CPU)</attribute>
               <attribute name='action'>app.spu_mode</attribute>
               <attribute name='target'>sync-n</attribute>
             </item>
             <item>
-              <attribute name='label' translatable='yes'>Synchronous (_Z)</attribute>
+              <attribute name='label' translatable='yes'>_Z: Micro-resampler (low latency)</attribute>
               <attribute name='action'>app.spu_mode</attribute>
               <attribute name='target'>sync-z</attribute>
             </item>
 <!-- #ifdef HAVE_LIBSOUNDTOUCH
             <item>
-              <attribute name='label' translatable='yes'>Synchronous (_P)</attribute>
+              <attribute name='label' translatable='yes'>_P: Time-stretch (keeps pitch)</attribute>
               <attribute name='action'>app.spu_mode</attribute>
               <attribute name='target'>sync-p</attribute>
             </item>
@@ -763,6 +763,25 @@
           <attribute name='label' translatable='yes'>_IO regs view</attribute>
           <attribute name='action'>app.ioregs</attribute>
         </item>
+        <submenu>
+          <attribute name='label' translatable='yes'>_Lua Scripting</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_New Lua Script Window...</attribute>
+              <attribute name='action'>app.addluascript</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Close All Script Windows</attribute>
+              <attribute name='action'>app.closealluascripts</attribute>
+            </item>
+          </section>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_About Lua Scripting...</attribute>
+              <attribute name='action'>app.aboutluascripting</attribute>
+            </item>
+          </section>
+        </submenu>
         <submenu>
           <attribute name='label' translatable='yes'>View _Layers</attribute>
           <section>

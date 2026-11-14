@@ -50,7 +50,7 @@ static const char* help_string = \
 "Arguments affecting overall emulator behaviour: (`user settings`):" ENDL
 " --num-cores N              Override numcores detection and use this many" ENDL
 " --spu-synch                Use SPU synch (crackles; helps streams; default ON)" ENDL
-" --spu-method N             Select SPU synch method: 0:N, 1:Z, 2:P; default 0" ENDL
+" --spu-method N             Select SPU synch method: 0:N crossfade resampler (low CPU), 1:Z micro-resampler (low latency), 2:P time-stretch (keeps pitch); default 0" ENDL
 " --3d-render [SW|AUTOGL|GL|OLDGL]" ENDL
 "                            Select 3d renderer; default SW" ENDL
 " --3d-texture-deposterize-enable" ENDL
@@ -449,7 +449,8 @@ bool CommandLine::parse(int argc,char **argv)
 	else if(_render3d == "OLDGL") render3d = COMMANDLINE_RENDER3D_OLDGL;
 	else if(_render3d == "AUTOGL") render3d = COMMANDLINE_RENDER3D_AUTOGL;
 	else if(_render3d == "GL") render3d = COMMANDLINE_RENDER3D_GL;
-
+	else if(_render3d == "WGPU") render3d = COMMANDLINE_RENDER3D_WGPU;
+	else if(_render3d == "WEBGPU") render3d = COMMANDLINE_RENDER3D_WGPU;
 	if (_texture_deposterize != -1) CommonSettings.GFX3D_Renderer_TextureDeposterize = (_texture_deposterize == 1);
 	if (_texture_smooth != -1) CommonSettings.GFX3D_Renderer_TextureSmoothing = (_texture_smooth == 1);
 

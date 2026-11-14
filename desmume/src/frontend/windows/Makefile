@@ -23,9 +23,14 @@ CPPFLAGS = -DMINGW_HAS_SECURE_API \
   -DNOMINMAX \
   -I../../libretro-common/include -Izlib128
 
+# MinGW still compiles the vendored Lua 5.1.5 sources (see the liblua.a rule
+# below).  lua-engine.cpp now uses only Lua's public 5.1 C API, so this path
+# stays valid even though the MSVC build has moved to LuaJIT 2.1.  To switch
+# this port too: drop -I../../lua, drop the liblua.a rule/target, and link the
+# LuaJIT lua51.dll from .libs/<arch> instead.
 CXXFLAGS = -I. -I../.. -I../../frontend/modules/osd/agg \
   -Iagg/include -Iwinpcap -Idirectx -I../../lua \
-  -fpermissive -fms-extensions -Wno-write-strings -std=gnu++11 $(OPT)
+  -fpermissive -fms-extensions -Wno-write-strings -std=gnu++14 $(OPT)
 
 CFLAGS=$(OPT)
 
@@ -33,7 +38,7 @@ LIBS= \
   -lgdi32 -lvfw32 -lshell32 -lddraw -lopengl32 \
   -lvfw32 -lwinmm -lopengl32 -lglu32 -lws2_32 -luser32 -lgdi32 -lshell32 \
   -lcomdlg32 -lshlwapi -lcomctl32 -lxinput -lole32 -ldinput8 -ldinput -ldxerr8 \
-  -ldxguid -ldsound -luuid
+  -ldxguid -ldsound -luuid -loleaut32
 
 LDFLAGS=$(STRIP) -Wl,--enable-stdcall-fixup -static-libgcc -static-libstdc++ -Wl,--stack,4194304
 
@@ -77,9 +82,14 @@ AGG_SRCS = \
 	agg/src/platform/win32/agg_win32_bmp.cpp \
 
 
+# Sources are listed explicitly, so new translation units have to be added here
+# as well as to the MSVC project. DPI.cpp/UiFont.cpp back the DPI-aware window
+# toolkit, and WGPURender.cpp supplies the gpu3DWGPU stub when ENABLE_WGPU is
+# off (main.cpp always lists that entry).
 SRCS = \
 	AboutBox.cpp \
 	CWindow.cpp \
+	DarkMode.cpp \
 	FEX_Interface.cpp \
 	FirmConfig.cpp \
 	IORegView.cpp \
@@ -91,10 +101,20 @@ SRCS = \
 	ddraw.cpp \
 	disView.cpp \
 	display.cpp \
+	dsmcsv.cpp \
+	dsmeditor.cpp \
+	wgpu_display.cpp \
+	wgpu_present_win32.cpp \
+	../shared/wgpu_present.cpp \
+	../shared/ram_debug_core.cpp \
+	../shared/ramwatch_core.cpp \
+	DPI.cpp \
+	UiFont.cpp \
 	fsnitroView.cpp \
 	gbaslot_config.cpp \
 	ginfo.cpp \
 	hotkey.cpp \
+	ImageWrite.cpp \
 	importSave.cpp \
 	inputdx.cpp \
 	lightView.cpp \
@@ -112,6 +132,7 @@ SRCS = \
 	ram_search.cpp \
 	ramwatch.cpp \
 	recentroms.cpp \
+	record_compositor.cpp \
 	replay.cpp \
 	slot1_config.cpp \
 	snddx.cpp \
@@ -170,6 +191,7 @@ SRCS = \
 	../../NDSSystem.cpp \
 	../../OGLRender.cpp \
 	../../OGLRender_3_2.cpp \
+	../../WGPURender.cpp \
 	../../path.cpp \
 	../../rasterize.cpp \
 	../../readwrite.cpp \
@@ -251,17 +273,18 @@ SRCS = \
 	../../metaspu/SndOut.cpp \
 	../../metaspu/Timestretcher.cpp \
 	../../metaspu/win32/ConfigSoundtouch.cpp \
-	../../metaspu/SoundTouch/3dnow_win.cpp \
 	../../metaspu/SoundTouch/AAFilter.cpp \
-	../../metaspu/SoundTouch/cpu_detect_x86_win.cpp \
+	../../metaspu/SoundTouch/cpu_detect_x86.cpp \
 	../../metaspu/SoundTouch/FIFOSampleBuffer.cpp \
 	../../metaspu/SoundTouch/FIRFilter.cpp \
+	../../metaspu/SoundTouch/InterpolateCubic.cpp \
+	../../metaspu/SoundTouch/InterpolateLinear.cpp \
+	../../metaspu/SoundTouch/InterpolateShannon.cpp \
 	../../metaspu/SoundTouch/mmx_optimized.cpp \
 	../../metaspu/SoundTouch/RateTransposer.cpp \
 	../../metaspu/SoundTouch/SoundTouch.cpp \
 	../../metaspu/SoundTouch/sse_optimized.cpp \
 	../../metaspu/SoundTouch/TDStretch.cpp \
-	../../metaspu/SoundTouch/WavFile.cpp \
 	../modules/Disassembler.cpp \
 	../modules/osd/agg/aggdraw.cpp \
 	../modules/osd/agg/agg_osd.cpp \
@@ -375,6 +398,20 @@ CSRCS = \
 	File_Extractor/7z_C/win32/Threads.c \
 
 RESRCS = resources.rc
+
+# Media Foundation recording.  mf_build.h turns it on by itself for MSVC; the
+# MSYS2 clang64 and ucrt64 toolchains carry <mfapi.h>, <mfreadwrite.h> and the
+# matching import libraries as well, so a build there can opt in with
+#
+#     make MF=1 CROSS=x86_64-w64-mingw32-
+#
+# The default i686 target this file is written for has no Media Foundation
+# headers, which is why this is a switch and not a test.
+ifeq ($(MF),1)
+  CPPFLAGS += -DDESMUME_ENABLE_MF=1
+  LIBS += -lmfplat -lmfreadwrite -lmfuuid
+  SRCS += mflite.cpp mfvideowriter.cpp videoencoders.cpp recording_settings.cpp
+endif
 
 RESOBJS = $(RESRCS:.rc=.o)
 OBJS=$(SRCS:.cpp=.o)

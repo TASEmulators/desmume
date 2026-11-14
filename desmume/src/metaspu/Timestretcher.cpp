@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include "types.h"
 #include "SndOut.h"
-//#include "SoundTouch/WavFile.h"
 
 #ifdef HAVE_LIBSOUNDTOUCH
 #include <SoundTouch.h>

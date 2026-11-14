@@ -27,6 +27,8 @@
 
 #include "resource.h"
 #include "main.h"
+#include "DPI.h"
+#include "UiFont.h"
 
 //this message is only supported in vista so folks sdk might not have it.
 //therefore we shall declare it here
@@ -620,15 +622,15 @@ LRESULT CALLBACK IORegView_Proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			// Retrieve the CIORegView instance passed upon window creation
 			// and match it to the window
 			wnd = (CIORegView*)((CREATESTRUCT*)lParam)->lpCreateParams;
-			SetWindowLongPtr(hWnd, DWLP_USER, (LONG)wnd);
+			SetWindowLongPtr(hWnd, DWLP_USER, (LONG_PTR)wnd);
 
 			// Create the fixed-pitch font
-			wnd->hFont = CreateFont(16, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
-				OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, GetFontQuality(), FIXED_PITCH, "Courier New");
+			wnd->hFont = CreateFont(DPI_ScaleForWindow(16, hWnd), 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
+				OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, GetFontQuality(), FIXED_PITCH, uiFont::monoFace());
 
 			// Create the vertical scrollbar
 			// The sizing and positioning of the scrollbar is done in WM_SIZE messages
-			wnd->vsbWidth = GetSystemMetrics(SM_CXVSCROLL);
+			wnd->vsbWidth = DPI_GetSystemMetricsForWindow(SM_CXVSCROLL, hWnd);
 			wnd->hScrollbar = CreateWindow("Scrollbar", "",
 				WS_CHILD | WS_VISIBLE | WS_DISABLED | SBS_VERT,
 				0, 0, 0, 0, hWnd, NULL, hAppInst, NULL);

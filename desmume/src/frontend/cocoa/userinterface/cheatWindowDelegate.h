@@ -17,10 +17,17 @@
 */
 
 #import <Cocoa/Cocoa.h>
+#include <stdint.h>
 
 @class CocoaDSCheatItem;
 @class CocoaDSCheatManager;
 @class CocoaDSCheatSearch;
+
+// Post this notification (userInfo: "address", "bytes" and "value" NSNumbers
+// plus an optional "description" NSString) to have the Cheat Manager create a
+// new internal cheat and bring its window to the front. RAM Search uses this
+// so it never has to know how the Cheat Manager is hosted.
+extern NSString * const kCheatManagerAddInternalCheatNotification;
 
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
@@ -95,6 +102,14 @@
 
 - (BOOL) cheatSystemStart:(CocoaDSCheatManager *)theManager;
 - (void) cheatSystemEnd;
+
+// Creates an enabled internal cheat (the equivalent of the Windows "Add Cheat"
+// dialog, pre-filled and auto-committed), selects it in the list and shows the
+// window. Returns NO when no game is running, in which case an alert is shown.
+- (BOOL) addInternalCheatWithAddress:(uint32_t)address
+                                size:(uint8_t)byteSize
+                               value:(uint32_t)value
+                         description:(NSString *)description;
 
 - (IBAction) addToList:(id)sender;
 - (IBAction) removeFromList:(id)sender;

@@ -18,6 +18,8 @@ desmume_src = [
   'main.cpp',
 ]
 
+desmume_src += ['tools/luaScriptConsole.cpp']
+
 if get_option('glx') and dep_gl.found()
   desmume_src += [
     '../shared/glx_3Demu.cpp',
@@ -37,6 +39,8 @@ includes = include_directories(
   '../../../../src',
   '../../../../src/libretro-common/include',
   '../../../../src/frontend',
+  '../../../../src/frontend/windows/agg/include',
+  '../../../../src/frontend/windows/agg/font_freetype',
 )
 
 executable('desmume',
