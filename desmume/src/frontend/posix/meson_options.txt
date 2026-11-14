@@ -23,6 +23,11 @@ option('frontend-gtk',
   value: true,
   description: 'Enable GTK3 frontend',
 )
+option('frontend-gtk2',
+  type: 'boolean',
+  value: false,
+  description: 'Enable GTK2 frontend',
+)
 option('frontend-cli',
   type: 'boolean',
   value: true,

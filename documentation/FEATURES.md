@@ -269,7 +269,12 @@ feature. Each entry says what you can do with it — not how it is built.
 - **SDL-based microphone** replaces the optional ALSA/OpenAL backends, removing
   two external dependencies; SDL3 then covers audio, gamepad and window handling
   for every POSIX frontend.
-- **Leaner tree** — the retired GTK2 frontend is gone from Meson, autotools,
-  Code::Blocks and CI, AGG is built in-tree, and the bundled wgpu-native library
+- **Leaner tree** — AGG is built in-tree, and the bundled wgpu-native library
   is found on both x86-64 and ARM64.
 - **HUD layout** saves and restores correctly even in builds without AGG.
+
+### GTK2 frontend: maintenance status
+- **Still shipped, no longer developed** — the GTK2 frontend remains available
+  through Meson, autotools, Code::Blocks and CI, alongside GTK3 and CLI.
+- **Bug fixes only** — GTK2 is in maintenance status. It receives bug fixes
+  only; no new features will be added to it. All new POSIX work goes to GTK3.

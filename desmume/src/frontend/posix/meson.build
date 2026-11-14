@@ -506,3 +506,6 @@ endif
 if get_option('frontend-gtk')
   subdir('gtk')
 endif
+if get_option('frontend-gtk2')
+  subdir('gtk2')
+endif

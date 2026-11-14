@@ -6,6 +6,52 @@
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
+			<Target title="GTK2_x64_Debug">
+				<Option platforms="Unix;" />
+				<Option output="bin/GTK2_Debug/DeSmuME_x64" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/GTK2_Debug/x86-64/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-m64" />
+					<Add option="-gdwarf" />
+					<Add option="-g" />
+					<Add option="`pkg-config --cflags gtk+-2.0`" />
+					<Add option="-DHOST_64" />
+					<Add option="-DENABLE_OPENGL_STANDARD" />
+				</Compiler>
+				<Linker>
+					<Add option="-m64" />
+					<Add option="`pkg-config --libs gtk+-2.0`" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libGL.so" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libGLESv2.so" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libEGL.so" />
+				</Linker>
+			</Target>
+			<Target title="GTK2_x64_Release">
+				<Option platforms="Unix;" />
+				<Option output="bin/GTK2_Release/DeSmuME_x64" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/GTK2_Release/x86-64/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-fno-strict-aliasing" />
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-flto" />
+					<Add option="-Ofast" />
+					<Add option="-m64" />
+					<Add option="`pkg-config --cflags gtk+-2.0`" />
+					<Add option="-DHOST_64" />
+					<Add option="-DENABLE_OPENGL_STANDARD" />
+				</Compiler>
+				<Linker>
+					<Add option="-flto" />
+					<Add option="-m64" />
+					<Add option="`pkg-config --libs gtk+-2.0`" />
+					<Add library="/usr/lib/x86_64-linux-gnu/libGL.so" />
+				</Linker>
+			</Target>
 			<Target title="GTK3_x64_Debug">
 				<Option platforms="Unix;" />
 				<Option output="bin/GTK3_Debug/DeSmuME_x64" prefix_auto="1" extension_auto="1" />
@@ -91,6 +137,68 @@
 					<Add option="-flto" />
 					<Add option="-m64" />
 					<Add option="`pkg-config --libs glib-2.0`" />
+				</Linker>
+			</Target>
+			<Target title="GTK2_AArch64_Debug">
+				<Option platforms="Unix;" />
+				<Option output="bin/GTK2_Debug/DeSmuME_AArch64" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/GTK2_Debug/aarch64/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Compiler>
+					<Add option="-gdwarf" />
+					<Add option="-g" />
+					<Add option="`pkg-config --cflags gtk+-2.0`" />
+					<Add option="-DHOST_64" />
+					<Add option="-DENABLE_OPENGL_ES" />
+					<Add option="-DENABLE_EGL" />
+				</Compiler>
+				<Linker>
+					<Add option="`pkg-config --libs gtk+-2.0`" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libX11.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libz.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libpcap.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libagg.a" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libSDL3.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libGLESv2.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libEGL.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfontconfig.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libaggfontfreetype.a" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfreetype.so" />
+				</Linker>
+			</Target>
+			<Target title="GTK2_AArch64_Release">
+				<Option platforms="Unix;" />
+				<Option output="bin/GTK2_Release/DeSmuME_AArch64" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/GTK2_Release/aarch64/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-fno-strict-aliasing" />
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-flto" />
+					<Add option="-Ofast" />
+					<Add option="`pkg-config --cflags gtk+-2.0`" />
+					<Add option="-DHOST_64" />
+					<Add option="-DENABLE_OPENGL_ES" />
+					<Add option="-DENABLE_EGL" />
+				</Compiler>
+				<Linker>
+					<Add option="-flto" />
+					<Add option="`pkg-config --libs gtk+-2.0`" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libX11.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libz.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libpcap.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libagg.a" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libSDL3.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libGLESv2.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libEGL.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfontconfig.so" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libaggfontfreetype.a" />
+					<Add library="/usr/lib/aarch64-linux-gnu/libfreetype.so" />
 				</Linker>
 			</Target>
 			<Target title="GTK3_AArch64_Debug">
@@ -267,38 +375,62 @@
 		<Unit filename="../../../NDSSystem.cpp" />
 		<Unit filename="../../../NDSSystem.h" />
 		<Unit filename="../../../OGLRender.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>
 		<Unit filename="../../../OGLRender.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>
 		<Unit filename="../../../OGLRender_3_2.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>
 		<Unit filename="../../../OGLRender_3_2.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>
 		<Unit filename="../../../OGLRender_ES3.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>
 		<Unit filename="../../../OGLRender_ES3.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>
@@ -333,6 +465,8 @@
 		<Unit filename="../../../addons/slot2_rumblepak.cpp" />
 		<Unit filename="../../../arm_instructions.cpp" />
 		<Unit filename="../../../arm_jit.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
@@ -1027,341 +1161,477 @@
 		<Unit filename="../../../thumb_instructions.cpp" />
 		<Unit filename="../../../types.h" />
 		<Unit filename="../../../utils/AsmJit/AsmJit.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/Config.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/apibegin.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/apiend.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/assembler.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/assembler.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/assert.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/assert.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/buffer.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/buffer.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/build.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/compiler.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/compiler.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/compilercontext.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/compilercontext.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/compilerfunc.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/compilerfunc.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/compileritem.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/compileritem.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/context.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/context.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/cpuinfo.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/cpuinfo.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/defs.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/defs.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/func.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/func.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/intutil.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/lock.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/logger.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/logger.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/memorymanager.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/memorymanager.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/memorymarker.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/memorymarker.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/operand.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/operand.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/podvector.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/stringbuilder.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/stringbuilder.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/stringutil.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/stringutil.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/virtualmemory.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/virtualmemory.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/zonememory.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/core/zonememory.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86assembler.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86assembler.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86compiler.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86compiler.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86compilercontext.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86compilercontext.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86compilerfunc.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86compilerfunc.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86compileritem.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86compileritem.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86cpuinfo.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86cpuinfo.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86defs.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86defs.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86func.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86func.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86operand.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86operand.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86util.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
 		</Unit>
 		<Unit filename="../../../utils/AsmJit/x86/x86util.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="CLI_x64_Release" />
@@ -1375,6 +1645,8 @@
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="../../../utils/arm_jit/arm_jit_arm.cpp">
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 			<Option target="CLI_AArch64_Release" />
@@ -1627,6 +1899,96 @@
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>
+		<Unit filename="../gtk2/cheatsGTK.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/cheatsGTK.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/config.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/config.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/config_opts.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/dTool.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/dToolsList.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/desmume.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/desmume.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/main.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/main.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/tools/ioregsView.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/tools/ioregsView.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/utilsGTK.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
+		<Unit filename="../gtk2/utilsGTK.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
+		</Unit>
 		<Unit filename="../shared/avout.h" />
 		<Unit filename="../shared/avout_flac.cpp" />
 		<Unit filename="../shared/avout_flac.h" />
@@ -1639,22 +2001,34 @@
 		<Unit filename="../shared/desmume_config.cpp" />
 		<Unit filename="../shared/desmume_config.h" />
 		<Unit filename="../shared/egl_3Demu.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>
 		<Unit filename="../shared/egl_3Demu.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>
 		<Unit filename="../shared/glx_3Demu.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 		</Unit>
 		<Unit filename="../shared/glx_3Demu.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
@@ -1662,14 +2036,22 @@
 		</Unit>
 		<Unit filename="../shared/mic_sdl.cpp" />
 		<Unit filename="../shared/sdl_3Demu.cpp">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>
 		<Unit filename="../shared/sdl_3Demu.h">
+			<Option target="GTK2_x64_Debug" />
+			<Option target="GTK2_x64_Release" />
 			<Option target="GTK3_x64_Debug" />
 			<Option target="GTK3_x64_Release" />
+			<Option target="GTK2_AArch64_Debug" />
+			<Option target="GTK2_AArch64_Release" />
 			<Option target="GTK3_AArch64_Debug" />
 			<Option target="GTK3_AArch64_Release" />
 		</Unit>

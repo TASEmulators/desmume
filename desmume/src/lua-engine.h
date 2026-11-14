@@ -59,7 +59,8 @@ void GetLuaEngineLibraryPath(char* out, size_t outSize);
 // Optional frontend hooks for Lua APIs that need real UI.  They are installed
 // at startup and stay valid for the process lifetime.  When a hook is NULL the
 // engine keeps the old platform-neutral fallback (a fixed popup answer, or a
-// no-op emu.openscript), which is what the CLI frontend uses.
+// no-op emu.openscript), which is what the CLI and the retired GTK2 frontend
+// use.
 //
 // Popup: show `message` with the requested button set and return the answer
 // string exactly as the Windows MessageBox mapping produces it ("ok", "yes",
@@ -133,8 +134,8 @@ void SetLuaGetControllerStatusHandler(LuaGetControllerStatusHandler handler);
 //
 // A menu handle is opaque to the engine; the frontend decides what it points
 // at.  Item ids are allocated by the frontend and must be freed by it when the
-// owning script stops.  The GTK3 frontend installs these hooks; the CLI
-// frontend leaves them unset, so the menu APIs stay no-ops there.
+// owning script stops.  The GTK3 frontend installs these hooks; the CLI and the
+// retired GTK2 frontend leave them unset, so the menu APIs stay no-ops there.
 //
 // Selecting an item is reported by the frontend with
 // CallRegisteredLuaMenuHandlers() using the id it was created with.

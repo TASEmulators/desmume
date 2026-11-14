@@ -20,6 +20,12 @@ AM_INIT_AUTOMAKE([1.10 subdir-objects tar-pax foreign])
 dnl -- make sure we have a c++ compiler
 AC_PROG_CXX
 
+dnl -- types.h uses std::atomic / std::memory_order_*, which needs C++11 at
+dnl    minimum.  Meson builds the POSIX frontends with cpp_std=c++14, so use
+dnl    the same standard here; otherwise autotools silently falls back to the
+dnl    compiler's (possibly C++98) default and the CLI/GTK2 build fails.
+CXXFLAGS="$CXXFLAGS -std=c++14"
+
 dnl -- use ranlib for libraries
 AC_PROG_RANLIB
 
@@ -191,14 +197,23 @@ AC_ARG_ENABLE([hud],
 dnl - Microphone capture uses SDL3 (shared/mic_sdl.cpp), which this frontend
 dnl   already requires for sound output and input.  No ALSA/OpenAL detection.
 
-dnl - Check for GLib / gthread (used by the core and the CLI frontend)
+dnl - Check for GTK
 FOUND_GLIB=no
 GLIB_VER=2.8
+GTK_VER=2.14
 
 PKG_CHECK_MODULES(GLIB,
                   glib-2.0 >= $GLIB_VER,
                   FOUND_GLIB=yes,
                   FOUND_GLIB=no)
+
+PKG_CHECK_MODULES(GTK,
+                  gtk+-2.0 >= $GTK_VER,
+                  HAVE_GTK=yes,
+                  HAVE_GTK=no)
+AC_SUBST(GTK_CFLAGS)
+AC_SUBST(GTK_LIBS)
+
 
 PKG_CHECK_MODULES(GTHREAD,
                   "gthread-2.0",
@@ -206,6 +221,8 @@ PKG_CHECK_MODULES(GTHREAD,
                   HAVE_GTHREAD=no)
 AC_SUBST(GTHREAD_CFLAGS)
 AC_SUBST(GTHREAD_LIBS)
+
+AC_PATH_PROG(UPDATEDESKTOP, [update-desktop-database])
 
 # Lua scripting is loaded with dlopen() at runtime, exactly like the macOS
 # frontend.  No Lua development package is required: lua-engine.cpp compiles
@@ -248,9 +265,11 @@ else
    AC_MSG_WARN([SoundTouch library not found, pcsx2 resampler will be disabled])
 fi
 
-dnl - Determine which UI to build.  Autotools builds the CLI frontend; the
-dnl   GTK3 frontend is built with Meson (see gtk/meson.build).
+dnl - Determine which UIs to build
 UI_DIR="cli $UI_DIR"
+if test "x$HAVE_GTK" = "xyes"; then
+  UI_DIR="gtk2 $UI_DIR"
+fi
 
 dnl - jit support
 case $host_cpu in
@@ -396,6 +415,8 @@ dnl --- Finally, output all the makefiles
 AC_CONFIG_FILES([Makefile
                  cli/Makefile
                  cli/doc/Makefile
+                 gtk2/Makefile
+                 gtk2/doc/Makefile
 ])
 AC_OUTPUT
 
