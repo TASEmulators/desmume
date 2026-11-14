@@ -4113,6 +4113,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	GtkComboBox *wPresentation, *wGPUFilter;
 	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
 	GtkSpinButton *wGPUScale;
+	GtkLabel *wMultisampleLabel;
 
 	Build3DRendererList();
 
@@ -4125,6 +4126,17 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	gtk_spin_button_set_range(wGPUScale, GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX);
 	gtk_spin_button_set_increments(wGPUScale, 0.5, 1.0);
 	wMultisample = GTK_COMBO_BOX(gtk_builder_get_object(builder, "multisample"));
+	wMultisampleLabel = GTK_LABEL(gtk_builder_get_object(builder, "multisample_label"));
+	// Only name the backends that are actually compiled into this build.
+#if (defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)) && defined(ENABLE_WGPU)
+	gtk_label_set_text(wMultisampleLabel, "Multisample Antialiasing (OpenGL/WebGPU):");
+#elif defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
+	gtk_label_set_text(wMultisampleLabel, "Multisample Antialiasing (OpenGL):");
+#elif defined(ENABLE_WGPU)
+	gtk_label_set_text(wMultisampleLabel, "Multisample Antialiasing (WebGPU):");
+#else
+	gtk_label_set_text(wMultisampleLabel, "Multisample Antialiasing:");
+#endif
 	wPosterize = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "posterize"));
 	wSmoothing = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "smoothing"));
 	wHCInterpolate = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "hc_interpolate"));
@@ -4238,14 +4250,13 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	// 3D Texture Smoothing
 	gtk_toggle_button_set_active(wSmoothing, CommonSettings.GFX3D_Renderer_TextureSmoothing);
 
-#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
-	// OpenGL Multisample
+	// Multisample antialiasing. This applies to the OpenGL and WebGPU
+	// renderers, so it must not be tied to the OpenGL build options.
 	int currentMultisample = CommonSettings.GFX3D_Renderer_MultisampleSize;
 	int currentActive = 0;
 	// find smallest option that is larger than current value, i.e. round up to power of 2
-	while (multisampleSizes[currentActive] < currentMultisample && currentActive < 5) { currentActive++; }
+	while ((currentActive < 5) && (multisampleSizes[currentActive] < currentMultisample)) { currentActive++; }
 	gtk_combo_box_set_active(wMultisample, currentActive);
-#endif
 
 	// SoftRasterizer High Color Interpolation
 	gtk_toggle_button_set_active(wHCInterpolate, CommonSettings.GFX3D_HighResolutionInterpolateColor);
@@ -4351,12 +4362,14 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(wSmoothing);
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
 		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(wHCInterpolate);
-#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
 		int selectedMultisample = gtk_combo_box_get_active(wMultisample);
+		if (selectedMultisample < 0)
+		{
+			selectedMultisample = 0;
+		}
 		config.multisamplingSize = multisampleSizes[selectedMultisample];
 		config.multisampling = selectedMultisample != 0;
 		CommonSettings.GFX3D_Renderer_MultisampleSize = multisampleSizes[selectedMultisample];
-#endif
 
 		// GPU filter. It only runs when a frame goes through the WebGPU
 		// presenter; the value is kept while software presentation is in use.
