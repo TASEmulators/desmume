@@ -17,6 +17,8 @@
 
 #include "wgpu_upscaler_linux.h"
 
+#include <stddef.h>
+
 #if defined(ENABLE_WGPU)
 
 #include <gio/gio.h>

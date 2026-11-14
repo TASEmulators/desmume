@@ -27,7 +27,9 @@ dep_soundtouch = dependency('soundtouch', required: false)
 dep_freetype = dependency('freetype2', required: false)
 dep_fontconfig = dependency('fontconfig', required: false)
 dep_egl = dependency('egl', required: false)
-dep_wayland = dependency('wayland-client')
+# wayland-client is only linked by the WebGPU surface adapter. Keep it
+# optional when WebGPU is disabled so a minimal build does not need it.
+dep_wayland = dependency('wayland-client', required: get_option('wgpu'))
 dep_x11 = dependency('x11')
 
 # ELF hosts where the linker provides __start_/__stop_ symbols for a
@@ -361,7 +363,10 @@ libdesmume_src += [
 # primitives agg_osd.cpp uses instead of rasterizing them with AGG.  The
 # recorder implements the AggDrawTarget interface without instantiating Agg2D,
 # so both object files are free of undefined agg::* symbols (wgpu-agg.md 20).
-add_global_arguments('-DDESMUME_WGPU_OSD', language: ['c', 'cpp'])
+# Only the WebGPU frontend path uses the recorder.
+if get_option('wgpu')
+  add_global_arguments('-DDESMUME_WGPU_OSD', language: ['c', 'cpp'])
+endif
 
 # Vector fonts need FreeType; the GTK frontends also use fontconfig to find a
 # font file, so only advertise AGG2D_USE_VECTORFONTS when both are present.
@@ -451,48 +456,57 @@ endif
 
 # WebGPU presentation layer. The portable core (src/frontend/shared) is used by
 # both Windows and Linux; the Linux adapters live in shared/wgpu_present_linux.*
-# and shared/wgpu_display_linux.*. wgpu-native is a hard dependency of the POSIX
-# build: it is taken from the checked-in 3rdparty copy, or from the directory
-# passed with -Dwgpu-native-path=/path/to/wgpu-linux-<arch>-release.
-wgpu_native_path = get_option('wgpu-native-path')
-wgpu_native_lib_dir = meson.current_source_dir() / '../../../3rdparty/libs' / ('linux-' + host_machine.cpu_family())
-wgpu_native_include = include_directories('../../../3rdparty/wgpu')
-
-if wgpu_native_path != ''
-  wgpu_native_path_abs = wgpu_native_path
-  if not fs.is_absolute(wgpu_native_path)
-    wgpu_native_path_abs = join_paths(meson.current_source_dir(), wgpu_native_path)
-  endif
-
-  if fs.exists(join_paths(wgpu_native_path_abs, 'lib', 'libwgpu_native.so'))
-    wgpu_native_lib_dir = join_paths(wgpu_native_path_abs, 'lib')
-    wgpu_native_include = include_directories(join_paths(wgpu_native_path_abs, 'include', 'webgpu'))
-  else
-    wgpu_native_lib_dir = wgpu_native_path_abs
-  endif
-endif
-
-dep_wgpu_lib = cxx.find_library('wgpu_native', dirs: wgpu_native_lib_dir, required: true)
-
-# The portable core, the display wrapper and the WebGPU 3D renderer are always
-# built. The X11 and Wayland adapters are part of the same build; the frontend
-# simply picks the one that matches the running GDK backend.
+# and shared/wgpu_display_linux.*.
+#
+# The renderer and display wrappers always provide stub implementations, so the
+# frontend can stay linked when -Dwgpu=false is used. Only the wgpu-native
+# dependency, the real Linux surface adapter and the ENABLE_WGPU define are
+# conditional.
 libdesmume_src += [
   '../../WGPURender.cpp',
   '../shared/wgpu_present.cpp',
   'shared/wgpu_display_linux.cpp',
-  'shared/wgpu_present_linux.cpp',
   'shared/wgpu_upscaler_linux.cpp',
 ]
 
-add_global_arguments(['-DENABLE_WGPU'], language: ['c', 'cpp'])
+if get_option('wgpu')
+  # wgpu-native is taken from the checked-in 3rdparty copy, or from the
+  # directory passed with -Dwgpu-native-path=/path/to/wgpu-linux-<arch>-release.
+  wgpu_native_path = get_option('wgpu-native-path')
+  wgpu_native_lib_dir = meson.current_source_dir() / '../../../3rdparty/libs' / ('linux-' + host_machine.cpu_family())
+  wgpu_native_include = include_directories('../../../3rdparty/wgpu')
 
-dep_wgpu = declare_dependency(
-  dependencies: dep_wgpu_lib,
-  include_directories: wgpu_native_include,
-  link_args: ['-Wl,-rpath,' + wgpu_native_lib_dir],
-)
-dependencies += [dep_wgpu, dep_wayland, dep_x11]
+  if wgpu_native_path != ''
+    wgpu_native_path_abs = wgpu_native_path
+    if not fs.is_absolute(wgpu_native_path)
+      wgpu_native_path_abs = join_paths(meson.current_source_dir(), wgpu_native_path)
+    endif
+
+    if fs.exists(join_paths(wgpu_native_path_abs, 'lib', 'libwgpu_native.so'))
+      wgpu_native_lib_dir = join_paths(wgpu_native_path_abs, 'lib')
+      wgpu_native_include = include_directories(join_paths(wgpu_native_path_abs, 'include', 'webgpu'))
+    else
+      wgpu_native_lib_dir = wgpu_native_path_abs
+    endif
+  endif
+
+  dep_wgpu_lib = cxx.find_library('wgpu_native', dirs: wgpu_native_lib_dir, required: true)
+
+  libdesmume_src += [
+    'shared/wgpu_present_linux.cpp',
+  ]
+
+  add_global_arguments(['-DENABLE_WGPU'], language: ['c', 'cpp'])
+
+  dep_wgpu = declare_dependency(
+    dependencies: dep_wgpu_lib,
+    include_directories: wgpu_native_include,
+    link_args: ['-Wl,-rpath,' + wgpu_native_lib_dir],
+  )
+  dependencies += [dep_wgpu, dep_wayland]
+endif
+
+dependencies += [dep_x11]
 
 libdesmume = static_library('desmume',
   libdesmume_src,

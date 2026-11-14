@@ -15,9 +15,10 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Linux adapters for the portable WebGPU presentation layer. The POSIX meson
-// build always compiles this file and treats wgpu-native, X11 and Wayland as
-// hard dependencies. See wgpu_present_linux.h for the wiring.
+// Linux adapters for the portable WebGPU presentation layer. This file is only
+// compiled when the POSIX build enables the "wgpu" option, which also brings in
+// wgpu-native and the Wayland client library. See wgpu_present_linux.h for the
+// wiring.
 
 #include "wgpu_present_linux.h"
 

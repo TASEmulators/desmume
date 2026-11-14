@@ -31,10 +31,9 @@ class WGPUPresentWindow;
 // class only owns the native-window adapter and forwards the frame.
 //
 // The native handles cross the boundary as void* so this header does not drag
-// Xlib or wayland-client into the frontend. The Linux adapters are always
-// compiled; beginX11()/beginWayland() still return false when wgpu-native is
-// unavailable or the surface cannot be created, and the caller falls back to
-// Cairo.
+// Xlib or wayland-client into the frontend. This wrapper is always compiled;
+// without -Dwgpu=true it provides stubs and beginX11()/beginWayland() return
+// false, so the caller falls back to Cairo.
 class WGPULinuxDisplay
 {
 public:

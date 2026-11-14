@@ -44,6 +44,12 @@ option('gdb-stub',
   description: 'Enable gdb stub',
 )
 
+option('wgpu',
+  type: 'boolean',
+  value: true,
+  description: 'Build the WebGPU renderer and presentation layer (requires wgpu-native)',
+)
+
 option('wgpu-native-path',
   type: 'string',
   value: '',

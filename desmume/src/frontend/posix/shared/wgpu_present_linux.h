@@ -20,9 +20,9 @@
 
 // Linux adapters for the portable WebGPU presentation layer.
 //
-// The POSIX meson build always compiles this file and links the Linux build of
-// wgpu-native (libwgpu_native.so). The X11 and Wayland client libraries are
-// hard dependencies of that build, so both adapters are always available.
+// The POSIX meson build compiles this file only with -Dwgpu=true (the default),
+// which also links the Linux build of wgpu-native (libwgpu_native.so) and the
+// Wayland client library. Both adapters are then available.
 //
 // The GTK frontend renders into the drawing area's GdkWindow, which is a native
 // X11 window or wl_surface depending on the active GDK backend:

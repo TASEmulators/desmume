@@ -132,7 +132,9 @@ VideoFilter* video;
 // WebGPU presentation. The object is a stub when the build does not include
 // wgpu-native, in which case every frame falls back to the Cairo path below.
 static WGPULinuxDisplay wgpu_display;
+#if defined(ENABLE_WGPU)
 static bool wgpu_initialization_failed = false;
+#endif
 
 #if defined(DESMUME_WGPU_OSD)
 // GPU HUD state (wgpu-agg.md 22). The target records agg_osd.cpp / Lua agg.*
@@ -506,9 +508,9 @@ static void Build3DRendererList()
 // through wgpuInstanceRelease(), which aborts the process. Never pass zero:
 // use the backend the user picked, or the first one the renderer enumeration
 // found (its preferred backend).
+#if defined(ENABLE_WGPU)
 static uint32_t WGPU_PresentationBackendMask()
 {
-#if defined(ENABLE_WGPU)
 	WGPURender_InitBackendList();
 
 	const size_t backendCount = WGPURender_GetBackendCount();
@@ -533,10 +535,8 @@ static uint32_t WGPU_PresentationBackendMask()
 	// No adapter was reported. Pin Vulkan rather than asking for every backend;
 	// if it cannot present, begin() fails and Cairo keeps drawing.
 	return (uint32_t)WGPUInstanceBackend_Vulkan;
-#else
-	return 0;
-#endif
 }
+#endif // ENABLE_WGPU
 
 int multisampleSizes[] = {0, 2, 4, 8, 16, 32};
 
@@ -2357,6 +2357,10 @@ static bool WGPU_PresentFrame(GtkWidget *widget, GdkWindow *window, gint daW, gi
 	return true;
 }
 
+#else // !ENABLE_WGPU
+static bool WGPU_HudPrepare(int, int) { return false; }
+static bool WGPU_HudRenderFrame() { return false; }
+static void WGPU_HudCompositeScreenshot(u8 *, int, int) {}
 #endif // ENABLE_WGPU
 
 /* Drawing callback */
@@ -4100,20 +4104,27 @@ static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, g
 // The GPU filters are WGSL chains run by the WebGPU presenter, so the choice is
 // only meaningful while that presentation is selected. The value is kept when
 // software presentation is chosen, exactly as the Windows frontend does.
+#if defined(ENABLE_WGPU)
 static void PresentationComboChanged(GtkComboBox *combo, gpointer user_data)
 {
 	const char *id = gtk_combo_box_get_active_id(combo);
 	gtk_widget_set_sensitive(GTK_WIDGET(user_data), (id != NULL) && (strcmp(id, "software") != 0));
 }
+#endif
 
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
 	GtkDialog *dialog;
 	GtkGrid *wGrid;
-	GtkComboBox *coreCombo, *wScale, *wMultisample;
-	GtkComboBox *wPresentation, *wGPUFilter;
+	GtkComboBox *coreCombo, *wScale;
 	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
 	GtkSpinButton *wGPUScale;
 	GtkLabel *wMultisampleLabel;
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
+	GtkComboBox *wMultisample;
+#endif
+#if defined(ENABLE_WGPU)
+	GtkComboBox *wPresentation, *wGPUFilter;
+#endif
 
 	Build3DRendererList();
 
@@ -4125,7 +4136,6 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	wGPUScale = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "gpuscale"));
 	gtk_spin_button_set_range(wGPUScale, GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX);
 	gtk_spin_button_set_increments(wGPUScale, 0.5, 1.0);
-	wMultisample = GTK_COMBO_BOX(gtk_builder_get_object(builder, "multisample"));
 	wMultisampleLabel = GTK_LABEL(gtk_builder_get_object(builder, "multisample_label"));
 	// Only name the backends that are actually compiled into this build.
 #if (defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)) && defined(ENABLE_WGPU)
@@ -4137,11 +4147,16 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 #else
 	gtk_label_set_text(wMultisampleLabel, "Multisample Antialiasing:");
 #endif
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
+	wMultisample = GTK_COMBO_BOX(gtk_builder_get_object(builder, "multisample"));
+#endif
 	wPosterize = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "posterize"));
 	wSmoothing = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "smoothing"));
 	wHCInterpolate = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "hc_interpolate"));
+#if defined(ENABLE_WGPU)
 	wPresentation = GTK_COMBO_BOX(gtk_builder_get_object(builder, "presentation_combo"));
 	wGPUFilter = GTK_COMBO_BOX(gtk_builder_get_object(builder, "gpu_filter_combo"));
+#endif
 	g_object_unref(builder);
 
 	// Populate the combo from the runtime renderer list so that the WebGPU
@@ -4153,14 +4168,17 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		gtk_combo_box_text_append_text(coreComboText, core3DList[i]->name);
 	}
 
-#if !defined(ENABLE_OPENGL_STANDARD) && !defined(ENABLE_OPENGL_ES) && !defined(ENABLE_WGPU)
+#if !defined(ENABLE_WGPU)
+	// Screen presentation and GPU filters only exist on the WebGPU path.
 	gtk_grid_remove_row(wGrid, 7);
 	gtk_grid_remove_row(wGrid, 6);
+#endif
+#if !defined(ENABLE_OPENGL_STANDARD) && !defined(ENABLE_OPENGL_ES) && !defined(ENABLE_WGPU)
 	gtk_grid_remove_row(wGrid, 5);
-	gtk_grid_remove_row(wGrid, 4);
 #endif
 	gtk_combo_box_set_active(coreCombo, cur3DCore);
 
+#if defined(ENABLE_WGPU)
 	// Screen presentation. Like the 3D renderer list, offer one entry per
 	// usable WebGPU backend ("WebGPU - Vulkan", ...) next to the software
 	// path. The id of a WebGPU item is its WGPUInstanceBackend mask, which is
@@ -4168,7 +4186,6 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	GtkComboBoxText *presentationComboText = GTK_COMBO_BOX_TEXT(wPresentation);
 	gtk_combo_box_text_remove_all(presentationComboText);
 
-#if defined(ENABLE_WGPU)
 	const size_t presentationBackendCount = WGPURender_GetBackendCount();
 
 	if (presentationBackendCount > 0)
@@ -4183,7 +4200,6 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		}
 	}
 	else
-#endif
 	{
 		char id[32];
 		g_snprintf(id, sizeof(id), "%u", (unsigned)WGPU_PresentationBackendMask());
@@ -4237,6 +4253,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 
 	gtk_widget_set_sensitive(GTK_WIDGET(wGPUFilter), config.presentationWGPU);
 	g_signal_connect(wPresentation, "changed", G_CALLBACK(PresentationComboChanged), wGPUFilter);
+#endif // ENABLE_WGPU
 
 	// The shift it work for scale up to 4. For scaling more than 4, a mapping function is required
 	gtk_combo_box_set_active(wScale, CommonSettings.GFX3D_Renderer_TextureScalingFactor >> 1);
@@ -4250,6 +4267,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	// 3D Texture Smoothing
 	gtk_toggle_button_set_active(wSmoothing, CommonSettings.GFX3D_Renderer_TextureSmoothing);
 
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
 	// Multisample antialiasing. This applies to the OpenGL and WebGPU
 	// renderers, so it must not be tied to the OpenGL build options.
 	int currentMultisample = CommonSettings.GFX3D_Renderer_MultisampleSize;
@@ -4257,6 +4275,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	// find smallest option that is larger than current value, i.e. round up to power of 2
 	while ((currentActive < 5) && (multisampleSizes[currentActive] < currentMultisample)) { currentActive++; }
 	gtk_combo_box_set_active(wMultisample, currentActive);
+#endif
 
 	// SoftRasterizer High Color Interpolation
 	gtk_toggle_button_set_active(wHCInterpolate, CommonSettings.GFX3D_HighResolutionInterpolateColor);
@@ -4362,6 +4381,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(wSmoothing);
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
 		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(wHCInterpolate);
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
 		int selectedMultisample = gtk_combo_box_get_active(wMultisample);
 		if (selectedMultisample < 0)
 		{
@@ -4370,7 +4390,9 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		config.multisamplingSize = multisampleSizes[selectedMultisample];
 		config.multisampling = selectedMultisample != 0;
 		CommonSettings.GFX3D_Renderer_MultisampleSize = multisampleSizes[selectedMultisample];
+#endif
 
+#if defined(ENABLE_WGPU)
 		// GPU filter. It only runs when a frame goes through the WebGPU
 		// presenter; the value is kept while software presentation is in use.
 		const char *filterId = gtk_combo_box_get_active_id(wGPUFilter);
@@ -4423,6 +4445,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 				gtk_widget_queue_draw(pDrawingArea);
 			}
 		}
+#endif // ENABLE_WGPU
     }
     // End: OK Response Block
         break;
@@ -5504,6 +5527,13 @@ common_gtk_main(GApplication *app, gpointer user_data)
     configured_features *my_config = static_cast<configured_features*>(user_data);
 
 	config.load();
+
+#if !defined(ENABLE_WGPU)
+	// A config written by a WebGPU build may still request the WebGPU
+	// presenter or one of its GPU filters. Neither exists in this build.
+	config.presentationWGPU = false;
+	config.gpuFilter = WGPUPresentUpscaler_Off;
+#endif
 
 	// The GPU filter belongs to the WebGPU presentation path. Nothing is
 	// compiled here: the chain of the selected filter is built on the first
