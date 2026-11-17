@@ -33,6 +33,17 @@ desmume_src = [
 
 desmume_src += ['tools/luaScriptConsole.cpp']
 
+if ffmpeg_recording
+  desmume_src += ['../shared/avout_ffmpeg.cpp']
+  gtk_dependencies += [
+    dep_libavcodec,
+    dep_libavformat,
+    dep_libavutil,
+    dep_libswscale,
+    dep_libswresample,
+  ]
+endif
+
 if get_option('glx') and dep_gl.found()
   desmume_src += [
     '../shared/glx_3Demu.cpp',

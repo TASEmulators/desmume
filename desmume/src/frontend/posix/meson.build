@@ -32,6 +32,29 @@ dep_egl = dependency('egl', required: false)
 dep_wayland = dependency('wayland-client', required: get_option('wgpu'))
 dep_x11 = dependency('x11')
 
+# The FFmpeg recorder is optional. When any of the libav* modules is missing,
+# or -Dffmpeg-recording=false is passed, the feature is compiled out and the
+# old x264/FLAC recorders remain the only recording path.
+dep_libavcodec    = dependency('libavcodec',    version: '>=59.37', required: false)
+dep_libavformat   = dependency('libavformat',                        required: false)
+dep_libavutil     = dependency('libavutil',     version: '>=57.28', required: false)
+dep_libswscale    = dependency('libswscale',                         required: false)
+dep_libswresample = dependency('libswresample',                      required: false)
+
+ffmpeg_recording = get_option('ffmpeg-recording') \
+  and dep_libavcodec.found() \
+  and dep_libavformat.found() \
+  and dep_libavutil.found() \
+  and dep_libswscale.found() \
+  and dep_libswresample.found()
+
+if ffmpeg_recording
+  add_global_arguments('-DHAVE_FFMPEG_RECORD', language: ['c', 'cpp'])
+  message('FFmpeg video recording: enabled')
+else
+  message('FFmpeg video recording: disabled (missing libav* or -Dffmpeg-recording=false)')
+endif
+
 # ELF hosts where the linker provides __start_/__stop_ symbols for a
 # C-identifier section. macOS/Mach-O is deliberately excluded.
 osd_elf_font_systems = ['android', 'dragonfly', 'freebsd', 'gnu', 'linux',

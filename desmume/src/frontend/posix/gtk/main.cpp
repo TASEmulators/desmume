@@ -78,6 +78,9 @@
 
 #include "../shared/avout_x264.h"
 #include "../shared/avout_flac.h"
+#ifdef HAVE_FFMPEG_RECORD
+#include "../shared/avout_ffmpeg.h"
+#endif
 
 #include "commandline.h"
 
@@ -236,9 +239,28 @@ gboolean EmuLoop(gpointer data);
 
 static AVOutX264 avout_x264;
 static AVOutFlac avout_flac;
+#ifdef HAVE_FFMPEG_RECORD
+static AVOutFFmpeg avout_ffmpeg;
+
+// True while the FFmpeg recorder is capturing the video filter's output
+// (which also contains the CPU HUD/Lua overlay) instead of the raw custom
+// buffer. The frame serial distinguishes real emulated frames from manual
+// RedrawScreen() presents, which reuse the previous frame.
+static bool sRecordFilteredOutput = false;
+static uint64_t sFrameSerial = 0;
+static uint64_t sLastRecordedFrameSerial = 0;
+static std::vector<uint8_t> sRecordFrameBuffer;
+#endif
 static void RecordAV_x264(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void RecordAV_flac(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void RecordAV_stop(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+#ifdef HAVE_FFMPEG_RECORD
+static void RecordAV_Video(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+#else
+// The menu entry is always present, so register a placeholder action in builds
+// configured without FFmpeg instead of leaving an unknown action behind.
+static void RecordAV_VideoUnavailable(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+#endif
 static void RedrawScreen();
 
 static void DoQuit(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -335,6 +357,11 @@ static const GActionEntry app_entries[] = {
     { "stopmovie",     StopMovie },
     { "record_x264",   RecordAV_x264 },
     { "record_flac",   RecordAV_flac },
+#ifdef HAVE_FFMPEG_RECORD
+    { "record_video",  RecordAV_Video },
+#else
+    { "record_video",  RecordAV_VideoUnavailable },
+#endif
     { "record_stop",   RecordAV_stop },
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
     { "loadfirmware",  SelectFirmwareFile },
@@ -1418,11 +1445,335 @@ static void RecordAV_flac(GSimpleAction *action, GVariant *parameter, gpointer u
     g_object_unref(pFileSelection);
 }
 
+#ifndef HAVE_FFMPEG_RECORD
+static void RecordAV_VideoUnavailable(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
+            GTK_DIALOG_MODAL,
+            GTK_MESSAGE_INFO,
+            GTK_BUTTONS_OK,
+            "This build was configured without FFmpeg recording support.\n"
+            "The old recorders are still available under Old recorders.");
+    gtk_dialog_run(GTK_DIALOG(pDialog));
+    gtk_widget_destroy(pDialog);
+}
+#endif
+
+static void RecordAV_SetStartActionsEnabled(bool enabled)
+{
+    const char *names[] = {
+        "record_x264",
+        "record_flac",
+#ifdef HAVE_FFMPEG_RECORD
+        "record_video",
+#endif
+    };
+
+    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+        GAction *action = g_action_map_lookup_action(G_ACTION_MAP(pApp), names[i]);
+        if (action != NULL)
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(action), enabled ? TRUE : FALSE);
+    }
+}
+
+#ifdef HAVE_FFMPEG_RECORD
+static int RecordAV_FindEncoderIndex(const std::vector<FFmpegEncoderInfo>& encoders, const std::string& name)
+{
+    for (size_t i = 0; i < encoders.size(); i++) {
+        if (encoders[i].name == name)
+            return (int)i;
+    }
+    return -1;
+}
+
+static void RecordAV_AudioEncoderChanged(GtkComboBox *combo, gpointer user_data)
+{
+    GtkWidget *bitrate = GTK_WIDGET(user_data);
+    gtk_widget_set_sensitive(bitrate, gtk_combo_box_get_active(combo) > 0);
+}
+
+static void RecordAV_Video(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    if (avout_x264.isRecording() || avout_flac.isRecording() || avout_ffmpeg.isRecording()) {
+        GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
+                GTK_DIALOG_MODAL,
+                GTK_MESSAGE_INFO,
+                GTK_BUTTONS_OK,
+                "A recording is already in progress.\n"
+                "Stop it before starting a new one.");
+        gtk_dialog_run(GTK_DIALOG(pDialog));
+        gtk_widget_destroy(pDialog);
+        return;
+    }
+
+    const std::vector<FFmpegEncoderInfo> videoEncoders = FFmpegRecorder::videoEncoders();
+    const std::vector<FFmpegEncoderInfo> audioEncoders = FFmpegRecorder::audioEncoders();
+
+    if (videoEncoders.empty()) {
+        GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
+                GTK_DIALOG_MODAL,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_OK,
+                "This build of FFmpeg provides no video encoders.");
+        gtk_dialog_run(GTK_DIALOG(pDialog));
+        gtk_widget_destroy(pDialog);
+        return;
+    }
+
+    if (desmume_running())
+        Pause(NULL, NULL, NULL);
+
+    GtkWidget *dialog = gtk_dialog_new_with_buttons("Record video (FFmpeg)",
+            GTK_WINDOW(pWindow),
+            GTK_DIALOG_MODAL,
+            "_Continue", GTK_RESPONSE_OK,
+            "_Cancel", GTK_RESPONSE_CANCEL,
+            NULL);
+    gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+
+    GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    GtkWidget *grid = gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+    gtk_container_set_border_width(GTK_CONTAINER(grid), 12);
+    gtk_container_add(GTK_CONTAINER(content), grid);
+
+    GtkWidget *videoCombo = gtk_combo_box_text_new();
+    int videoIndex = RecordAV_FindEncoderIndex(videoEncoders, config.record_video_encoder);
+    if (videoIndex < 0)
+        videoIndex = RecordAV_FindEncoderIndex(videoEncoders, "libx264");
+    if (videoIndex < 0) {
+        for (size_t i = 0; i < videoEncoders.size(); i++) {
+            if (!videoEncoders[i].hardware) {
+                videoIndex = (int)i;
+                break;
+            }
+        }
+    }
+    if (videoIndex < 0)
+        videoIndex = 0;
+    for (size_t i = 0; i < videoEncoders.size(); i++)
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(videoCombo), FFmpegRecorder::encoderLabel(videoEncoders[i]).c_str());
+    gtk_combo_box_set_active(GTK_COMBO_BOX(videoCombo), videoIndex);
+
+    GtkWidget *audioCombo = gtk_combo_box_text_new();
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(audioCombo), "None (no audio)");
+    int audioIndex = 0;
+    // An empty saved value means the user explicitly chose "None"; only fall
+    // back to AAC when the saved encoder no longer exists.
+    if (!config.record_audio_encoder.get().empty()) {
+        int foundAudio = RecordAV_FindEncoderIndex(audioEncoders, config.record_audio_encoder);
+        if (foundAudio < 0)
+            foundAudio = RecordAV_FindEncoderIndex(audioEncoders, "aac");
+        if (foundAudio >= 0)
+            audioIndex = foundAudio + 1;
+    }
+    for (size_t i = 0; i < audioEncoders.size(); i++)
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(audioCombo), FFmpegRecorder::encoderLabel(audioEncoders[i]).c_str());
+    gtk_combo_box_set_active(GTK_COMBO_BOX(audioCombo), audioIndex);
+
+    GtkWidget *containerCombo = gtk_combo_box_text_new();
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(containerCombo), "Matroska (.mkv)");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(containerCombo), "MP4 (.mp4)");
+    const bool useMp4 = (config.record_container.get() == "mp4");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(containerCombo), useMp4 ? 1 : 0);
+
+    GtkWidget *videoBitrate = gtk_spin_button_new_with_range(100, 100000, 100);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(videoBitrate), (gdouble)config.record_video_bitrate);
+
+    GtkWidget *audioBitrate = gtk_spin_button_new_with_range(32, 512, 8);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(audioBitrate), (gdouble)config.record_audio_bitrate);
+    gtk_widget_set_sensitive(audioBitrate, audioIndex > 0);
+    g_signal_connect(audioCombo, "changed", G_CALLBACK(RecordAV_AudioEncoderChanged), audioBitrate);
+
+    GtkWidget *filteredCheck = gtk_check_button_new_with_label(
+            "Include video filter, Lua and OSD");
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(filteredCheck),
+                                 config.record_filtered ? TRUE : FALSE);
+    gtk_widget_set_tooltip_text(filteredCheck,
+            "Records the frame after the video filter and HUD/Lua overlays. "
+            "The output size follows the filter scale (for example 2x = 512x768).");
+
+    GtkWidget *hint = gtk_label_new("Captures the shown frame at 59.83 fps.\n"
+                                    "Hardware encoders may fail if the driver or device is unavailable.");
+    gtk_label_set_xalign(GTK_LABEL(hint), 0.0f);
+    gtk_label_set_line_wrap(GTK_LABEL(hint), TRUE);
+
+    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Video encoder:"), 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), videoCombo, 1, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Audio encoder:"), 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), audioCombo, 1, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Container:"), 0, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), containerCombo, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Video bitrate (kbps):"), 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), videoBitrate, 1, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Audio bitrate (kbps):"), 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), audioBitrate, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), filteredCheck, 0, 5, 2, 1);
+    gtk_grid_attach(GTK_GRID(grid), hint, 0, 6, 2, 1);
+
+    gtk_widget_show_all(dialog);
+    const int response = gtk_dialog_run(GTK_DIALOG(dialog));
+    if (response != GTK_RESPONSE_OK) {
+        gtk_widget_destroy(dialog);
+        return;
+    }
+
+    int selectedVideo = gtk_combo_box_get_active(GTK_COMBO_BOX(videoCombo));
+    int selectedAudio = gtk_combo_box_get_active(GTK_COMBO_BOX(audioCombo));
+    int selectedContainer = gtk_combo_box_get_active(GTK_COMBO_BOX(containerCombo));
+    int videoKbps = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(videoBitrate));
+    int audioKbps = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(audioBitrate));
+    const bool filteredOutput = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(filteredCheck));
+    gtk_widget_destroy(dialog);
+
+    if (selectedVideo < 0 || selectedVideo >= (int)videoEncoders.size())
+        selectedVideo = videoIndex;
+
+    const std::string videoEncoder = videoEncoders[selectedVideo].name;
+    const std::string audioEncoder = (selectedAudio > 0 && selectedAudio - 1 < (int)audioEncoders.size())
+        ? audioEncoders[selectedAudio - 1].name
+        : std::string();
+    const std::string container = (selectedContainer == 1) ? "mp4" : "matroska";
+    const std::string extension = (container == "mp4") ? ".mp4" : ".mkv";
+
+    GtkFileFilter *pFilter_video = gtk_file_filter_new();
+    std::string pattern = "*" + extension;
+    gtk_file_filter_add_pattern(pFilter_video, pattern.c_str());
+    gtk_file_filter_set_name(pFilter_video, (container == "mp4") ? "MP4 (.mp4)" : "Matroska (.mkv)");
+
+    GtkFileFilter *pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
+
+    GtkFileChooserNative *pFileSelection = gtk_file_chooser_native_new("Save video...",
+            GTK_WINDOW(pWindow),
+            GTK_FILE_CHOOSER_ACTION_SAVE,
+            "_Save", "_Cancel");
+    gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(pFileSelection), TRUE);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_video);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+
+    if (gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection)) == GTK_RESPONSE_ACCEPT) {
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
+        gchar *sPath = (file != NULL) ? g_file_get_path(file) : NULL;
+
+        if (sPath != NULL) {
+            std::string path = sPath;
+
+            if (path.size() < extension.size() ||
+                path.compare(path.size() - extension.size(), extension.size(), extension) != 0) {
+                path += extension;
+            }
+
+            FFmpegRecordConfig cfg;
+            cfg.videoEncoder = videoEncoder;
+            cfg.audioEncoder = audioEncoder;
+            cfg.container = container;
+            cfg.videoBitrateKbps = videoKbps;
+            cfg.audioBitrateKbps = audioKbps;
+
+            if (filteredOutput) {
+                // Keep the filter's scale in the recording (2x/3x/4x, ...).
+                const int dstWidth = (int)video->GetDstWidth();
+                const int dstHeight = (int)video->GetDstHeight();
+                cfg.width = (dstWidth > 0) ? dstWidth : AVOUT_FFMPEG_WIDTH;
+                cfg.height = (dstHeight > 0) ? dstHeight : AVOUT_FFMPEG_HEIGHT;
+            }
+
+            config.record_video_encoder = videoEncoder;
+            config.record_audio_encoder = audioEncoder;
+            config.record_container = container;
+            config.record_video_bitrate = videoKbps;
+            config.record_audio_bitrate = audioKbps;
+            config.record_filtered = filteredOutput;
+
+            if (avout_ffmpeg.begin(path.c_str(), cfg)) {
+                sRecordFilteredOutput = filteredOutput;
+                // Do not turn the frame that was already pending when the
+                // dialog opened into the first video frame.
+                sLastRecordedFrameSerial = sFrameSerial;
+                sRecordFrameBuffer.clear();
+                RecordAV_SetStartActionsEnabled(false);
+                std::string status = "Recording to " + path;
+                UpdateStatusBar(status.c_str());
+            } else {
+                std::string error = avout_ffmpeg.lastError();
+                GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
+                        GTK_DIALOG_MODAL,
+                        GTK_MESSAGE_ERROR,
+                        GTK_BUTTONS_OK,
+                        "Unable to record video to:\n%s\n\n%s", path.c_str(), error.c_str());
+                gtk_dialog_run(GTK_DIALOG(pDialog));
+                gtk_widget_destroy(pDialog);
+            }
+        }
+
+        g_free(sPath);
+        if (file != NULL)
+            g_object_unref(file);
+    }
+    g_object_unref(pFileSelection);
+}
+
+static gboolean RecordAV_Watchdog(gpointer data)
+{
+    (void)data;
+
+    if (avout_ffmpeg.hasFailed()) {
+        std::string error = avout_ffmpeg.lastError();
+        avout_ffmpeg.end();
+        sRecordFilteredOutput = false;
+        sRecordFrameBuffer.clear();
+        // The error has been consumed; without this the watchdog would report
+        // it again on every tick and never restore the menu.
+        avout_ffmpeg.clearFailure();
+        RecordAV_SetStartActionsEnabled(true);
+        std::string status = error.empty() ? "Recording failed" : ("Recording failed: " + error);
+        UpdateStatusBar(status.c_str());
+    } else if (!avout_ffmpeg.isRecording() &&
+               !avout_x264.isRecording() &&
+               !avout_flac.isRecording()) {
+        // A failed begin() or an explicit stop must not leave the menu stuck.
+        RecordAV_SetStartActionsEnabled(true);
+    }
+
+    return TRUE;
+}
+#endif
+
 static void RecordAV_stop(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
+    std::string status;
+#ifdef HAVE_FFMPEG_RECORD
+    if (avout_ffmpeg.isRecording())
+        status = "Recording stopped";
+#endif
 	avout_x264.end();
 	avout_flac.end();
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "record_x264")), TRUE);
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "record_flac")), TRUE);
+#ifdef HAVE_FFMPEG_RECORD
+    avout_ffmpeg.end();
+    sRecordFilteredOutput = false;
+    sRecordFrameBuffer.clear();
+    // A runtime failure or a trailer error (e.g. a codec that the MP4 muxer
+    // accepts at header time but cannot finalize) is only visible here.
+    if (avout_ffmpeg.hasFailed()) {
+        const std::string error = avout_ffmpeg.lastError();
+        avout_ffmpeg.clearFailure();
+        status = "Recording failed";
+        GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
+                GTK_DIALOG_MODAL,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_OK,
+                "The recording could not be finalized:\n%s\n\n"
+                "The file may be incomplete or unplayable.",
+                error.empty() ? "unknown error" : error.c_str());
+        gtk_dialog_run(GTK_DIALOG(pDialog));
+        gtk_widget_destroy(pDialog);
+    }
+#endif
+    RecordAV_SetStartActionsEnabled(true);
+    if (!status.empty())
+        UpdateStatusBar(status.c_str());
 }
 
 static void OpenNdsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -2231,10 +2582,103 @@ static void WGPU_HudCompositeScreenshot(u8 *dst, int width, int height)
 		}
 	}
 }
+
+// Blends the last rendered HUD layer into a frame captured from the video
+// filter destination. The HUD texture is premultiplied BGRA at the source
+// resolution; a scaled filter (2x/3x/...) makes the destination larger, so
+// sample the HUD bilinearly just like the presenter's GPU sampler does.
+static void WGPU_HudCompositeFrame(u8 *dst, int dstWidth, int dstHeight)
+{
+	if ( (dst == NULL) || (dstWidth <= 0) || (dstHeight <= 0) ||
+		 !config.presentationWGPUHud || (sGpuHudView == NULL) ||
+		 (sGpuHudTarget == NULL) )
+	{
+		return;
+	}
+
+	const int hudWidth = sGpuHudTarget->targetWidth();
+	const int hudHeight = sGpuHudTarget->targetHeight();
+
+	if ( (hudWidth <= 0) || (hudHeight <= 0) )
+	{
+		return;
+	}
+
+	std::vector<uint8_t> hud((size_t)hudWidth * (size_t)hudHeight * 4);
+
+	if (!sGpuHudTarget->readPixels(hud.data(), hudWidth * 4))
+	{
+		return;
+	}
+
+	const int64_t maxX16 = (int64_t)(hudWidth - 1) << 16;
+	const int64_t maxY16 = (int64_t)(hudHeight - 1) << 16;
+
+	for (int y = 0; y < dstHeight; y++)
+	{
+		int64_t fy16 = ((int64_t)(2 * y + 1) * (int64_t)hudHeight * 32768) / (int64_t)dstHeight - 32768;
+		if (fy16 < 0)
+			fy16 = 0;
+		else if (fy16 > maxY16)
+			fy16 = maxY16;
+
+		const int y0 = (int)(fy16 >> 16);
+		const int y1 = (y0 + 1 < hudHeight) ? (y0 + 1) : y0;
+		const unsigned wy = (unsigned)((fy16 >> 8) & 0xFF);
+		const unsigned wy0 = 256u - wy;
+
+		uint8_t *out = dst + (size_t)y * (size_t)dstWidth * 4;
+
+		for (int x = 0; x < dstWidth; x++, out += 4)
+		{
+			int64_t fx16 = ((int64_t)(2 * x + 1) * (int64_t)hudWidth * 32768) / (int64_t)dstWidth - 32768;
+			if (fx16 < 0)
+				fx16 = 0;
+			else if (fx16 > maxX16)
+				fx16 = maxX16;
+
+			const int x0 = (int)(fx16 >> 16);
+			const int x1 = (x0 + 1 < hudWidth) ? (x0 + 1) : x0;
+			const unsigned wx = (unsigned)((fx16 >> 8) & 0xFF);
+			const unsigned wx0 = 256u - wx;
+
+			const uint8_t *p00 = hud.data() + (((size_t)y0 * (size_t)hudWidth + (size_t)x0) * 4);
+			const uint8_t *p01 = hud.data() + (((size_t)y0 * (size_t)hudWidth + (size_t)x1) * 4);
+			const uint8_t *p10 = hud.data() + (((size_t)y1 * (size_t)hudWidth + (size_t)x0) * 4);
+			const uint8_t *p11 = hud.data() + (((size_t)y1 * (size_t)hudWidth + (size_t)x1) * 4);
+
+			const unsigned w00 = wx0 * wy0;
+			const unsigned w01 = wx  * wy0;
+			const unsigned w10 = wx0 * wy;
+			const unsigned w11 = wx  * wy;
+
+			const unsigned b = (p00[0] * w00 + p01[0] * w01 + p10[0] * w10 + p11[0] * w11) >> 16;
+			const unsigned g = (p00[1] * w00 + p01[1] * w01 + p10[1] * w10 + p11[1] * w11) >> 16;
+			const unsigned r = (p00[2] * w00 + p01[2] * w01 + p10[2] * w10 + p11[2] * w11) >> 16;
+			const unsigned a = (p00[3] * w00 + p01[3] * w01 + p10[3] * w10 + p11[3] * w11) >> 16;
+
+			if (a == 0)
+			{
+				continue;
+			}
+
+			const unsigned inv = 255u - a;
+			const unsigned db = b + (out[0] * inv + 127u) / 255u;
+			const unsigned dg = g + (out[1] * inv + 127u) / 255u;
+			const unsigned dr = r + (out[2] * inv + 127u) / 255u;
+
+			out[0] = (uint8_t)((db > 255) ? 255 : db);
+			out[1] = (uint8_t)((dg > 255) ? 255 : dg);
+			out[2] = (uint8_t)((dr > 255) ? 255 : dr);
+			out[3] = 255;
+		}
+	}
+}
 #else
 static bool WGPU_HudPrepare(int, int) { return false; }
 static bool WGPU_HudRenderFrame() { return false; }
 static void WGPU_HudCompositeScreenshot(u8 *, int, int) {}
+static void WGPU_HudCompositeFrame(u8 *, int, int) {}
 #endif
 
 // Returns true when WebGPU presented the frame.  False means Cairo should draw
@@ -2382,6 +2826,7 @@ static bool WGPU_PresentFrame(GtkWidget *widget, GdkWindow *window, gint daW, gi
 static bool WGPU_HudPrepare(int, int) { return false; }
 static bool WGPU_HudRenderFrame() { return false; }
 static void WGPU_HudCompositeScreenshot(u8 *, int, int) {}
+static void WGPU_HudCompositeFrame(u8 *, int, int) {}
 #endif // ENABLE_WGPU
 
 /* Drawing callback */
@@ -2579,6 +3024,12 @@ static void PresentFrame()
 	sFramePresentPending = false;
 
 	gtk3gpuEvent->VideoFetchLock();
+
+#ifdef HAVE_FFMPEG_RECORD
+	bool capturedFrame = false;
+	int capturedWidth = 0;
+	int capturedHeight = 0;
+#endif
 	
 #ifdef HAVE_LIBAGG
 	const bool needsHUDDisplay = (
@@ -2630,7 +3081,46 @@ static void PresentFrame()
 #endif // HAVE_LIBAGG
 	
 	video->RunFilter();
+
+#ifdef HAVE_FFMPEG_RECORD
+	// Capture at the latest point that is still a single CPU frame: after the
+	// video filter, HUD and Lua have been composited, but before the presenter
+	// applies the window layout/rotation and (on WGPU) the HUD texture overlay.
+	// The frame serial keeps manual RedrawScreen() presents from becoming
+	// duplicate video frames.
+	if (sRecordFilteredOutput && avout_ffmpeg.isRecording() &&
+	    sFrameSerial != sLastRecordedFrameSerial)
+	{
+		sLastRecordedFrameSerial = sFrameSerial;
+
+		const int width = (int)video->GetDstWidth();
+		const int height = (int)video->GetDstHeight();
+		const u32 *pixels = video->GetDstBufferPtr();
+
+		if ( (pixels != NULL) && (width > 0) && (height > 0) )
+		{
+			const size_t frameBytes = (size_t)width * (size_t)height * 4;
+			sRecordFrameBuffer.resize(frameBytes);
+			memcpy(sRecordFrameBuffer.data(), pixels, frameBytes);
+			capturedWidth = width;
+			capturedHeight = height;
+			capturedFrame = true;
+		}
+	}
+#endif
+
 	gtk3gpuEvent->VideoFetchUnlock();
+
+#ifdef HAVE_FFMPEG_RECORD
+	// The WGPU HUD readback can wait on the GPU, so do it after releasing the
+	// video fetch lock.
+	if (capturedFrame)
+	{
+		WGPU_HudCompositeFrame(sRecordFrameBuffer.data(), capturedWidth, capturedHeight);
+		avout_ffmpeg.updateVideo(sRecordFrameBuffer.data(), capturedWidth, capturedHeight,
+		                         FFmpegCaptureFormat_BGRA8888);
+	}
+#endif
 	
 	gtk_widget_queue_draw(pDrawingArea);
 }
@@ -4910,11 +5400,18 @@ public:
 
 	virtual bool AVI_IsRecording()
 	{
-		return avout_x264.isRecording() || avout_flac.isRecording();
+		bool recording = avout_x264.isRecording() || avout_flac.isRecording();
+#ifdef HAVE_FFMPEG_RECORD
+		recording = recording || avout_ffmpeg.isRecording();
+#endif
+		return recording;
 	}
 
 	virtual void AVI_SoundUpdate(void* soundData, int soundLen) {
 		avout_flac.updateAudio(soundData, soundLen);
+#ifdef HAVE_FFMPEG_RECORD
+		avout_ffmpeg.updateAudio(soundData, soundLen);
+#endif
 	}
 };
 
@@ -6149,6 +6646,11 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     pApp = GTK_APPLICATION(app);
 
+#ifdef HAVE_FFMPEG_RECORD
+    // Recover menu state if the encoder worker fails after begin() succeeded.
+    g_timeout_add_seconds(1, RecordAV_Watchdog, NULL);
+#endif
+
     // The app menubar is alive now (the application holds it after
     // gtk_application_set_menubar).  Top-level Lua menus are appended here.
     GtkLua_SetAppMenubar(G_MENU(menubar));
@@ -6417,6 +6919,9 @@ static void Teardown() {
 	config.save();
 	avout_x264.end();
 	avout_flac.end();
+#ifdef HAVE_FFMPEG_RECORD
+	avout_ffmpeg.end();
+#endif
 
     desmume_free();
 
@@ -6641,9 +7146,33 @@ void Gtk3GPUEventHandler::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo 
 	
 	slock_lock(this->_mutexFramebufferPage[this->_latestBufferIndex]);
 	
-	// TODO: Video file writes only work on fixed 16-bit buffers at the native-size only.
+	// The legacy x264 pipe recorder still assumes the native 16-bit buffer.
 	// This currently does not work on custom-sized buffers or any 32-bit color format.
 	avout_x264.updateVideo(latestDisplayInfo.masterNativeBuffer16);
+#ifdef HAVE_FFMPEG_RECORD
+	// Filtered recording captures the finished frame from PresentFrame()
+	// instead, so that the filter, Lua and HUD are part of the video.
+	if (!sRecordFilteredOutput)
+	{
+		// masterCustomBuffer is the buffer the frontend actually presents.
+		// Unlike masterNativeBuffer16 it contains the 3D output and every
+		// custom-rendered screen, which is why recording the native buffer
+		// left the 3D screen black.
+		//
+		// 18/24-bit masterCustomBuffer memory order is R,G,B,A; the display and
+		// filter buffers are B,G,R,A. Using BGRA here swapped red and blue.
+		const FFmpegCaptureFormat captureFormat =
+			(latestDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+				? FFmpegCaptureFormat_BGR555LE
+				: FFmpegCaptureFormat_RGBA8888;
+		avout_ffmpeg.updateVideo(latestDisplayInfo.masterCustomBuffer,
+		                         (int)latestDisplayInfo.customWidth,
+		                         (int)(latestDisplayInfo.customHeight * 2),
+		                         captureFormat);
+	}
+
+	sFrameSerial++;
+#endif
 	
 	this->VideoFetchLock();
 	if (latestDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev)

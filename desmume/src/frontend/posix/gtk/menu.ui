@@ -198,18 +198,27 @@
           <attribute name='label' translatable='yes'>Record _video/audio</attribute>
           <section>
             <item>
-              <attribute name='label' translatable='yes'>Record lossless H._264 (video only)…</attribute>
-              <attribute name='action'>app.record_x264</attribute>
-            </item>
-            <item>
-              <attribute name='label' translatable='yes'>Record _FLAC (audio only)…</attribute>
-              <attribute name='action'>app.record_flac</attribute>
+              <attribute name='label' translatable='yes'>Record _video (FFmpeg)…</attribute>
+              <attribute name='action'>app.record_video</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_Stop recording</attribute>
-              <attribute name='action'>app.stop_recording</attribute>
+              <attribute name='action'>app.record_stop</attribute>
             </item>
           </section>
+          <submenu>
+            <attribute name='label' translatable='yes'>_Old recorders</attribute>
+            <section>
+              <item>
+                <attribute name='label' translatable='yes'>Record lossless H._264 (video only)…</attribute>
+                <attribute name='action'>app.record_x264</attribute>
+              </item>
+              <item>
+                <attribute name='label' translatable='yes'>Record _FLAC (audio only)…</attribute>
+                <attribute name='action'>app.record_flac</attribute>
+              </item>
+            </section>
+          </submenu>
         </submenu>
 <!--#ifdef DESMUME_GTK_FIRMWARE_BROKEN
         <item>
