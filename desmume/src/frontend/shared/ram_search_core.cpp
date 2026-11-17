@@ -339,7 +339,10 @@ void RAMSearchCore::Search()
 
 bool RAMSearchCore::CanUndo() const
 {
-	return _hasUndo && !_undoSnapshot.empty();
+	// The snapshot itself may legitimately be empty: a search can empty the
+	// list, and undoing back to (or redoing into) that state must still work.
+	// _hasUndo is what tracks validity.
+	return _hasUndo;
 }
 
 bool RAMSearchCore::Undo()
@@ -360,7 +363,8 @@ bool RAMSearchCore::Undo()
 
 bool RAMSearchCore::CanRedo() const
 {
-	return _hasRedo && !_redoSnapshot.empty();
+	// See CanUndo(): an empty redo branch is a valid "no results" state.
+	return _hasRedo;
 }
 
 bool RAMSearchCore::Redo()

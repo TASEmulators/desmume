@@ -188,6 +188,10 @@ Gtk3GPUEventHandler *gtk3gpuEvent = NULL;
 desmume::config::Config config;
 bool in_joy_config_mode = false;
 
+// Base name (no directory, no extension) of the loaded ROM. Tools use it for
+// default file names; RAM Watch suggests "<ROM>.wch" for a new watch list.
+static std::string sCurrentROMBaseName;
+
 #ifdef GDB_STUB
 gdbstub_handle_t arm9_gdb_stub = NULL;
 gdbstub_handle_t arm7_gdb_stub = NULL;
@@ -958,10 +962,24 @@ static int Open(const char *filename)
     ResetSaveStateTimes();
     res = NDS_LoadROM( filename );
     if(res > 0) {
+        // Remember the ROM name so tools can suggest "<ROM>.wch" and friends.
+        gchar *baseName = g_path_get_basename(filename);
+        gchar *extension = strrchr(baseName, '.');
+        if (extension != NULL && extension != baseName) {
+            *extension = '\0';
+        }
+        sCurrentROMBaseName.assign(baseName);
+        g_free(baseName);
+
         LoadSaveStateInfo();
         g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "cheatlist")), TRUE);
     }
     return res;
+}
+
+const char *Desmume_CurrentROMBaseName(void)
+{
+    return sCurrentROMBaseName.c_str();
 }
 
 void Launch(GSimpleAction *action, GVariant *parameter, gpointer user_data)

@@ -40,6 +40,7 @@
 
 #include "../dTool.h"
 #include "../config.h"
+#include "../main.h"
 #include "../../../shared/ram_debug_core.h"
 #include "../../../shared/ramwatch_core.h"
 
@@ -389,6 +390,15 @@ static const char *default_watch_file_name(void)
 		gchar *baseName = g_path_get_basename(current.c_str());
 		name.assign(baseName);
 		g_free(baseName);
+		return name.c_str();
+	}
+
+	// Same convention as the other frontends: "<ROM>.wch" next to the ROM.
+	const char *romName = Desmume_CurrentROMBaseName();
+	if ((romName != NULL) && (romName[0] != '\0'))
+	{
+		name.assign(romName);
+		name += ".wch";
 		return name.c_str();
 	}
 

@@ -44,6 +44,10 @@
 #include "../../../shared/ram_debug_core.h"
 #include "../../../shared/ram_search_core.h"
 
+// Internal cheats ("Add Cheat") are handed to the emulator's cheat list, which
+// the frontend shares with the Cheat List window.
+#include "../../../../cheatSystem.h"
+
 #define SHORTNAME "ramsearch"
 #define TOOL_NAME "RAM Search"
 
@@ -99,7 +103,14 @@ static GtkWidget *sMisalignButton = NULL;
 static GtkWidget *sLittleEndianButton = NULL;
 static GtkWidget *sSearchButton = NULL;
 static GtkWidget *sResetButton = NULL;
+static GtkWidget *sClearChangesButton = NULL;
+static GtkWidget *sUndoButton = NULL;
+static GtkWidget *sRedoButton = NULL;
+static GtkWidget *sEliminateButton = NULL;
+static GtkWidget *sPokeButton = NULL;
 static GtkWidget *sAddWatchButton = NULL;
+static GtkWidget *sAddCheatButton = NULL;
+static GtkWidget *sAutoSearchButton = NULL;
 static GtkWidget *sStatusLabel = NULL;
 
 static int sToolID = -1;
@@ -107,12 +118,26 @@ static int sToolID = -1;
 // Rows currently in the model, so per-frame repaints never run past the end.
 static guint sModelRows = 0;
 
-// Transient feedback shown after "Add Watch" (which does not change the
-// result count, so nothing else would refresh the label).
-static char sStatusNote[64] = "";
+// Transient feedback shown under the result count (a poke, a cheat, ...).
+static char sStatusNote[96] = "";
 
 // Timestamp of the last per-frame refresh (microseconds, monotonic).
 static gint64 sLastRefreshTime = 0;
+
+// Auto-search re-applies the current criteria on every refresh tick, like the
+// Windows dialog and the macOS window. When a pass empties the list the user is
+// asked whether to retry, retry silently from now on, or stop.
+static gboolean sAutoSearchEnabled = FALSE;
+static gboolean sAutoSearchAutoRetry = FALSE;
+static gboolean sInAutoSearchAlert = FALSE;
+static gboolean sSyncingAutoSearchButton = FALSE;
+
+enum
+{
+	RESPONSE_RETRY = 1,
+	RESPONSE_IGNORE = 2,
+	RESPONSE_STOP = 3
+};
 
 /////////////////////////////// HELPERS ///////////////////////////////
 
@@ -211,12 +236,31 @@ static int selected_row(void)
 	return row;
 }
 
+static void show_error(const char *message)
+{
+	GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(sWindow),
+	                                           (GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	                                           GTK_MESSAGE_ERROR,
+	                                           GTK_BUTTONS_OK,
+	                                           "%s", message);
+	gtk_window_set_title(GTK_WINDOW(dialog), TOOL_NAME);
+	gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+}
+
 static void update_control_states(void)
 {
 	const int row = selected_row();
-	const gboolean hasRow = (row >= 0) && ((size_t)row < RAMSearchCore::Get().ResultCount());
+	const RAMSearchCore &core = RAMSearchCore::Get();
+	const gboolean hasRow = (row >= 0) && ((size_t)row < core.ResultCount());
 
 	gtk_widget_set_sensitive(sAddWatchButton, hasRow);
+	gtk_widget_set_sensitive(sAddCheatButton, hasRow);
+	gtk_widget_set_sensitive(sEliminateButton, hasRow);
+	gtk_widget_set_sensitive(sPokeButton, hasRow);
+	gtk_widget_set_sensitive(sUndoButton, core.CanUndo());
+	gtk_widget_set_sensitive(sRedoButton, core.CanRedo());
+	gtk_widget_set_sensitive(sClearChangesButton, core.ResultCount() > 0);
 }
 
 /////////////////////////////// RESULT TABLE ///////////////////////////////
@@ -248,6 +292,10 @@ static void rebuild_model(void)
 	const size_t count = core.ResultCount();
 	const size_t rows = (count > kMaxDisplayedResults) ? kMaxDisplayedResults : count;
 
+	// gtk_list_store_clear() drops the selection, and most actions that rebuild
+	// (clear change counts, a search) should not also lose the current row.
+	const gint previousSelection = selected_row();
+
 	gtk_list_store_clear(sStore);
 	for (size_t i = 0; i < rows; i++)
 	{
@@ -256,6 +304,14 @@ static void rebuild_model(void)
 		fill_row(&iter, i);
 	}
 	sModelRows = (guint)rows;
+
+	if ((previousSelection >= 0) && ((size_t)previousSelection < rows))
+	{
+		GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sTreeView));
+		GtkTreePath *path = gtk_tree_path_new_from_indices(previousSelection, -1);
+		gtk_tree_selection_select_path(selection, path);
+		gtk_tree_path_free(path);
+	}
 
 	update_status_label();
 	update_control_states();
@@ -428,13 +484,331 @@ static void on_add_watch(GtkButton *button, gpointer data)
 	update_status_label();
 }
 
+static void on_clear_changes(GtkButton *button, gpointer data)
+{
+	RAMSearchCore::Get().ClearChangeCounts();
+	sStatusNote[0] = '\0';
+	rebuild_model();
+}
+
+// Selecting the row that takes the place of the removed one keeps a repeated
+// Eliminate click walking down the list, like the macOS window.
+static void select_row_if_possible(size_t row)
+{
+	const RAMSearchCore &core = RAMSearchCore::Get();
+	if (row >= core.ResultCount())
+	{
+		return;
+	}
+
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sTreeView));
+	GtkTreePath *path = gtk_tree_path_new_from_indices((gint)row, -1);
+	gtk_tree_selection_select_path(selection, path);
+	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(sTreeView), path, NULL, FALSE, 0.0f, 0.0f);
+	gtk_tree_path_free(path);
+}
+
+static void on_undo(GtkButton *button, gpointer data)
+{
+	RAMSearchCore &core = RAMSearchCore::Get();
+	if (!core.Undo())
+	{
+		return;
+	}
+
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sTreeView));
+	gtk_tree_selection_unselect_all(selection);
+	sStatusNote[0] = '\0';
+	rebuild_model();
+}
+
+static void on_redo(GtkButton *button, gpointer data)
+{
+	RAMSearchCore &core = RAMSearchCore::Get();
+	if (!core.Redo())
+	{
+		return;
+	}
+
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sTreeView));
+	gtk_tree_selection_unselect_all(selection);
+	sStatusNote[0] = '\0';
+	rebuild_model();
+}
+
+static void on_eliminate(GtkButton *button, gpointer data)
+{
+	const int row = selected_row();
+	RAMSearchCore &core = RAMSearchCore::Get();
+
+	if ((row < 0) || !core.Eliminate((size_t)row))
+	{
+		return;
+	}
+
+	sStatusNote[0] = '\0';
+	rebuild_model();
+	select_row_if_possible((size_t)row);
+}
+
+static void on_poke(GtkButton *button, gpointer data)
+{
+	const int row = selected_row();
+	RAMSearchCore &core = RAMSearchCore::Get();
+
+	if ((row < 0) || ((size_t)row >= core.ResultCount()))
+	{
+		return;
+	}
+
+	const RAMSearchCore::Result result = core.ResultAt((size_t)row);
+	const char sizeCode = selected_size_code();
+	const uint32_t value = (uint32_t)parse_value_entry(sValueEntry);
+
+	if (!RAMDebugCore::WriteValue(result.address, value, RAMDebugCore::SizeInBytes(sizeCode)))
+	{
+		gdk_display_beep(gtk_widget_get_display(sWindow));
+		return;
+	}
+
+	// Refresh right away so the write is visible without waiting for the next
+	// throttled tick.
+	core.SignalNewFrame();
+	refresh_visible_values();
+
+	const std::string valueText = RAMDebugCore::FormatValue(sizeCode, selected_display_code(), value);
+	g_snprintf(sStatusNote, sizeof(sStatusNote), "poked %s = %s",
+	           RAMDebugCore::FormatAddress(result.address).c_str(), valueText.c_str());
+	update_status_label();
+}
+
+static void on_add_cheat(GtkButton *button, gpointer data)
+{
+	const int row = selected_row();
+	RAMSearchCore &core = RAMSearchCore::Get();
+
+	if ((row < 0) || ((size_t)row >= core.ResultCount()))
+	{
+		return;
+	}
+	if (cheats == NULL)
+	{
+		show_error("Load a ROM before adding cheats.");
+		return;
+	}
+
+	const RAMSearchCore::Result result = core.ResultAt((size_t)row);
+
+	// Internal cheats are Action Replay constant writes into main RAM, so any
+	// other address would silently freeze the wrong memory. Same restriction as
+	// the macOS window.
+	if ((result.address < RAMDebugCore::kMainMemAddress) ||
+	    (result.address >= (RAMDebugCore::kMainMemAddress + RAMDebugCore::kMainMemSize)))
+	{
+		gdk_display_beep(gtk_widget_get_display(sWindow));
+		show_error("Internal cheats can only target main RAM (0x02000000 - 0x023FFFFF). "
+		           "The selected result is not in main RAM.");
+		return;
+	}
+
+	// Take the value as the table shows it, like the Windows dialog, instead of
+	// re-reading the bus with a different endianness convention.
+	const int sizeInBytes = RAMDebugCore::SizeInBytes(selected_size_code());
+	const uint32_t sizeMask = (sizeInBytes >= 4) ? 0xFFFFFFFFu : ((1u << (8 * sizeInBytes)) - 1u);
+	const uint32_t value = result.currentValue & sizeMask;
+
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Add Cheat",
+	                                                GTK_WINDOW(sWindow),
+	                                                (GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	                                                "_Cancel", GTK_RESPONSE_CANCEL,
+	                                                "_Add", GTK_RESPONSE_OK,
+	                                                NULL);
+	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+
+	GtkWidget *grid = gtk_grid_new();
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 8);
+	gtk_container_set_border_width(GTK_CONTAINER(grid), 12);
+
+	gchar *addressText = g_strdup_printf("%s = %s (%d byte%s)",
+	                                     RAMDebugCore::FormatAddress(result.address).c_str(),
+	                                     RAMDebugCore::FormatValue(selected_size_code(),
+	                                                               selected_display_code(), value).c_str(),
+	                                     sizeInBytes, (sizeInBytes == 1) ? "" : "s");
+
+	GtkWidget *addressLabel = gtk_label_new("Cheat:");
+	gtk_widget_set_halign(addressLabel, GTK_ALIGN_END);
+	GtkWidget *addressValue = gtk_label_new(addressText);
+	gtk_widget_set_halign(addressValue, GTK_ALIGN_START);
+
+	GtkWidget *descriptionLabel = gtk_label_new("Description:");
+	gtk_widget_set_halign(descriptionLabel, GTK_ALIGN_END);
+	GtkWidget *descriptionEntry = gtk_entry_new();
+	gchar *defaultDescription = g_strdup_printf("RAM Search %s",
+	                                            RAMDebugCore::FormatAddress(result.address).c_str());
+	gtk_entry_set_text(GTK_ENTRY(descriptionEntry), defaultDescription);
+	gtk_entry_set_activates_default(GTK_ENTRY(descriptionEntry), TRUE);
+	gtk_widget_set_hexpand(descriptionEntry, TRUE);
+
+	GtkWidget *hint = gtk_label_new("Constant write, added to the cheat list and saved with the ROM.");
+	gtk_widget_set_halign(hint, GTK_ALIGN_START);
+	gtk_style_context_add_class(gtk_widget_get_style_context(hint), "dim-label");
+
+	gtk_grid_attach(GTK_GRID(grid), addressLabel, 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), addressValue, 1, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), descriptionLabel, 0, 1, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), descriptionEntry, 1, 1, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), hint, 1, 2, 1, 1);
+
+	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))),
+	                   grid, TRUE, TRUE, 0);
+	gtk_widget_show_all(dialog);
+
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK)
+	{
+		gchar *description = g_strdup(gtk_entry_get_text(GTK_ENTRY(descriptionEntry)));
+
+		// CHEATS::add() takes a zero-based size: 0 = 1 byte, 1 = 2 bytes, 2 = 4.
+		const bool added = cheats->add((u8)(sizeInBytes - 1), result.address, value,
+		                              description, true);
+
+		if (added)
+		{
+			// Persist the list the same way the Cheat List window does on close.
+			cheats->save();
+			g_snprintf(sStatusNote, sizeof(sStatusNote), "cheat added for %s",
+			           RAMDebugCore::FormatAddress(result.address).c_str());
+		}
+		else
+		{
+			show_error("The cheat could not be added.");
+		}
+
+		g_free(description);
+	}
+
+	gtk_widget_destroy(dialog);
+	g_free(defaultDescription);
+	g_free(addressText);
+
+	update_status_label();
+}
+
+/////////////////////////////// AUTO-SEARCH ///////////////////////////////
+
+// The result list ran dry: ask what to do, then restart the search. This runs
+// from the frame tick, so the nested dialog loop keeps the emulator running;
+// update() bails out while the alert is up to avoid stacking dialogs.
+static void handle_auto_search_exhausted(void)
+{
+	RAMSearchCore &core = RAMSearchCore::Get();
+
+	if (sAutoSearchAutoRetry)
+	{
+		core.Reset();
+		rebuild_model();
+		return;
+	}
+	if (sInAutoSearchAlert)
+	{
+		return;
+	}
+
+	sInAutoSearchAlert = TRUE;
+
+	GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(sWindow),
+	                                           (GtkDialogFlags)(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	                                           GTK_MESSAGE_QUESTION,
+	                                           GTK_BUTTONS_NONE,
+	                                           "Auto-search is out of results.");
+	gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog),
+	                                         "Retry resets the search once and keeps auto-searching. "
+	                                         "Ignore resets whenever necessary without asking again. "
+	                                         "Stop turns auto-search off.");
+	gtk_dialog_add_buttons(GTK_DIALOG(dialog),
+	                       "_Stop", RESPONSE_STOP,
+	                       "_Ignore", RESPONSE_IGNORE,
+	                       "_Retry", RESPONSE_RETRY,
+	                       NULL);
+	gtk_dialog_set_default_response(GTK_DIALOG(dialog), RESPONSE_RETRY);
+
+	const int response = gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+	sInAutoSearchAlert = FALSE;
+
+	if (response == RESPONSE_STOP)
+	{
+		sSyncingAutoSearchButton = TRUE;
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(sAutoSearchButton), FALSE);
+		sSyncingAutoSearchButton = FALSE;
+
+		sAutoSearchEnabled = FALSE;
+		sAutoSearchAutoRetry = FALSE;
+		sStatusNote[0] = '\0';
+		update_status_label();
+		return;
+	}
+
+	if (response == RESPONSE_IGNORE)
+	{
+		sAutoSearchAutoRetry = TRUE;
+	}
+
+	core.Reset();
+	rebuild_model();
+}
+
+// One auto-search pass. The criteria come from the widgets, exactly as if the
+// user pressed Search each time.
+static void run_auto_search_step(void)
+{
+	RAMSearchCore &core = RAMSearchCore::Get();
+	if (core.ResultCount() == 0)
+	{
+		handle_auto_search_exhausted();
+		return;
+	}
+
+	sync_options_from_ui();
+
+	const size_t before = core.ResultCount();
+	core.Search();
+	if (core.ResultCount() == before)
+	{
+		refresh_visible_values();
+		return;
+	}
+
+	rebuild_model();
+}
+
+static void on_auto_search_toggled(GtkToggleButton *button, gpointer data)
+{
+	if (sSyncingAutoSearchButton)
+	{
+		return;
+	}
+
+	sAutoSearchEnabled = gtk_toggle_button_get_active(button);
+	sAutoSearchAutoRetry = FALSE;
+
+	// Checking the box runs a search right away, like the Windows dialog.
+	if (sAutoSearchEnabled)
+	{
+		on_search(NULL, NULL);
+	}
+	else
+	{
+		sStatusNote[0] = '\0';
+		update_status_label();
+	}
+}
+
 static void on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column,
                              gpointer data)
 {
 	on_add_watch(NULL, NULL);
-}
-
-static void on_selection_changed(GtkTreeSelection *selection, gpointer data)
+}static void on_selection_changed(GtkTreeSelection *selection, gpointer data)
 {
 	update_control_states();
 }
@@ -456,10 +830,23 @@ static void on_window_destroy(GtkWidget *widget, gpointer data)
 	sLittleEndianButton = NULL;
 	sSearchButton = NULL;
 	sResetButton = NULL;
+	sClearChangesButton = NULL;
+	sUndoButton = NULL;
+	sRedoButton = NULL;
+	sEliminateButton = NULL;
+	sPokeButton = NULL;
 	sAddWatchButton = NULL;
+	sAddCheatButton = NULL;
+	sAutoSearchButton = NULL;
 	sStatusLabel = NULL;
 	sModelRows = 0;
 	sStatusNote[0] = '\0';
+
+	// Auto-search state belongs to the window; the engine keeps its results.
+	sAutoSearchEnabled = FALSE;
+	sAutoSearchAutoRetry = FALSE;
+	sInAutoSearchAlert = FALSE;
+	sSyncingAutoSearchButton = FALSE;
 
 	if (sToolID >= 0)
 	{
@@ -476,11 +863,25 @@ static GtkWidget *add_label(GtkGrid *grid, const char *text, gint row)
 	return label;
 }
 
+// Two buttons sharing one row; every action column pair uses this so the
+// sidebar stays short enough for the 640 px window.
+static GtkWidget *button_row(GtkWidget *left, GtkWidget *right)
+{
+	GtkWidget *rowBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+	gtk_box_set_homogeneous(GTK_BOX(rowBox), TRUE);
+	gtk_box_pack_start(GTK_BOX(rowBox), left, TRUE, TRUE, 0);
+	if (right != NULL)
+	{
+		gtk_box_pack_start(GTK_BOX(rowBox), right, TRUE, TRUE, 0);
+	}
+	return rowBox;
+}
+
 static void build_window(void)
 {
 	sWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(sWindow), TOOL_NAME);
-	gtk_window_set_default_size(GTK_WINDOW(sWindow), 780, 520);
+	gtk_window_set_default_size(GTK_WINDOW(sWindow), 880, 640);
 	gtk_window_set_resizable(GTK_WINDOW(sWindow), TRUE);
 	gtk_window_set_icon_name(GTK_WINDOW(sWindow), "org.desmume.DeSmuME");
 	gtk_container_set_border_width(GTK_CONTAINER(sWindow), 6);
@@ -605,18 +1006,32 @@ static void build_window(void)
 
 	sMisalignButton = gtk_check_button_new_with_label("Allow misaligned addresses");
 	sLittleEndianButton = gtk_check_button_new_with_label("Little endian values");
+	sAutoSearchButton = gtk_check_button_new_with_label("Auto-search");
+	gtk_widget_set_tooltip_text(sAutoSearchButton,
+		"Keep applying the current criteria as the game runs");
 	gtk_box_pack_start(GTK_BOX(sidebar), sMisalignButton, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(sidebar), sLittleEndianButton, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(sidebar), sAutoSearchButton, FALSE, FALSE, 0);
 
 	gtk_box_pack_start(GTK_BOX(sidebar), gtk_separator_new(GTK_ORIENTATION_HORIZONTAL),
 	                   FALSE, FALSE, 0);
 
+	// Same order as the Windows dialog and the macOS column.
 	sSearchButton = gtk_button_new_with_label("Search");
 	sResetButton = gtk_button_new_with_label("Reset");
+	sClearChangesButton = gtk_button_new_with_label("Clear Changes");
+	sUndoButton = gtk_button_new_with_label("Undo");
+	sRedoButton = gtk_button_new_with_label("Redo");
+	sEliminateButton = gtk_button_new_with_label("Eliminate");
+	sPokeButton = gtk_button_new_with_label("Poke");
 	sAddWatchButton = gtk_button_new_with_label("Add Watch");
-	gtk_box_pack_start(GTK_BOX(sidebar), sSearchButton, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(sidebar), sResetButton, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(sidebar), sAddWatchButton, FALSE, FALSE, 0);
+	sAddCheatButton = gtk_button_new_with_label("Add Cheat");
+
+	gtk_box_pack_start(GTK_BOX(sidebar), button_row(sSearchButton, sResetButton), FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(sidebar), sClearChangesButton, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(sidebar), button_row(sUndoButton, sRedoButton), FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(sidebar), button_row(sEliminateButton, sPokeButton), FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(sidebar), button_row(sAddWatchButton, sAddCheatButton), FALSE, FALSE, 0);
 
 	sStatusLabel = gtk_label_new("");
 	gtk_label_set_justify(GTK_LABEL(sStatusLabel), GTK_JUSTIFY_CENTER);
@@ -652,7 +1067,15 @@ static void build_window(void)
 	                 G_CALLBACK(on_options_changed), NULL);
 	g_signal_connect(G_OBJECT(sSearchButton), "clicked", G_CALLBACK(on_search), NULL);
 	g_signal_connect(G_OBJECT(sResetButton), "clicked", G_CALLBACK(on_reset), NULL);
+	g_signal_connect(G_OBJECT(sClearChangesButton), "clicked", G_CALLBACK(on_clear_changes), NULL);
+	g_signal_connect(G_OBJECT(sUndoButton), "clicked", G_CALLBACK(on_undo), NULL);
+	g_signal_connect(G_OBJECT(sRedoButton), "clicked", G_CALLBACK(on_redo), NULL);
+	g_signal_connect(G_OBJECT(sEliminateButton), "clicked", G_CALLBACK(on_eliminate), NULL);
+	g_signal_connect(G_OBJECT(sPokeButton), "clicked", G_CALLBACK(on_poke), NULL);
 	g_signal_connect(G_OBJECT(sAddWatchButton), "clicked", G_CALLBACK(on_add_watch), NULL);
+	g_signal_connect(G_OBJECT(sAddCheatButton), "clicked", G_CALLBACK(on_add_cheat), NULL);
+	g_signal_connect(G_OBJECT(sAutoSearchButton), "toggled",
+	                 G_CALLBACK(on_auto_search_toggled), NULL);
 	g_signal_connect(G_OBJECT(sTreeView), "row-activated",
 	                 G_CALLBACK(on_row_activated), NULL);
 
@@ -676,10 +1099,15 @@ static void update(void)
 	{
 		return;
 	}
+	if (sInAutoSearchAlert)
+	{
+		// The alert runs a nested loop; the frame tick keeps firing.
+		return;
+	}
 
 	RAMSearchCore &core = RAMSearchCore::Get();
 	const size_t count = core.ResultCount();
-	if (count == 0)
+	if ((count == 0) && !sAutoSearchEnabled)
 	{
 		return;
 	}
@@ -696,7 +1124,17 @@ static void update(void)
 	sLastRefreshTime = now;
 
 	core.SignalNewFrame();
-	refresh_visible_values();
+
+	if (sAutoSearchEnabled)
+	{
+		// Narrowing may rebuild the whole model, so the visible-row repaint is
+		// left to that path (or to run_auto_search_step() when nothing changed).
+		run_auto_search_step();
+	}
+	else
+	{
+		refresh_visible_values();
+	}
 }
 
 static void open_window(int ID)

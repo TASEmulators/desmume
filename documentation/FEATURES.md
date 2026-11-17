@@ -279,8 +279,16 @@ feature. Each entry says what you can do with it — not how it is built.
   misaligned and little-endian options; Add Watch, or a double-click, sends a row
   to the watch list. A first search shows the leading 50 000 candidates and says
   how many are hidden, since `GtkTreeView` builds a row for every model entry.
+- **Narrow down without starting over** — Eliminate drops a wrong candidate,
+  Undo and Redo step through searches, Clear Changes restarts the change
+  counters, and Poke writes the typed value into the selected address.
+- **Auto-search and Add Cheat** — auto-search keeps applying the current criteria
+  as the game runs and offers Retry, Ignore or Stop when the list runs dry; Add
+  Cheat turns a main-RAM result into an internal cheat in the cheat list, which
+  is saved with the ROM.
 - **Tools > RAM Watch / RAM Search** — preferences live in the existing
-  `config.cfg`, so Auto-load, window position and recent files survive restarts.
+  `config.cfg`, so Auto-load, window position and recent files survive restarts,
+  and a new watch list is offered as `<ROM>.wch` next to the ROM.
 
 ### Input, audio and build simplification
 - **SDL-based microphone** replaces the optional ALSA/OpenAL backends, removing
