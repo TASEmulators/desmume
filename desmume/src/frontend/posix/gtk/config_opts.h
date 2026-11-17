@@ -92,6 +92,16 @@ OPT(ramwatch_win_y, int, -1, RAMWatch, WindowY)
 OPT(ramwatch_win_w, int, 640, RAMWatch, WindowWidth)
 OPT(ramwatch_win_h, int, 460, RAMWatch, WindowHeight)
 
+/* Cheats
+ *
+ * The cheat list itself is a document handled by src/cheatSystem.cpp; only the
+ * preference values live here. "Disabled" keeps the list intact while stopping
+ * the core from applying it, and "DatabasePath" remembers the R4 database the
+ * Cheat Database button reads from (empty means "<config dir>/desmume/cheat.dat").
+ */
+OPT(cheats_disabled, bool, false, Cheats, Disabled)
+OPT(cheats_database_path, std::string, std::string(), Cheats, DatabasePath)
+
 /* Audio */
 OPT(audio_enabled, bool, true, Audio, Enabled)
 OPT(audio_sync, int, 0, Audio, Synchronization)

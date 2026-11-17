@@ -290,6 +290,30 @@ feature. Each entry says what you can do with it — not how it is built.
   `config.cfg`, so Auto-load, window position and recent files survive restarts,
   and a new watch list is offered as `<ROM>.wch` next to the ROM.
 
+### Cheats
+- **One cheat list, edited properly** — internal cheats and Action Replay or
+  Codebreaker codes live in two tabs of one window, each with the columns that
+  suit it. Add, Edit and Remove go through dialogs with the same validation the
+  Windows dialogs use: hex addresses up to 0x0FFFFFFF, values checked against the
+  selected width, a generated Action Replay preview for internal cheats, and code
+  syntax that has to parse before the code can be stored.
+- **Nothing is half-saved** — closing with unsaved edits asks first, and
+  discarding puts the list back exactly as it was opened, so a cheat that breaks
+  a game never survives by accident. Files are the same `.dct` the other ports
+  read and write, one per ROM.
+- **Reorder and block-edit** — Move Up/Down reorder within a tab, and ticking a
+  checkbox with several rows selected turns the whole block on or off.
+- **Cheat Database** — an R4 `cheat.dat`/`usrcheat.dat` can be picked once and
+  then browsed per game; ticked entries are copied into the list as Action Replay
+  codes.
+- **Cheat Search** — width, sign and exact/compared searches against main RAM,
+  narrowed repeatedly between trips back to the game, with a result list that can
+  add a frozen cheat directly. It shares the `CHEATSEARCH` engine with the
+  Windows dialog, so search state survives closing the window just as it does
+  there.
+- **Cheat > Disable cheats** — switches the whole list off without deleting it,
+  and remembers the setting in `config.cfg`.
+
 ### Input, audio and build simplification
 - **SDL-based microphone** replaces the optional ALSA/OpenAL backends, removing
   two external dependencies; SDL3 then covers audio, gamepad and window handling

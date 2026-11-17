@@ -689,12 +689,18 @@
           <attribute name='label' translatable='yes'>_Cheat</attribute>
           <section>
             <item>
+              <attribute name='label' translatable='yes'>_List</attribute>
+              <attribute name='action'>app.cheatlist</attribute>
+            </item>
+            <item>
               <attribute name='label' translatable='yes'>_Search</attribute>
               <attribute name='action'>app.cheatsearch</attribute>
             </item>
+          </section>
+          <section>
             <item>
-              <attribute name='label' translatable='yes'>_List</attribute>
-              <attribute name='action'>app.cheatlist</attribute>
+              <attribute name='label' translatable='yes'>_Disable cheats</attribute>
+              <attribute name='action'>app.cheatsdisable</attribute>
             </item>
           </section>
         </submenu>

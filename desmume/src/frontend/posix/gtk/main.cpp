@@ -270,6 +270,7 @@ static void ToggleStatusbarVisible(GSimpleAction *action, GVariant *parameter, g
 static void ToggleToolbarVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ToggleFullscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ToggleAudio(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void ToggleCheatsDisabled(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Modify_SPUMode(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Modify_SPUInterpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 #ifdef FAKE_MIC
@@ -381,6 +382,7 @@ static const GActionEntry app_entries[] = {
     { "spu_interpolation",   Modify_SPUInterpolation, "s", "\"linear\"" },
     { "cheatsearch",         CheatSearch },
     { "cheatlist",           CheatList },
+    { "cheatsdisable",       ToggleCheatsDisabled, NULL, "false" },
     { "savetype",            changesavetype,          "s", "\"autodetect\"" },
     { "setaudiovolume",      SetAudioVolume },
     { "setfirmwarelanguage", SetFirmwareLanguage },
@@ -973,6 +975,7 @@ static int Open(const char *filename)
 
         LoadSaveStateInfo();
         g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "cheatlist")), TRUE);
+        g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "cheatsearch")), TRUE);
     }
     return res;
 }
@@ -5463,6 +5466,21 @@ static void ToggleAudio(GSimpleAction *action, GVariant *parameter, gpointer use
     g_simple_action_set_state(action, g_variant_new_boolean(value));
 }
 
+/* Cheats are applied by the core, so this only stops it from doing so. The
+ * list is left untouched, which is what makes it a useful debugging switch: a
+ * cheat that breaks a game can be turned off without losing the entry. */
+static void ToggleCheatsDisabled(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    GVariant *variant = g_action_get_state(G_ACTION(action));
+    gboolean value = !g_variant_get_boolean(variant);
+    g_variant_unref(variant);
+
+    config.cheats_disabled = value;
+    CommonSettings.cheatsDisable = value;
+    UpdateStatusBar(value ? "Cheats disabled" : "Cheats enabled");
+    g_simple_action_set_state(action, g_variant_new_boolean(value));
+}
+
 #ifdef FAKE_MIC
 static void ToggleMicNoise(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
@@ -6208,6 +6226,12 @@ common_gtk_main(GApplication *app, gpointer user_data)
 		gtk_widget_hide(pStatusBar);
         g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_statusbar")), g_variant_new_boolean(FALSE));
 	}
+
+    /* Applied by the core on the next frame; the cheat list itself is loaded
+     * per ROM, so only the on/off switch is restored here. */
+    CommonSettings.cheatsDisable = config.cheats_disabled;
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "cheatsdisable")), g_variant_new_boolean(config.cheats_disabled));
+
     UpdateDrawingAreaAspect();
 
     if (my_config->disable_limiter || !config.fpslimiter) {
