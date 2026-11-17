@@ -53,11 +53,21 @@ enum FFmpegCaptureFormat
 	FFmpegCaptureFormat_BGRA8888
 };
 
+// Arrangement of the two screens in the recorded frame. The captured buffer
+// always contains the screens stacked vertically; the recorder rearranges it
+// before scaling to the output size.
+enum FFmpegScreenLayout
+{
+	FFmpegScreenLayout_Vertical   = 0, // main above touch (or the reverse when swapped)
+	FFmpegScreenLayout_Horizontal = 1, // main beside touch (or the reverse when swapped)
+	FFmpegScreenLayout_Single     = 2  // one screen only; swap selects the touch screen
+};
+
 struct FFmpegRecordConfig
 {
-	std::string videoEncoder;    // required
+	std::string videoEncoder;    // empty = no video (audio-only recording)
 	std::string audioEncoder;    // empty = no audio
-	std::string container;       // "matroska" or "mp4"
+	std::string container;       // "mp4" or "matroska"
 	int videoBitrateKbps;
 	int audioBitrateKbps;
 
@@ -67,13 +77,24 @@ struct FFmpegRecordConfig
 	int width;
 	int height;
 
+	// Screen arrangement. screenGap is in source pixels and rotation is one
+	// of 0, 90, 180 or 270 degrees (clockwise).
+	int layout;
+	bool swapScreens;
+	int screenGap;
+	int rotation;
+
 	FFmpegRecordConfig()
 		: videoEncoder("libx264")
-		, container("matroska")
+		, container("mp4")
 		, videoBitrateKbps(8000)
 		, audioBitrateKbps(192)
 		, width(0)
 		, height(0)
+		, layout(FFmpegScreenLayout_Vertical)
+		, swapScreens(false)
+		, screenGap(0)
+		, rotation(0)
 	{
 	}
 };
@@ -94,6 +115,8 @@ public:
 	void end();
 
 	bool isRecording() const;
+	// False for an audio-only recording (config.videoEncoder was empty).
+	bool hasVideo() const;
 	bool hasFailed() const;
 	// Clears the failure state after the UI has shown lastError().
 	void clearFailure();
@@ -118,9 +141,20 @@ private:
 
 namespace FFmpegRecorder
 {
-	// All registered encoders, hardware first, then by name.
-	std::vector<FFmpegEncoderInfo> videoEncoders();
-	std::vector<FFmpegEncoderInfo> audioEncoders();
+	// Encoders that can actually be used for the given container. Encoders
+	// that the muxer rejects, experimental codecs, the pseudo encoders
+	// (wrapped_avframe, anull) and hardware backends whose device nodes are
+	// absent are omitted. Hardware first, then by name.
+	std::vector<FFmpegEncoderInfo> videoEncoders(const std::string& container);
+	std::vector<FFmpegEncoderInfo> audioEncoders(const std::string& container);
+
+	// Size of the frame produced by arranging the two stacked screens.
+	// sourceWidth/sourceHeight describe the full captured frame (both screens
+	// stacked), so one screen is sourceWidth x sourceHeight / 2. swapScreens
+	// does not change the size, but it is part of the same geometry.
+	void composedSize(int sourceWidth, int sourceHeight,
+	                  int layout, bool swapScreens, int screenGap, int rotation,
+	                  int* outWidth, int* outHeight);
 
 	// "<name> - <long name> [Hardware|Software]" for combo boxes.
 	std::string encoderLabel(const FFmpegEncoderInfo& info);

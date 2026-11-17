@@ -111,8 +111,12 @@ OPT(audio_volume, int, 128, Audio, Volume)
 /* Recording */
 OPT(record_video_encoder, std::string, "libx264", Recording, VideoEncoder)
 OPT(record_audio_encoder, std::string, "aac", Recording, AudioEncoder)
-OPT(record_container, std::string, "matroska", Recording, Container)
+OPT(record_container, std::string, "mp4", Recording, Container)
 OPT(record_video_bitrate, int, 8000, Recording, VideoBitrate)
 OPT(record_audio_bitrate, int, 192, Recording, AudioBitrate)
 OPT(record_filtered, bool, true, Recording, FilteredOutput)
+OPT(record_layout, int, 0, Recording, ScreenLayout)
+OPT(record_swap, bool, false, Recording, SwapScreens)
+OPT(record_gap, int, 0, Recording, ScreenGap)
+OPT(record_rotation, int, 0, Recording, Rotation)
 

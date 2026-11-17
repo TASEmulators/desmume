@@ -24,9 +24,11 @@
 #include <cstring>
 #include <deque>
 #include <exception>
+#include <glob.h>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <unistd.h>
 #include <vector>
 
 extern "C"
@@ -101,7 +103,13 @@ static int CaptureFormatBytesPerPixel(FFmpegCaptureFormat format)
 static int AvPixFmtBytesPerPixel(enum AVPixelFormat format)
 {
 	const AVPixFmtDescriptor* descriptor = av_pix_fmt_desc_get(format);
-	return (descriptor != NULL) ? av_get_bits_per_pixel(descriptor) / 8 : 0;
+	if (descriptor == NULL)
+	{
+		return 0;
+	}
+	// Native 15/16-bit formats report 15 or 16 bits per pixel, so round up
+	// rather than dropping the last packed byte.
+	return (av_get_bits_per_pixel(descriptor) + 7) / 8;
 }
 
 static bool PixFmtIsHardware(enum AVPixelFormat format)
@@ -229,6 +237,161 @@ static std::vector<AVChannelLayout> SupportedAudioChannelLayouts(const AVCodec* 
 #endif
 
 	return result;
+}
+
+static bool StringContains(const std::string& value, const char* needle)
+{
+	return value.find(needle) != std::string::npos;
+}
+
+static bool StringEndsWith(const std::string& value, const char* suffix)
+{
+	const size_t length = strlen(suffix);
+	return value.size() >= length && value.compare(value.size() - length, length, suffix) == 0;
+}
+
+static bool HasDeviceNodes(const char* pattern)
+{
+	glob_t matches;
+	memset(&matches, 0, sizeof(matches));
+
+	const int result = glob(pattern, 0, NULL, &matches);
+	const bool found = (result == 0) && (matches.gl_pathc > 0);
+	globfree(&matches);
+
+	return found;
+}
+
+// FFmpeg registers every encoder the distribution compiled in, including
+// wrappers for hardware that this machine does not have. Opening one to find
+// out is not safe (some Vulkan wrappers crash without a full device/frame
+// setup), so the obviously absent backends are recognised by their device
+// nodes instead. Encoders whose backend cannot be identified are kept; they
+// still get a clear error from begin() if they cannot open.
+static bool EncoderRequiresUnavailableHardware(const AVCodec* codec)
+{
+	if (codec->type != AVMEDIA_TYPE_VIDEO)
+	{
+		return false;
+	}
+
+	if ((codec->capabilities & (AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_HYBRID)) == 0)
+	{
+		return false;
+	}
+
+	const std::string name = (codec->name != NULL) ? codec->name : "";
+
+#if !defined(_WIN32)
+	// AMF is a Windows-only backend. If a non-Windows FFmpeg build still
+	// registers the wrapper, it can never open here.
+	if (StringEndsWith(name, "_amf"))
+	{
+		return true;
+	}
+#endif
+#if !defined(__APPLE__)
+	if (StringEndsWith(name, "_videotoolbox"))
+	{
+		return true;
+	}
+#endif
+
+	bool needsRenderNode = StringContains(name, "_vaapi") || StringContains(name, "_qsv");
+	bool needsNvidia     = StringContains(name, "_nvenc") || StringContains(name, "_cuda");
+	bool needsVideoNode  = StringContains(name, "_v4l2m2m") || StringContains(name, "_rkmpp");
+	bool needsDriNode    = StringContains(name, "_vulkan");
+
+	const std::vector<enum AVPixelFormat> formats = SupportedVideoPixelFormats(codec);
+	for (size_t i = 0; i < formats.size(); i++)
+	{
+		switch (formats[i])
+		{
+			case AV_PIX_FMT_VAAPI:
+			case AV_PIX_FMT_QSV:
+				needsRenderNode = true;
+				break;
+			case AV_PIX_FMT_CUDA:
+				needsNvidia = true;
+				break;
+			case AV_PIX_FMT_VULKAN:
+				needsDriNode = true;
+				break;
+			default:
+				break;
+		}
+	}
+
+	if (needsRenderNode && !HasDeviceNodes("/dev/dri/renderD*"))
+	{
+		// A VAAPI render node can also be selected by path.
+		const char* devicePath = getenv("DESMUME_VAAPI_DEVICE");
+		if (devicePath == NULL || access(devicePath, R_OK) != 0)
+		{
+			return true;
+		}
+	}
+
+	if (needsNvidia && !HasDeviceNodes("/dev/nvidia*"))
+	{
+		return true;
+	}
+
+	if (needsVideoNode && !HasDeviceNodes("/dev/video*"))
+	{
+		return true;
+	}
+
+	if (needsDriNode &&
+	    !HasDeviceNodes("/dev/dri/renderD*") &&
+	    !HasDeviceNodes("/dev/dri/card*"))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+static bool EncoderIsUsable(const AVCodec* codec, const AVOutputFormat* outputFormat)
+{
+	// FFmpeg refuses experimental encoders unless strict_std_compliance is
+	// relaxed, so they would always fail at begin().
+	if ((codec->capabilities & AV_CODEC_CAP_EXPERIMENTAL) != 0)
+	{
+		return false;
+	}
+
+	if (codec->type == AVMEDIA_TYPE_VIDEO)
+	{
+		// Wrapped AVFrames is an internal container for already-encoded data,
+		// not a codec that turns pictures into a video stream.
+		if (codec->id == AV_CODEC_ID_WRAPPED_AVFRAME)
+		{
+			return false;
+		}
+		if (EncoderRequiresUnavailableHardware(codec))
+		{
+			return false;
+		}
+	}
+	else if (codec->type == AVMEDIA_TYPE_AUDIO)
+	{
+		// anull accepts samples and produces nothing.
+		if (codec->id == AV_CODEC_ID_ANULL)
+		{
+			return false;
+		}
+	}
+
+	// avformat_query_codec() returns 0 for combinations the muxer refuses
+	// (for example rawvideo in MP4) and a negative value when it cannot tell.
+	if (outputFormat != NULL &&
+	    avformat_query_codec(outputFormat, codec->id, FF_COMPLIANCE_NORMAL) == 0)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 struct VideoFormatChoice
@@ -387,15 +550,97 @@ static AudioFormatChoice ChooseAudioFormat(const AVCodec* codec)
 	return choice;
 }
 
-static std::vector<FFmpegEncoderInfo> EnumerateEncoders(enum AVMediaType type)
+static int NormalizeRotation(int rotation)
+{
+	int value = rotation % 360;
+	if (value < 0)
+	{
+		value += 360;
+	}
+
+	return (value == 90 || value == 180 || value == 270) ? value : 0;
+}
+
+static int MakeEven(int value)
+{
+	return (value > 2) ? (value & ~1) : 2;
+}
+
+struct ComposeGeometry
+{
+	int screenWidth;
+	int screenHeight;
+	int gap;            // even, so it matches the even output size
+	int unrotatedWidth;
+	int unrotatedHeight;
+	int outputWidth;    // after rotation, rounded to an even size
+	int outputHeight;
+};
+
+static ComposeGeometry GetComposeGeometry(int sourceWidth, int sourceHeight,
+                                          int layout, int screenGap, int rotation)
+{
+	ComposeGeometry geometry;
+
+	geometry.screenWidth  = std::max(1, sourceWidth);
+	geometry.screenHeight = std::max(1, sourceHeight / 2);
+	geometry.gap          = std::max(0, screenGap) & ~1;
+
+	switch (layout)
+	{
+		case FFmpegScreenLayout_Horizontal:
+			geometry.unrotatedWidth  = (geometry.screenWidth * 2) + geometry.gap;
+			geometry.unrotatedHeight = geometry.screenHeight;
+			break;
+
+		case FFmpegScreenLayout_Single:
+			geometry.unrotatedWidth  = geometry.screenWidth;
+			geometry.unrotatedHeight = geometry.screenHeight;
+			break;
+
+		case FFmpegScreenLayout_Vertical:
+		default:
+			geometry.unrotatedWidth  = geometry.screenWidth;
+			geometry.unrotatedHeight = (geometry.screenHeight * 2) + geometry.gap;
+			break;
+	}
+
+	// H.264/HEVC 4:2:0 cannot describe an odd frame size, so round once here
+	// and keep the rotated size consistent with it.
+	geometry.unrotatedWidth  = MakeEven(geometry.unrotatedWidth);
+	geometry.unrotatedHeight = MakeEven(geometry.unrotatedHeight);
+
+	int outputWidth  = geometry.unrotatedWidth;
+	int outputHeight = geometry.unrotatedHeight;
+	if (NormalizeRotation(rotation) == 90 || NormalizeRotation(rotation) == 270)
+	{
+		std::swap(outputWidth, outputHeight);
+	}
+
+	geometry.outputWidth  = outputWidth;
+	geometry.outputHeight = outputHeight;
+
+	return geometry;
+}
+
+static std::vector<FFmpegEncoderInfo> EnumerateEncoders(enum AVMediaType type, const std::string& container)
 {
 	std::vector<FFmpegEncoderInfo> result;
+
+	const AVOutputFormat* outputFormat = container.empty()
+		? NULL
+		: av_guess_format(container.c_str(), NULL, NULL);
 
 	void* opaque = NULL;
 	const AVCodec* codec = NULL;
 	while ((codec = av_codec_iterate(&opaque)) != NULL)
 	{
 		if (!av_codec_is_encoder(codec) || codec->type != type)
+		{
+			continue;
+		}
+
+		if (!EncoderIsUsable(codec, outputFormat))
 		{
 			continue;
 		}
@@ -419,6 +664,67 @@ static std::vector<FFmpegEncoderInfo> EnumerateEncoders(enum AVMediaType type)
 	return result;
 }
 
+template <typename Pixel>
+static void RotatePixels(const Pixel* source, int sourceWidth, int sourceHeight,
+                         Pixel* destination, int rotation)
+{
+	switch (NormalizeRotation(rotation))
+	{
+		case 90:
+			// (x, y) -> (sourceHeight - 1 - y, x)
+			for (int y = 0; y < sourceHeight; y++)
+			{
+				for (int x = 0; x < sourceWidth; x++)
+				{
+					destination[(size_t)x * sourceHeight + (sourceHeight - 1 - y)] =
+						source[(size_t)y * sourceWidth + x];
+				}
+			}
+			break;
+
+		case 180:
+			// (x, y) -> (sourceWidth - 1 - x, sourceHeight - 1 - y)
+			for (int y = 0; y < sourceHeight; y++)
+			{
+				for (int x = 0; x < sourceWidth; x++)
+				{
+					destination[(size_t)(sourceHeight - 1 - y) * sourceWidth + (sourceWidth - 1 - x)] =
+						source[(size_t)y * sourceWidth + x];
+				}
+			}
+			break;
+
+		case 270:
+			// (x, y) -> (y, sourceWidth - 1 - x)
+			for (int y = 0; y < sourceHeight; y++)
+			{
+				for (int x = 0; x < sourceWidth; x++)
+				{
+					destination[(size_t)(sourceWidth - 1 - x) * sourceHeight + y] =
+						source[(size_t)y * sourceWidth + x];
+				}
+			}
+			break;
+
+		default:
+			memcpy(destination, source, (size_t)sourceWidth * sourceHeight * sizeof(Pixel));
+			break;
+	}
+}
+
+static uint32_t GapPixel(enum AVPixelFormat format)
+{
+	if (format == AV_PIX_FMT_BGR555LE)
+	{
+		// Same 30% gray the window uses for its gap (#4D4D4D), reduced to
+		// the 5 bits per channel of the native 15-bit format.
+		const uint16_t channel = 0x4D >> 3;
+		return (uint16_t)(channel | (channel << 5) | (channel << 10));
+	}
+
+	return 0x4D4D4Du;
+}
+
 struct AVOutFFmpeg::Impl
 {
 	struct VideoJob
@@ -437,11 +743,19 @@ struct AVOutFFmpeg::Impl
 	};
 
 	// Output configuration.
+	int layout;
+	bool swapScreens;
+	int screenGap;
+	int rotation;
 	int width;
 	int height;
 	int64_t videoFrameIndex;
 	int64_t audioSampleCount;
 	int audioFrameSize;
+
+	// Reused on the worker thread when the screens need to be rearranged.
+	std::vector<uint8_t> composeBuffer;
+	std::vector<uint8_t> rotatedBuffer;
 
 	// FFmpeg state.
 	const AVCodec* videoCodec;
@@ -480,7 +794,11 @@ struct AVOutFFmpeg::Impl
 	std::string errorText;
 
 	Impl()
-		: width(AVOUT_FFMPEG_WIDTH)
+		: layout(FFmpegScreenLayout_Vertical)
+		, swapScreens(false)
+		, screenGap(0)
+		, rotation(0)
+		, width(AVOUT_FFMPEG_WIDTH)
 		, height(AVOUT_FFMPEG_HEIGHT)
 		, videoFrameIndex(0)
 		, audioSampleCount(0)
@@ -584,58 +902,88 @@ struct AVOutFFmpeg::Impl
 		ReleaseResources();
 		ResetState();
 
+		layout = config.layout;
+		swapScreens = config.swapScreens;
+		screenGap = std::max(0, config.screenGap);
+		rotation = NormalizeRotation(config.rotation);
+
 		// Filtered capture keeps the filter's destination size; unfiltered
 		// capture and callers that leave the fields at zero use the native
-		// dual-screen size.
-		width = (config.width > 0) ? config.width : AVOUT_FFMPEG_WIDTH;
-		height = (config.height > 0) ? config.height : AVOUT_FFMPEG_HEIGHT;
-
-		videoCodec = avcodec_find_encoder_by_name(config.videoEncoder.c_str());
-		if (videoCodec == NULL || videoCodec->type != AVMEDIA_TYPE_VIDEO)
+		// dual-screen size. The arrangement can make the frame wider, taller
+		// or smaller, so derive the fallback from it as well.
+		if (config.width > 0 && config.height > 0)
 		{
-			return BeginFail("Video encoder not found: " + config.videoEncoder);
+			width = config.width;
+			height = config.height;
+		}
+		else
+		{
+			const ComposeGeometry geometry = GetComposeGeometry(AVOUT_FFMPEG_WIDTH,
+			                                                    AVOUT_FFMPEG_HEIGHT,
+			                                                    layout, screenGap, rotation);
+			width = geometry.outputWidth;
+			height = geometry.outputHeight;
 		}
 
-		VideoFormatChoice videoFormat;
-		std::string formatError;
-		if (!ChooseVideoFormat(videoCodec, videoFormat, formatError))
+		// H.264/HEVC 4:2:0 cannot describe an odd frame size.
+		width = MakeEven(width);
+		height = MakeEven(height);
+
+		if (config.videoEncoder.empty() && config.audioEncoder.empty())
 		{
-			return BeginFail("Video encoder " + config.videoEncoder + ": " + formatError);
+			return BeginFail("Select at least a video encoder or an audio encoder.");
 		}
 
-		videoContext = avcodec_alloc_context3(videoCodec);
-		if (videoContext == NULL)
+		int result = 0;
+		if (!config.videoEncoder.empty())
 		{
-			return BeginFail("Unable to allocate the video encoder context.");
-		}
-
-		videoContext->width = width;
-		videoContext->height = height;
-		videoContext->time_base = kVideoTimeBase;
-		videoContext->framerate = kVideoFrameRate;
-		videoContext->pix_fmt = videoFormat.encoderFormat;
-		videoContext->bit_rate = (int64_t)std::max(1, config.videoBitrateKbps) * 1000;
-		videoContext->gop_size = 60;
-		videoContext->max_b_frames = 0;
-		videoContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-
-		if (videoFormat.uploadToHardware)
-		{
-			if (!SetUpHardwareFrames(videoFormat, formatError))
+			videoCodec = avcodec_find_encoder_by_name(config.videoEncoder.c_str());
+			if (videoCodec == NULL || videoCodec->type != AVMEDIA_TYPE_VIDEO)
 			{
-				return BeginFail(formatError);
+				return BeginFail("Video encoder not found: " + config.videoEncoder);
 			}
-		}
 
-		int result = avcodec_open2(videoContext, videoCodec, NULL);
-		if (result < 0)
-		{
-			return BeginFail("Unable to open video encoder " + config.videoEncoder + ": " + AvErrorString(result));
-		}
+			VideoFormatChoice videoFormat;
+			std::string formatError;
+			if (!ChooseVideoFormat(videoCodec, videoFormat, formatError))
+			{
+				return BeginFail("Video encoder " + config.videoEncoder + ": " + formatError);
+			}
 
-		swsContext = NULL;
-		softwarePixelFormat = videoFormat.softwareFormat;
-		uploadToHardware = videoFormat.uploadToHardware;
+			videoContext = avcodec_alloc_context3(videoCodec);
+			if (videoContext == NULL)
+			{
+				return BeginFail("Unable to allocate the video encoder context.");
+			}
+
+			videoContext->width = width;
+			videoContext->height = height;
+			videoContext->time_base = kVideoTimeBase;
+			videoContext->framerate = kVideoFrameRate;
+			videoContext->pix_fmt = videoFormat.encoderFormat;
+			videoContext->bit_rate = (int64_t)std::max(1, config.videoBitrateKbps) * 1000;
+			videoContext->gop_size = 60;
+			videoContext->max_b_frames = 0;
+			videoContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+			if (videoFormat.uploadToHardware)
+			{
+				if (!SetUpHardwareFrames(videoFormat, formatError))
+				{
+					return BeginFail(formatError);
+				}
+			}
+
+			result = avcodec_open2(videoContext, videoCodec, NULL);
+			if (result < 0)
+			{
+				return BeginFail("Unable to open video encoder " + config.videoEncoder + ": " + AvErrorString(result));
+			}
+
+			swsContext = NULL;
+			softwarePixelFormat = videoFormat.softwareFormat;
+			uploadToHardware = videoFormat.uploadToHardware;
+		}
 
 		if (!config.audioEncoder.empty())
 		{
@@ -693,7 +1041,7 @@ struct AVOutFFmpeg::Impl
 			}
 		}
 
-		const char* containerName = config.container.empty() ? "matroska" : config.container.c_str();
+		const char* containerName = config.container.empty() ? "mp4" : config.container.c_str();
 		result = avformat_alloc_output_context2(&formatContext, NULL, containerName, filename);
 		if (formatContext == NULL)
 		{
@@ -705,7 +1053,8 @@ struct AVOutFFmpeg::Impl
 		// as rawvideo + mp4 (and 1 when the muxer accepts the codec); a
 		// negative value means "cannot tell", so let the header write decide.
 		const char* containerLabel = ContainerDisplayName(formatContext->oformat->name);
-		if (avformat_query_codec(formatContext->oformat, videoCodec->id, FF_COMPLIANCE_NORMAL) == 0)
+		if (videoCodec != NULL &&
+		    avformat_query_codec(formatContext->oformat, videoCodec->id, FF_COMPLIANCE_NORMAL) == 0)
 		{
 			return BeginFail(std::string("The ") + containerLabel + " container does not support the " +
 			                 config.videoEncoder + " video encoder. Choose a different container or encoder.");
@@ -717,17 +1066,20 @@ struct AVOutFFmpeg::Impl
 			                 config.audioEncoder + " audio encoder. Choose a different container or encoder.");
 		}
 
-		videoStream = avformat_new_stream(formatContext, videoCodec);
-		if (videoStream == NULL)
+		if (videoContext != NULL)
 		{
-			return BeginFail("Unable to create the video stream.");
-		}
-		videoStream->time_base = videoContext->time_base;
-		videoStream->avg_frame_rate = kVideoFrameRate;
-		result = avcodec_parameters_from_context(videoStream->codecpar, videoContext);
-		if (result < 0)
-		{
-			return BeginFail("Unable to copy the video stream parameters: " + AvErrorString(result));
+			videoStream = avformat_new_stream(formatContext, videoCodec);
+			if (videoStream == NULL)
+			{
+				return BeginFail("Unable to create the video stream.");
+			}
+			videoStream->time_base = videoContext->time_base;
+			videoStream->avg_frame_rate = kVideoFrameRate;
+			result = avcodec_parameters_from_context(videoStream->codecpar, videoContext);
+			if (result < 0)
+			{
+				return BeginFail("Unable to copy the video stream parameters: " + AvErrorString(result));
+			}
 		}
 
 		if (audioContext != NULL)
@@ -963,11 +1315,14 @@ struct AVOutFFmpeg::Impl
 		outputFileCreated = false;
 		outputFilename.clear();
 		audioFrameSize = 0;
+
+		composeBuffer.clear();
+		rotatedBuffer.clear();
 	}
 
 	void PushVideo(const void* buffer, int srcWidth, int srcHeight, FFmpegCaptureFormat captureFormat)
 	{
-		if (!running || failed || buffer == NULL || srcWidth <= 0 || srcHeight <= 0)
+		if (!running || failed || videoContext == NULL || buffer == NULL || srcWidth <= 0 || srcHeight <= 0)
 		{
 			return;
 		}
@@ -1094,6 +1449,162 @@ struct AVOutFFmpeg::Impl
 		FlushCodec(videoContext, videoStream, "video");
 	}
 
+	void ComposeVideoFrame(const VideoJob& job, int bytesPerPixel,
+	                       const uint8_t*& frameData, int& frameWidth, int& frameHeight)
+	{
+		const ComposeGeometry geometry = GetComposeGeometry(job.width, job.height,
+		                                                    layout, screenGap, rotation);
+		const int contentWidth  = geometry.unrotatedWidth;
+		const int contentHeight = geometry.unrotatedHeight;
+		const int screenWidth   = geometry.screenWidth;
+		const int screenHeight  = geometry.screenHeight;
+		const int gap           = geometry.gap;
+		const size_t rowBytes   = (size_t)contentWidth * (size_t)bytesPerPixel;
+		const size_t frameBytes = rowBytes * (size_t)contentHeight;
+
+		composeBuffer.resize(frameBytes);
+		memset(composeBuffer.data(), 0, frameBytes);
+
+		// The captured frame always has the two screens stacked vertically.
+		const int secondScreenY = screenHeight;
+		const uint32_t gapPixel = GapPixel(job.format);
+
+		if (layout != FFmpegScreenLayout_Single && gap > 0)
+		{
+			int gapX = 0;
+			int gapY = 0;
+			int gapW = 0;
+			int gapH = 0;
+
+			if (layout == FFmpegScreenLayout_Horizontal)
+			{
+				gapX = screenWidth;
+				gapY = 0;
+				gapW = gap;
+				gapH = screenHeight;
+			}
+			else
+			{
+				gapX = 0;
+				gapY = screenHeight;
+				gapW = screenWidth;
+				gapH = gap;
+			}
+
+			const int clippedW = std::min(gapW, contentWidth - gapX);
+			const int clippedH = std::min(gapH, contentHeight - gapY);
+			for (int y = 0; y < clippedH; y++)
+			{
+				uint8_t* row = composeBuffer.data() + (size_t)(gapY + y) * rowBytes + (size_t)gapX * bytesPerPixel;
+				if (bytesPerPixel == 2)
+				{
+					uint16_t* pixels = (uint16_t*)row;
+					for (int x = 0; x < clippedW; x++)
+					{
+						pixels[x] = (uint16_t)gapPixel;
+					}
+				}
+				else
+				{
+					uint32_t* pixels = (uint32_t*)row;
+					for (int x = 0; x < clippedW; x++)
+					{
+						pixels[x] = gapPixel;
+					}
+				}
+			}
+		}
+
+		int firstX = 0;
+		int firstY = 0;
+		int secondX = 0;
+		int secondY = 0;
+		int sourceFirstY = 0;
+		int sourceSecondY = secondScreenY;
+
+		switch (layout)
+		{
+			case FFmpegScreenLayout_Horizontal:
+				firstX = 0;
+				firstY = 0;
+				secondX = screenWidth + gap;
+				secondY = 0;
+				if (swapScreens)
+				{
+					std::swap(sourceFirstY, sourceSecondY);
+				}
+				break;
+
+			case FFmpegScreenLayout_Single:
+				firstX = 0;
+				firstY = 0;
+				secondX = 0;
+				secondY = 0;
+				sourceFirstY = swapScreens ? secondScreenY : 0;
+				break;
+
+			case FFmpegScreenLayout_Vertical:
+			default:
+				firstX = 0;
+				firstY = 0;
+				secondX = 0;
+				secondY = screenHeight + gap;
+				if (swapScreens)
+				{
+					std::swap(sourceFirstY, sourceSecondY);
+				}
+				break;
+		}
+
+		const size_t sourceRowBytes = (size_t)job.width * (size_t)bytesPerPixel;
+		const int screenCount = (layout == FFmpegScreenLayout_Single) ? 1 : 2;
+
+		for (int screen = 0; screen < screenCount; screen++)
+		{
+			const int destinationX = (screen == 0) ? firstX : secondX;
+			const int destinationY = (screen == 0) ? firstY : secondY;
+			const int sourceY      = (screen == 0) ? sourceFirstY : sourceSecondY;
+
+			const int copyWidth  = std::min(screenWidth, contentWidth - destinationX);
+			const int copyHeight = std::min(screenHeight, contentHeight - destinationY);
+			if (copyWidth <= 0 || copyHeight <= 0)
+			{
+				continue;
+			}
+
+			for (int y = 0; y < copyHeight; y++)
+			{
+				memcpy(composeBuffer.data() + (size_t)(destinationY + y) * rowBytes + (size_t)destinationX * bytesPerPixel,
+				       job.pixels.data() + (size_t)(sourceY + y) * sourceRowBytes,
+				       (size_t)copyWidth * bytesPerPixel);
+			}
+		}
+
+		if (rotation == 0)
+		{
+			frameData   = composeBuffer.data();
+			frameWidth  = contentWidth;
+			frameHeight = contentHeight;
+			return;
+		}
+
+		rotatedBuffer.resize(frameBytes);
+		if (bytesPerPixel == 2)
+		{
+			RotatePixels<uint16_t>((const uint16_t*)composeBuffer.data(), contentWidth, contentHeight,
+			                       (uint16_t*)rotatedBuffer.data(), rotation);
+		}
+		else
+		{
+			RotatePixels<uint32_t>((const uint32_t*)composeBuffer.data(), contentWidth, contentHeight,
+			                       (uint32_t*)rotatedBuffer.data(), rotation);
+		}
+
+		frameData   = rotatedBuffer.data();
+		frameWidth  = geometry.outputWidth;
+		frameHeight = geometry.outputHeight;
+	}
+
 	bool EncodeVideo(const VideoJob& job)
 	{
 		if (videoContext == NULL)
@@ -1108,11 +1619,29 @@ struct AVOutFFmpeg::Impl
 			return false;
 		}
 
+		const ComposeGeometry geometry = GetComposeGeometry(job.width, job.height,
+		                                                    layout, screenGap, rotation);
+		const bool needsCompose = (layout != FFmpegScreenLayout_Vertical) ||
+		                          swapScreens ||
+		                          (screenGap > 0) ||
+		                          (rotation != 0) ||
+		                          (geometry.unrotatedWidth != job.width) ||
+		                          (geometry.unrotatedHeight != job.height);
+
+		const uint8_t* frameData = job.pixels.data();
+		int frameWidth  = job.width;
+		int frameHeight = job.height;
+		if (needsCompose)
+		{
+			ComposeVideoFrame(job, sourceBytesPerPixel, frameData, frameWidth, frameHeight);
+		}
+
 		// The capture comes from the frontend's final custom buffer, whose size
-		// follows the GPU scaling factor. The encoder always uses the fixed
-		// native output size, so reconfigure the scaler when the two differ.
+		// follows the GPU scaling factor, and the arrangement above may change
+		// its shape again. The encoder always uses the fixed output size, so
+		// reconfigure the scaler whenever the input geometry changes.
 		swsContext = sws_getCachedContext(swsContext,
-		                                  job.width, job.height, job.format,
+		                                  frameWidth, frameHeight, job.format,
 		                                  width, height, softwarePixelFormat,
 		                                  SWS_BILINEAR, NULL, NULL, NULL);
 		if (swsContext == NULL)
@@ -1140,9 +1669,9 @@ struct AVOutFFmpeg::Impl
 			return false;
 		}
 
-		const uint8_t* sourceData[4] = { (const uint8_t*)job.pixels.data(), NULL, NULL, NULL };
-		const int sourceStride[4] = { job.width * sourceBytesPerPixel, 0, 0, 0 };
-		sws_scale(swsContext, sourceData, sourceStride, 0, job.height, softwareFrame->data, softwareFrame->linesize);
+		const uint8_t* sourceData[4] = { frameData, NULL, NULL, NULL };
+		const int sourceStride[4] = { frameWidth * sourceBytesPerPixel, 0, 0, 0 };
+		sws_scale(swsContext, sourceData, sourceStride, 0, frameHeight, softwareFrame->data, softwareFrame->linesize);
 
 		bool success = false;
 
@@ -1456,6 +1985,11 @@ bool AVOutFFmpeg::isRecording() const
 	return impl->running;
 }
 
+bool AVOutFFmpeg::hasVideo() const
+{
+	return impl->running && impl->videoContext != NULL;
+}
+
 bool AVOutFFmpeg::hasFailed() const
 {
 	return impl->failed;
@@ -1486,14 +2020,31 @@ void AVOutFFmpeg::updateAudio(const void* data, int sampleCount)
 
 namespace FFmpegRecorder
 {
-	std::vector<FFmpegEncoderInfo> videoEncoders()
+	std::vector<FFmpegEncoderInfo> videoEncoders(const std::string& container)
 	{
-		return EnumerateEncoders(AVMEDIA_TYPE_VIDEO);
+		return EnumerateEncoders(AVMEDIA_TYPE_VIDEO, container);
 	}
 
-	std::vector<FFmpegEncoderInfo> audioEncoders()
+	std::vector<FFmpegEncoderInfo> audioEncoders(const std::string& container)
 	{
-		return EnumerateEncoders(AVMEDIA_TYPE_AUDIO);
+		return EnumerateEncoders(AVMEDIA_TYPE_AUDIO, container);
+	}
+
+	void composedSize(int sourceWidth, int sourceHeight,
+	                  int layout, bool swapScreens, int screenGap, int rotation,
+	                  int* outWidth, int* outHeight)
+	{
+		(void)swapScreens;
+		const ComposeGeometry geometry = GetComposeGeometry(sourceWidth, sourceHeight,
+		                                                    layout, screenGap, rotation);
+		if (outWidth != NULL)
+		{
+			*outWidth = geometry.outputWidth;
+		}
+		if (outHeight != NULL)
+		{
+			*outHeight = geometry.outputHeight;
+		}
 	}
 
 	std::string encoderLabel(const FFmpegEncoderInfo& info)

@@ -10,18 +10,25 @@
 
 在 Linux 上提供与 Windows / macOS 新版录制功能对齐的视频录制：
 
-1. 通过 FFmpeg（libavcodec）**枚举本机可用的全部视频编码器**，由用户选择。
+1. 通过 FFmpeg（libavcodec）**枚举本机可用的视频编码器**，由用户选择。
 2. 列表中明确标注每个编码器是 **硬件编码** 还是 **软件编码**。
 3. 同时支持视频与音频，复用到一个容器文件（MKV / MP4），不再像旧版那样视频、音频分成两个文件。
 4. 构建期由 Meson 请求 FFmpeg 库；找不到库时**整个功能编译期关闭**，不影响旧功能构建。
 5. 旧录制功能（外部 `x264` / `flac` 子进程）**原样保留**，移到菜单的 “Old recording” 子菜单。
 6. 录制在独立工作线程完成，不阻塞 GTK 主线程/模拟线程。
+7. 下拉列表只显示容器能封装、且当前系统至少有机会打开的编码器，过滤掉
+   `wrapped_avframe`、实验性编码器、与容器不兼容的编码器，以及没有对应设备节点的
+   硬件后端。
+8. 支持配置上下屏的摆放方式：上下 / 左右 / 单屏、交换、间距、旋转 0/90/180/270。
+9. 视频编码器可选 **None**，此时输出纯音频文件；默认容器为 **MP4**。视频和音频
+   至少要选择一个。
 
 ### 非目标
 
 - 不做 VAAPI 专用路径。VAAPI 只是 FFmpeg 枚举结果中的一种编码器。
 - 不做 GPU 零拷贝（DMA-BUF / Vulkan external memory）。当前 GTK 最终画面本来就在 CPU 侧。
-- 不做 Windows/macOS 那样的“窗口布局 / 旋转 / CPU 滤镜合成”画面。第一版固定录制原生双屏缓冲。
+- 不做 Windows/macOS 那样的完整窗口合成（多窗口、窗口缩放、任意位置）。录制画面只对
+  DS 的两块屏幕做固定布局，合成在 CPU 侧完成。
 - 不改 GTK2 前端。GTK2 继续只提供旧录制。
 - 不改 Windows / macOS 实现。
 
@@ -64,8 +71,9 @@ SPU 每帧音频（GTK 主线程）
                                               +-------------+-------------+
                                                             ↓
                                               工作线程（std::thread）
+                                                ├─ 双屏合成（可选）：拆上下屏 → 按布局/交换/间距/旋转重组
                                                 ├─ sws_scale BGR555/RGBA/BGRA → NV12/YUV420P
-                                                │  （源尺寸与输出尺寸不同时重建缩放器）
+                                                │  （合成后尺寸与输出尺寸不同时重建缩放器）
                                                 ├─ 可选 hwframe 上传（VAAPI/QSV/Vulkan）
                                                 ├─ avcodec_send_frame / receive_packet
                                                 ├─ swr_convert DESMUME_SAMPLE_RATE → 编码器采样率
@@ -198,15 +206,26 @@ struct FFmpegEncoderInfo
     bool hardware;          // AV_CODEC_CAP_HARDWARE / AV_CODEC_CAP_HYBRID
 };
 
+enum FFmpegScreenLayout
+{
+    FFmpegScreenLayout_Vertical,     // 上下（默认）
+    FFmpegScreenLayout_Horizontal,   // 左右
+    FFmpegScreenLayout_Single        // 只录一屏，默认上屏；swap 后为下屏
+};
+
 struct FFmpegRecordConfig
 {
-    std::string videoEncoder;    // 必填，默认 "libx264"
+    std::string videoEncoder;    // 空 = 不录视频（纯音频）
     std::string audioEncoder;    // 空 = 不录音频
-    std::string container;       // "matroska"（默认）或 "mp4"
+    std::string container;       // "mp4"（默认）或 "matroska"
     int videoBitrateKbps;        // 默认 8000
     int audioBitrateKbps;        // 默认 192
     int width;                   // 0 = 原生 256（滤镜输出时取 dst 宽度）
     int height;                  // 0 = 原生 384（滤镜输出时取 dst 高度）
+    int layout;                  // FFmpegScreenLayout
+    bool swapScreens;            // 交换上下/左右屏
+    int screenGap;               // 屏间距（像素），默认 0
+    int rotation;                // 0 / 90 / 180 / 270，默认 0
 
     FFmpegRecordConfig();
 };
@@ -228,6 +247,7 @@ public:
     bool begin(const char* filename, const FFmpegRecordConfig& config);
     void end();
     bool isRecording() const;
+    bool hasVideo() const;           // false = 纯音频录制
     bool hasFailed() const;
     void clearFailure();             // UI 显示完 lastError() 后清除失败状态
     std::string lastError() const;
@@ -247,9 +267,15 @@ private:
 
 namespace FFmpegRecorder
 {
-    // 全部已注册的 FFmpeg 视频/音频编码器，按“硬件优先、名称升序”排序
-    std::vector<FFmpegEncoderInfo> videoEncoders();
-    std::vector<FFmpegEncoderInfo> audioEncoders();
+    // 已过滤的 FFmpeg 视频/音频编码器，按“硬件优先、名称升序”排序。
+    // container 为 "matroska" / "mp4" / "webm"；传入后按该容器的封装能力过滤。
+    std::vector<FFmpegEncoderInfo> videoEncoders(const std::string& container);
+    std::vector<FFmpegEncoderInfo> audioEncoders(const std::string& container);
+
+    // 合成并旋转后的输出尺寸；用于对话框实时显示与 begin() 前的 config 填充。
+    void composedSize(int sourceWidth, int sourceHeight,
+                      int layout, bool swapScreens, int screenGap, int rotation,
+                      int* outWidth, int* outHeight);
 
     // "<name> - <long name> [Hardware|Software]"；供 GTK 下拉框直接使用
     std::string encoderLabel(const FFmpegEncoderInfo& info);
@@ -258,7 +284,7 @@ namespace FFmpegRecorder
 #endif
 ```
 
-### 4.3 编码器枚举
+### 4.3 编码器枚举与过滤
 
 实现要点：
 
@@ -269,6 +295,8 @@ while ((codec = av_codec_iterate(&opaque)) != nullptr)
 {
     if (!av_codec_is_encoder(codec) || codec->type != AVMEDIA_TYPE_VIDEO)
         continue;
+    if (!EncoderIsUsable(codec, outputFormat))
+        continue;
 
     const bool hw = (codec->capabilities & (AV_CODEC_CAP_HARDWARE |
                                             AV_CODEC_CAP_HYBRID)) != 0;
@@ -276,10 +304,28 @@ while ((codec = av_codec_iterate(&opaque)) != nullptr)
 }
 ```
 
-- **不过滤**具体 codec id；用户能看到 `libx264`、`h264_vaapi`、`h264_nvenc`、`h264_v4l2m2m`、`ffv1`、`rawvideo` 等全部编码器。
-- 排序：硬件在前，其次按 `name` 字典序。
-- 音频同理，额外在 UI 侧加一行 “None (no audio)”。
-- 枚举只读 `AVCodec` 元数据，不初始化设备、不探测硬件是否存在；编码器是否真的可用，在 `begin()` 打开时判定并给出错误。
+`EncoderIsUsable()` 只读 codec / muxer 元数据和设备节点，不打开编码器：
+
+1. 跳过 `AV_CODEC_CAP_EXPERIMENTAL`（需要 `-strict experimental` 才能工作）。
+2. 跳过没有实际画面/声音的包装编码器：`wrapped_avframe`、`anull`。
+3. 容器兼容：用 `av_guess_format(container)` 得到 `AVOutputFormat`，再调用
+   `avformat_query_codec(fmt, codec->id, 0)`。返回 0 的编码器不显示。这样 MP4
+   列表不会出现 `rawvideo`、`ffv1`（本机 muxer 恰好接受时仍会显示）等实际写不进去的项。
+4. 硬件后端按设备节点过滤（避免列出本机根本没有对应硬件的编码器）：
+   - VAAPI / QSV：需要 `/dev/dri/renderD*`，或设置了 `DESMUME_VAAPI_DEVICE`；
+   - CUDA / NVENC：需要 `/dev/nvidia*`；
+   - V4L2 M2M / RKMPP：需要 `/dev/video*`；
+   - Vulkan：需要 `/dev/dri/renderD*` 或 `/dev/dri/card*`；
+   - AMF 只在 Windows 枚举，VideoToolbox 只在 Apple 平台枚举。
+5. 排序：硬件在前，其次按 `name` 字典序（两组内部仍按名称升序）。
+6. 音频同理，额外在 UI 侧加一行 “None (no audio)”。
+
+**不打开编码器做探测。** `avcodec_open2()` 需要完整的设备、帧尺寸和像素格式；
+实测对 `prores_ks_vulkan` 这类只支持硬件格式的编码器直接打开会段错误。因此过滤只做
+“元数据 + 设备节点”判断，真正的打开仍由 `begin()` 完成，失败时给出明确错误。
+
+默认 MP4 下本机过滤结果为 39 个视频、21 个音频编码器；Matroska 下为 51 / 23。
+`anull` 与 `wrapped_avframe` 已从列表中消失。
 
 ### 4.4 编码器/像素格式协商
 
@@ -375,10 +421,38 @@ vctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;  // mp4/mkv 需要 extradata
 - `sws_scale` 的输出格式是编码器协商出的软件格式（优先 NV12/YUV420P）。
 - 硬件格式：先 `sws_scale` 到 NV12 的暂存 frame，再
   `av_hwframe_get_buffer()` + `av_hwframe_transfer_data()`。
+- 视频编码器为空时不创建视频编码器、视频流和缩放器，`updateVideo()` 直接忽略输入；
+  文件只包含音频流。此时 `hasVideo()` 返回 false，GTK 钩子跳过逐帧抓图/HUD 回读。
 - PTS：每来一个捕获帧 `frameIndex++`；`frame->pts = frameIndex`。队列满时丢弃**新帧**但 `frameIndex` 仍递增，保持时间轴不塌缩。
+
+#### 4.5.1 双屏合成
+
+合成在工作线程、`sws_scale` 之前完成，输入始终是“上屏在上、下屏在下”的源缓冲：
+
+1. 按 `sourceHeight / 2` 把源拆成两块屏幕。所有源格式（BGR555LE、RGBA、BGRA）
+   都按 2 或 4 字节/像素整体拷贝，不做像素格式转换。
+2. 根据 `layout` 排列：
+   - `Vertical`：上屏在上、下屏在下，中间插入 `screenGap` 行；
+   - `Horizontal`：上屏在左、下屏在右，中间插入 `screenGap` 列；
+   - `Single`：只放一屏，默认上屏。
+3. `swapScreens` 交换两块屏幕的来源；`Single` 下表示录制下屏。
+4. 间距用 `#4D4D4D`（BGR555LE 对应 5-bit 的 `0x2529`）填充；`screenGap = 0`
+   时两屏直接相邻。
+5. `rotation` 在合成后按整帧旋转：90（顺时针）、180、270。90/270 会交换输出宽高。
+6. 输出宽高在旋转前向下取偶数，避免 H.264/HEVC 4:2:0 无法描述奇数尺寸；
+   间距同样向下取偶，保证屏幕位置与最终尺寸一致。
+7. 合成缓冲和旋转缓冲在 worker 线程内复用；只有确实需要改变布局、间距、旋转或
+   源尺寸时才分配/重建。
+
+输出尺寸由 `FFmpegRecorder::composedSize()` 统一计算，对话框用它实时更新
+“Output size”，`begin()` 用它填 `config.width/height`。若源缓冲尺寸与合成尺寸不同
+（例如滤镜把画面放大到 2x），合成仍按源分辨率完成，再由 `sws_scale` 缩放到固定输出
+尺寸。
 
 ### 4.6 音频编码
 
+- `audioEncoder` 为空表示不录音频。视频和音频同时为空时 `begin()` 返回
+  “Select at least a video encoder or an audio encoder.”，不会创建空文件。
 - 输入：s16、双声道、`DESMUME_SAMPLE_RATE`（当前 44100 Hz）。
 - 输出采样率：从 `AV_CODEC_CONFIG_SAMPLE_RATE` 查询，**优先 48000**；列表存在但不含
   48000 时取第一个；返回 `NULL` / 空表示不限制，使用 48000。不能假定所有编码器都支持
@@ -512,20 +586,34 @@ Record _video/audio
 1. 若有任意录制在运行（旧 x264 / 旧 flac / 新 FFmpeg），提示并返回。
 2. 暂停模拟（与旧录制一致）。
 3. 弹出 `GtkDialog`：
-   - **Video encoder**：`GtkComboBoxText`，内容来自 `FFmpegRecorder::videoEncoders()`；
-     文本格式：`"<name> — <longName> [Hardware]"` / `[Software]`。
-     默认值依次尝试：配置中保存的编码器 → `libx264` → 第一个软件编码器。
-   - **Audio encoder**：第一项 “None (no audio)”，其后为全部音频编码器（同样标 Hardware/Software）。
+   - **Video encoder**：第一项 “None (no video)”，其后为
+     `FFmpegRecorder::videoEncoders(container)`；文本格式：
+     `"<name> — <longName> [Hardware]"` / `[Software]`。
+     默认值依次尝试：配置中保存的编码器 → `libx264` → 第一个软件编码器；
+     保存值为空表示用户显式选择了 None。
+   - **Audio encoder**：第一项 “None (no audio)”，其后为
+     `audioEncoders(container)`（同样标 Hardware/Software）。
      默认：配置值 → `aac` → None。
-   - **Container**：`Matroska (.mkv)` / `MP4 (.mp4)`，默认 MKV。
-   - **Video bitrate (kbps)**：`GtkSpinButton`，范围 100–100000，默认 8000。
+   - 容器切换时重建两个编码器列表，并尽量保留原来选中的编码器名；不在新列表中的
+     选择回退到默认值。这样 MP4 下不会残留只在 MKV 可用的编码器。
+   - **Container**：`Matroska (.mkv)` / `MP4 (.mp4)`，默认 MP4。
+   - **Video bitrate (kbps)**：`GtkSpinButton`，范围 100–100000，默认 8000；
+     Video=None 时禁用。
    - **Audio bitrate (kbps)**：范围 32–512，默认 192；Audio=None 时禁用。
+   - **Screen layout**：上下 / 左右 / 单屏；Video=None 时相关控件全部禁用。
+   - **Swap screens**：复选框；单屏时表示录下屏而不是上屏。
+   - **Gap (pixels)**：`GtkSpinButton`，范围 0–256（步进 2），默认 0；单屏时禁用。
+   - **Rotation**：0° / 90° / 180° / 270°（顺时针）。
+   - **Output size**：只读标签，随布局、间距、旋转和滤镜尺寸实时更新；
+     Video=None 时显示 “Output: audio only”。
    - **Include video filter, Lua and OSD**：复选框，默认开启；开启时录制滤镜输出
      （尺寸跟随滤镜，例如 2x = 512×768），关闭时录制原生 `masterCustomBuffer`。
-   - 说明文字：`Captures the shown frame at 59.83 fps.`
+     Video=None 时禁用。
+   - 说明文字：`Captures the shown frame at 59.83 fps.`，并说明可用 None 录制纯音频。
+   - 视频、音频都为 None 时 “Continue” 按钮禁用；`begin()` 也会再次拒绝这种配置。
 4. 用户确认后，弹出 `GtkFileChooserNative` 保存文件：
-   - 过滤器跟随容器（`*.mkv` / `*.mp4`）。
-   - 文件名缺扩展名时自动补 `.mkv` / `.mp4`。
+   - 过滤器跟随容器（`*.mp4` / `*.mkv`）。
+   - 文件名缺扩展名时自动补 `.mp4` / `.mkv`。
 5. 调 `avout_ffmpeg.begin(path, cfg)`：
    - 成功：禁用 `record_video`、`record_x264`、`record_flac`，启用 `record_stop`，
      状态栏显示 `Recording to <path>`。
@@ -635,14 +723,19 @@ bool AVI_IsRecording()
 /* Recording */
 OPT(record_video_encoder,   std::string, "libx264",      Recording, VideoEncoder)
 OPT(record_audio_encoder,   std::string, "aac",          Recording, AudioEncoder)
-OPT(record_container,       std::string, "matroska",     Recording, Container)
+OPT(record_container,       std::string, "mp4",          Recording, Container)
 OPT(record_video_bitrate,   int,         8000,           Recording, VideoBitrate)
 OPT(record_audio_bitrate,   int,         192,            Recording, AudioBitrate)
 OPT(record_filtered,        bool,        true,           Recording, FilteredOutput)
+OPT(record_layout,          int,         0,              Recording, ScreenLayout)
+OPT(record_swap,            bool,        false,          Recording, SwapScreens)
+OPT(record_gap,             int,         0,              Recording, ScreenGap)
+OPT(record_rotation,        int,         0,              Recording, Rotation)
 ```
 
-- 编码器按 `name` 保存，便于跨版本复用。
+- 编码器按 `name` 保存，便于跨版本复用；空字符串表示 None（视频为空即纯音频）。
 - 若保存的编码器在当前机器不存在，对话框回退到默认值。
+- `record_layout` 保存 `FFmpegScreenLayout` 的整数值。
 
 ### 5.7 运行时状态恢复
 
@@ -745,15 +838,17 @@ composed 录制范围一致。
 
 ### 6.5 编码器可能“枚举得到但打不开”
 
-这是正常现象，不应在枚举阶段过滤：
+枚举阶段会过滤掉“本机明显没有对应后端”的编码器（见 §4.3），但下面这些情况仍可能
+在列表里、直到打开时才失败：
 
-- `h264_vaapi`：没有 `/dev/dri/renderD*` 或驱动无编码入口；
-- `h264_nvenc`：没有 NVIDIA GPU / 驱动；
-- `h264_qsv`：没有 Intel iHD 驱动；
-- `h264_v4l2m2m`：没有对应 SoC 编码节点；
+- `h264_vaapi`：存在 `/dev/dri/renderD*`，但驱动没有编码入口；
+- `h264_nvenc`：存在 `/dev/nvidia*`，但驱动版本或 GPU 不支持；
+- `h264_qsv`：存在 render node，但没有 Intel iHD 驱动；
+- `h264_v4l2m2m`：存在 `/dev/video*`，但不是可用的 SoC 编码节点；
 - `h264_vulkan`：驱动未实现 Vulkan Video encode。
 
-用户选中后，`begin()` 给出明确错误即可。
+用户选中后，`begin()` 给出明确错误即可。不要用“打开一次编码器”做预探测：
+`prores_ks_vulkan` 等只支持硬件帧的编码器在没有完整设备/帧配置时会崩溃。
 
 ### 6.6 不阻塞模拟线程
 
@@ -798,7 +893,7 @@ meson compile -C build
   “编译进来”不等于“本机可用”。因此 `h264_vaapi` 行只能验证 `begin()` 的报错路径，
   不能验证真实硬件编码。
 - 本机可枚举 132 个视频编码器（23 硬件 + 109 软件）、87 个音频编码器（全部软件）。
-  列表会很长，但这是“枚举全部编码器”的预期结果。
+  经过 §4.3 的过滤后，Matroska 下剩 51 视频 / 23 音频，MP4 下剩 39 / 21。
 
 建议覆盖组合：
 
@@ -817,14 +912,20 @@ meson compile -C build
 ### 7.3 GTK 手工测试
 
 1. 菜单：新项 + “Old recorders” 子菜单显示正确；旧项仍可录制。
-2. 编码器列表包含全部视频编码器，并正确标注 Hardware/Software。
-3. 选中 `h264_vaapi`（本机可枚举、但没有可用 VAAPI 编码设备）时弹窗错误，
+2. 编码器列表只包含当前容器可用的编码器，并正确标注 Hardware/Software。
+3. 切换容器为 MP4/MKV 时列表立即更新，原来选中的编码器仍可用时保持不变。
+4. 选中 `h264_vaapi`（本机可枚举、但没有可用 VAAPI 编码设备）时弹窗错误，
    不留下半截文件。
-4. 录制 30 秒：画面流畅、音频不超前/滞后、停止后文件可播放。
-5. 录制期间菜单项禁用；停止后恢复；旧录制与新录制不能同时启动。
-6. 录制中关闭窗口 / 退出：文件能正常收尾（或至少 MKV 可播放）。
-7. 录音期间切换静音/音量不影响录制数据。
-8. 状态栏显示录制路径与停止提示。
+5. 分别用上下、左右、单屏、交换、4px 间距、90/180/270 度录制短片段，确认画面
+   排列与 “Output: W x H” 标签一致，且 H.264/HEVC 不报奇数尺寸错误。
+6. 录制 30 秒：画面流畅、音频不超前/滞后、停止后文件可播放。
+7. 录制期间菜单项禁用；停止后恢复；旧录制与新录制不能同时启动。
+8. 录制中关闭窗口 / 退出：文件能正常收尾（或至少 MKV 可播放）。
+9. 录音期间切换静音/音量不影响录制数据。
+10. 状态栏显示录制路径与停止提示。
+11. 视频编码器选 None + AAC 录制约 10 秒：文件只有音频流，可正常播放；
+    视频/音频都选 None 时 “Continue” 不可点击。
+12. 首次打开对话框时容器默认为 MP4，保存的容器/布局/旋转在重启后仍保留。
 
 ### 7.4 异常注入
 
@@ -842,9 +943,9 @@ meson compile -C build
 | `desmume/src/frontend/posix/meson_options.txt` | 新增 `ffmpeg-recording` 选项 |
 | `desmume/src/frontend/posix/meson.build` | 探测 libav*、定义 `HAVE_FFMPEG_RECORD` |
 | `desmume/src/frontend/posix/gtk/meson.build` | 加入新源文件与 FFmpeg 依赖 |
-| `desmume/src/frontend/posix/shared/avout_ffmpeg.h` | 新增公共接口 |
-| `desmume/src/frontend/posix/shared/avout_ffmpeg.cpp` | 新增 FFmpeg 录制实现 |
-| `desmume/src/frontend/posix/gtk/main.cpp` | 动作、对话框、钩子、看门狗、状态栏 |
+| `desmume/src/frontend/posix/shared/avout_ffmpeg.h` | 新增公共接口、布局配置与过滤后的枚举签名 |
+| `desmume/src/frontend/posix/shared/avout_ffmpeg.cpp` | 新增 FFmpeg 录制实现、编码器过滤、双屏合成/旋转 |
+| `desmume/src/frontend/posix/gtk/main.cpp` | 动作、对话框（含布局控件）、钩子、看门狗、状态栏 |
 | `desmume/src/frontend/posix/gtk/menu.ui` | 新菜单结构、旧录制移入子菜单、修正 stop action |
 | `desmume/src/frontend/posix/gtk/config_opts.h` | 新增 Recording 配置项 |
 
@@ -869,31 +970,43 @@ meson compile -C build
 4. **VAAPI 覆盖有限**：Intel/AMD 较稳；NVIDIA 通常需 `h264_nvenc`；ARM/Asahi 可能完全没有
    可用的硬件编码器（本机就是这种情况，只剩 Vulkan 编码器可枚举，但多数驱动未实现
    Vulkan Video encode）。
-5. **音频重采样**：优先统一到 48000 Hz；对 AAC/Opus 是必要的，对 FLAC/PCM 会产生一次重采样。
+5. **编码器数量仍然不少**：过滤后本机 Matroska 下仍有 51 个视频编码器（含
+   `ffv1`、`rawvideo`、`pcm_*`、`adpcm_*` 等），这是“枚举所有可用编码器”的直接结果；
+   后续可增加“常用/全部”或收藏列表。过滤只根据设备节点判断“明显没有硬件”，
+   不能保证列出的硬件编码器一定能在当前驱动/权限下打开。
+6. **枚举 ≠ 可用**：硬件编码器是否可用还取决于驱动版本、GPU、权限和会话类型，
+   最终只能在 `begin()` 打开时判定。过滤只能排除设备节点完全不存在的情况；例如
+   `/dev/dri/renderD128` 存在但 VAAPI 驱动不支持某个 profile 时，仍会在打开或编码阶段报错。
+7. **容器兼容性**：过滤使用 `avformat_query_codec()`，能排除明确不兼容的编码器，
+   但部分 muxer 的兼容性只在写 header/写 packet 时才暴露（例如 MP4 + `libvorbis`）。
+   失败信息仍需清晰。
+8. **音频重采样**：优先统一到 48000 Hz；对 AAC/Opus 是必要的，对 FLAC/PCM 会产生一次重采样。
    若编码器不支持 48000，则退回其支持列表中的第一个采样率（`time_base` 随之变化）。
    （若需要“音频原样无损”，后续可让 FLAC/PCM 直接使用 `DESMUME_SAMPLE_RATE`）。
-6. **画面内容**：
+9. **画面内容**：
    - 默认（滤镜输出开启）：读取 `video->GetDstBufferPtr()`，包含 3D、CPU 视频滤镜、
      Lua 和 HUD；输出尺寸跟随滤镜（如 2x = 512×768）。WGPU HUD 纹理通过
      `readPixels()` 合成，因此会多一次 GPU 回读。
-   - 关闭滤镜输出：读取 `masterCustomBuffer`，输出固定 256×384 双屏，不含滤镜/HUD。
-   - 两种模式都不包含窗口布局、屏幕间距、旋转和窗口缩放，和 Windows/macOS 的
-     composed 模式仍有差距。
-7. **异常退出**：MP4 在未写 `moov` 时不可播放；默认 MKV 降低风险。
-8. **C++14 线程**：使用 `std::thread`/`std::mutex`/`std::condition_variable`；与项目现有
-   `Task`/`pthread` 风格混用，需注意只在录制模块内部使用。
-9. **音频编码器列表同样很长**：87 个条目里包含 `pcm_*`、`adpcm_*`、`anull` 等，
-   其中许多不能进 MKV/MP4 或没有实际用途。第一版按“全部枚举”显示，靠 `begin()`
-   的容器/编码器打开错误兜底；后续可增加常用列表或过滤。
+   - 关闭滤镜输出：读取 `masterCustomBuffer`，默认输出 256×384 双屏，不含滤镜/HUD；
+     配置布局、间距或旋转后，输出尺寸由 §4.5.1 决定。
+   - 两种模式都支持上下 / 左右 / 单屏、交换、间距和 0/90/180/270 旋转，但合成只针对
+     DS 的两块屏幕，不包含桌面窗口位置、窗口缩放或其他窗口。
+10. **异常退出**：MP4 在未写 `moov` 时不可播放；默认容器现在是 MP4，若更在意
+    异常退出后的可恢复性，可手动选择 MKV。
+11. **C++14 线程**：使用 `std::thread`/`std::mutex`/`std::condition_variable`；与项目现有
+    `Task`/`pthread` 风格混用，需注意只在录制模块内部使用。
+12. **音频编码器列表同样很长**：过滤后 Matroska 下 23 个，包含 `pcm_*`、`adpcm_*` 等
+    不常用项。`anull` 已排除；容器不兼容项由 `avformat_query_codec()` 排除。
+13. **纯音频录制**：`videoEncoder` 为空时只创建音频流，`hasVideo()` 为 false，GTK
+    钩子跳过抓图和 WGPU HUD 回读。视频、音频不能同时为空，否则 `begin()` 直接报错。
 
 ---
 
 ## 10. 后续可扩展项
 
-- 录制 composed 画面：复用 `frontend/windows/record_compositor.cpp` 的 CPU 合成逻辑
-  （其算法本身跨平台），支持布局、间距、旋转、CPU 滤镜、最多 4x 放大。
 - 常用编码器过滤 / 收藏列表。
-- 硬件编码器可用性预探测（打开一次空编码器并立即关闭）以在列表中灰显不可用项。
+- 硬件编码器可用性预探测（不打开编码器，只查询 hwdevice/hwconfig 能力）以在列表中灰显不可用项。
+- 更多合成能力：每屏独立缩放、自定义间距颜色、镜像、任意角度。
 - 录制暂停/恢复、帧步进（`frameStep`）。
 - 音频无损直通（FLAC/PCM 保持 `DESMUME_SAMPLE_RATE`）。
 - 零拷贝：WebGPU/EGL 输出 → DMA-BUF → VAAPI/Vulkan surface。
@@ -985,9 +1098,20 @@ LIBAVCODEC_VERSION_MAJOR = 63
 - V4L2 M2M：`h263_v4l2m2m`、`h264_v4l2m2m`、`hevc_v4l2m2m`、`mpeg4_v4l2m2m`、
   `vp8_v4l2m2m`
 
-这些条目只是“发行版 FFmpeg 编译进来了”，**不代表本机有对应硬件**。本机没有可用的
-VAAPI/NVENC/AMF 设备，Vulkan 多数驱动也未实现 Video encode，所以实际打开都会失败。
-这验证了设计决定：枚举阶段不过滤，`begin()` 打开失败时再给出明确错误。
+这些条目只是“发行版 FFmpeg 编译进来了”，**不代表本机有对应硬件**。原始测试机没有可用的
+VAAPI/NVENC/AMF 驱动，Vulkan 多数驱动也未实现 Video encode，所以实际打开都会失败。
+最初的实现把这些编码器全部显示，靠 `begin()` 报错兜底；后续增加了
+`EncoderIsUsable()`，按设备节点和容器能力过滤：
+
+| 容器 | 视频 | 音频 |
+|---|---:|---:|
+| MP4（默认） | 39 | 21 |
+| Matroska | 51 | 23 |
+
+`anull`、`wrapped_avframe` 已排除。设备节点（`/dev/dri/renderD*`、`/dev/nvidia*`、
+`/dev/video*`）不存在时，对应后端也不会出现；VAAPI 可用 `DESMUME_VAAPI_DEVICE`
+指定其他路径。过滤不打开编码器，因此不会重现已验证过的 `prores_ks_vulkan` 段错误。
+注意：节点存在不等于驱动能编码，最终仍由 `begin()` 判定。
 
 软件编码器中的关键项：
 
@@ -1070,6 +1194,8 @@ VAAPI/NVENC/AMF 设备，Vulkan 多数驱动也未实现 Video encode，所以�
 - `gtk-builder-tool validate menu.ui` 通过；GTK 程序启动时没有出现
   “unknown action” 或菜单解析警告。
 - 加入滤镜输出录制后，主构建与 `-Dffmpeg-recording=false` 构建都重新编译通过。
+- 加入编码器过滤与双屏合成后，主构建和 `-Dffmpeg-recording=false` 构建再次通过；
+  `gtk-builder-tool validate menu.ui` 无输出（成功）。
 
 独立冒烟测试（不依赖 GTK，直接驱动 `AVOutFFmpeg`）：
 
@@ -1092,9 +1218,9 @@ VAAPI/NVENC/AMF 设备，Vulkan 多数驱动也未实现 Video encode，所以�
 - 第一版冒烟测试不节流时，120 帧在几毫秒内全部入队，工作线程处理不过来，
   有界队列丢弃了新帧，文件时长缩短到 1.4–1.97 秒。这验证了“队列满丢新帧”
   的行为，也说明**测试/使用时应按真实帧率送入**；真实模拟器路径不会这样突发。
-- 硬件编码器不可用时的错误来自 `av_hwdevice_ctx_create()`，目前信息较底层
-  （`Input/output error`）。后续可在 `begin()` 前检查 `/dev/dri/renderD*`
-  或环境变量，给出更友好的提示。
+- 硬件编码器不可用时的错误来自 `av_hwdevice_ctx_create()`，信息较底层
+  （`Input/output error`）。现在枚举阶段已按 `/dev/dri/renderD*`、`/dev/nvidia*`、
+  `/dev/video*` 过滤掉明显没有设备的后端；设备存在但驱动不支持时仍会得到该错误。
 - GTK 配置类 `value<std::string>` 的 `operator T()` 不参与
   `operator==(const basic_string&, const char*)` 的模板推导，因此代码里必须写
   `config.record_container.get() == "mp4"`、`config.record_audio_encoder.get().empty()`。
@@ -1129,6 +1255,29 @@ VAAPI/NVENC/AMF 设备，Vulkan 多数驱动也未实现 Video encode，所以�
 > 这些测试只验证“给定内存布局 → 编码器 → 解码颜色”的映射，不验证
 > `masterCustomBuffer` 本身的内存布局。后者由 `colorspacehandler` 的模板参数
 > 决定，已在 §6.1 中直接核对。
+
+编码器过滤与双屏布局测试（独立程序，`ffv1` 无损编码后解码回 RGB 检查）：
+
+| 场景 | 期望 | 结果 |
+|---|---|---|
+| Matroska 枚举 | 无 `anull` / `wrapped_avframe` / 实验性编码器 | 51 视频 / 23 音频，通过 |
+| MP4 枚举 | 同上，且无容器不兼容项 | 39 视频 / 21 音频，通过 |
+| 上下布局 | 上屏红、下屏蓝 | 通过 |
+| 上下 + 4px 间距 | 中间 4 行 `#4D4D4D` | 通过（YUV420 色度抽样导致边缘略混色） |
+| 上下 + swap | 上屏蓝、下屏红 | 通过 |
+| 左右布局 | 左屏红、右屏蓝，中间间距 | 通过 |
+| 单屏 | 默认上屏；swap 后下屏 | 通过 |
+| 90° / 180° / 270° | 宽高交换 / 图像倒置 / 反向旋转 | 通过 |
+| 2x 输出（合成后缩放） | 尺寸翻倍，布局不变 | 通过 |
+| BGR555LE / RGBA / BGRA 输入 | 三种格式颜色一致 | 通过 |
+| Video=None + aac + MP4 | 文件只有音频流，48 kHz stereo | 通过，0.17 s |
+| Video=None + flac + MKV | 文件只有音频流，48 kHz stereo | 通过，0.19 s |
+| Video=None + Audio=None | `begin()` 拒绝并删除文件 | 通过 |
+| libx264 + aac + MP4（默认容器） | 视频 + 音频两条流 | 通过 |
+
+**踩坑记录：** `av_get_bits_per_pixel()` 对 `AV_PIX_FMT_BGR555LE` 返回 15，
+直接 `/ 8` 得到 1 字节/像素，导致源行跨度和合成缓冲全部错位。`AvPixFmtBytesPerPixel()`
+必须写成 `(bits + 7) / 8`。这个问题只在 BGR555 路径出现，RGBA/BGRA（32 bit）不受影响。
 
 ### 11.9 实测画面问题：3D 图层缺失与偏红
 
