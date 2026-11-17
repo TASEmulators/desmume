@@ -265,6 +265,23 @@ feature. Each entry says what you can do with it — not how it is built.
   the console offers Run/Stop/Edit, file watching, drag-and-drop, an About
   dialog, frame stepping, popups, menus and host input APIs.
 
+### RAM Watch and RAM Search
+- **The same debugger as the other ports** — live watch lists and searches over
+  main RAM, ITCM and DTCM behave like the Windows and macOS windows, including
+  Windows-compatible `.wch` lists, because all three are hosts over one shared
+  core rather than three implementations.
+- **RAM Watch** — Address / Value / Notes refreshed every frame, with New, Edit,
+  Duplicate, Remove, Separator and Move Up/Down, a File menu (new, open, append,
+  recent, save, save as, Auto-load, Save Window Position, close), `.wch` files
+  dropped onto the list, and unsaved changes confirmed before the window closes.
+- **RAM Search** — specific value, relative-to-previous, specific address and
+  number-of-changes searches with the full comparison set, 1/2/4-byte widths and
+  misaligned and little-endian options; Add Watch, or a double-click, sends a row
+  to the watch list. A first search shows the leading 50 000 candidates and says
+  how many are hidden, since `GtkTreeView` builds a row for every model entry.
+- **Tools > RAM Watch / RAM Search** — preferences live in the existing
+  `config.cfg`, so Auto-load, window position and recent files survive restarts.
+
 ### Input, audio and build simplification
 - **SDL-based microphone** replaces the optional ALSA/OpenAL backends, removing
   two external dependencies; SDL3 then covers audio, gamepad and window handling

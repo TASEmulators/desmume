@@ -5498,6 +5498,10 @@ static void desmume_gtk_menu_tools(GtkApplication *app)
 {
     std::vector<GActionEntry> entries;
     std::vector<std::string> names;
+    // GActionEntry keeps a pointer to the parameter value, so the string
+    // vector must not reallocate while its entries are still referenced.
+    entries.reserve(dTools_list_size);
+    names.reserve(dTools_list_size);
     for (int i = 0; i < dTools_list_size; i++) {
         names.push_back(std::to_string(i));
         GActionEntry entry = {dTools_list[i]->shortname, Start_dTool, "u", names.back().c_str(), NULL};

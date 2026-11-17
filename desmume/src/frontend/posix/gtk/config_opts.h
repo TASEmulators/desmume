@@ -77,6 +77,21 @@ OPT(command_line_overriding_firmware_language, bool, false, Config, CommandLineO
 OPT(firmware_language, int, 1, Config, FirmwareLanguage)
 OPT(savetype, int, 0, Config, SaveType)
 
+/* RAM Watch
+ *
+ * The watch list itself is a document handled by shared/ramwatch_core.cpp;
+ * only the preference values live here, because persistence is a host job
+ * (INI on Windows, NSUserDefaults on macOS, this key file on GTK). Defaults
+ * and -1 coordinates mean "let the window manager place the window".
+ */
+OPT(ramwatch_autoload, bool, false, RAMWatch, AutoLoad)
+OPT(ramwatch_save_window_pos, bool, false, RAMWatch, SaveWindowPosition)
+OPT(ramwatch_recent_files, std::vector<std::string>, std::vector<std::string>(), RAMWatch, RecentFiles)
+OPT(ramwatch_win_x, int, -1, RAMWatch, WindowX)
+OPT(ramwatch_win_y, int, -1, RAMWatch, WindowY)
+OPT(ramwatch_win_w, int, 640, RAMWatch, WindowWidth)
+OPT(ramwatch_win_h, int, 460, RAMWatch, WindowHeight)
+
 /* Audio */
 OPT(audio_enabled, bool, true, Audio, Enabled)
 OPT(audio_sync, int, 0, Audio, Synchronization)

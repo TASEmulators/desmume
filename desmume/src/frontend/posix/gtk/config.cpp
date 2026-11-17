@@ -120,6 +120,42 @@ void value<std::vector<int>>::save() {
 	g_key_file_set_integer_list(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), this->mData.data(), this->mData.size());
 }
 
+/* class value<std::vector<std::string>> */
+
+template<>
+void value<std::vector<std::string>>::load() {
+	gsize count = 0;
+	char** val = g_key_file_get_string_list(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), &count, NULL);
+	if (val == NULL) {
+		return;
+	}
+
+	this->mData.clear();
+	this->mData.reserve(count);
+	for (gsize i = 0; i < count; i++) {
+		this->mData.push_back(val[i]);
+	}
+	g_strfreev(val);
+}
+
+template<>
+void value<std::vector<std::string>>::save() {
+	if (this->mData.empty()) {
+		// Same reasoning as the integer list: g_key_file_set_string_list()
+		// asserts that the list is non-NULL, so drop the key instead.
+		g_key_file_remove_key(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(), NULL);
+		return;
+	}
+
+	std::vector<const char*> pointers;
+	pointers.reserve(this->mData.size());
+	for (size_t i = 0; i < this->mData.size(); i++) {
+		pointers.push_back(this->mData[i].c_str());
+	}
+	g_key_file_set_string_list(this->mKeyFile, this->mSection.c_str(), this->mKey.c_str(),
+	                           (const gchar * const *)pointers.data(), pointers.size());
+}
+
 /* class Config */
 
 Config::Config()

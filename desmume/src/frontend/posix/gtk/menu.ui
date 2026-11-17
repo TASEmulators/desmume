@@ -763,6 +763,14 @@
           <attribute name='label' translatable='yes'>_IO regs view</attribute>
           <attribute name='action'>app.ioregs</attribute>
         </item>
+        <item>
+          <attribute name='label' translatable='yes'>_RAM Watch</attribute>
+          <attribute name='action'>app.ramwatch</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>R_AM Search</attribute>
+          <attribute name='action'>app.ramsearch</attribute>
+        </item>
         <submenu>
           <attribute name='label' translatable='yes'>_Lua Scripting</attribute>
           <section>
