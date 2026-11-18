@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2025 DeSmuME team
+	Copyright (C) 2025-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -41,6 +41,8 @@ public:
 	int GetBufferSizeForSPUInit() const;
 	bool IsPaused() const;
 	
+	virtual bool WillDeleteOnEngineChange() const;
+	
 	virtual void Start();
 	virtual void Stop();
 	virtual void SetMute(bool theState);
@@ -53,7 +55,6 @@ public:
 	
 	virtual void HandleFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
 	virtual size_t HandlePostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
-	
 };
 
 class DummyAudioOutputEngine : public ClientAudioOutputEngine
@@ -66,7 +67,8 @@ class ClientAudioOutput : public ClientEmulationOutput
 {
 protected:
 	DummyAudioOutputEngine *_dummyAudioEngine;
-	ClientAudioOutputEngine *_audioEngine;
+	ClientAudioOutputEngine *_audioEnginePending;
+	ClientAudioOutputEngine *_audioEngineApplied;
 	SoundInterface_struct _spuCallbackStruct;
 	
 	float _volume;
@@ -84,6 +86,12 @@ protected:
 	slock_t *_mutexSpuAdvancedLogic;
 	slock_t *_mutexSpuInterpolationMode;
 	slock_t *_mutexSpuSyncMethod;
+	
+	bool _needUpdateAudioEngine;
+	bool _needUpdateVolume;
+	bool _needUpdateSPUAdvancedLogic;
+	bool _needUpdateSPUInterpolationMode;
+	bool _needUpdateSPUSyncMethod;
 	
 public:
 	ClientAudioOutput();
@@ -117,6 +125,7 @@ public:
 	
 	// ClientEmulationOutput methods
 	virtual void SetIdle(bool theState);
+	virtual void NDSExecConfigure();
 };
 
 #endif // _CLIENT_AUDIO_OUTPUT_H_

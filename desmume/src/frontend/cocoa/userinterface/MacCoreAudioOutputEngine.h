@@ -40,9 +40,11 @@ protected:
 	
 public:
 	MacCoreAudioOutputEngine();
-	~MacCoreAudioOutputEngine();
+	virtual ~MacCoreAudioOutputEngine();
 	
 	// ClientAudioOutputEngine methods
+	virtual bool WillDeleteOnEngineChange() const;
+	
 	virtual void Start();
 	virtual void Stop();
 	virtual void SetMute(bool theState);

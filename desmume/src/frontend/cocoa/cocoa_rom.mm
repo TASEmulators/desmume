@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2024 DeSmuME team
+	Copyright (C) 2011-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -36,8 +36,9 @@
 @dynamic willStreamLoadData;
 @dynamic isDataLoaded;
 @synthesize saveType;
+@synthesize saveTypeAdvanscene;
 
-static NSMutableDictionary *saveTypeValues = nil;
+static NSMutableDictionary *__RomSaveTypeValues = nil;
 
 - (id)init
 {
@@ -62,19 +63,25 @@ static NSMutableDictionary *saveTypeValues = nil;
 		return self;
 	}
 	
-	if (saveTypeValues == nil)
+	if (__RomSaveTypeValues == nil)
 	{
-		saveTypeValues = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
-						  [NSNumber numberWithInteger:1], @"eeprom - 4 kbit",
-						  [NSNumber numberWithInteger:2], @"eeprom - 64 kbit",
-						  [NSNumber numberWithInteger:3], @"eeprom - 512 kbit",
-						  [NSNumber numberWithInteger:5], @"flash - 2 mbit",
-						  [NSNumber numberWithInteger:6], @"flash - 4 mbit",
-						  [NSNumber numberWithInteger:7], @"flash - 8 mbit",
-						  [NSNumber numberWithInteger:10], @"flash - 64 mbit",
-						  [NSNumber numberWithInteger:0], @"none",
-						  [NSNumber numberWithInteger:0], @"tbc",
-						  nil];
+		__RomSaveTypeValues = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+							   [NSNumber numberWithInteger:-1], @"unassigned",
+		                       [NSNumber numberWithInteger:0], @"none",
+		                       [NSNumber numberWithInteger:1], @"eeprom - 4 kbit",
+		                       [NSNumber numberWithInteger:2], @"eeprom - 64 kbit",
+		                       [NSNumber numberWithInteger:3], @"eeprom - 512 kbit",
+		                       [NSNumber numberWithInteger:4], @"fram - 256 kbit",
+		                       [NSNumber numberWithInteger:5], @"flash - 2 mbit",
+		                       [NSNumber numberWithInteger:6], @"flash - 4 mbit",
+		                       [NSNumber numberWithInteger:7], @"flash - 8 mbit",
+		                       [NSNumber numberWithInteger:8], @"flash - 16 mbit",
+		                       [NSNumber numberWithInteger:9], @"flash - 32 mbit",
+		                       [NSNumber numberWithInteger:10], @"flash - 64 mbit",
+		                       [NSNumber numberWithInteger:11], @"flash - 128 mbit",
+		                       [NSNumber numberWithInteger:12], @"flash - 256 mbit",
+		                       [NSNumber numberWithInteger:13], @"flash - 512 mbit",
+		                       nil];
 	}
 	
 	header = [[NSMutableDictionary alloc] initWithCapacity:32];
@@ -96,6 +103,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 	
 	fileURL = nil;
 	saveType = saveTypeID;
+	saveTypeAdvanscene = ROMSAVETYPE_UNASSIGNED;
 	
 	xmlCurrentRom = nil;
 	xmlElementStack = [[NSMutableArray alloc] initWithCapacity:32];
@@ -252,8 +260,6 @@ static NSMutableDictionary *saveTypeValues = nil;
 
 - (BOOL) loadData:(NSURL *)theURL
 {
-	[CocoaDSRom changeRomSaveType:saveType];
-	
 	BOOL result = [CocoaDSFile loadRom:theURL];
 	
 	if (result)
@@ -274,6 +280,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 	NSString *advscDBPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Advanscene_DatabasePath"];
 	if (advscDBPath != nil)
 	{
+		[self setSaveTypeAdvanscene:ROMSAVETYPE_UNASSIGNED];
 		NSXMLParser *advscDB = [[NSXMLParser alloc] initWithContentsOfURL:[NSURL fileURLWithPath:advscDBPath]];
 		[advscDB setDelegate:self];
 		[advscDB parse];
@@ -452,12 +459,9 @@ static NSMutableDictionary *saveTypeValues = nil;
 	{
 		NSString *saveTypeString = (NSString *)[xmlCurrentRom valueForKey:@"saveType"];
 		NSInteger saveTypeID = [CocoaDSRom saveTypeByString:saveTypeString];
-		[CocoaDSRom changeRomSaveType:saveTypeID];
 		
-		if (saveTypeID != ROMSAVETYPE_AUTOMATIC)
-		{
-			NSLog(@"Set the ROM save type using the ADVANsCEne database: %s.", [saveTypeString cStringUsingEncoding:NSUTF8StringEncoding]);
-		}
+		[self setSaveTypeAdvanscene:saveTypeID];
+		NSLog(@"Set the ROM save type using the ADVANsCEne database: %s.", [saveTypeString cStringUsingEncoding:NSUTF8StringEncoding]);
 	}
 }
 
@@ -532,25 +536,16 @@ static NSMutableDictionary *saveTypeValues = nil;
 	}
 }
 
-+ (void) changeRomSaveType:(NSInteger)saveTypeID
-{
-	CommonSettings.manualBackupType = (int)saveTypeID;
-	if (saveTypeID != ROMSAVETYPE_AUTOMATIC)
-	{
-		backup_forceManualBackupType();
-	}
-}
-
 + (NSInteger) saveTypeByString:(NSString *)saveTypeString
 {
 	NSInteger saveTypeID = 0;
 	
-	if (saveTypeValues == nil)
+	if (__RomSaveTypeValues == nil)
 	{
 		return saveTypeID;
 	}
 	
-	NSNumber *saveTypeNumber = (NSNumber *)[saveTypeValues valueForKey:[saveTypeString lowercaseString]];
+	NSNumber *saveTypeNumber = (NSNumber *)[__RomSaveTypeValues valueForKey:[saveTypeString lowercaseString]];
 	if (saveTypeNumber == nil)
 	{
 		return saveTypeID;

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2025 DeSmuME team
+	Copyright (C) 2025-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,58 +22,58 @@
 
 
 // Global sound playback manager
-static ClientAudioOutputEngine *_audioInterface = NULL;
+static ClientAudioOutputEngine *__SharedAudioInterface = NULL;
 
 int SPUInitCallback(int buffer_size)
 {
-	_audioInterface->Start();
+	__SharedAudioInterface->Start();
 	
 	return 0;
 }
 
 void SPUDeInitCallback()
 {
-	_audioInterface->Stop();
+	__SharedAudioInterface->Stop();
 }
 
 void SPUUpdateAudioCallback(s16 *buffer, u32 num_samples)
 {
-	_audioInterface->WriteToBuffer(buffer, (size_t)num_samples);
+	__SharedAudioInterface->WriteToBuffer(buffer, (size_t)num_samples);
 }
 
 u32 SPUGetAudioSpaceCallback()
 {
-	return (u32)_audioInterface->GetAvailableSamples();
+	return (u32)__SharedAudioInterface->GetAvailableSamples();
 }
 
 void SPUMuteAudioCallback()
 {
-	_audioInterface->SetMute(true);
+	__SharedAudioInterface->SetMute(true);
 }
 
 void SPUUnMuteAudioCallback()
 {
-	_audioInterface->SetMute(false);
+	__SharedAudioInterface->SetMute(false);
 }
 
 void SPUSetVolumeCallback(int volume)
 {
-	_audioInterface->SetVolume(volume);
+	__SharedAudioInterface->SetVolume(volume);
 }
 
 void SPUClearBufferCallback()
 {
-	_audioInterface->ClearBuffer();
+	__SharedAudioInterface->ClearBuffer();
 }
 
 void SPUFetchSamplesCallback(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
 {
-	_audioInterface->HandleFetchSamples(sampleBuffer, sampleCount, synchMode, theSynchronizer);
+	__SharedAudioInterface->HandleFetchSamples(sampleBuffer, sampleCount, synchMode, theSynchronizer);
 }
 
 size_t SPUPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
 {
-	return _audioInterface->HandlePostProcessSamples(postProcessBuffer, requestedSampleCount, synchMode, theSynchronizer);
+	return __SharedAudioInterface->HandlePostProcessSamples(postProcessBuffer, requestedSampleCount, synchMode, theSynchronizer);
 }
 
 SoundInterface_struct *SNDCoreList[] = {
@@ -113,6 +113,11 @@ int ClientAudioOutputEngine::GetBufferSizeForSPUInit() const
 bool ClientAudioOutputEngine::IsPaused() const
 {
 	return this->_isPaused;
+}
+
+bool ClientAudioOutputEngine::WillDeleteOnEngineChange() const
+{
+	return false;
 }
    
 void ClientAudioOutputEngine::Start()
@@ -172,14 +177,15 @@ ClientAudioOutput::ClientAudioOutput()
 	_typeId = OutputTypeID_Generic | OutputTypeID_Audio;
 	
 	_dummyAudioEngine = new DummyAudioOutputEngine;
-	if (_audioInterface == NULL)
+	if (__SharedAudioInterface == NULL)
 	{
-		_audioInterface = _dummyAudioEngine;
+		__SharedAudioInterface = _dummyAudioEngine;
 	}
 	
-	_audioEngine = _dummyAudioEngine;
-	_spuCallbackStruct.id                 = _audioEngine->GetEngineID();
-	_spuCallbackStruct.Name               = _audioEngine->GetEngineString();
+	_audioEnginePending = _dummyAudioEngine;
+	_audioEngineApplied = _audioEnginePending;
+	_spuCallbackStruct.id                 = _audioEngineApplied->GetEngineID();
+	_spuCallbackStruct.Name               = _audioEngineApplied->GetEngineString();
 	_spuCallbackStruct.Init               = &SPUInitCallback;
 	_spuCallbackStruct.DeInit             = &SPUDeInitCallback;
 	_spuCallbackStruct.UpdateAudio        = &SPUUpdateAudioCallback;
@@ -210,6 +216,12 @@ ClientAudioOutput::ClientAudioOutput()
 	_mutexSpuAdvancedLogic = slock_new();
 	_mutexSpuInterpolationMode = slock_new();
 	_mutexSpuSyncMethod = slock_new();
+	
+	_needUpdateAudioEngine = true;
+	_needUpdateVolume = true;
+	_needUpdateSPUAdvancedLogic = true;
+	_needUpdateSPUInterpolationMode = true;
+	_needUpdateSPUSyncMethod = true;
 }
 
 ClientAudioOutput::~ClientAudioOutput()
@@ -226,49 +238,25 @@ ClientAudioOutput::~ClientAudioOutput()
 
 void ClientAudioOutput::SetEngine(ClientAudioOutputEngine *theEngine)
 {
-	slock_lock(this->_mutexEngine);
-	
 	if (theEngine == NULL)
 	{
 		theEngine = this->_dummyAudioEngine;
 	}
 	
-	const bool isEnginePaused = this->_audioEngine->IsPaused();
-	this->_audioEngine = theEngine;
-	_audioInterface = theEngine;
-	
-	this->_spuCallbackStruct.id   = theEngine->GetEngineID();
-	this->_spuCallbackStruct.Name = theEngine->GetEngineString();
-	SNDCoreList[1] = &this->_spuCallbackStruct; // Assign our callback struct to index 1 so that the SPU can find it.
-	
+	slock_lock(this->_mutexEngine);
+	this->_audioEnginePending = theEngine;
+	this->_needUpdateAudioEngine = true;
 	slock_unlock(this->_mutexEngine);
 	
-	pthread_rwlock_wrlock(this->_rwlockProducer);
-	
-	int result = SPU_ChangeSoundCore(theEngine->GetEngineID(), theEngine->GetBufferSizeForSPUInit());
-	if (result == -1)
-	{
-		SPU_ChangeSoundCore(this->_dummyAudioEngine->GetEngineID(), this->_dummyAudioEngine->GetBufferSizeForSPUInit());
-	}
-	
-	this->_audioEngine->SetPause(isEnginePaused);
-	
-	pthread_rwlock_unlock(this->_rwlockProducer);
-	
 	slock_lock(this->_mutexVolume);
-	
-	if (!this->_isMuted)
-	{
-		SPU_SetVolume((int)(this->_volume + 0.5f));
-	}
-	
+	this->_needUpdateVolume = true;
 	slock_unlock(this->_mutexVolume);
 }
 
 ClientAudioOutputEngine* ClientAudioOutput::GetEngine()
 {
 	slock_lock(this->_mutexEngine);
-	ClientAudioOutputEngine *theEngine = this->_audioEngine;
+	ClientAudioOutputEngine *theEngine = this->_audioEnginePending;
 	slock_unlock(this->_mutexEngine);
 	
 	return theEngine;
@@ -276,7 +264,7 @@ ClientAudioOutputEngine* ClientAudioOutput::GetEngine()
 
 int ClientAudioOutput::GetEngineByID()
 {
-	return this->_audioEngine->GetEngineID();
+	return this->_audioEnginePending->GetEngineID();
 }
 
 void ClientAudioOutput::SetVolume(float vol)
@@ -291,14 +279,8 @@ void ClientAudioOutput::SetVolume(float vol)
 	}
 	
 	slock_lock(this->_mutexVolume);
-	
 	this->_volume = vol;
-	
-	if (!this->_isMuted)
-	{
-		SPU_SetVolume((int)(vol + 0.5f));
-	}
-	
+	this->_needUpdateVolume = true;
 	slock_unlock(this->_mutexVolume);
 }
 
@@ -315,27 +297,25 @@ void ClientAudioOutput::SetSPUAdvancedLogic(bool theState)
 {
 	slock_lock(this->_mutexSpuAdvancedLogic);
 	this->_spuAdvancedLogic = theState;
+	this->_needUpdateSPUAdvancedLogic = true;
 	slock_unlock(this->_mutexSpuAdvancedLogic);
-	
-	pthread_rwlock_wrlock(this->_rwlockProducer);
-	CommonSettings.spu_advanced = theState;
-	pthread_rwlock_unlock(this->_rwlockProducer);
 }
 
 bool ClientAudioOutput::GetSPUAdvancedLogic()
 {
-	return this->_spuAdvancedLogic;
+	slock_lock(this->_mutexSpuAdvancedLogic);
+	const bool spuAdvancedLogic = this->_spuAdvancedLogic;
+	slock_unlock(this->_mutexSpuAdvancedLogic);
+	
+	return spuAdvancedLogic;
 }
 
 void ClientAudioOutput::SetSPUInterpolationModeByID(SPUInterpolationMode interpModeID)
 {
 	slock_lock(this->_mutexSpuInterpolationMode);
 	this->_interpolationModeID = interpModeID;
+	this->_needUpdateSPUInterpolationMode = true;
 	slock_unlock(this->_mutexSpuInterpolationMode);
-	
-	pthread_rwlock_wrlock(this->_rwlockProducer);
-	CommonSettings.spuInterpolationMode = interpModeID;
-	pthread_rwlock_unlock(this->_rwlockProducer);
 	
 	switch (interpModeID)
 	{
@@ -362,19 +342,19 @@ void ClientAudioOutput::SetSPUInterpolationModeByID(SPUInterpolationMode interpM
 
 SPUInterpolationMode ClientAudioOutput::GetSPUInterpolationModeByID()
 {
-	return this->_interpolationModeID;
+	slock_lock(this->_mutexSpuInterpolationMode);
+	const SPUInterpolationMode interpModeID = this->_interpolationModeID;
+	slock_unlock(this->_mutexSpuInterpolationMode);
+	
+	return interpModeID;
 }
 
 void ClientAudioOutput::SetSPUSyncModeByID(ESynchMode syncModeID)
 {
 	slock_lock(this->_mutexSpuSyncMethod);
 	this->_syncModeID = syncModeID;
+	this->_needUpdateSPUSyncMethod = true;
 	slock_unlock(this->_mutexSpuSyncMethod);
-	
-	pthread_rwlock_wrlock(this->_rwlockProducer);
-	CommonSettings.SPU_sync_mode = syncModeID;
-	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
-	pthread_rwlock_unlock(this->_rwlockProducer);
 	
 	if (syncModeID == ESynchMode_DualSynchAsynch)
 	{
@@ -404,19 +384,19 @@ void ClientAudioOutput::SetSPUSyncModeByID(ESynchMode syncModeID)
 
 ESynchMode ClientAudioOutput::GetSPUSyncModeByID()
 {
-	return this->_syncModeID;
+	slock_lock(this->_mutexSpuSyncMethod);
+	const ESynchMode syncModeID = this->_syncModeID;
+	slock_unlock(this->_mutexSpuSyncMethod);
+	
+	return syncModeID;
 }
 
 void ClientAudioOutput::SetSPUSyncMethodByID(ESynchMethod syncMethodID)
 {
 	slock_lock(this->_mutexSpuSyncMethod);
 	this->_syncMethodID = syncMethodID;
+	this->_needUpdateSPUSyncMethod = true;
 	slock_unlock(this->_mutexSpuSyncMethod);
-	
-	pthread_rwlock_wrlock(this->_rwlockProducer);
-	CommonSettings.SPU_sync_method = syncMethodID;
-	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
-	pthread_rwlock_unlock(this->_rwlockProducer);
 	
 	if (this->_syncModeID == ESynchMode_DualSynchAsynch)
 	{
@@ -446,24 +426,18 @@ void ClientAudioOutput::SetSPUSyncMethodByID(ESynchMethod syncMethodID)
 
 ESynchMethod ClientAudioOutput::GetSPUSyncMethodByID()
 {
-	return this->_syncMethodID;
+	slock_lock(this->_mutexSpuSyncMethod);
+	const ESynchMethod syncMethodID = this->_syncMethodID;
+	slock_unlock(this->_mutexSpuSyncMethod);
+	
+	return syncMethodID;
 }
 
 void ClientAudioOutput::SetMute(bool theState)
 {
 	slock_lock(this->_mutexVolume);
-	
 	this->_isMuted = theState;
-	
-	if (theState)
-	{
-		SPU_SetVolume(0);
-	}
-	else
-	{
-		SPU_SetVolume((int)(this->_volume + 0.5f));
-	}
-	
+	this->_needUpdateVolume = true;
 	slock_unlock(this->_mutexVolume);
 }
 
@@ -478,7 +452,7 @@ bool ClientAudioOutput::IsMuted()
 
 const char* ClientAudioOutput::GetEngineString()
 {
-	return this->_audioEngine->GetEngineString();
+	return this->_audioEnginePending->GetEngineString();
 }
 
 const char* ClientAudioOutput::GetSPUInterpolationModeString()
@@ -493,6 +467,103 @@ const char* ClientAudioOutput::GetSPUSyncMethodString()
 
 void ClientAudioOutput::SetIdle(bool theState)
 {
-	this->_audioEngine->SetPause(theState);
+	this->_audioEngineApplied->SetPause(theState);
 	ClientEmulationOutput::SetIdle(theState);
+}
+
+void ClientAudioOutput::NDSExecConfigure()
+{
+	slock_lock(this->_mutexEngine);
+	if (this->_needUpdateAudioEngine)
+	{
+		this->_needUpdateAudioEngine = false;
+		
+		const ClientAudioOutputEngine *oldEngine = this->_audioEngineApplied;
+		const bool wasOldEnginePaused = oldEngine->IsPaused();
+		
+		this->_audioEngineApplied = this->_audioEnginePending;
+		slock_unlock(this->_mutexEngine);
+		
+		this->_spuCallbackStruct.id   = this->_audioEngineApplied->GetEngineID();
+		this->_spuCallbackStruct.Name = this->_audioEngineApplied->GetEngineString();
+		__SharedAudioInterface = this->_audioEngineApplied;
+		
+		int result = SPU_ChangeSoundCore(this->_audioEngineApplied->GetEngineID(), this->_audioEngineApplied->GetBufferSizeForSPUInit());
+		if (result == -1)
+		{
+			SPU_ChangeSoundCore(this->_dummyAudioEngine->GetEngineID(), this->_dummyAudioEngine->GetBufferSizeForSPUInit());
+		}
+		
+		this->_audioEngineApplied->SetPause(wasOldEnginePaused);
+		
+		if ( oldEngine->WillDeleteOnEngineChange() )
+		{
+			delete oldEngine;
+		}
+	}
+	else
+	{
+		slock_unlock(this->_mutexEngine);
+	}
+	
+	slock_lock(this->_mutexVolume);
+	if (this->_needUpdateVolume)
+	{
+		this->_needUpdateVolume = false;
+		const float vol = this->_volume;
+		const bool isMuted = this->_isMuted;
+		slock_unlock(this->_mutexVolume);
+		
+		if (isMuted)
+		{
+			SPU_SetVolume(0);
+		}
+		else
+		{
+			SPU_SetVolume((int)(vol + 0.5f));
+		}
+	}
+	else
+	{
+		slock_unlock(this->_mutexVolume);
+	}
+	
+	slock_lock(this->_mutexSpuAdvancedLogic);
+	if (this->_needUpdateSPUAdvancedLogic)
+	{
+		this->_needUpdateSPUAdvancedLogic = false;
+		CommonSettings.spu_advanced = this->_spuAdvancedLogic;
+		slock_unlock(this->_mutexSpuAdvancedLogic);
+	}
+	else
+	{
+		slock_unlock(this->_mutexSpuAdvancedLogic);
+	}
+	
+	slock_lock(this->_mutexSpuInterpolationMode);
+	if (this->_needUpdateSPUInterpolationMode)
+	{
+		this->_needUpdateSPUInterpolationMode = false;
+		CommonSettings.spuInterpolationMode = this->_interpolationModeID;
+		slock_unlock(this->_mutexSpuInterpolationMode);
+	}
+	else
+	{
+		slock_unlock(this->_mutexSpuInterpolationMode);
+	}
+	
+	slock_lock(this->_mutexSpuSyncMethod);
+	if (this->_needUpdateSPUSyncMethod)
+	{
+		this->_needUpdateSPUSyncMethod = false;
+		CommonSettings.SPU_sync_mode = this->_syncModeID;
+		CommonSettings.SPU_sync_method = this->_syncMethodID;
+		slock_unlock(this->_mutexSpuSyncMethod);
+		
+		SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
+	}
+	else
+	{
+		slock_unlock(this->_mutexSpuSyncMethod);
+	}
 }

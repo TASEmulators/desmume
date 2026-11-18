@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2025 DeSmuME team
+	Copyright (C) 2012-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -108,6 +108,9 @@
 	[super dealloc];
 }
 
+#pragma mark -
+#pragma mark Class Methods
+
 - (BOOL) cheatSystemStart:(CocoaDSCheatManager *)cheatManager
 {
 	BOOL didStartSuccessfully = NO;
@@ -147,6 +150,97 @@
 	[CheatDatabaseWindowController setCurrentGameForAllWindowsSerial:nil crc:0];
 }
 
+- (void) refreshList
+{
+	if ([self cdsCheats] == nil)
+	{
+		return;
+	}
+	
+	[cheatListController setContent:[[self cdsCheats] sessionList]];
+	[[self cdsCheats] save];
+}
+
+- (void) setCheatConfigViewByType:(NSInteger)cheatTypeID
+{
+	NSView *newView = nil;
+	
+	if (currentView == nil)
+	{
+		currentView = viewConfigureNoSelection;
+	}
+	
+	switch (cheatTypeID)
+	{
+		case CheatType_Internal:
+			newView = viewConfigureInternalCheat;
+			break;
+			
+		case CheatType_ActionReplay:
+			newView = viewConfigureActionReplayCheat;
+			break;
+			
+		case CheatType_CodeBreaker:
+			newView = viewConfigureCodeBreakerCheat;
+			break;
+			
+		default:
+			break;
+	}
+	
+	if (newView != nil)
+	{
+		NSRect frameRect = [currentView frame];
+		[currentView retain];
+		[cheatConfigBox replaceSubview:currentView with:newView];
+		currentView = newView;
+		[currentView setFrame:frameRect];
+	}
+}
+
+- (void) setCheatSearchViewByStyle:(NSInteger)searchStyleID
+{
+	NSView *newView = nil;
+	
+	if (currentSearchStyleView == nil)
+	{
+		currentSearchStyleView = viewSearchNoSelection;
+	}
+	
+	switch (searchStyleID)
+	{
+		case CheatSearchStyle_ExactValue:
+			newView = viewSearchExactValue;
+			break;
+			
+		case CheatSearchStyle_Comparative:
+			if ([cdsCheats searchDidStart] == 0)
+			{
+				newView = viewSearchComparativeStart;
+			}
+			else
+			{
+				newView = viewSearchComparativeContinue;
+			}
+			break;
+			
+		default:
+			break;
+	}
+	
+	if (newView != nil)
+	{
+		NSRect frameRect = [currentSearchStyleView frame];
+		[currentSearchStyleView retain];
+		[cheatSearchView replaceSubview:currentSearchStyleView with:newView];
+		currentSearchStyleView = newView;
+		[currentSearchStyleView setFrame:frameRect];
+	}
+}
+
+#pragma mark -
+#pragma mark IBActions
+
 - (IBAction) addToList:(id)sender
 {
 	if ([self cdsCheats] == nil)
@@ -157,8 +251,7 @@
 	CocoaDSCheatItem *newCheatItem = [[self cdsCheats] newItem];
 	if (newCheatItem != nil)
 	{
-		[cheatListController setContent:[[self cdsCheats] sessionList]];
-		[[self cdsCheats] save];
+		[self refreshList];
 	}
 }
 
@@ -180,8 +273,7 @@
 	CocoaDSCheatItem *selectedCheat = (CocoaDSCheatItem *)[selectedObjects objectAtIndex:0];
 	[cheatManager remove:selectedCheat];
 	
-	[cheatListController setContent:[cheatManager sessionList]];
-	[cheatManager save];
+	[self refreshList];
 	[cheatListTable deselectAll:sender];
 	
 	NSUInteger cheatCount = [cheatManager itemTotalCount];
@@ -248,8 +340,7 @@
 		[cheatManager removeAtIndex:0];
 	}
 	
-	[cheatListController setContent:[cheatManager sessionList]];
-	[cheatManager save];
+	[self refreshList];
 }
 
 - (IBAction) setInternalCheatValue:(id)sender
@@ -366,87 +457,16 @@
 	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isSearchStarted"];
 }
 
-- (void) setCheatConfigViewByType:(NSInteger)cheatTypeID
-{
-	NSView *newView = nil;
-	
-	if (currentView == nil)
-	{
-		currentView = viewConfigureNoSelection;
-	}
-	
-	switch (cheatTypeID)
-	{
-		case CheatType_Internal:
-			newView = viewConfigureInternalCheat;
-			break;
-			
-		case CheatType_ActionReplay:
-			newView = viewConfigureActionReplayCheat;
-			break;
-			
-		case CheatType_CodeBreaker:
-			newView = viewConfigureCodeBreakerCheat;
-			break;
-			
-		default:
-			break;
-	}
-	
-	if (newView != nil)
-	{
-		NSRect frameRect = [currentView frame];
-		[currentView retain];
-		[cheatConfigBox replaceSubview:currentView with:newView];
-		currentView = newView;
-		[currentView setFrame:frameRect];
-	}
-}
-
-- (void) setCheatSearchViewByStyle:(NSInteger)searchStyleID
-{
-	NSView *newView = nil;
-	
-	if (currentSearchStyleView == nil)
-	{
-		currentSearchStyleView = viewSearchNoSelection;
-	}
-	
-	switch (searchStyleID)
-	{
-		case CheatSearchStyle_ExactValue:
-			newView = viewSearchExactValue;
-			break;
-			
-		case CheatSearchStyle_Comparative:
-			if ([cdsCheats searchDidStart] == 0)
-			{
-				newView = viewSearchComparativeStart;
-			}
-			else
-			{
-				newView = viewSearchComparativeContinue;
-			}
-			break;
-			
-		default:
-			break;
-	}
-	
-	if (newView != nil)
-	{
-		NSRect frameRect = [currentSearchStyleView frame];
-		[currentSearchStyleView retain];
-		[cheatSearchView replaceSubview:currentSearchStyleView with:newView];
-		currentSearchStyleView = newView;
-		[currentSearchStyleView setFrame:frameRect];
-	}
-}
+#pragma mark -
+#pragma mark NSWindowDelegate Protocol
 
 - (void)windowDidBecomeKey:(NSNotification *)notification
 {
 	[cheatWindowController setContent:bindings];
 }
+
+#pragma mark -
+#pragma mark NSTableViewDelegate Protocol
 
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification
 {

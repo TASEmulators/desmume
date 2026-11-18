@@ -93,8 +93,17 @@
 @property (retain) NSString *currentGameCode;
 @property (assign) NSInteger currentGameCRC;
 
+#pragma mark -
+#pragma mark Class Methods
+
 - (BOOL) cheatSystemStart:(CocoaDSCheatManager *)theManager;
 - (void) cheatSystemEnd;
+- (void) refreshList;
+- (void) setCheatConfigViewByType:(NSInteger)cheatTypeID;
+- (void) setCheatSearchViewByStyle:(NSInteger)searchStyleID;
+
+#pragma mark -
+#pragma mark IBActions
 
 - (IBAction) addToList:(id)sender;
 - (IBAction) removeFromList:(id)sender;

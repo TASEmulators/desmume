@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2025 DeSmuME team
+	Copyright (C) 2025-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -88,6 +88,21 @@ pthread_rwlock_t* ClientEmulationOutput::GetProducerRWLock()
 void ClientEmulationOutput::SetProducerRWLock(pthread_rwlock_t *rwlockProducer)
 {
 	this->_rwlockProducer = rwlockProducer;
+}
+
+void ClientEmulationOutput::NDSExecConfigure()
+{
+	// Do nothing. This is method is implementation dependent.
+}
+
+void ClientEmulationOutput::NDSExecPre()
+{
+	// Do nothing. This is method is implementation dependent.
+}
+
+void ClientEmulationOutput::NDSExecPost()
+{
+	// Do nothing. This is method is implementation dependent.
 }
 
 void ClientEmulationOutput::Dispatch(int32_t messageID)
@@ -389,7 +404,7 @@ void ClientEmulationOutputManager::_UnregisterPending()
 	}
 }
 
-void ClientEmulationOutputManager::DispatchAllOfPlatformAndType(int32_t platformId, int32_t typeId, int32_t messageID)
+void ClientEmulationOutputManager::NDSExecConfigureAllOfPlatformAndType(int32_t platformId, int32_t typeId)
 {
 	// Add all pending outputs to be registered.
 	pthread_mutex_lock(&this->_pendingRegisterListMutex);
@@ -406,14 +421,188 @@ void ClientEmulationOutputManager::DispatchAllOfPlatformAndType(int32_t platform
 		ClientEmulationOutput *runningOutput = this->_runList[i];
 		if ( !runningOutput->IsIdle() && ((runningOutput->GetPlatformId() & platformId) != 0) && ((runningOutput->GetTypeId() & typeId) != 0) )
 		{
-			runningOutput->Dispatch(messageID);
+			runningOutput->NDSExecConfigure();
 		}
 	}
 	
 	pthread_mutex_unlock(&this->_pendingUnregisterListMutex);
 }
 
+void ClientEmulationOutputManager::NDSExecConfigureAll()
+{
+	this->NDSExecConfigureAllOfPlatformAndType(PlatformTypeID_Any, OutputTypeID_Any);
+}
+
+void ClientEmulationOutputManager::NDSExecPreAllOfPlatformAndType(int32_t platformId, int32_t typeId)
+{
+	for (size_t i = 0; i < this->_runList.size(); i++)
+	{
+		ClientEmulationOutput *runningOutput = this->_runList[i];
+		if ( !runningOutput->IsIdle() && ((runningOutput->GetPlatformId() & platformId) != 0) && ((runningOutput->GetTypeId() & typeId) != 0) )
+		{
+			runningOutput->NDSExecPre();
+		}
+	}
+}
+
+void ClientEmulationOutputManager::NDSExecPreAll()
+{
+	this->NDSExecPreAllOfPlatformAndType(PlatformTypeID_Any, OutputTypeID_Any);
+}
+
+void ClientEmulationOutputManager::NDSExecPostAllOfPlatformAndType(int32_t platformId, int32_t typeId)
+{
+	for (size_t i = 0; i < this->_runList.size(); i++)
+	{
+		ClientEmulationOutput *runningOutput = this->_runList[i];
+		if ( !runningOutput->IsIdle() && ((runningOutput->GetPlatformId() & platformId) != 0) && ((runningOutput->GetTypeId() & typeId) != 0) )
+		{
+			runningOutput->NDSExecPost();
+		}
+	}
+}
+
+void ClientEmulationOutputManager::NDSExecPostAll()
+{
+	this->NDSExecPostAllOfPlatformAndType(PlatformTypeID_Any, OutputTypeID_Any);
+}
+
+void ClientEmulationOutputManager::DispatchAllOfPlatformAndType(int32_t platformId, int32_t typeId, int32_t messageID)
+{
+	for (size_t i = 0; i < this->_runList.size(); i++)
+	{
+		ClientEmulationOutput *runningOutput = this->_runList[i];
+		if ( !runningOutput->IsIdle() && ((runningOutput->GetPlatformId() & platformId) != 0) && ((runningOutput->GetTypeId() & typeId) != 0) )
+		{
+			runningOutput->Dispatch(messageID);
+		}
+	}
+}
+
 void ClientEmulationOutputManager::DispatchAll(int32_t messageID)
 {
 	this->DispatchAllOfPlatformAndType(PlatformTypeID_Any, OutputTypeID_Any, messageID);
+}
+
+static void* RunManagerThread(void *arg)
+{
+	ClientEmulationThreadedOutputManager *manager = (ClientEmulationThreadedOutputManager *)arg;
+	
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
+	if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber10_6)
+	{
+		pthread_setname_np(manager->GetThreadName());
+	}
+#endif
+	
+	manager->RunLoop();
+	
+	return NULL;
+}
+
+ClientEmulationThreadedOutputManager::ClientEmulationThreadedOutputManager(const char *threadName, int priority)
+{
+	_threadName = (threadName != NULL) ? threadName : "Unnamed Output Manager Thread";
+	_threadMessageID = MESSAGE_NONE;
+	_priority = priority;
+	
+	pthread_mutex_init(&_mutexMessageLoop, NULL);
+	pthread_cond_init(&_condSignalMessage, NULL);
+}
+
+ClientEmulationThreadedOutputManager::~ClientEmulationThreadedOutputManager()
+{
+	pthread_mutex_lock(&this->_mutexMessageLoop);
+	
+	if (this->_pthread != NULL)
+	{
+		this->_threadMessageID = MESSAGE_NONE;
+		pthread_mutex_unlock(&this->_mutexMessageLoop);
+		
+		pthread_cancel(this->_pthread);
+		pthread_join(this->_pthread, NULL);
+		this->_pthread = NULL;
+	}
+	else
+	{
+		pthread_mutex_unlock(&this->_mutexMessageLoop);
+	}
+	
+	pthread_cond_destroy(&this->_condSignalMessage);
+	pthread_mutex_destroy(&this->_mutexMessageLoop);
+}
+
+const char* ClientEmulationThreadedOutputManager::GetThreadName() const
+{
+	return this->_threadName.c_str();
+}
+
+void ClientEmulationThreadedOutputManager::CreateThread()
+{
+	if (CommonSettings.num_cores > 1)
+	{
+		pthread_attr_t threadAttr;
+		pthread_attr_init(&threadAttr);
+		pthread_attr_setschedpolicy(&threadAttr, SCHED_RR);
+		
+		struct sched_param sp;
+		memset(&sp, 0, sizeof(struct sched_param));
+		sp.sched_priority = this->_priority;
+		pthread_attr_setschedparam(&threadAttr, &sp);
+		
+		pthread_create(&this->_pthread, &threadAttr, &RunManagerThread, this);
+		pthread_attr_destroy(&threadAttr);
+	}
+	else
+	{
+		pthread_create(&this->_pthread, NULL, &RunManagerThread, this);
+	}
+}
+
+void ClientEmulationThreadedOutputManager::ExitThread()
+{
+	pthread_mutex_lock(&this->_mutexMessageLoop);
+	
+	if (this->_pthread != NULL)
+	{
+		this->_threadMessageID = MESSAGE_NONE;
+		pthread_mutex_unlock(&this->_mutexMessageLoop);
+		
+		pthread_cancel(this->_pthread);
+		pthread_join(this->_pthread, NULL);
+		this->_pthread = NULL;
+	}
+	else
+	{
+		pthread_mutex_unlock(&this->_mutexMessageLoop);
+	}
+}
+
+void ClientEmulationThreadedOutputManager::RunLoop()
+{
+	pthread_mutex_lock(&this->_mutexMessageLoop);
+	
+	do
+	{
+		while (this->_threadMessageID == MESSAGE_NONE)
+		{
+			pthread_cond_wait(&this->_condSignalMessage, &this->_mutexMessageLoop);
+		}
+		
+		this->_PerformTaskOnThread();
+		this->_threadMessageID = MESSAGE_NONE;
+	} while(true);
+}
+
+void ClientEmulationThreadedOutputManager::Dispatch()
+{
+	pthread_mutex_lock(&this->_mutexMessageLoop);
+	this->_threadMessageID = MESSAGE_EMU_FRAME_PROCESSED;
+	pthread_cond_signal(&this->_condSignalMessage);
+	pthread_mutex_unlock(&this->_mutexMessageLoop);
+}
+
+void ClientEmulationThreadedOutputManager::_PerformTaskOnThread()
+{
+	// Do nothing. This is implementation dependent.
 }

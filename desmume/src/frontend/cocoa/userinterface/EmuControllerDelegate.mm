@@ -926,7 +926,7 @@
 	[self setSelectedRomSaveTypeID:saveTypeID];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore changeRomSaveType:saveTypeID];
+	[cdsCore execControl]->SetROMSaveTypeUserForce((int)saveTypeID);
 }
 
 - (IBAction) changeHostMicrophonePermission:(id)sender
@@ -1835,6 +1835,17 @@
 	}
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	// If we're using an Advanscene database to set the save type, then set it now.
+	if ([self selectedRomSaveTypeID] == ROMSAVETYPE_AUTOMATIC)
+	{
+		const NSInteger saveTypeAdvsc = [[self currentRom] saveTypeAdvanscene];
+		if (saveTypeAdvsc != ROMSAVETYPE_UNASSIGNED)
+		{
+			[cdsCore execControl]->SetROMSaveTypeUserOnReset((int)saveTypeAdvsc);
+		}
+	}
+	
 	[cdsCore reset];
 	
 	for (DisplayWindowController *windowController in windowList)
@@ -2041,38 +2052,42 @@
 	// Need to pause the core before loading the ROM.
 	[self pauseCore];
 	
+	CocoaDSRom *newRom = [[CocoaDSRom alloc] init];
+	if (newRom == nil)
+	{
+		[self setStatusTextWithString:NSSTRING_STATUS_ROM_LOADING_FAILED];
+		[self setIsWorking:NO];
+		return result;
+	}
+	
+	[self setIsRomLoading:YES];
+	[romURL retain];
+	[newRom setSaveType:[self selectedRomSaveTypeID]];
+	[newRom setWillStreamLoadData:[[NSUserDefaults standardUserDefaults] boolForKey:@"General_StreamLoadRomData"]];
+	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	if (![cdsCore emuFlagUseExternalBios] || ![cdsCore emuFlagUseExternalFirmware])
 	{
 		[[cdsCore cdsFirmware] updateFirmwareConfigSessionValues];
 	}
 	
+	[cdsCore execControl]->SetROMSaveTypeUserOnReset((int)[self selectedRomSaveTypeID]);
 	[cdsCore execControl]->ApplySettingsOnReset();
 	[cdsCore updateSlot1DeviceStatus];
 	[self writeDefaultsSlot1Settings:nil];
 	
-	CocoaDSRom *newRom = [[CocoaDSRom alloc] init];
-	if (newRom != nil)
+	if (willLoadAsync)
 	{
-		[self setIsRomLoading:YES];
-		[romURL retain];
-		[newRom setSaveType:selectedRomSaveTypeID];
-		[newRom setWillStreamLoadData:[[NSUserDefaults standardUserDefaults] boolForKey:@"General_StreamLoadRomData"]];
-		
-		if (willLoadAsync)
-		{
-			[NSThread detachNewThreadSelector:@selector(loadDataOnThread:) toTarget:newRom withObject:romURL];
-		}
-		else
-		{
-			[newRom loadData:romURL];
-		}
-		
-		[romURL release];
+		[NSThread detachNewThreadSelector:@selector(loadDataOnThread:) toTarget:newRom withObject:romURL];
+	}
+	else
+	{
+		[newRom loadData:romURL];
 	}
 	
-	result = YES;
+	[romURL release];
 	
+	result = YES;
 	return result;
 }
 
@@ -2097,12 +2112,23 @@
 		return;
 	}
 	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
 	// Set the core's ROM to our newly allocated ROM object.
 	[self setCurrentRom:theRom];
 	[romInfoPanelController setContent:[theRom bindings]];
 	
+	// If we're using an Advanscene database to set the save type, then set it now.
+	if ([self selectedRomSaveTypeID] == ROMSAVETYPE_AUTOMATIC)
+	{
+		const NSInteger saveTypeAdvsc = [theRom saveTypeAdvanscene];
+		if (saveTypeAdvsc != ROMSAVETYPE_UNASSIGNED)
+		{
+			[cdsCore execControl]->SetROMSaveTypeUserForce((int)saveTypeAdvsc);
+		}
+	}
+	
 	// If the ROM has an associated cheat file, load it now.
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cheatWindowDelegate cheatSystemStart:[cdsCore cdsCheatManager]];
 	
 	// Add the last loaded ROM to the Recent ROMs list.

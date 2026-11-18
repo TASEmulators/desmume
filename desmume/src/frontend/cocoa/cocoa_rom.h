@@ -29,6 +29,7 @@
 	NSMutableDictionary *bindings;
 	NSURL *fileURL;
 	NSInteger saveType;
+	NSInteger saveTypeAdvanscene;
 	
 	NSMutableDictionary *xmlCurrentRom;
 	NSMutableArray *xmlElementStack;
@@ -41,6 +42,7 @@
 @property (assign) BOOL willStreamLoadData;
 @property (readonly) BOOL isDataLoaded;
 @property (assign) NSInteger saveType;
+@property (assign) NSInteger saveTypeAdvanscene;
 
 - (id) initWithURL:(NSURL *)theURL;
 - (id) initWithURL:(NSURL *)theURL saveType:(NSInteger)saveTypeID;
@@ -59,7 +61,6 @@
 - (NSImage *) icon;
 - (void) handleAdvansceneDatabaseInfo;
 
-+ (void) changeRomSaveType:(NSInteger)saveTypeID;
 + (NSInteger) saveTypeByString:(NSString *)saveTypeString;
 + (NSMutableDictionary *) romNotLoadedBindings;
 + (NSString *) byteSizeStringWithLargerUnit:(NSUInteger)byteSize;

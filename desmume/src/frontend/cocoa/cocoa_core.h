@@ -139,7 +139,6 @@ typedef struct
 - (BOOL) isSlot1Ejected;
 - (void) slot1Eject;
 
-- (void) changeRomSaveType:(NSInteger)saveTypeID;
 - (void) updateExecutionSpeedStatus;
 - (void) updateSlot1DeviceStatus;
 
