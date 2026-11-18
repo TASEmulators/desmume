@@ -158,6 +158,8 @@ volatile bool execute = true;
 	cdsCheatManager = [[CocoaDSCheatManager alloc] init];
 	cdsOutputList = [[NSMutableArray alloc] initWithCapacity:32];
 	
+	execControl->SetClientCheatManager([cdsCheatManager internalManager]);
+	
 	macDisplayOutputManager = ((MacGPUFetchObjectDisplayLink *)graphicsControl->GetFetchObject())->GetOutputManager();
 	
 	ClientInputHandler *inputHandler = [cdsController inputHandler];
@@ -236,6 +238,9 @@ volatile bool execute = true;
 	
 	[cdsController release];
 	cdsController = nil;
+	
+	[cdsCheatManager release];
+	cdsCheatManager = nil;
 	
 	[cdsOutputList release];
 	cdsOutputList = nil;
@@ -814,24 +819,13 @@ volatile bool execute = true;
 
 - (BOOL) isSlot1Ejected
 {
-	const BOOL isEjected = (nds.cardEjected) ? YES : NO;
-	return isEjected;
+	return (execControl->IsSlot1Ejected()) ? YES : NO;
 }
 
 - (void) slot1Eject
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	NDS_TriggerCardEjectIRQ();
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
+	execControl->PerformSlot1Eject();
 	[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_NO_DEVICE];
-}
-
-- (void) changeRomSaveType:(NSInteger)saveTypeID
-{
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	[CocoaDSRom changeRomSaveType:saveTypeID];
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
 }
 
 - (void) updateExecutionSpeedStatus
@@ -1136,6 +1130,7 @@ static void* RunCoreThread(void *arg)
 	ClientCheatManager *cheatManager = [[cdsCore cdsCheatManager] internalManager];
 	ClientExecutionControl *execControl = [cdsCore execControl];
 	MacGraphicsControl *graphicsControl = (MacGraphicsControl *)execControl->GetClientGraphicsControl();
+	ClientEmulationOutputManager *outputManager = [cdsCore outputManager];
 	ClientDisplayViewOutputManager *macDisplayOutputManager = [cdsCore macDisplayOutputManager];
 	ClientInputHandler *inputHandler = execControl->GetClientInputHandler();
 	const NDSFrameInfo &ndsFrameInfo = execControl->GetNDSFrameInfo();
@@ -1209,8 +1204,11 @@ static void* RunCoreThread(void *arg)
 			avCaptureObject = NULL;
 		}
 		
+		outputManager->NDSExecConfigureAll();
+		
 		// Execute the frame and increment the frame counter.
 		pthread_rwlock_wrlock(&param->rwlockCoreExecute);
+		outputManager->NDSExecPreAll();
 #ifdef HAVE_LUA
 		intptr_t queuedUid;
 		std::string queuedFilename;
@@ -1231,6 +1229,8 @@ static void* RunCoreThread(void *arg)
 #endif
 		NDS_exec<false>();
 		SPU_Emulate_user();
+		
+		outputManager->NDSExecPostAll();
 		execControl->FetchOutputPostNDSExec();
 #ifdef HAVE_LUA
 		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
@@ -1256,6 +1256,8 @@ static void* RunCoreThread(void *arg)
 		MacMetalOSD_PresentBack();
 #endif
 		pthread_rwlock_unlock(&param->rwlockCoreExecute);
+		
+		outputManager->DispatchAll(MESSAGE_EMU_FRAME_PROCESSED);
 		
 		// Check if an internal execution error occurred that halted the emulation.
 		if (!execute)

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2025 DeSmuME team
+	Copyright (C) 2025-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -836,15 +836,15 @@ ClientCheatItem* ClientCheatList::__AddItem(const ClientCheatItem *srcItem, cons
 	{
 		if (willCopy)
 		{
-			this->_list->push_back(new ClientCheatItem);
+			newItem = new ClientCheatItem;
 			newItem->Init(*srcItem);
 		}
 		else
 		{
-			this->_list->push_back((ClientCheatItem *)srcItem);
+			newItem = (ClientCheatItem *)srcItem;
 		}
 		
-		newItem = this->_list->back();
+		this->_list->push_back(newItem);
 	}
 	
 	return newItem;

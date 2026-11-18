@@ -49,6 +49,7 @@
 
 class ClientAVCaptureObject;
 class ClientGraphicsControl;
+class ClientCheatManager;
 
 enum ExecutionBehavior
 {
@@ -85,6 +86,8 @@ struct ClientExecutionControlSettings
 	
 	std::string cpuEmulationEngineName;
 	std::string slot1DeviceName;
+	
+	int romSaveTypeUser;
 	
 	bool enableAdvancedBusLevelTiming;
 	bool enableRigorous3DRenderingTiming;
@@ -207,6 +210,7 @@ class ClientExecutionControl
 protected:
 	ClientInputHandler *_inputHandler;
 	ClientGraphicsControl *_graphicsControl;
+	ClientCheatManager *_cheatManager;
 	
 	ClientExecutionControlSettings _settingsPending;
 	ClientExecutionControlSettings _settingsApplied;
@@ -218,6 +222,10 @@ protected:
 	bool _newSettingsPendingOnNDSExec;
 	
 	bool _needResetFramesToSkip;
+	bool _needPerformSlot1Eject;
+	bool _needChangeRomSaveTypeForce;
+	
+	bool _isSlot1Ejected;
 	
 	double _frameTime;
 	uint8_t _framesToSkip;
@@ -258,6 +266,9 @@ public:
 	ClientGraphicsControl* GetClientGraphicsControl();
 	void SetClientGraphicsControl(ClientGraphicsControl *graphicsControl);
 	
+	ClientCheatManager* GetClientCheatManager();
+	void SetClientCheatManager(ClientCheatManager *cheatManager);
+	
 	CPUEmulationEngineID GetCPUEmulationEngineID();
 	const char* GetCPUEmulationEngineName();
 	void SetCPUEmulationEngineByID(CPUEmulationEngineID engineID);
@@ -268,6 +279,13 @@ public:
 	NDS_SLOT1_TYPE GetSlot1DeviceType();
 	const char* GetSlot1DeviceName();
 	void SetSlot1DeviceByType(NDS_SLOT1_TYPE type);
+	
+	void PerformSlot1Eject();
+	bool IsSlot1Ejected();
+	
+	int GetROMSaveTypeUser();
+	void SetROMSaveTypeUserOnReset(int romSaveTypeUser);
+	void SetROMSaveTypeUserForce(int romSaveTypeUser);
 	
 	const char* GetARM9ImagePath();
 	void SetARM9ImagePath(const char *filePath);

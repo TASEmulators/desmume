@@ -151,7 +151,6 @@
 	
 	if (newEngineID != SNDCORE_MAC_COREAUDIO)
 	{
-		delete _audioEngineMacCoreAudio;
 		_audioEngineMacCoreAudio = NULL;
 	}
 	

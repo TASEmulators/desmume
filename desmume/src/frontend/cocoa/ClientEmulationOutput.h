@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2025 DeSmuME team
+	Copyright (C) 2025-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -90,6 +90,10 @@ public:
 	pthread_rwlock_t* GetProducerRWLock();
 	void SetProducerRWLock(pthread_rwlock_t *rwlockProducer);
 	
+	virtual void NDSExecConfigure();
+	virtual void NDSExecPre();
+	virtual void NDSExecPost();
+	
 	virtual void Dispatch(int32_t messageID);
 	virtual void HandleEmuFrameProcessed();
 };
@@ -131,8 +135,8 @@ protected:
 	pthread_mutex_t _pendingRegisterListMutex;
 	pthread_mutex_t _pendingUnregisterListMutex;
 	
-	void _RegisterPending();
-	void _UnregisterPending();
+	virtual void _RegisterPending();
+	virtual void _UnregisterPending();
 	
 public:
 	ClientEmulationOutputManager();
@@ -146,8 +150,41 @@ public:
 	void UnregisterAtIndex(size_t index);
 	void UnregisterAll();
 	
+	void NDSExecConfigureAllOfPlatformAndType(int32_t platformId, int32_t typeId);
+	void NDSExecConfigureAll();
+	
+	void NDSExecPreAllOfPlatformAndType(int32_t platformId, int32_t typeId);
+	void NDSExecPreAll();
+	
+	void NDSExecPostAllOfPlatformAndType(int32_t platformId, int32_t typeId);
+	void NDSExecPostAll();
+	
 	void DispatchAllOfPlatformAndType(int32_t platformId, int32_t typeId, int32_t messageID);
 	void DispatchAll(int32_t messageID);
+};
+
+class ClientEmulationThreadedOutputManager : public ClientEmulationOutputManager
+{
+protected:
+	std::string _threadName;
+	int32_t _threadMessageID;
+	pthread_mutex_t _mutexMessageLoop;
+	pthread_cond_t _condSignalMessage;
+	pthread_t _pthread;
+	int _priority;
+	
+	virtual void _PerformTaskOnThread() = 0;
+	
+public:
+	ClientEmulationThreadedOutputManager(const char *threadName, int priority);
+	~ClientEmulationThreadedOutputManager();
+	
+	const char* GetThreadName() const;
+	void CreateThread();
+	void ExitThread();
+	
+	virtual void RunLoop();
+	virtual void Dispatch();
 };
 
 #endif //_CLIENT_EMULATION_OUTPUT_H_

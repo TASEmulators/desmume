@@ -100,8 +100,17 @@ extern NSString * const kCheatManagerAddInternalCheatNotification;
 @property (retain) NSString *currentGameCode;
 @property (assign) NSInteger currentGameCRC;
 
+#pragma mark -
+#pragma mark Class Methods
+
 - (BOOL) cheatSystemStart:(CocoaDSCheatManager *)theManager;
 - (void) cheatSystemEnd;
+- (void) refreshList;
+- (void) setCheatConfigViewByType:(NSInteger)cheatTypeID;
+- (void) setCheatSearchViewByStyle:(NSInteger)searchStyleID;
+
+#pragma mark -
+#pragma mark IBActions
 
 // Creates an enabled internal cheat (the equivalent of the Windows "Add Cheat"
 // dialog, pre-filled and auto-committed), selects it in the list and shows the

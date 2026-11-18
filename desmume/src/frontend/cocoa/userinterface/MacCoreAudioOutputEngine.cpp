@@ -148,6 +148,11 @@ MacCoreAudioOutputEngine::~MacCoreAudioOutputEngine()
 	apple_unfairlock_destroy(this->_unfairlockAU);
 }
 
+bool MacCoreAudioOutputEngine::WillDeleteOnEngineChange() const
+{
+	return true;
+}
+
 void MacCoreAudioOutputEngine::Start()
 {
 	apple_unfairlock_lock(this->_unfairlockAU);

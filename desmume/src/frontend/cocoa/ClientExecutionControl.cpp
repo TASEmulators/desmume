@@ -49,12 +49,17 @@ ClientExecutionControl::ClientExecutionControl()
 {
 	_inputHandler = NULL;
 	_graphicsControl = NULL;
+	_cheatManager = NULL;
 	
 	_newSettingsPendingOnReset = true;
 	_newSettingsPendingOnExecutionLoopStart = true;
 	_newSettingsPendingOnNDSExec = true;
 	
 	_needResetFramesToSkip = false;
+	_needPerformSlot1Eject = false;
+	_needChangeRomSaveTypeForce = false;
+	
+	_isSlot1Ejected = true;
 	
 	_frameTime = 0.0;
 	_framesToSkip = 0;
@@ -84,6 +89,7 @@ ClientExecutionControl::ClientExecutionControl()
 	_settingsPending.filePathSlot1R4					= std::string();
 	_settingsPending.cpuEmulationEngineName				= "Interpreter";
 	_settingsPending.slot1DeviceName					= "Uninitialized";
+	_settingsPending.romSaveTypeUser                    = ROMSAVETYPE_AUTOMATIC;
 	
 	_settingsPending.enableAdvancedBusLevelTiming		= true;
 	_settingsPending.enableRigorous3DRenderingTiming	= false;
@@ -187,6 +193,16 @@ ClientGraphicsControl* ClientExecutionControl::GetClientGraphicsControl()
 void ClientExecutionControl::SetClientGraphicsControl(ClientGraphicsControl *graphicsControl)
 {
 	this->_graphicsControl = graphicsControl;
+}
+
+ClientCheatManager* ClientExecutionControl::GetClientCheatManager()
+{
+	return this->_cheatManager;
+}
+
+void ClientExecutionControl::SetClientCheatManager(ClientCheatManager *cheatManager)
+{
+	this->_cheatManager = cheatManager;
 }
 
 CPUEmulationEngineID ClientExecutionControl::GetCPUEmulationEngineID()
@@ -294,6 +310,61 @@ void ClientExecutionControl::SetSlot1DeviceByType(NDS_SLOT1_TYPE type)
 		this->_settingsPending.slot1DeviceName = slot1_List[type]->info()->name();
 	}
 	
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+}
+
+void ClientExecutionControl::PerformSlot1Eject()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	this->_needPerformSlot1Eject = true;
+	this->_newSettingsPendingOnNDSExec = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	this->_isSlot1Ejected = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+}
+
+bool ClientExecutionControl::IsSlot1Ejected()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	const bool isEjected = this->_isSlot1Ejected;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return isEjected;
+}
+
+int ClientExecutionControl::GetROMSaveTypeUser()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	const int romSaveTypeUser = this->_settingsPending.romSaveTypeUser;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return romSaveTypeUser;
+}
+
+void ClientExecutionControl::SetROMSaveTypeUserOnReset(int romSaveTypeUser)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	this->_settingsPending.romSaveTypeUser = romSaveTypeUser;
+	
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+}
+
+void ClientExecutionControl::SetROMSaveTypeUserForce(int romSaveTypeUser)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	
+	this->_settingsPending.romSaveTypeUser = romSaveTypeUser;
+	this->_needChangeRomSaveTypeForce = true;
+	
+	this->_newSettingsPendingOnNDSExec = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 	this->_newSettingsPendingOnReset = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 }
@@ -1006,7 +1077,10 @@ void ClientExecutionControl::SetFrameJumpBehavior(FrameJumpBehavior newBehavior)
 
 void ClientExecutionControl::ApplySettingsOnReset()
 {
+	this->_needPerformSlot1Eject = false;
+	
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	this->_isSlot1Ejected = false;
 	
 	if (this->_newSettingsPendingOnReset)
 	{
@@ -1017,6 +1091,8 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		this->_settingsApplied.filePathARM7BIOS				= this->_settingsPending.filePathARM7BIOS;
 		this->_settingsApplied.filePathFirmware				= this->_settingsPending.filePathFirmware;
 		this->_settingsApplied.filePathSlot1R4				= this->_settingsPending.filePathSlot1R4;
+		
+		this->_settingsApplied.romSaveTypeUser              = this->_settingsPending.romSaveTypeUser;
 		
 		this->_settingsApplied.enableExternalBIOS			= this->_settingsPending.enableExternalBIOS;
 		this->_settingsApplied.enableExternalFirmware		= this->_settingsPending.enableExternalFirmware;
@@ -1038,6 +1114,7 @@ void ClientExecutionControl::ApplySettingsOnReset()
 			this->_settingsApplied.slot1DeviceType	= this->_settingsPending.slot1DeviceType;
 		}
 		
+		this->_needChangeRomSaveTypeForce = false;
 		this->_newSettingsPendingOnReset = false;
 		pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 		
@@ -1049,6 +1126,8 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		CommonSettings.BootFromFirmware			= this->_settingsApplied.enableFirmwareBoot;
 		CommonSettings.WifiBridgeDeviceID		= this->_settingsApplied.wifiBridgeDeviceIndex;
 		CommonSettings.fwConfig					= this->_settingsApplied.fwConfig;
+		
+		CommonSettings.manualBackupType         = this->_settingsApplied.romSaveTypeUser;
 		
 		wifiHandler->SetEmulationLevel((WifiEmulationLevel)this->_settingsApplied.wifiEmulationMode);
 		wifiHandler->SetBridgeDeviceIndex(this->_settingsApplied.wifiBridgeDeviceIndex);
@@ -1166,6 +1245,8 @@ void ClientExecutionControl::ApplySettingsOnNDSExec()
 	
 	if (this->_newSettingsPendingOnNDSExec)
 	{
+		this->_settingsApplied.romSaveTypeUser                  = this->_settingsPending.romSaveTypeUser;
+		
 		this->_settingsApplied.enableAdvancedBusLevelTiming		= this->_settingsPending.enableAdvancedBusLevelTiming;
 		this->_settingsApplied.enableRigorous3DRenderingTiming	= this->_settingsPending.enableRigorous3DRenderingTiming;
 		this->_settingsApplied.enableGameSpecificHacks			= this->_settingsPending.enableGameSpecificHacks;
@@ -1181,7 +1262,11 @@ void ClientExecutionControl::ApplySettingsOnNDSExec()
 		this->_settingsApplied.avCaptureObject					= this->_settingsPending.avCaptureObject;
 		
 		const bool needResetFramesToSkip = this->_needResetFramesToSkip;
+		const bool needPerformSlot1Eject = this->_needPerformSlot1Eject;
+		const bool needChangeRomSaveType = this->_needChangeRomSaveTypeForce;
 		
+		this->_needChangeRomSaveTypeForce = false;
+		this->_needPerformSlot1Eject = false;
 		this->_needResetFramesToSkip = false;
 		this->_newSettingsPendingOnNDSExec = false;
 		pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
@@ -1197,6 +1282,21 @@ void ClientExecutionControl::ApplySettingsOnNDSExec()
 		
 		CommonSettings.gamehacks.en				= this->_settingsApplied.enableGameSpecificHacks;
 		CommonSettings.gamehacks.apply();
+		
+		if (needChangeRomSaveType)
+		{
+			CommonSettings.manualBackupType = this->_settingsApplied.romSaveTypeUser;
+			if (CommonSettings.manualBackupType != ROMSAVETYPE_AUTOMATIC)
+			{
+				backup_forceManualBackupType();
+			}
+		}
+		
+		if (needPerformSlot1Eject)
+		{
+			NDS_TriggerCardEjectIRQ();
+			nds.cardEjected = true;
+		}
 		
 		if (needResetFramesToSkip)
 		{

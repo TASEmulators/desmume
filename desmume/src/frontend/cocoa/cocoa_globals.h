@@ -284,7 +284,8 @@ enum
 
 enum
 {
-	ROMSAVETYPE_AUTOMATIC							= 0
+	ROMSAVETYPE_UNASSIGNED                          = -1,
+	ROMSAVETYPE_AUTOMATIC                           = 0
 };
 
 enum
