@@ -2153,6 +2153,12 @@ void NDS_exec(s32 nb)
 			nds.cpuloopIterationCount++;
 			sequencer.execHardware();
 
+			// every DMA that was armed has been executed by execHardware() above,
+			// so the JIT may run a full block again. This has to happen before the
+			// vblank break below, otherwise a stale flag would survive into the
+			// next frame and cost one extra block boundary.
+			mmu_dma_event_pending = 0;
+
 			//break out once per frame
 			if(sequencer.nds_vblankEnded) break;
 			//it should be benign to execute execHardware in the next frame,

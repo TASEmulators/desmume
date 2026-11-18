@@ -267,6 +267,9 @@ static GpVar bb_cpu;
 static GpVar bb_cycles;
 static GpVar bb_total_cycles;
 static u32 bb_constant_cycles;
+// pointer to mmu_dma_event_pending, materialised on demand (see emit_dma_event_check)
+static GpVar bb_dma_pending;
+static bool bb_dma_pending_ready;
 
 #define cpu (&ARMPROC)
 #define bb_next_instruction (bb_adr + bb_opcodesize)
@@ -4076,6 +4079,84 @@ static void _armlog(u8 proc, u32 addr, u32 opcode)
 #endif
 }
 
+//-----------------------------------------------------------------------------
+//   Event-boundary support
+//-----------------------------------------------------------------------------
+
+// Instructions that write to memory. A store is the only way the CPU can arm a
+// DMA channel, so these are the places where a compiled block has to be able to
+// end early.
+static bool instr_is_store(u32 opcode)
+{
+	if(bb_thumb)
+	{
+		switch(opcode & 0xF800)
+		{
+			case 0x5000: return true; // STR/STRB/STRH (register offset, L clear)
+			case 0x6000: return true; // STR   (immediate offset)
+			case 0x7000: return true; // STRB  (immediate offset)
+			case 0x8000: return true; // STRH  (immediate offset)
+			case 0x9000: return true; // STR   (SP relative)
+			default: break;
+		}
+		if((opcode & 0xF000) == 0xC000) return true; // STMIA
+		if((opcode & 0xFE00) == 0xB400) return true; // PUSH
+		return false;
+	}
+
+	// ARM: single data transfer, L bit clear
+	if((opcode & 0x0C000000) == 0x04000000)
+		return (opcode & 0x00100000) == 0;
+	// ARM: block data transfer, L bit clear
+	if((opcode & 0x0E000000) == 0x08000000)
+		return (opcode & 0x00100000) == 0;
+	// ARM: SWP / SWPB
+	if((opcode & 0x0FB00000) == 0x01000000)
+		return true;
+	// ARM: STRD
+	if((opcode & 0x0E000000) == 0 && (opcode & 0x00400000) && (opcode & 0x00100000) == 0
+		&& ((opcode >> 4) & 0xF) == 0xD)
+		return true;
+
+	return false;
+}
+
+// Emit an early exit out of the current block.
+//
+// A store just retired. If it programmed a DMA channel that starts immediately,
+// DmaController::write32() has set mmu_dma_event_pending; the transfer is due
+// *now* (nextEvent == nds_timer), so the CPU must not retire another instruction
+// before Sequencer::execHardware() has run it. Returning here reproduces what
+// the interpreter does after every single instruction.
+//
+// bb_total_cycles holds the runtime (variable) cycle count of the instructions
+// already emitted, bb_constant_cycles the constant part of exactly those
+// instructions, so together they are the correct cycle count for the partial
+// block.
+static void emit_dma_event_check(u32 resume_adr)
+{
+	if(!bb_dma_pending_ready)
+	{
+		bb_dma_pending_ready = true;
+		bb_dma_pending = c.newGpVar(kX86VarTypeGpz);
+		c.mov(bb_dma_pending, (uintptr_t)&mmu_dma_event_pending);
+	}
+
+	Label skip = c.newLabel();
+	c.test(dword_ptr(bb_dma_pending, 0), 1);
+	c.jz(skip);
+
+	JIT_COMMENT("DMA armed: leave block at %08Xh", resume_adr);
+	c.mov(dword_ptr(bb_dma_pending, 0), 0);
+	c.mov(cpu_ptr(instruct_adr), resume_adr);
+	c.mov(cpu_ptr(next_instruction), resume_adr);
+	if(bb_constant_cycles > 0)
+		c.add(bb_total_cycles, bb_constant_cycles);
+	c.ret(bb_total_cycles);
+
+	c.bind(skip);
+}
+
 template<int PROCNUM>
 static u32 compile_basicblock()
 {
@@ -4112,6 +4193,7 @@ static u32 compile_basicblock()
 	JIT_COMMENT("reset bb_total_cycles");
 	bb_total_cycles = c.newGpVar(kX86VarTypeGpz);
 	c.mov(bb_total_cycles, 0);
+	bb_dma_pending_ready = false;
 
 #if (PROFILER_JIT_LEVEL > 0)
 	JIT_COMMENT("Profiler ptr");
@@ -4192,6 +4274,14 @@ static u32 compile_basicblock()
 				c.lea(bb_total_cycles, ptr(bb_total_cycles.r64(), bb_cycles.r64(), kScaleNone));
 			}
 		}
+
+		// A store may have armed a DMA channel. If it did, the transfer is due
+		// immediately and has to run before the next instruction, otherwise a
+		// following write to the same DMA registers would overwrite the
+		// parameters that were just latched.
+		if(instr_is_store(opcode))
+			emit_dma_event_check(bb_next_instruction);
+
 		interpreted_cycles += op_decode[PROCNUM][bb_thumb]();
 	}
 	
