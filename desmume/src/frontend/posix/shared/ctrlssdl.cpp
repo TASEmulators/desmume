@@ -393,6 +393,56 @@ static void set_mouse_coord(signed long x,signed long y)
 static bool allowUpAndDown = false;
 static buttonstruct<int> cardinalHeldTime = {};
 
+/* Per-button autofire, the POSIX counterpart of the Windows port's
+   Turbo/TurboTime and the macOS port's per-input turbo flag: while a button
+   whose turbo_cfg[] entry is set is held, it is pressed and released on
+   alternate frames instead of staying held.  Same pattern and phase as the
+   Windows port, so autofire feels identical across the ports. */
+u8 turbo_cfg[NB_KEYS] = {0};
+
+static u32 turboTime[NB_KEYS] = {0};
+static const bool turboPattern[] = {true, false};
+
+/* buttonstruct<bool>::array position -> key_names[] index.  The pad struct is
+   ordered G,E,W,X,Y,A,B,S,T,U,D,L,R,F while the configuration arrays follow
+   key_names[] (A,B,Select,Start,Right,Left,Up,Down,R,L,X,Y,Debug,Boost,Lid). */
+static const u8 padPositionToKey[] =
+{
+    12, /* G - debug          */
+     8, /* E - right shoulder */
+     9, /* W - left shoulder  */
+    10, /* X                  */
+    11, /* Y                  */
+     0, /* A                  */
+     1, /* B                  */
+     3, /* S - start          */
+     2, /* T - select         */
+     6, /* U - up             */
+     7, /* D - down           */
+     5, /* L - left           */
+     4, /* R - right          */
+    14, /* F - lid            */
+};
+
+static void ApplyTurbo(buttonstruct<bool>& pad)
+{
+    for (size_t pos = 0; pos < sizeof(padPositionToKey) / sizeof(padPositionToKey[0]); pos++)
+    {
+        const int key = padPositionToKey[pos];
+
+        if (!turbo_cfg[key] || !pad.array[pos])
+        {
+            // Not configured, or nothing to auto-fire right now: start the
+            // next press on a "pressed" frame so the first frame registers.
+            turboTime[key] = 0;
+            continue;
+        }
+
+        pad.array[pos] = turboPattern[turboTime[key]];
+        turboTime[key] = (turboTime[key] + 1) % (sizeof(turboPattern) / sizeof(turboPattern[0]));
+    }
+}
+
 static void RunAntipodalRestriction(const buttonstruct<bool>& pad)
 {
 	if (allowUpAndDown)
@@ -444,6 +494,7 @@ void update_keypad(u16 keys)
 		input.R = (keys>>4)&1;
 		input.F = (keys>>14)&1;
 		RunAntipodalRestriction(input);
+		ApplyTurbo(input);
 		NDS_setPad(
 			input.R, input.L, input.D, input.U,
 			input.T, input.S, input.B, input.A,

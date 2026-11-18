@@ -314,6 +314,19 @@ feature. Each entry says what you can do with it — not how it is built.
 - **Cheat > Disable cheats** — switches the whole list off without deleting it,
   and remembers the setting in `config.cfg`.
 
+### Autofire and frame advance
+- **Per-button autofire** — tick "Turbo" next to any DS button in Edit controls
+  and holding that button auto-fires: pressed and released on alternate frames,
+  the same pattern the Windows and macOS ports use. The switch follows the DS
+  button, so keyboard and gamepad both get it, and it is remembered in the
+  frontend's config.
+- **Frame advance (Ctrl+N)** — stops the emulator where it is, then steps one
+  frame per press. A step runs the whole frame — input latch, Lua callbacks, HUD
+  and presentation — with frame skipping forced off, so what you see is the frame
+  you asked for; resuming does not replay the paused time as catch-up.
+- **Not to be confused with Boost** — the Boost key (default `O`) is the
+  unthrottled fast-forward; autofire is the per-button one.
+
 ### Input, audio and build simplification
 - **SDL-based microphone** replaces the optional ALSA/OpenAL backends, removing
   two external dependencies; SDL3 then covers audio, gamepad and window handling

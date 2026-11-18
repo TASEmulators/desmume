@@ -275,6 +275,8 @@ static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
 static void ImportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 void Launch(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 void Pause(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void FrameAdvance(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void EmuSingleFrame();
 static void ResetSaveStateTimes();
 static void LoadSaveStateInfo();
 static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -345,6 +347,7 @@ static const GActionEntry app_entries[] = {
     { "recent",        OpenRecent, "s" },
     { "run",           Launch },
     { "pause",         Pause },
+    { "frame_advance", FrameAdvance },
     { "reset",         Reset },
     { "save_state_to",   SaveStateDialog },
     { "load_state_from", LoadStateDialog },
@@ -775,6 +778,10 @@ struct nds_screen_t nds_screen;
 
 static guint regMainLoop = 0;
 
+// Set when a frame was stepped outside EmuLoop (frame advance).  EmuLoop's
+// clock then restarts instead of treating the pause as catch-up.
+static bool sResyncTiming = false;
+
 #ifdef HAVE_LUA
 static void AddLuaScript(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
@@ -1003,6 +1010,7 @@ static int Open(const char *filename)
         LoadSaveStateInfo();
         g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "cheatlist")), TRUE);
         g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "cheatsearch")), TRUE);
+        g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "frame_advance")), TRUE);
     }
     return res;
 }
@@ -1051,6 +1059,43 @@ void Pause(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 
     //run = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/run")));
     //gtk_widget_grab_focus(run);
+}
+
+static void FrameAdvance(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    if (gameInfo.fROM == NULL)
+        return;
+
+    // Same contract as the Windows port: the first press halts the emulator
+    // where it is, further presses step exactly one frame.
+    if (desmume_running()) {
+        Pause(NULL, NULL, NULL);
+        gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME - Paused");
+        return;
+    }
+
+    // Take the idle source out of the loop first, so the frame stepped here is
+    // the only one that runs; Launch() puts it back when emulation resumes.
+    if (regMainLoop) {
+        g_source_remove(regMainLoop);
+        regMainLoop = 0;
+    }
+
+    // Frame advance never skips: the whole point is to see this frame.
+    NDS_OmitFrameSkip();
+
+    // NDS_exec() bails out as soon as `execute` is false, so the stepped frame
+    // has to run as if the emulator were running.  This is the same trick the
+    // Windows port uses; everything here is on the GTK thread, so nothing races.
+    execute = true;
+    EmuSingleFrame();
+    execute = false;
+
+    // The loop normally fixes the title when it notices the pause; a step can
+    // happen before that (or with the source already removed), so set it here.
+    gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME - Paused");
+
+    sResyncTiming = true;
 }
 
 static void LoadStateDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -4685,6 +4730,8 @@ static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer u
 {
     GtkWidget *ecDialog;
     GtkWidget *ecKey;
+    GtkWidget *turboToggle[NB_KEYS];
+    GtkWidget *ecRow;
     gchar *Key_Label;
     u32 keyboard_cfg_sdl[NB_KEYS];
     int i;
@@ -4702,17 +4749,39 @@ static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer u
                         NULL);
 
     for(i = 0; i < NB_KEYS; i++) {
+        ecRow = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+
         Key_Label = g_strdup_printf("%s (%s)", key_names[i], gdk_keyval_name(Keypad_Temp[i]));
         ecKey = gtk_button_new_with_label(Key_Label);
         g_free(Key_Label);
         g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_Key), GINT_TO_POINTER(i));
-        gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(ecDialog))), ecKey,TRUE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(ecRow), ecKey, TRUE, TRUE, 0);
+
+        /* One autofire switch per DS button: it follows the button, not the
+           physical key, so joystick and keyboard input are covered alike.
+           "Boost" is a frontend-only key and has no DS button behind it. */
+        turboToggle[i] = NULL;
+        if (i != 13) {
+            turboToggle[i] = gtk_check_button_new_with_label("Turbo");
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(turboToggle[i]), turbo_cfg[i] != 0);
+            gtk_widget_set_tooltip_text(turboToggle[i],
+                "Auto-fire this button while it is held (pressed and released on alternate frames).");
+            gtk_box_pack_start(GTK_BOX(ecRow), turboToggle[i], FALSE, FALSE, 0);
+        }
+
+        gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(ecDialog))), ecRow, FALSE, FALSE, 0);
     }
 
     gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(ecDialog)));
 
     switch (gtk_dialog_run(GTK_DIALOG(ecDialog))) {
     case GTK_RESPONSE_OK:
+        for (i = 0; i < NB_KEYS; i++) {
+            if (turboToggle[i] != NULL)
+                turbo_cfg[i] = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(turboToggle[i])) ? 1 : 0;
+        }
+        desmume_config_update_turbo(keyfile);
+
         /* convert keycodes to SDL for the cli frontend, since it has no config menu */
         for (i = 0; i < NB_KEYS; ++i) {
             int sk = gdk_to_sdl_keycode(Keypad_Temp[i]);
@@ -5744,6 +5813,51 @@ static void OnMainWindowDestroy(GtkWidget *widget, gpointer user_data)
 }
 
 
+// Runs exactly one frame through the same pipeline EmuLoop uses: merge the
+// joystick into the key latch, hand the result to the core, run the Lua frame
+// callbacks, then present.  Split out of EmuLoop so frame advance can step a
+// single frame while the emulator is halted without duplicating the input path.
+static void EmuSingleFrame()
+{
+    /* Merge the joystick keys with the keyboard ones */
+    if(!in_joy_config_mode)
+        process_joystick_events(&keys_latch);
+    /* Update! */
+    update_keypad(keys_latch);
+    /* Update mouse position and click (source - game controller touchpad)*/
+    if(touchpad.down) {
+        NDS_setTouchPos(touchpad.x * 256, touchpad.y * 192);
+        touchpad.down = 2;
+    }
+    if(touchpad.click)
+    {
+        NDS_releaseTouch();
+        touchpad.click = 0;
+    }
+
+#ifdef HAVE_LUA
+    NDS_beginProcessingInput();
+    CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+    NDS_endProcessingInput();
+#endif
+
+    desmume_cycle();    /* Emule ! */
+
+#ifdef HAVE_LUA
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+    // See EmuStepFrame(): menu handlers run at a frame boundary, never from
+    // the GTK action callback.
+    GtkLua_DrainMenuCalls();
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+#endif
+
+    // The Lua GUI callback (if any) has drawn into the source buffer; overlay
+    // the built-in HUD, filter, and present the finished frame.
+    PresentFrame();
+
+    _updateDTools();
+}
+
 gboolean EmuLoop(gpointer data)
 {
     /* SDL3's SDL_GetTicks() returns Uint64 milliseconds. */
@@ -5766,6 +5880,15 @@ gboolean EmuLoop(gpointer data)
       }
       RedrawScreen();
       return FALSE;
+    }
+
+    if (sResyncTiming) {
+        // A frame was advanced while paused; start the clock over so the
+        // first frame after resuming is not treated as falling behind.
+        sResyncTiming = false;
+        next_frame_time = 0;
+        frame_mod3 = 0;
+        fps_SecStart = 0;
     }
 
     fps_FrameCount += Frameskip + 1;
@@ -5814,43 +5937,9 @@ gboolean EmuLoop(gpointer data)
 	Hud.cpuloopIterationCount = nds.cpuloopIterationCount;
 #endif
 
-    /* Merge the joystick keys with the keyboard ones */
-    if(!in_joy_config_mode)
-        process_joystick_events(&keys_latch);
-    /* Update! */
-    update_keypad(keys_latch);
-    /* Update mouse position and click (source - game controller touchpad)*/
-    if(touchpad.down) {
-        NDS_setTouchPos(touchpad.x * 256, touchpad.y * 192);
-        touchpad.down = 2;
-    }
-    if(touchpad.click)
-    {
-        NDS_releaseTouch();
-        touchpad.click = 0;
-    }
+    /* Input, core, Lua callbacks and presentation for this frame */
+    EmuSingleFrame();
 
-#ifdef HAVE_LUA
-    NDS_beginProcessingInput();
-    CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
-    NDS_endProcessingInput();
-#endif
-
-    desmume_cycle();    /* Emule ! */
-
-#ifdef HAVE_LUA
-    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
-    // See EmuStepFrame(): menu handlers run at a frame boundary, never from
-    // the GTK action callback.
-    GtkLua_DrainMenuCalls();
-    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
-#endif
-
-    // The Lua GUI callback (if any) has drawn into the source buffer; overlay
-    // the built-in HUD, filter, and present the finished frame.
-    PresentFrame();
-
-    _updateDTools();
 
     if (!config.fpslimiter || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
         if (autoframeskip) {
@@ -6873,6 +6962,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "pause")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "run")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "frame_advance")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "reset")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "printscreen")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "cheatlist")), FALSE);

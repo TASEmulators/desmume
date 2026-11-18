@@ -32,4 +32,10 @@ gboolean desmume_config_read_keys(GKeyFile*, const char *section = "KEYS");
 gboolean desmume_config_update_joykeys(GKeyFile*);
 gboolean desmume_config_read_joykeys(GKeyFile*);
 
+/* Per-button autofire flags, stored as one 0/1 entry per NDS button in the
+   "TURBO" group.  Older config files simply have no group, which means "no
+   button auto-fires". */
+gboolean desmume_config_update_turbo(GKeyFile*);
+gboolean desmume_config_read_turbo(GKeyFile*);
+
 #endif

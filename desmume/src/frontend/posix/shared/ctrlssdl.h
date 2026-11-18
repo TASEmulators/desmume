@@ -69,6 +69,9 @@ extern const char *key_names[NB_KEYS];
 extern u32 keyboard_cfg[NB_KEYS];
 /* Current joypad configuration */
 extern u32 joypad_cfg[NB_KEYS];
+/* Per-button autofire ("turbo"), indexed like keyboard_cfg/joypad_cfg.
+   A non-zero entry makes that DS button auto-fire while it is held. */
+extern u8 turbo_cfg[NB_KEYS];
 
 #ifndef GTK_UI
 struct mouse_status

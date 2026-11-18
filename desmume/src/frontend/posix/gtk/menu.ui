@@ -25,6 +25,11 @@
           <attribute name='accel'>Pause</attribute>
         </item>
         <item>
+          <attribute name='label' translatable='yes'>_Frame advance</attribute>
+          <attribute name='action'>app.frame_advance</attribute>
+          <attribute name='accel'>&lt;Control&gt;n</attribute>
+        </item>
+        <item>
           <attribute name='label' translatable='yes'>Re_set</attribute>
           <attribute name='action'>app.reset</attribute>
         </item>
