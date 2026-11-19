@@ -28,6 +28,7 @@
 #include "MMU.h"
 #include "NDSSystem.h"
 #include "arm_jit.h"
+#include "instructions.h"
 
 // Where the probe instructions are planted. ARM9 main RAM starts at 0x02000000
 // and is directly addressable with the MMU off, which is the state after
@@ -43,6 +44,13 @@ static const u32 kOperands[8] = {
 	0x00000000u, 0x00000001u, 0x7FFFFFFFu, 0x80000000u,
 	0xFFFFFFFFu, 0x0000FFFFu, 0xFF000000u, 0xDEADBEEFu,
 };
+
+// Set by --verbose. When a comparison is about to crash, the last line printed
+// names the exact engine call, which is the only way to tell "the JIT produced
+// bad code" from "the harness primed an illegal state".
+static bool gTrace = false;
+
+static const char *mnemonic(bool thumb, u32 opcode);
 
 struct CpuSnapshot
 {
@@ -92,15 +100,55 @@ static void primeState(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr)
 	// (measured as an access violation when SP was left at 0), and an emulated
 	// instruction may legitimately push. Keep it inside ARM9 main RAM.
 	NDS_ARM9.R[13] = kStackTop;
-	NDS_ARM9.R[15] = codeAdr;
+
+	// R15 must be primed to the value the pipeline would have left there, not to
+	// the address of the instruction. armcpu_prefetch() establishes
+	// R15 = instruct_adr + 2*opcodesize before the handler runs, and handlers
+	// that branch rely on it: priming R15 = codeAdr made `B #0` compute a target
+	// of codeAdr instead of codeAdr+8, which looks exactly like a JIT bug.
+	const u32 insnSize = (cpsr & 0x20u) ? 2u : 4u;
+	NDS_ARM9.R[15] = codeAdr + 2 * insnSize;
 	NDS_ARM9.instruct_adr = codeAdr;
-	NDS_ARM9.next_instruction = codeAdr;
+	// Next_instruction is the *following* instruction: the interpreter prefetches
+	// ahead by one slot, and priming it to codeAdr makes the post-execute
+	// prefetch land back on the instruction just executed.
+	NDS_ARM9.next_instruction = codeAdr + insnSize;
 	NDS_ARM9.instruction = opcode;
 }
 
-static bool sameSnapshot(const CpuSnapshot *a, const CpuSnapshot *b, char *why, size_t whyLen)
+// What is compared, and what deliberately is not.
+//
+// R0-R14, CPSR, cycles and instruct_adr are the contract both engines keep, so
+// they are always compared.
+//
+// R15 and next_instruction are only partly maintained by the JIT, by design:
+//   * sync_r15() writes next_instruction only for a block-final instruction that
+//     does not redirect PC; for a branch end-of-block it writes instruct_adr and
+//     leaves next_instruction alone (arm_jit.cpp:3995, 4010).
+//   * R15 is written only when the instruction reads PC, as a compile-time
+//     constant (bb_r15, arm_jit.cpp:4005). A compiled block never otherwise
+//     maintains R[15]; between blocks it holds whatever was there before.
+// Neither is read back by the emulator: armcpu_exec<P,true>() resumes from
+// instruct_adr. So comparing them unconditionally reports every branch as a
+// failure and, for everything else, only echoes the primed value back.
+//
+// next_instruction is not compared. The two engines use it with a one-slot
+// difference that is internal bookkeeping rather than architectural state:
+// after one instruction the interpreter has already prefetched the following
+// one (next_instruction = instruct_adr + size), while a compiled block leaves
+// both pointing at the next instruction (arm_jit.cpp:4003 copies
+// bb_next_instruction into next_instruction, then the block tail copies it into
+// instruct_adr). instruct_adr is the resume point for both, so it is compared
+// and it subsumes the other.
+//
+// R15 is never compared; the interpreter's own invariant is asserted instead,
+// which is what would catch the harness priming an illegal state. The invariant
+// only applies when the instruction fell through: SWI/BX/BLX/POP{pc} re-enter
+// the pipeline at a vector or branch target and set R15 themselves.
+static bool sameSnapshot(const CpuSnapshot *a, const CpuSnapshot *b,
+	u32 codeAdr, u32 insnSize, char *why, size_t whyLen)
 {
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < 15; i++)
 	{
 		if (a->r[i] != b->r[i])
 		{
@@ -118,107 +166,105 @@ static bool sameSnapshot(const CpuSnapshot *a, const CpuSnapshot *b, char *why, 
 		snprintf(why, whyLen, "cycles: interp=%u jit=%u", a->cycles, b->cycles);
 		return false;
 	}
-	if (a->next_instruction != b->next_instruction)
+	if (a->instruct_adr != b->instruct_adr)
 	{
-		snprintf(why, whyLen, "next_instruction: interp=%08X jit=%08X",
-			a->next_instruction, b->next_instruction);
+		snprintf(why, whyLen, "instruct_adr: interp=%08X jit=%08X", a->instruct_adr, b->instruct_adr);
 		return false;
 	}
+
+	// Harness self-check: on a fall-through the interpreter must hold
+	// R15 = next_instruction + opcodesize. If that does not hold, either the state
+	// was primed illegally or the interpreter's pipeline model changed; either way
+	// the comparison above is not meaningful.
+	const bool fellThrough = (a->instruct_adr == codeAdr + insnSize);
+	if (fellThrough && a->r[15] != a->next_instruction + insnSize)
+	{
+		snprintf(why, whyLen, "interpreter invariant broken: R15=%08X next=%08X size=%u",
+			a->r[15], a->next_instruction, insnSize);
+		return false;
+	}
+
 	return true;
 }
 
-struct Probe
+static void traceStep(const char *what, u32 codeAdr, u32 cpsr)
 {
-	const char *name;
-	u32 opcode;
-};
+	if (!gTrace)
+		return;
+	printf("      step %-16s adr=%08X cpsr=%08X R13=%08X\n", what, codeAdr, cpsr, NDS_ARM9.R[13]);
+	fflush(stdout);
+}
 
-static const Probe kProbes[] = {
-	{ "MOV  r0,r1",           0xE1A00001u },
-	{ "ADD  r0,r1,r2",        0xE0810002u },
-	{ "SUB  r0,r1,r2",        0xE0410002u },
-	{ "AND  r0,r1,r2",        0xE0010002u },
-	{ "ORR  r0,r1,r2",        0xE1810002u },
-	{ "EOR  r0,r1,r2",        0xE0210002u },
-	{ "CMP  r1,r2",           0xE1510002u },
-	{ "MOV  r0,r1,LSL #4",    0xE1A00201u },
-	{ "ADD  r0,r1,r2,ASR #2", 0xE0810142u },
-	{ "MUL  r0,r1,r2",        0xE0000291u },
-};
+// A sweep that dies on the first faulting slot is worth very little: an access
+// violation can come from an uninitialised front-end pointer, from a handler
+// path the emulator never takes with a real game, or from a genuine bug -- and
+// you cannot tell which without seeing all of them. So the two engine calls are
+// wrapped in a structured-exception boundary and recorded per slot.
+//
+// This does not make a fault harmless: the machine state afterwards is
+// undefined, so the comparison is reported as a failure and the next vector
+// re-primes from scratch.
+#ifdef _MSC_VER
+#define HARNESS_HAVE_SEH 1
+static unsigned long gFaultCode = 0;
+static uintptr_t gFaultAddr = 0;
+static uintptr_t gFaultAccess = 0;
+static uintptr_t gFaultOp = 0;
 
-// CPSR variants. For ARM the condition field is part of the dispatch index
-// (opcode >> 20 includes bits 31..28), so sweeping slots already covers every
-// condition *encoding*; these two make the flags differ, forcing each condition
-// to be taken and not taken. Both are supervisor mode with interrupts masked:
-// 0xD3 = all flags clear, 0xF3 = N/Z/C/V set.
-static const u32 kFlagVariants[2] = { 0x000000D3u, 0x000000F3u };
+#define HARNESS_EXCEPT_FILTER \
+	((gFaultCode = GetExceptionCode()), \
+	 (gFaultAddr = (uintptr_t)GetExceptionInformation()->ExceptionRecord->ExceptionAddress), \
+	 (gFaultOp = (GetExceptionInformation()->ExceptionRecord->NumberParameters > 0) \
+	     ? GetExceptionInformation()->ExceptionRecord->ExceptionInformation[0] : 0), \
+	 (gFaultAccess = (GetExceptionInformation()->ExceptionRecord->NumberParameters > 1) \
+	     ? GetExceptionInformation()->ExceptionRecord->ExceptionInformation[1] : 0), \
+	 EXCEPTION_EXECUTE_HANDLER)
+#endif
 
-static int runProbes(void)
+static u32 execInterp(void)
 {
-	const int probeCount = (int)(sizeof(kProbes) / sizeof(kProbes[0]));
-	int failures = 0;
+#ifdef HARNESS_HAVE_SEH
+	u32 cycles = 0;
+	gFaultCode = 0;
+	gFaultAddr = 0;
+	gFaultAccess = 0;
+	gFaultOp = 0;
+	__try { cycles = armcpu_exec<0, false>(); }
+	__except (HARNESS_EXCEPT_FILTER) { }
+	return cycles;
+#else
+	return armcpu_exec<0, false>();
+#endif
+}
 
-	for (int p = 0; p < probeCount; p++)
+static u32 execJit(void)
+{
+#ifdef HARNESS_HAVE_SEH
+	u32 cycles = 0;
+	gFaultCode = 0;
+	gFaultAddr = 0;
+	gFaultAccess = 0;
+	gFaultOp = 0;
+	__try { cycles = armcpu_exec<0, true>(); }
+	__except (HARNESS_EXCEPT_FILTER) { }
+	return cycles;
+#else
+	return armcpu_exec<0, true>();
+#endif
+}
+
+static bool faulted(char *why, size_t whyLen, const char *engine)
+{
+#ifdef HARNESS_HAVE_SEH
+	if (gFaultCode != 0)
 	{
-		for (int v = 0; v < 2; v++)
-		{
-			// One unique address per (probe, vector) so the JIT never reuses a
-			// block compiled for a different opcode.
-			const u32 codeAdr = kCodeBase + (u32)((p * 2 + v) * 4);
-			const u32 ops[8] = {
-				kOperands[v], kOperands[(v + 1) & 7], kOperands[(v + 2) & 7], kOperands[(v + 3) & 7],
-				kOperands[(v + 4) & 7], kOperands[(v + 5) & 7], kOperands[(v + 6) & 7], kOperands[(v + 7) & 7],
-			};
-
-			_MMU_write32<0>(codeAdr, kProbes[p].opcode);
-
-			// Warm-up. The first execution of a given address pays a one-off
-			// cost that has nothing to do with instruction semantics: measured
-			// 52 cycles on the first interpreter run and 1 on the second, on
-			// identical state. Both engines are therefore run once and thrown
-			// away before either is measured -- the JIT needs it anyway, since
-			// its first run is the one that compiles the block.
-			primeState(codeAdr, ops, kProbes[p].opcode, kFlagVariants[0]);
-			armcpu_exec<0, false>();
-			primeState(codeAdr, ops, kProbes[p].opcode, kFlagVariants[0]);
-			armcpu_exec<0, true>();
-
-			CpuSnapshot interp;
-			primeState(codeAdr, ops, kProbes[p].opcode, kFlagVariants[0]);
-			u32 c1 = armcpu_exec<0, false>();
-			takeSnapshot(&interp, c1);
-
-			// Guard against a regression in the warm-up assumption above: if the
-			// interpreter is still not repeatable, the cycle comparison is
-			// meaningless and must say so instead of failing silently.
-			primeState(codeAdr, ops, kProbes[p].opcode, kFlagVariants[0]);
-			u32 c1b = armcpu_exec<0, false>();
-			if (c1b != c1)
-			{
-				printf("FAIL  %-22s vec%d  interpreter not repeatable: %u then %u\n",
-					kProbes[p].name, v, c1, c1b);
-				failures++;
-				continue;
-			}
-
-			_MMU_write32<0>(codeAdr, kProbes[p].opcode);
-
-			CpuSnapshot jit;
-			primeState(codeAdr, ops, kProbes[p].opcode, kFlagVariants[0]);
-			u32 c2 = armcpu_exec<0, true>();
-			takeSnapshot(&jit, c2);
-
-			char why[128] = {0};
-			if (!sameSnapshot(&interp, &jit, why, sizeof(why)))
-			{
-				printf("FAIL  %-22s vec%d  %s\n", kProbes[p].name, v, why);
-				failures++;
-			}
-		}
+		snprintf(why, whyLen, "%s: exception %08lX at %p op=%lu access=%p",
+			engine, gFaultCode, (void *)gFaultAddr, (unsigned long)gFaultOp, (void *)gFaultAccess);
+		return true;
 	}
-
-	printf("\n%d probe(s) x 2 vectors: %d mismatch(es)\n", probeCount, failures);
-	return failures;
+#endif
+	(void)why; (void)whyLen; (void)engine;
+	return false;
 }
 
 // Run one instruction through both engines on identical state and compare.
@@ -232,18 +278,28 @@ static int runProbes(void)
 // already-compiled block; the first call is also what the emulator does when it
 // first reaches a block, so that is the behaviour worth pinning down.
 static bool compareOne(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr,
-	char *why, size_t whyLen)
+	char *why, size_t whyLen, u32 *jitCycles)
 {
+	traceStep("prime-interp-warm", codeAdr, cpsr);
 	primeState(codeAdr, ops, opcode, cpsr);
-	armcpu_exec<0, false>();
+	execInterp();
+	if (faulted(why, whyLen, "interpreter (warm-up)"))
+		return false;
+	traceStep("ret-interp-warm", codeAdr, cpsr);
 
 	CpuSnapshot interp;
+	traceStep("prime+interp-run", codeAdr, cpsr);
 	primeState(codeAdr, ops, opcode, cpsr);
-	u32 c1 = armcpu_exec<0, false>();
+	u32 c1 = execInterp();
+	if (faulted(why, whyLen, "interpreter"))
+		return false;
 	takeSnapshot(&interp, c1);
 
+	traceStep("prime+interp-again", codeAdr, cpsr);
 	primeState(codeAdr, ops, opcode, cpsr);
-	u32 c1b = armcpu_exec<0, false>();
+	u32 c1b = execInterp();
+	if (faulted(why, whyLen, "interpreter (repeat)"))
+		return false;
 	if (c1b != c1)
 	{
 		snprintf(why, whyLen, "interpreter not repeatable: %u then %u", c1, c1b);
@@ -251,12 +307,173 @@ static bool compareOne(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr,
 	}
 
 	CpuSnapshot jit;
+	traceStep("prime+jit-run", codeAdr, cpsr);
 	primeState(codeAdr, ops, opcode, cpsr);
-	u32 c2 = armcpu_exec<0, true>();
+	u32 c2 = execJit();
+	if (faulted(why, whyLen, "jit"))
+		return false;
 	takeSnapshot(&jit, c2);
+	*jitCycles = c2;
 
-	return sameSnapshot(&interp, &jit, why, whyLen);
+	if (gTrace)
+	{
+		printf("      interp pc=%08X nxt=%08X R15=%08X | jit pc=%08X nxt=%08X R15=%08X\n",
+			interp.instruct_adr, interp.next_instruction, interp.r[15],
+			jit.instruct_adr, jit.next_instruction, jit.r[15]);
+		fflush(stdout);
+	}
+
+	return sameSnapshot(&interp, &jit, codeAdr, (cpsr & 0x20u) ? 2u : 4u, why, whyLen);
 }
+
+struct Probe
+{
+	const char *name;
+	u32 opcode;
+	bool thumb;
+};
+
+// Targeted probes, on top of the slot sweep. The sweep's opcodes all have zero
+// low bits, so a register-shift instruction always ends up with Rs == Rd == r0;
+// these pairs deliberately separate the two so an operand-ordering bug cannot
+// hide behind it.
+static const Probe kProbes[] = {
+	{ "ARM   MOV  r0,r1",        0xE1A00001u, false },
+	{ "ARM   ADD  r0,r1,r2",     0xE0810002u, false },
+	{ "ARM   SUB  r0,r1,r2",     0xE0410002u, false },
+	{ "ARM   AND  r0,r1,r2",     0xE0010002u, false },
+	{ "ARM   ORR  r0,r1,r2",     0xE1810002u, false },
+	{ "ARM   EOR  r0,r1,r2",     0xE0210002u, false },
+	{ "ARM   CMP  r1,r2",        0xE1510002u, false },
+	{ "ARM   MOV  r0,r1,LSL#4",  0xE1A00201u, false },
+	{ "ARM   ADD  r0,r1,r2,ASR2",0xE0810142u, false },
+	{ "ARM   MUL  r0,r1,r2",     0xE0000291u, false },
+	// Thumb format 4, register shifts: (Rs == Rd) then (Rs != Rd).
+	{ "THUMB LSL  r0,r0",        0x4080u, true },
+	{ "THUMB LSL  r0,r1",        0x4088u, true },
+	{ "THUMB LSR  r0,r0",        0x40C0u, true },
+	{ "THUMB LSR  r0,r1",        0x40C8u, true },
+	{ "THUMB ASR  r0,r0",        0x4100u, true },
+	{ "THUMB ASR  r0,r1",        0x4108u, true },
+	{ "THUMB ROR  r0,r0",        0x41C0u, true },
+	{ "THUMB ROR  r0,r1",        0x41C8u, true },
+};
+
+// CPSR variants. For ARM the condition field is part of the dispatch index
+// (opcode >> 20 includes bits 31..28), so sweeping slots already covers every
+// condition *encoding*; these two make the flags differ, forcing each condition
+// to be taken and not taken.
+//
+// Both are supervisor mode (0x13) with IRQ/FIQ masked (0xD0). The upper byte is
+// where N/Z/C/V live: 0x00 = all clear, 0xF0 = all set.
+//
+// Note where the flags do NOT live: bits 7..4 are I, F, T and the top mode bit.
+// A variant written as 0x000000F3 (the obvious-looking mistake) sets T, which
+// puts the CPU in Thumb state; the ARM sweep then dispatches through
+// thumb_instructions_set with index opcode>>6 == 0x4000 and dies on an access
+// violation. kFlagVariants is checked for this at start-up.
+static const u32 kFlagVariants[2] = { 0x000000D3u, 0xF00000D3u };
+
+static bool compareOne(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr,
+	char *why, size_t whyLen, u32 *jitCycles);
+
+// Probes share compareOne() with the sweep: one comparison path means a probe
+// cannot accidentally be a weaker test than a sweep line.
+static int runProbes(void)
+{
+	const int probeCount = (int)(sizeof(kProbes) / sizeof(kProbes[0]));
+	const int vectors = 8;
+	int failures = 0;
+	u32 codeAdr = kCodeBase;
+
+	for (int p = 0; p < probeCount; p++)
+	{
+		for (int v = 0; v < vectors; v++)
+		{
+			const u32 ops[8] = {
+				kOperands[v], kOperands[(v + 1) & 7], kOperands[(v + 2) & 7], kOperands[(v + 3) & 7],
+				kOperands[(v + 4) & 7], kOperands[(v + 5) & 7], kOperands[(v + 6) & 7], kOperands[(v + 7) & 7],
+			};
+
+			if (kProbes[p].thumb)
+				_MMU_write16<0>(codeAdr, (u16)kProbes[p].opcode);
+			else
+				_MMU_write32<0>(codeAdr, kProbes[p].opcode);
+
+			// Both flag variants: a flag-setting instruction can agree with all
+			// flags clear and disagree with them set (the ROR r0,r0 case only
+			// shows up with N/Z/C/V set).
+			for (int f = 0; f < 2; f++)
+			{
+				const u32 cpsr = kFlagVariants[f] | (kProbes[p].thumb ? 0x20u : 0u);
+
+				char why[128] = {0};
+				u32 jitCycles = 0;
+				if (!compareOne(codeAdr, ops, kProbes[p].opcode, cpsr, why, sizeof(why), &jitCycles))
+				{
+					printf("FAIL  %-24s vec%d f=%d  %s\n", kProbes[p].name, v, f, why);
+					fflush(stdout);
+					failures++;
+				}
+			}
+
+			// One unique address per (probe, vector) so the JIT never reuses a
+			// block compiled for a different opcode.
+			codeAdr += 4;
+		}
+	}
+
+	printf("\n%d probe(s) x %d vectors x 2 flags: %d mismatch(es)\n", probeCount, vectors, failures);
+	return failures;
+}
+// The emulator's own mnemonic tables, so a report line names the same
+// instruction the worklist in documentation/jit-opcode-matrix.md does.
+static const char *mnemonic(bool thumb, u32 opcode)
+{
+	return thumb ? thumb_instruction_names[opcode >> 6]
+	             : arm_instruction_names[opcode >> 20];
+}
+
+// Mismatch classification. "2127 mismatches" is not actionable on its own: two
+// thousand cycle differences caused by one encoder decision and three register
+// differences are very different problems. The buckets are derived from the
+// message sameSnapshot()/compareOne() produced, so they cannot drift from it.
+struct FailureBuckets
+{
+	int exceptions;
+	int cycles;
+	int cyclesGarbage;
+	int registers;
+	int cpsr;
+	int pc;
+	int invariant;
+	int repeatable;
+
+	void add(const char *why, u32 jitCycles)
+	{
+		if (strstr(why, "exception")) exceptions++;
+		else if (strstr(why, "not repeatable")) repeatable++;
+		else if (strstr(why, "invariant")) invariant++;
+		else if (strncmp(why, "cycles:", 7) == 0) { if (jitCycles > 4096) cyclesGarbage++; else cycles++; }
+		else if (why[0] == 'R' && why[1] >= '0' && why[1] <= '9') registers++;
+		else if (strncmp(why, "CPSR:", 5) == 0) cpsr++;
+		else if (strncmp(why, "instruct_adr:", 13) == 0) pc++;
+		else exceptions++;   // unrecognised message: do not silently drop it
+	}
+
+	void print(void) const
+	{
+		printf("  exceptions (engine fault) : %d\n", exceptions);
+		printf("  cycle count               : %d\n", cycles);
+		printf("  cycle count (implausible) : %d\n", cyclesGarbage);
+		printf("  R0-R14                    : %d\n", registers);
+		printf("  CPSR                      : %d\n", cpsr);
+		printf("  instruct_adr              : %d\n", pc);
+		printf("  harness invariant         : %d\n", invariant);
+		printf("  interpreter not repeatable: %d\n", repeatable);
+	}
+};
+
 // Every dispatch slot of one instruction set.
 //
 // The slot index is exactly what the decoder uses -- 12 bits for ARM
@@ -266,7 +483,7 @@ static bool compareOne(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr,
 //
 // `onlySlot` >= 0 restricts the run to one slot index in each set, which is how
 // a crash gets bisected down to the instruction that caused it.
-static int runSweep(bool full, int onlySlot, bool verbose)
+static int runSweep(bool full, int onlySlot, bool verbose, bool listAll)
 {
 	const int armSlots = 4096;
 	const int thumbSlots = 1024;
@@ -275,6 +492,8 @@ static int runSweep(bool full, int onlySlot, bool verbose)
 	int failures = 0;
 	int checked = 0;
 	int shown = 0;
+	const int showCap = listAll ? 0x7FFFFFFF : 40;
+	FailureBuckets buckets = {0, 0, 0, 0, 0, 0, 0, 0};
 	u32 codeAdr = kCodeBase;
 
 	for (int set = 0; set < 2; set++)
@@ -290,6 +509,15 @@ static int runSweep(bool full, int onlySlot, bool verbose)
 			const u32 opcode = thumb
 				? ((u32)slot << 6)
 				: ((u32)slot << 20);
+
+			// The interpreter indexes thumb_instructions_set with
+			// (instruction >> 6) and does not mask it, so a Thumb opcode wider than
+			// 16 bits reads past the 1024-entry table instead of failing loudly.
+			if (thumb && (opcode >> 6) >= (u32)thumbSlots)
+			{
+				printf("bad harness configuration: thumb opcode %08X out of range\n", opcode);
+				return -1;
+			}
 
 			if (verbose && (slot & 0x7F) == 0)
 			{
@@ -315,16 +543,18 @@ static int runSweep(bool full, int onlySlot, bool verbose)
 					checked++;
 					if (verbose)
 					{
-						printf("  try %s slot=%03X v=%d f=%d adr=%08X op=%08X\n", thumb ? "thumb" : "arm  ", slot, v, f, codeAdr, opcode);
+						printf("  try %s slot=%03X v=%d f=%d adr=%08X op=%08X %s\n", thumb ? "thumb" : "arm  ", slot, v, f, codeAdr, opcode, mnemonic(thumb, opcode));
 						fflush(stdout);
 					}
-					if (!compareOne(codeAdr, ops, opcode, kFlagVariants[f] | (thumb ? 0x20u : 0u), why, sizeof(why)))
+					u32 jitCycles = 0;
+					if (!compareOne(codeAdr, ops, opcode, kFlagVariants[f] | (thumb ? 0x20u : 0u), why, sizeof(why), &jitCycles))
 					{
 						failures++;
-						if (shown < 40)
+						buckets.add(why, jitCycles);
+						if (shown < showCap)
 						{
-							printf("FAIL  %s slot=%03X v=%d flags=%d op=%08X  %s\n",
-								thumb ? "thumb" : "arm  ", slot, v, f, opcode, why);
+							printf("FAIL  %s slot=%03X v=%d flags=%d op=%08X %s  %s\n",
+								thumb ? "thumb" : "arm  ", slot, v, f, opcode, mnemonic(thumb, opcode), why);
 							fflush(stdout);
 							shown++;
 						}
@@ -345,6 +575,8 @@ static int runSweep(bool full, int onlySlot, bool verbose)
 
 	printf("\n%s sweep: %d comparison(s), %d mismatch(es)\n",
 		full ? "full" : "fast", checked, failures);
+	if (failures)
+		buckets.print();
 	if (failures > shown)
 		printf("(%d more not shown)\n", failures - shown);
 	return failures;
@@ -355,31 +587,64 @@ int main(int argc, char **argv)
 	bool sweep = false;
 	bool full = false;
 	bool verbose = false;
+	bool listAll = false;
 	int onlySlot = -1;
 	for (int i = 1; i < argc; i++)
 	{
 		if (strcmp(argv[i], "--sweep") == 0) sweep = true;
 		else if (strcmp(argv[i], "--full") == 0) { full = true; sweep = true; }
 		else if (strcmp(argv[i], "--verbose") == 0) verbose = true;
+		else if (strcmp(argv[i], "--all") == 0) listAll = true;
 		else if (strcmp(argv[i], "--slot") == 0 && i + 1 < argc) onlySlot = atoi(argv[++i]);
 	}
 
 	printf("DeSmuME JIT differential harness\n");
+	// Fault addresses are absolute; without the load address the map file cannot
+	// be used to name the function that faulted.
+	printf("module base %p\n", (void *)GetModuleHandleA(NULL));
+	gTrace = verbose;
 
-	// NDS_Init() returns non-zero on success (it is a BOOL-style result, not an
-	// errno), so 0 means failure.
-	if (!NDS_Init())
+	// The flag variants must differ only in N/Z/C/V. T and the mode field are
+	// chosen per instruction set by compareOne; a variant that also touches them
+	// silently switches instruction sets and turns the sweep into an out-of-range
+	// dispatch (see the comment on kFlagVariants).
+	for (int f = 0; f < 2; f++)
 	{
-		printf("NDS_Init failed\n");
+		if (kFlagVariants[f] & 0x00000020u)
+		{
+			printf("bad harness configuration: kFlagVariants[%d] sets the T bit\n", f);
+			return 2;
+		}
+		if ((kFlagVariants[f] & 0x0000001Fu) != 0x00000013u)
+		{
+			printf("bad harness configuration: kFlagVariants[%d] is not supervisor mode\n", f);
+			return 2;
+		}
+	}
+
+	// NDS_Init() returns 0 on success, -1 when SPU_Init() fails. Checking for
+	// "non-zero" rather than "truthy" matters: with -1 both are the same thing,
+	// but a truthiness test reads as if 1 meant success, which it does not.
+	const int initResult = NDS_Init();
+	if (initResult != 0)
+	{
+		printf("NDS_Init failed (%d)\n", initResult);
 		return 2;
 	}
+
+	// NDS_Init() only allocates and wires the memory interfaces; NDS_Reset() is
+	// what puts the CPUs, CP15 and the coprocessor hooks into a defined state.
+	// It is normally reached through NDS_LoadROM(), which the harness has no ROM
+	// for -- skipping it leaves the coprocessor path uninitialised and every
+	// CDP/MCR/MRC slot faults with the same access violation.
+	NDS_Reset();
 
 	// One instruction per block: the harness compares single instructions, and a
 	// multi-instruction block would make a mismatch ambiguous.
 	CommonSettings.jit_max_block_size = 1;
 	arm_jit_reset(true, true);
 
-	int failures = sweep ? runSweep(full, onlySlot, verbose) : runProbes();
+	int failures = sweep ? runSweep(full, onlySlot, verbose, listAll) : runProbes();
 
 	arm_jit_close();
 	return failures == 0 ? 0 : 1;

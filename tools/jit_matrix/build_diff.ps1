@@ -88,7 +88,10 @@ $sysLibs = @(
 )
 
 $exe = Join-Path $Out 'jit_diff.exe'
-& $Cl /nologo @objs "/Fe$exe" "/link" "/LIBPATH:$Out" 'desmume_core.lib' @sysLibs
+# /MAP: the harness reports fault addresses, and without a map a fault is just a
+# number. RVAs are enough -- no PDB needed to name the function that faulted.
+$map = Join-Path $Out 'jit_diff.map'
+& $Cl /nologo @objs "/Fe$exe" "/link" "/MAP:$map" "/LIBPATH:$Out" 'desmume_core.lib' @sysLibs
 if ($LASTEXITCODE -ne 0) { throw 'link failed' }
 
 Write-Host "built: $exe"

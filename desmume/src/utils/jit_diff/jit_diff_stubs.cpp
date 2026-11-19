@@ -20,6 +20,7 @@
 
 #include "NDSSystem.h"
 #include "mic.h"
+#include "rasterize.h"
 #include "render3D.h"
 #include "SPU.h"
 #include "winutil.h"
@@ -62,10 +63,14 @@ void mic_savestate(EMUFILE& /*f*/) {}
 bool mic_loadstate(EMUFILE& /*f*/, int /*version*/) { return true; }
 
 // --- renderer / sound core registries --------------------------------------
-// Populated by the GUI front end at start-up. The harness never switches cores,
-// so a one-entry NULL-terminated list keeps the lookup loops happy.
-GPU3DInterface* core3DList[] = { NULL };
-SoundInterface_struct* SNDCoreList[] = { NULL };
+// Populated by the GUI front end at start-up, but not with empty lists: NDS_Init
+// calls SPU_Init(SNDCORE_DUMMY) and GPU->... look their core up *by id* in these
+// tables. An empty list makes the lookup fail, SPU_Init returns non-zero, and
+// NDS_Init() returns -1 before it ever creates wifiHandler -- which then turns
+// every instruction that reaches emu_halt() into a null-pointer fault instead of
+// a halt. Both cores are compiled into the archive, so use the real ones.
+GPU3DInterface* core3DList[] = { &gpu3DNull, &gpu3DRasterize, NULL };
+SoundInterface_struct* SNDCoreList[] = { &SNDDummy, NULL };
 
 // --- zlib crc32 ------------------------------------------------------------
 // The bundled zlib is compiled by the Windows project, not by the core archive,
