@@ -5403,7 +5403,6 @@
 		AB455E032E8F77EB009DEF2B /* CocoaGraphicsController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CocoaGraphicsController.h; sourceTree = "<group>"; };
 		AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CocoaGraphicsController.mm; sourceTree = "<group>"; };
 		AB46E54B2814F40800A4E3D6 /* arm64_emit.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = arm64_emit.cpp; sourceTree = "<group>"; };
-		AB46E54C2814F40800A4E3D6 /* arm_emit.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = arm_emit.cpp; sourceTree = "<group>"; };
 		AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = arm_jit_arm.cpp; sourceTree = "<group>"; };
 		AB46E54E2814F40800A4E3D6 /* emit_core.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = emit_core.cpp; sourceTree = "<group>"; };
 		AB47B52B18A3F722009A42AF /* xbrz.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xbrz.h; sourceTree = "<group>"; };
@@ -7030,7 +7029,6 @@
 			children = (
 				AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */,
 				AB46E54E2814F40800A4E3D6 /* emit_core.cpp */,
-				AB46E54C2814F40800A4E3D6 /* arm_emit.cpp */,
 				AB46E54B2814F40800A4E3D6 /* arm64_emit.cpp */,
 			);
 			path = arm_jit;

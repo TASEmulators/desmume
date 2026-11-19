@@ -272,8 +272,10 @@ if test "x$HAVE_GTK" = "xyes"; then
 fi
 
 dnl - jit support
+dnl 32-bit ARM hosts are deliberately absent: the ARM32 encoder was removed,
+dnl so those hosts build and run the interpreter only.
 case $host_cpu in
-  x86|x86_64|i386|i486|i586|i686|arm|arm64|aarch64)
+  x86|x86_64|i386|i486|i586|i686|arm64|aarch64)
     HAVE_JIT=yes
     AC_DEFINE(HAVE_JIT)
     ;;
@@ -336,7 +338,6 @@ AS_CASE([$host_cpu],
 		[i386],    [host_cpu_kind_x86=yes],
 		[aarch64], [host_cpu_kind_arm=yes],
 		[arm64],   [host_cpu_kind_arm=yes],
-		[arm],     [host_cpu_kind_arm=yes],
 		[ppc64],   [host_cpu_kind_powerpc=yes],
 		[powerpc], [host_cpu_kind_powerpc=yes],
 		[host_cpu_kind_unknown=yes]

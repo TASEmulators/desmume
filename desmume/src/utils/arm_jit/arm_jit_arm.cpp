@@ -42,25 +42,23 @@ static const char *disassemble(u32 opcode);
 #define VALUE 			1
 #define VALUE_NO_CACHE	2
 
-#ifdef __aarch64__
-#include "arm64_emit.cpp"
-#else
-#include "arm_emit.cpp"
+// AArch64 is the only remaining host backend for this file. The 32-bit ARM
+// encoder (arm_emit.cpp) was removed: it had no test coverage, and 18 of its
+// primitives had zero references from this file, so it was already dead weight.
+#ifndef __aarch64__
+#error "arm_jit_arm.cpp is the AArch64 host backend only; build arm_jit.cpp on x86 hosts"
 #endif
+
+#include "arm64_emit.cpp"
 
 // Register that caches the address of mmu_dma_event_pending for the whole block,
 // so the DMA event check after a store costs one load instead of reloading the
 // pointer. It has to survive helper calls, so it must be callee-saved, and the
 // back end must not use it as scratch.
 //
-// AArch64: x24 is callee-saved (AAPCS64) and has no other use here; save() in
-//          emit_startfunc already pushes x23/x24.
-// ARM32:   there is no such register left. The emitters use r2-r11 as scratch
-//          (r11 is PTR_STORE_REG) and callR3 relies on them, so the check
-//          rematerialises the address instead.
-#ifdef __aarch64__
+// x24 is callee-saved (AAPCS64) and has no other use here; save() in
+// emit_startfunc already pushes x23/x24.
 #define JIT_DMA_FLAG_REG X24_REG
-#endif
 
 t_bytes *g_out = NULL;
 
@@ -4013,17 +4011,12 @@ static void _armlog(u8 proc, u32 addr, u32 opcode)
 // does with bb_dma_pending.
 static int emit_dma_event_flag_ptr()
 {
-#ifdef JIT_DMA_FLAG_REG
 	if(!bb_dma_flag_ptr_ready)
 	{
 		bb_dma_flag_ptr_ready = true;
 		emit_ptr(g_out, (uintptr_t)&mmu_dma_event_pending, JIT_DMA_FLAG_REG);
 	}
 	return JIT_DMA_FLAG_REG;
-#else
-	emit_ptr(g_out, (uintptr_t)&mmu_dma_event_pending, R3);
-	return R3;
-#endif
 }
 
 // Emit an early exit out of the current block.

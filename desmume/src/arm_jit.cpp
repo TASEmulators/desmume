@@ -4097,8 +4097,8 @@ static void _armlog(u8 proc, u32 addr, u32 opcode)
 // instructions, so together they are the correct cycle count for the partial
 // block.
 //
-// utils/arm_jit/arm_jit_arm.cpp implements the same policy for the ARM32 and
-// AArch64 back ends; only the code emission differs. The set of instructions
+// utils/arm_jit/arm_jit_arm.cpp implements the same policy for the AArch64
+// back end; only the code emission differs. The set of instructions
 // that can arm a DMA channel is shared through jit_dma_event.h.
 static void emit_dma_event_check(u32 resume_adr)
 {
