@@ -46,12 +46,6 @@
 
 	NSString *defaultMovieName;
 	NSString *moviesDirectory;
-	NSString *requestPath;
-	NSString *requestAuthor;
-	NSString *requestDescription;
-	NSString *requestSramPath;
-	int requestStartFrom;
-	NSDate *requestRTCDate;
 	id target;
 	SEL action;
 }

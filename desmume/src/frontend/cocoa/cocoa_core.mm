@@ -1012,7 +1012,12 @@ volatile bool execute = true;
 	const std::wstring wAuthor = mbstowcs(authorUtf8);
 	const std::wstring wDescription = mbstowcs(descriptionUtf8);
 
-	FCEUI_SaveMovie(fileName, wAuthor, (START_FROM)startFrom, sramPath, rtcStart, wDescription);
+	const char *recordError = FCEUI_SaveMovie(fileName, wAuthor, (START_FROM)startFrom, sramPath, rtcStart, wDescription);
+	if (recordError != NULL)
+	{
+		NSLog(@"FCEUI_SaveMovie failed: %s", recordError);
+		return NO;
+	}
 	return YES;
 }
 

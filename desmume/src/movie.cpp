@@ -759,13 +759,18 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	return NULL; // success
 }
 
-static void openRecordingMovie(const char* fname)
+static bool openRecordingMovie(const char* fname)
 {
 	//osRecordingMovie = FCEUD_UTF8_fstream(fname, "wb");
 	osRecordingMovie = new EMUFILE_FILE(fname, "wb");
-	/*if(!osRecordingMovie)
-		FCEU_PrintError("Error opening movie output file: %s",fname);*/
+	if (osRecordingMovie->fail())
+	{
+		delete osRecordingMovie;
+		osRecordingMovie = NULL;
+		return false;
+	}
 	strcpy(curMovieFilename, fname);
+	return true;
 }
 
 bool MovieData::loadSramFrom(std::vector<u8>* buf)
@@ -810,7 +815,7 @@ bool MovieData::loadSramFrom(std::vector<u8>* buf)
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
-void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart, const std::wstring &description)
+const char* FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart, const std::wstring &description)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
@@ -819,7 +824,8 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 
 	FCEUI_StopMovie();
 
-	openRecordingMovie(fname);
+	if (!openRecordingMovie(fname))
+		return "Could not open the movie file for writing.";
 
 	currFrameCounter = 0;
 	//LagCounterReset();
@@ -866,12 +872,22 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 		//todo ?
 		//poweron(true);
 
-		if (startFrom == START_SRAM)
-			EMUFILE::readAllBytes(&currMovieData.sram, sramfname);
+		if (startFrom == START_SRAM && !EMUFILE::readAllBytes(&currMovieData.sram, sramfname))
+		{
+			delete osRecordingMovie;
+			osRecordingMovie = NULL;
+			return "Could not read the SRAM file. Recording was cancelled.";
+		}
 	}
 
 	//we are going to go ahead and dump the header. from now on we will only be appending frames
 	currMovieData.dump(*osRecordingMovie, false);
+	if (osRecordingMovie->fail())
+	{
+		delete osRecordingMovie;
+		osRecordingMovie = NULL;
+		return "Could not write the movie header.";
+	}
 
 	currFrameCounter=0;
 	lagframecounter=0;
@@ -887,7 +903,13 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 	if(currMovieData.sram.size() != 0)
 	{
 		bool success = MovieData::loadSramFrom(&currMovieData.sram);
-		if(!success) return;
+		if(!success)
+		{
+			movieMode = MOVIEMODE_INACTIVE;
+			delete osRecordingMovie;
+			osRecordingMovie = NULL;
+			return "Could not load the movie's SRAM into the emulator.";
+		}
 	}
 	else if (startFrom == START_BLANK)
 	{
@@ -899,6 +921,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 	}
 
 	driver->USR_InfoMessage("Movie recording started.");
+	return NULL;
 }
 
 
@@ -1211,8 +1234,7 @@ bool mov_loadstate(EMUFILE &fp, int size)
 			currMovieData.rerecordCount = currRerecordCount;
 			currMovieData.truncateAt(currFrameCounter);
 
-			openRecordingMovie(curMovieFilename);
-			if(!osRecordingMovie)
+			if(!openRecordingMovie(curMovieFilename))
 			{
 			   driver->SetLineColor(255, 0, 0);
 			   driver->AddLine("Can't save movie file!");

@@ -634,7 +634,12 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 			t.tm_sec = systime.wSecond;
 			DateTime rtcstart(t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
 
-			FCEUI_SaveMovie(fname.c_str(), author, startFrom, sramfname, rtcstart, description);
+			const char *recordError = FCEUI_SaveMovie(fname.c_str(), author, startFrom, sramfname, rtcstart, description);
+			if (recordError != NULL)
+			{
+				MessageBoxA(hwndDlg, recordError, "Failed to record movie", MB_OK | MB_ICONERROR);
+				return TRUE;  // keep the dialog open so the user can fix the path
+			}
 			EndDialog(hwndDlg, 0);
 			return TRUE;
 		}

@@ -209,6 +209,7 @@ static NSString *NSStr(const std::string &s)
 	[cancelButton release];
 
 	[window setDefaultButtonCell:[okButton cell]];
+	[self ensureMoviesDirectory];
 	[self startFromChanged:nil];
 	return self;
 }
@@ -234,11 +235,6 @@ static NSString *NSStr(const std::string &s)
 	[okButton release];
 	[defaultMovieName release];
 	[moviesDirectory release];
-	[requestPath release];
-	[requestAuthor release];
-	[requestDescription release];
-	[requestSramPath release];
-	[requestRTCDate release];
 	[super dealloc];
 }
 
@@ -262,6 +258,7 @@ static NSString *NSStr(const std::string &s)
 {
 	[moviesDirectory release];
 	moviesDirectory = [directory copy];
+	[self ensureMoviesDirectory];
 }
 
 - (void)setTarget:(id)theTarget action:(SEL)theAction
@@ -326,17 +323,40 @@ static NSString *NSStr(const std::string &s)
 
 #pragma mark - Actions
 
+- (void)ensureMoviesDirectory
+{
+	NSString *directory = ([moviesDirectory length] > 0)
+	                        ? moviesDirectory
+	                        : [NSHomeDirectory() stringByAppendingPathComponent:@"Movies"];
+	NSFileManager *files = [NSFileManager defaultManager];
+	BOOL isDirectory = NO;
+	if ([files fileExistsAtPath:directory isDirectory:&isDirectory] && isDirectory)
+		return;
+	[files createDirectoryAtPath:directory withIntermediateDirectories:YES
+	                 attributes:nil error:NULL];
+}
+
+// One predicate shared by the OK button and -accept:, so the button can never
+// look enabled while -accept: silently refuses to record.
+- (BOOL)canWriteMovieAtPath:(NSString *)path
+{
+	if ([path length] == 0)
+		return NO;
+	NSFileManager *files = [NSFileManager defaultManager];
+	NSString *parent = [path stringByDeletingLastPathComponent];
+	BOOL isDirectory = NO;
+	if (![files fileExistsAtPath:parent isDirectory:&isDirectory] || !isDirectory)
+		return NO;
+	if (![files isWritableFileAtPath:parent])
+		return NO;
+	if ([files fileExistsAtPath:path] && ![files isWritableFileAtPath:path])
+		return NO;
+	return YES;
+}
+
 - (void)updateOK
 {
-	NSString *path = [self moviePath];
-	BOOL usable = NO;
-	if ([path length] > 0)
-	{
-		NSFileManager *files = [NSFileManager defaultManager];
-		BOOL exists = [files fileExistsAtPath:path];
-		usable = (!exists || [files isWritableFileAtPath:path]);
-	}
-	[okButton setEnabled:usable];
+	[okButton setEnabled:[self canWriteMovieAtPath:[self moviePath]]];
 }
 
 - (IBAction)startFromChanged:(id)sender
@@ -374,20 +394,8 @@ static NSString *NSStr(const std::string &s)
 - (IBAction)accept:(id)sender
 {
 	NSString *path = [self moviePath];
-	if ([path length] == 0 || ![[NSFileManager defaultManager] isWritableFileAtPath:[path stringByDeletingLastPathComponent]])
+	if (![self canWriteMovieAtPath:path])
 		return;
-
-	[requestPath release];
-	requestPath = [path copy];
-	[requestAuthor release];
-	requestAuthor = [[authorField stringValue] copy];
-	[requestDescription release];
-	requestDescription = [[commentField stringValue] copy];
-	[requestSramPath release];
-	requestSramPath = [[self sramPath] copy];
-	requestStartFrom = [self startFrom];
-	[requestRTCDate release];
-	requestRTCDate = [[self rtcDate] retain];
 
 	if (target != nil && action != NULL)
 		[target performSelector:action withObject:self];
