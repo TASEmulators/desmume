@@ -55,6 +55,16 @@
 
 namespace MovieInfo
 {
+	// Mirrors START_FROM from movie.h so frontends never have to include the
+	// core header (types.h would break Cocoa declarations). Values are checked
+	// against the real enum in movie_info_core.cpp.
+	enum StartFrom
+	{
+		kStartBlank = 0,
+		kStartSram = 1,
+		kStartSavestate = 2
+	};
+
 	// All fields are kept as raw header strings so a host can display or parse
 	// them without losing information. lines[] holds every header line verbatim
 	// (LF-normalised) so rewriting comments never drops unknown keys.
@@ -177,6 +187,37 @@ namespace MovieInfo
 
 	bool IsHexCrc(const std::string &s);
 	uint32_t ParseUInt(const std::string &s);
+
+	// --- Movie creation helpers (Record Movie dialog) ---
+
+	// Appends .dsm only when the leaf name has no extension, matching the
+	// Windows dialog's EnsureDsmExtension().
+	std::string EnsureDsmExtension(const std::string &fileName);
+
+	// Returns a leaf file name (no directory). With unique=true, "ROM.dsm"
+	// becomes "ROM - 1.dsm", "ROM - 2.dsm" ... until one does not exist in
+	// directory; playback never uses this (it must not guess a name).
+	std::string DefaultMovieFileName(const std::string &baseName,
+	                                  const std::string &directory, bool unique);
+
+	struct EmulationFlags
+	{
+		bool useExtBios;
+		bool swiFromBios;
+		bool useExtFirmware;
+		bool bootFromFirmware;
+	};
+
+	EmulationFlags CurrentEmulationFlags();
+
+	struct RTCStamp
+	{
+		int year, month, day, hour, minute, second;
+	};
+
+	// The core's historical default (2009-01-01 00:00:00), used as the Start
+	// RTC field of the Record dialog.
+	RTCStamp DefaultRTCStamp();
 }
 
 #endif // MOVIE_INFO_CORE_H

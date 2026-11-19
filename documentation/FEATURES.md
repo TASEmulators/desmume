@@ -73,9 +73,10 @@ feature. Each entry says what you can do with it — not how it is built.
 - **Comments go back without touching the timeline** — only comment lines are
   rewritten; the author line, unknown keys and all frame bytes survive, with an
   atomic replace on both Windows and POSIX.
-- **A ready-made playback contract** — `PlayRequest`, `ParsePauseFrame()` and
-  the formatting helpers let a future GTK dialog reuse the whole behaviour;
-  only the widgets and path settings are host-specific.
+- **A ready-made playback contract** — `PlayRequest`, `ParsePauseFrame()`,
+  the Record helpers and the formatting functions let a future GTK dialog
+  reuse the whole behaviour; only the widgets and path settings are
+  host-specific.
 
 ---
 
@@ -160,6 +161,17 @@ feature. Each entry says what you can do with it — not how it is built.
   left byte-for-byte untouched.
 - **Pause at a frame** — defaults to the last frame and is passed straight to
   `FCEUI_LoadMovie`; no shell command or workaround needed.
+
+### Record Movie dialog
+- **All three start points** — power on (cold boot), reset/SRAM with a `.dsv`
+  picker, or the current emulator state as a snapshot.
+- **Author and comment up front** — both are editable and go straight into the
+  movie header; the recorded timeline itself is produced by the core.
+- **Start RTC and current settings** — date/time pickers seeded from the
+  core's historical default, with read-only flags showing exactly which BIOS
+  and firmware settings the movie will store.
+- **A filename that never overwrites** — derived from the loaded ROM, with
+  ` - 1`, ` - 2`, … appended until the name is free in the Movies folder.
 
 ### Metal OSD for Lua and the HUD
 - **AGG-free rendering** — Lua drawing and OSD text go into a HUD layer shared by

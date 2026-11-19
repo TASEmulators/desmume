@@ -114,9 +114,9 @@ Windows 侧：`dsmeditor.cpp`(73 KB) + `dsmcsv.cpp`(11 KB)。macOS 只做了播�
   （macOS `MoviePlayWindowController` + `MovieInfoPreview`，Windows 原有对话框，共用 `shared/movie_info_core`）
 - ☑ ROM / 核心版本不匹配时红色高亮并提示 desync
 - ☑ 播放暂停到指定帧（默认末帧）
-- ◐ 录制时可写注释，并可只改头部的注释行 —— Windows 与 macOS 的 **Play** 对话框已实现
-  （`MovieInfo::WriteComments` 只重写 comment 行，帧数据原样保留）；Record 对话框的注释输入尚未移植
-- ☐ 录制起点三选一：开机 / Reset+SRAM / 当前状态（Play 对话框里只读展示已完成，Record 对话框未移植）
+- ☑ 录制时可写注释，并可只改头部的注释行（Play 与 Record 对话框均实现；
+  `MovieInfo::WriteComments` 只重写 comment 行，帧数据原样保留）
+- ☑ 录制起点三选一：开机 / Reset+SRAM（含 `.dsv` 选择）/ 当前状态（macOS `MovieRecordWindowController`）
 
 ### P2 — 窗口与显示细节
 

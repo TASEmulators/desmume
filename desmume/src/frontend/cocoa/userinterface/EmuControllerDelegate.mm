@@ -28,6 +28,7 @@
 #import "RAMWatchWindow.h"
 #import "RAMSearchWindow.h"
 #import "MoviePlayWindowController.h"
+#import "MovieRecordWindowController.h"
 
 #import "CocoaAudioController.h"
 #import "CocoaDisplayView.h"
@@ -636,47 +637,42 @@
 
 - (IBAction) recordReplay:(id)sender
 {
-	NSSavePanel *panel = [NSSavePanel savePanel];
-	[panel setCanCreateDirectories:YES];
-	[panel setTitle:@"Record Replay"];
-	
-	// While [NSSavePanel setAllowedFileTypes:] is available in Leopard, the
-	// allowedFileTypes property is ignored on that version of macOS. To maintain
-	// compatibility with Leopard, we need to call the deprecated method
-	// [NSSavePanel setRequiredFileType:] instead.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	if (IsOSXVersionSupported(10, 6, 0))
-	{
-		NSArray *fileTypes = [NSArray arrayWithObjects:@"dsm", nil];
-		[panel setAllowedFileTypes:fileTypes];
-	}
+	MovieRecordWindowController *recordDialog = [[[MovieRecordWindowController alloc] init] autorelease];
+	NSString *movieName = [[[self currentRom] fileURL] lastPathComponent];
+	if ([movieName length] == 0)
+		movieName = @"movie";
 	else
-#endif
-	{
-		SILENCE_DEPRECATION_MACOS_10_6( [panel setRequiredFileType:@"dsm"] );
-	}
-	
-	const NSInteger buttonClicked = [panel runModal];
-	if (buttonClicked == GUI_RESPONSE_OK)
-	{
-		NSURL *fileURL = [panel URL];
-		if(fileURL == nil)
-		{
-			return;
-		}
-		
-		[self pauseCore];
-		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-		NSURL *sramURL = [CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"];
-		
-		//NSFileManager *fileManager = [[NSFileManager alloc] init];
-		//const BOOL exists = [fileManager isReadableFileAtPath:[sramURL path]];
-		//[fileManager release];
-		
-		const BOOL isMovieStarted = [cdsCore startReplayRecording:fileURL sramURL:sramURL];
-		[self setStatusTextWithString:(isMovieStarted) ? NSSTRING_STATUS_REPLAY_RECORDING_STARTED : NSSTRING_STATUS_REPLAY_CREATION_FAILED];
-		[self restoreCoreState];
-	}
+		movieName = [movieName stringByDeletingPathExtension];
+
+	[recordDialog setDefaultMovieName:movieName];
+	[recordDialog setMoviesDirectory:[NSHomeDirectory() stringByAppendingPathComponent:@"Movies"]];
+	[recordDialog setTarget:self action:@selector(recordMovieFromController:)];
+	[recordDialog runModal];
+}
+
+- (void) recordMovieFromController:(id)sender
+{
+	MovieRecordWindowController *controller = (MovieRecordWindowController *)sender;
+	NSString *path = [controller moviePath];
+	if ([path length] == 0)
+		return;
+
+	NSURL *fileURL = [NSURL fileURLWithPath:path];
+	NSString *sramText = [controller sramPath];
+	NSURL *sramURL = ([sramText length] > 0) ? [NSURL fileURLWithPath:sramText] : nil;
+	if (sramURL == nil && [controller startFrom] == 1)
+		sramURL = [CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"];
+
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[self pauseCore];
+	const BOOL isMovieStarted = [cdsCore startReplayRecording:fileURL
+	                                                  sramURL:sramURL
+	                                                   author:[controller author]
+	                                              description:[controller descriptionText]
+	                                                startFrom:[controller startFrom]
+	                                                  rtcDate:[controller rtcDate]];
+	[self setStatusTextWithString:(isMovieStarted) ? NSSTRING_STATUS_REPLAY_RECORDING_STARTED : NSSTRING_STATUS_REPLAY_CREATION_FAILED];
+	[self restoreCoreState];
 }
 
 - (IBAction) stopReplay:(id)sender
@@ -3442,7 +3438,8 @@
 	}
 	else if (theAction == @selector(stopReplay:))
 	{
-		if ([self currentRom] == nil || [self isRomLoading] || [self isShowingSaveStateDialog])
+		if ([self currentRom] == nil || [self isRomLoading] || [self isShowingSaveStateDialog]
+		    || ![cdsCore isMovieActive])
 		{
 			enable = NO;
 		}

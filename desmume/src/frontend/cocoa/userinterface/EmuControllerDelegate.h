@@ -227,6 +227,7 @@ class AudioSampleBlockGenerator;
 - (IBAction) openReplay:(id)sender;
 - (void) playMovieFromController:(id)sender;
 - (IBAction) recordReplay:(id)sender;
+- (void) recordMovieFromController:(id)sender;
 - (IBAction) stopReplay:(id)sender;
 - (IBAction) importRomSave:(id)sender;
 - (IBAction) exportRomSave:(id)sender;

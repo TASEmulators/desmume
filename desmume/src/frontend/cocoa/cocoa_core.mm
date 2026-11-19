@@ -41,6 +41,8 @@
 #include "../../SPU.h"
 #include "../../wifi.h"
 #undef BOOL
+#include "../../utils/xstring.h"
+#undef BOOL
 
 #ifdef DESMUME_COCOA_METAL_OSD
 #include "userinterface/MacMetalOSDDraw.h"
@@ -963,50 +965,65 @@ volatile bool execute = true;
 
 - (BOOL) startReplayRecording:(NSURL *)fileURL sramURL:(NSURL *)sramURL
 {
+	return [self startReplayRecording:fileURL
+	                          sramURL:sramURL
+	                           author:NSFullUserName()
+	                      description:@""
+	                        startFrom:START_BLANK
+	                          rtcDate:nil];
+}
+
+- (BOOL) startReplayRecording:(NSURL *)fileURL
+                      sramURL:(NSURL *)sramURL
+                       author:(NSString *)author
+                  description:(NSString *)description
+                    startFrom:(int)startFrom
+                      rtcDate:(NSDate *)rtcDate
+{
 	if (fileURL == nil)
 	{
 		return NO;
 	}
-	
-	const char *cSramPath = [CocoaDSUtil cPathFromFileURL:sramURL];
-	std::string sramPath = (cSramPath != NULL) ? std::string(cSramPath) : "";
+
 	const char *fileName = [CocoaDSUtil cPathFromFileURL:fileURL];
-	
-	NSDateFormatter *df = [[NSDateFormatter alloc] init];
-	[df setDateFormat:@"Y M d H m s SSS"];
-	
-	 // Copy the current date into a formatted string.
-	NSString *dateString = [df stringFromDate:[NSDate date]];
-	
-	[df release];
-	df = nil;
-	
-	int dateYear = 2009;
-	int dateMonth = 1;
-	int dateDay = 1;
-	int dateHour = 0;
-	int dateMinute = 0;
-	int dateSecond = 0;
-	int dateMillisecond = 0;
-	sscanf([dateString cStringUsingEncoding:NSUTF8StringEncoding], "%i %i %i %i %i %i %i",
-		   &dateYear, &dateMonth, &dateDay, &dateHour, &dateMinute, &dateSecond, &dateMillisecond);
-	
-	DateTime rtcDate = DateTime(dateYear,
-								dateMonth,
-								dateDay,
-								dateHour,
-								dateMinute,
-								dateSecond,
-								dateMillisecond);
-	
-	FCEUI_SaveMovie(fileName, L"Test Author", START_BLANK, sramPath, rtcDate);
-	
+	if (fileName == NULL)
+	{
+		return NO;
+	}
+
+	// SRAM is only meaningful for the "From reset / SRAM" start point.
+	std::string sramPath;
+	if ((START_FROM)startFrom == START_SRAM)
+	{
+		const char *cSramPath = [CocoaDSUtil cPathFromFileURL:sramURL];
+		sramPath = (cSramPath != NULL) ? std::string(cSramPath) : "";
+	}
+
+	NSDate *date = (rtcDate != nil) ? rtcDate : [NSDate date];
+	NSDateComponents *parts = [[NSCalendar currentCalendar]
+	                           components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay |
+	                                       NSCalendarUnitHour | NSCalendarUnitMinute | NSCalendarUnitSecond)
+	                           fromDate:date];
+	DateTime rtcStart((int)[parts year], (int)[parts month], (int)[parts day],
+	                  (int)[parts hour], (int)[parts minute], (int)[parts second]);
+
+	const std::string authorUtf8 = (author != nil) ? std::string([author UTF8String]) : std::string();
+	const std::string descriptionUtf8 = (description != nil) ? std::string([description UTF8String]) : std::string();
+	const std::wstring wAuthor = mbstowcs(authorUtf8);
+	const std::wstring wDescription = mbstowcs(descriptionUtf8);
+
+	FCEUI_SaveMovie(fileName, wAuthor, (START_FROM)startFrom, sramPath, rtcStart, wDescription);
 	return YES;
 }
 
 - (void) stopReplay
 {
 	FCEUI_StopMovie();
+}
+
+- (BOOL) isMovieActive
+{
+	return (movieMode == MOVIEMODE_PLAY || movieMode == MOVIEMODE_RECORD) ? YES : NO;
 }
 
 - (void) postNDSError:(const NDSError &)ndsError

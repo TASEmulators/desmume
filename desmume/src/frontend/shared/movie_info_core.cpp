@@ -30,6 +30,11 @@
 
 #include "../../NDSSystem.h"
 #include "../../version.h"
+#include "../../movie.h"
+
+static_assert((int)MovieInfo::kStartBlank == (int)START_BLANK, "START_FROM mirror out of date");
+static_assert((int)MovieInfo::kStartSram == (int)START_SRAM, "START_FROM mirror out of date");
+static_assert((int)MovieInfo::kStartSavestate == (int)START_SAVESTATE, "START_FROM mirror out of date");
 
 namespace MovieInfo
 {
@@ -507,6 +512,71 @@ std::string DescribeLanguage(const std::string &raw)
 	if (v >= 0 && v < (int)(sizeof(kLanguages) / sizeof(kLanguages[0])))
 		return kLanguages[v];
 	return raw;
+}
+
+std::string EnsureDsmExtension(const std::string &fileName)
+{
+	const size_t slash = fileName.find_last_of("\\/");
+	const size_t leaf = (slash == std::string::npos) ? 0 : slash + 1;
+	const size_t dot = fileName.find_last_of('.');
+	if (dot == std::string::npos || dot < leaf)
+		return fileName + ".dsm";
+	return fileName;
+}
+
+std::string DefaultMovieFileName(const std::string &baseName,
+                                  const std::string &directory, bool unique)
+{
+	const std::string base = baseName.empty() ? "movie" : baseName;
+	if (!unique)
+		return base + ".dsm";
+
+	for (int n = 0; n < 10000; n++)
+	{
+		char suffix[32];
+		if (n == 0)
+			suffix[0] = '\0';
+		else
+			snprintf(suffix, sizeof(suffix), " - %d", n);
+		const std::string name = base + suffix + ".dsm";
+
+		std::string full = name;
+		if (!directory.empty())
+		{
+			full = directory;
+			if (full[full.size() - 1] != '/' && full[full.size() - 1] != '\\')
+				full += '/';
+			full += name;
+		}
+		FILE *fp = fopen(full.c_str(), "rb");
+		if (fp == NULL)
+			return name;
+		fclose(fp);
+	}
+	return base + ".dsm";
+}
+
+EmulationFlags CurrentEmulationFlags()
+{
+	EmulationFlags flags;
+	flags.useExtBios = CommonSettings.UseExtBIOS;
+	flags.swiFromBios = CommonSettings.SWIFromBIOS;
+	flags.useExtFirmware = CommonSettings.UseExtFirmware;
+	flags.bootFromFirmware = CommonSettings.BootFromFirmware;
+	return flags;
+}
+
+RTCStamp DefaultRTCStamp()
+{
+	const DateTime t = FCEUI_MovieGetRTCDefault();
+	RTCStamp stamp;
+	stamp.year = t.get_Year();
+	stamp.month = t.get_Month();
+	stamp.day = t.get_Day();
+	stamp.hour = t.get_Hour();
+	stamp.minute = t.get_Minute();
+	stamp.second = t.get_Second();
+	return stamp;
 }
 
 } // namespace MovieInfo

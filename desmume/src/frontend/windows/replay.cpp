@@ -131,23 +131,7 @@ static std::string MovieBaseName()
 // always shows the plain default name.
 static std::string DefaultMovieFilename(bool unique)
 {
-	const std::string dir = MovieDirectory();
-	const std::string base = MovieBaseName();
-	if (!unique)
-		return base + ".dsm";
-
-	char suffix[32];
-	for (int n = 0; n < 10000; n++)
-	{
-		if (n == 0)
-			suffix[0] = '\0';
-		else
-			snprintf(suffix, sizeof(suffix), " - %d", n);
-		const std::string name = base + suffix + ".dsm";
-		if (GetFileAttributesA((dir + name).c_str()) == 0xFFFFFFFF)
-			return name;
-	}
-	return base + ".dsm";
+	return MovieInfo::DefaultMovieFileName(MovieBaseName(), MovieDirectory(), unique);
 }
 
 // tests if a file is readable at the given location without changing whatever is there
@@ -180,12 +164,7 @@ static BOOL IsFileWritable(const char *filePath)
 
 static void EnsureDsmExtension(std::string &fname)
 {
-	const char *slash = strrchr(fname.c_str(), '\\');
-	const char *fslash = strrchr(fname.c_str(), '/');
-	const char *dot = strrchr(fname.c_str(), '.');
-	const char *base = slash ? slash : (fslash ? fslash : fname.c_str());
-	if (!dot || dot < base)
-		fname.append(".dsm");
+	fname = MovieInfo::EnsureDsmExtension(fname);
 }
 
 // The movie edit boxes show only a file name. A bare name is resolved against
@@ -608,10 +587,11 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 		const MovieInfo::RomIdentity rom = MovieInfo::CurrentRomIdentity();
 		SetTextA(hwndDlg, IDC_REC_ROMINFO, MovieInfo::FormatRomLine("Your ROM:  ",
 		         rom.serial, MovieInfo::FormatHexCrc(rom.crc), "title=", rom.internalName));
-		CheckDlgButton(hwndDlg, IDC_REC_BIOSEXT, CommonSettings.UseExtBIOS ? BST_CHECKED : BST_UNCHECKED);
-		CheckDlgButton(hwndDlg, IDC_REC_BIOSWI, CommonSettings.SWIFromBIOS ? BST_CHECKED : BST_UNCHECKED);
-		CheckDlgButton(hwndDlg, IDC_REC_FIRMEXT, CommonSettings.UseExtFirmware ? BST_CHECKED : BST_UNCHECKED);
-		CheckDlgButton(hwndDlg, IDC_REC_BOOTFW, CommonSettings.BootFromFirmware ? BST_CHECKED : BST_UNCHECKED);
+		const MovieInfo::EmulationFlags flags = MovieInfo::CurrentEmulationFlags();
+		CheckDlgButton(hwndDlg, IDC_REC_BIOSEXT, flags.useExtBios ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_REC_BIOSWI, flags.swiFromBios ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_REC_FIRMEXT, flags.useExtFirmware ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_REC_BOOTFW, flags.bootFromFirmware ? BST_CHECKED : BST_UNCHECKED);
 
 		// Both the suggested path and the author are defaults and stay editable.
 		// The path is resolved through File > Path Settings > Movies.
