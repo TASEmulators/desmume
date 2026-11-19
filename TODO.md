@@ -31,7 +31,7 @@
 | 即时存档（10 槽 + 另存/另读） | ☑ | ☑ | ☑ | |
 | 金手指：列表 / 搜索 / 禁用 / 数据库 | ☑ | ☑ | ☑ | GTK 的数据库入口在窗口内，不在菜单 |
 | 电影（.dsm）播放 / 录制 / 停止 | ☑ | ☑ | ☑ | |
-| 电影：元数据、ROM 校验、暂停到某帧、改注释 | ☑ | ☐ | ☐ | |
+| 电影：元数据、ROM 校验、暂停到某帧、改注释 | ☑ | ☑ | ☑ | 三端共用 `shared/movie_info_core` |
 | DSM 时间线编辑器（逐帧网格 / CSV 剪贴板） | ☑ | ☐ | ☐ | |
 | 视频录制 | ☑ MP4/AVI/WAV | ☑ AVFoundation | ☑ FFmpeg | |
 | 旧式 AVI / WAV / UserSPU WAV | ☑ | ☐ | ◐ 仅 H.264 / FLAC | 建议不追平，见 §5 |
@@ -116,7 +116,7 @@ Windows 侧：`dsmeditor.cpp`(73 KB) + `dsmcsv.cpp`(11 KB)。macOS 只做了播�
 - ☑ 播放暂停到指定帧（默认末帧）
 - ☑ 录制时可写注释，并可只改头部的注释行（Play 与 Record 对话框均实现；
   `MovieInfo::WriteComments` 只重写 comment 行，帧数据原样保留）
-- ☑ 录制起点三选一：开机 / Reset+SRAM（含 `.dsv` 选择）/ 当前状态（macOS `MovieRecordWindowController`）
+- ☑ 录制起点三选一：开机 / Reset+SRAM（含 `.dsv` 选择）/ 当前状态（macOS `MovieRecordWindowController`，GTK `tools/movieRecord.cpp`）
 
 ### P2 — 窗口与显示细节
 
@@ -185,8 +185,8 @@ GTK3 这半年补得很快（RAM Watch/Search、金手指重写、FFmpeg 录制�
 ### P1 — 电影与录像
 
 - ☐ DSM 编辑器（同 macOS，共用同一套 core）
-- ☐ 电影元数据 / ROM 校验 / 暂停到帧 / 改注释 —— `shared/movie_info_core` 已提供全部逻辑，
-  GTK 只需接一个 `GtkDialog` 并照头文件里的 integration contract 调用
+- ☑ 电影元数据 / ROM 校验 / 暂停到帧 / 改注释 —— GTK `tools/moviePlay.cpp` / `movieRecord.cpp`
+  已按 `shared/movie_info_core` 的 integration contract 接入完整对话框（2026-11-19）
 - ☐ 录像暂停（`Pause Recording`），现在只能开始/停止
 
 ### P2 — 截图与显示

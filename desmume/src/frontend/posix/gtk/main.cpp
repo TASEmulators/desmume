@@ -62,6 +62,8 @@
 #include "saves.h"
 #include "mic.h"
 #include "movie.h"
+#include "tools/moviePlay.h"
+#include "tools/movieRecord.h"
 #include "dTool.h"
 #include "../shared/desmume_config.h"
 #include "../shared/gdksdl.cpp"
@@ -1149,86 +1151,32 @@ static void LoadStateDialog(GSimpleAction *action, GVariant *parameter, gpointer
     g_object_unref(pFileSelection);
 }
 
+// Stop Replay is only meaningful while a movie is being played or recorded,
+// matching the Cocoa dialog's -isMovieActive check.
+static void update_movie_actions()
+{
+    GSimpleAction *stop = G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "stopmovie"));
+    if (stop != NULL)
+        g_simple_action_set_enabled(stop,
+            (movieMode == MOVIEMODE_PLAY || movieMode == MOVIEMODE_RECORD) ? TRUE : FALSE);
+}
+
 static void RecordMovieDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
- GtkFileFilter *pFilter_dsm, *pFilter_any;
-    GtkFileChooserNative *pFileSelection;
-
-    if (desmume_running())
-        Pause(NULL, NULL, NULL);
-
-    pFilter_dsm = gtk_file_filter_new();
-    gtk_file_filter_add_pattern(pFilter_dsm, "*.dsm*");
-    gtk_file_filter_set_name(pFilter_dsm, "DeSmuME movie file (.dsm*)");
-
-    pFilter_any = gtk_file_filter_new();
-    gtk_file_filter_add_pattern(pFilter_any, "*");
-    gtk_file_filter_set_name(pFilter_any, "All files");
-
-    /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_native_new("Save Movie To ...",
-            GTK_WINDOW(pWindow),
-            GTK_FILE_CHOOSER_ACTION_SAVE,
-            "_Save", "_Cancel");
-    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
-
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_dsm);
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
-
-    /* Showing the window */
-    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
-    if (response == GTK_RESPONSE_ACCEPT) {
-        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
-        gchar *sPath = g_file_get_path(file);
-
-        FCEUI_SaveMovie(sPath,L"",START_BLANK,"", FCEUI_MovieGetRTCDefault());
-        g_free(sPath);
-    }
-    g_object_unref(pFileSelection);
+    movie_record_dialog_show(GTK_WINDOW(pWindow));
+    update_movie_actions();
 }
 
 static void StopMovie(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
 	FCEUI_StopMovie();
+    update_movie_actions();
 }
 
 static void PlayMovieDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-   GtkFileFilter *pFilter_dsm, *pFilter_any;
-    GtkFileChooserNative *pFileSelection;
-
-    if (desmume_running())
-        Pause(NULL, NULL, NULL);
-
-    pFilter_dsm = gtk_file_filter_new();
-    gtk_file_filter_add_pattern(pFilter_dsm, "*.dsm*");
-    gtk_file_filter_set_name(pFilter_dsm, "DeSmuME movie file (.dsm*)");
-
-    pFilter_any = gtk_file_filter_new();
-    gtk_file_filter_add_pattern(pFilter_any, "*");
-    gtk_file_filter_set_name(pFilter_any, "All files");
-
-    /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_native_new("Play movie from...",
-            GTK_WINDOW(pWindow),
-            GTK_FILE_CHOOSER_ACTION_OPEN,
-            "_Open", "_Cancel");
-    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
-
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_dsm);
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
-
-    /* Showing the window */
-    int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
-    if (response == GTK_RESPONSE_ACCEPT) {
-        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(pFileSelection));
-        gchar *sPath = g_file_get_path(file);
-
-		FCEUI_LoadMovie(sPath,true,false,-1);
-
-        g_free(sPath);
-    }
-    g_object_unref(pFileSelection);
+    movie_play_dialog_show(GTK_WINDOW(pWindow));
+    update_movie_actions();
 }
 
 static void ImportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -7027,6 +6975,10 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_object_unref(builder);
 
     pApp = GTK_APPLICATION(app);
+
+    // No movie is active on startup; Stop Replay stays greyed out until a
+    // Play/Record dialog actually starts one.
+    update_movie_actions();
 
 #ifdef HAVE_FFMPEG_RECORD
     // Recover menu state if the encoder worker fails after begin() succeeded.

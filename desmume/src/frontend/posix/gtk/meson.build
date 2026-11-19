@@ -19,12 +19,17 @@ desmume_src = [
   '../../shared/ram_debug_core.cpp',
   '../../shared/ramwatch_core.cpp',
   '../../shared/ram_search_core.cpp',
+  # Play/Record Movie dialogs: header parsing, desync assessment, comment
+  # rewriting and name/RTC helpers, shared with Windows and Cocoa.
+  '../../shared/movie_info_core.cpp',
   'config.cpp',
   'desmume.cpp',
   'dToolsList.cpp',
   'tools/ioregsView.cpp',
   'tools/ramWatch.cpp',
   'tools/ramSearch.cpp',
+  'tools/moviePlay.cpp',
+  'tools/movieRecord.cpp',
   'utilsGTK.cpp',
   'cheatsGTK.cpp',
   'main.cpp',

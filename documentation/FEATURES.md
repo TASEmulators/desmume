@@ -74,9 +74,9 @@ feature. Each entry says what you can do with it — not how it is built.
   rewritten; the author line, unknown keys and all frame bytes survive, with an
   atomic replace on both Windows and POSIX.
 - **A ready-made playback contract** — `PlayRequest`, `ParsePauseFrame()`,
-  the Record helpers and the formatting functions let a future GTK dialog
-  reuse the whole behaviour; only the widgets and path settings are
-  host-specific.
+  the Record helpers and the formatting functions let every frontend reuse the
+  whole behaviour; only the widgets and path settings are host-specific.
+  Windows, Cocoa and GTK all consume this one core.
 
 ---
 
@@ -163,8 +163,7 @@ feature. Each entry says what you can do with it — not how it is built.
   is passed to `FCEUI_LoadMovie`. The core's `FCEUMOV_ShouldPause()` owns the
   decision (movie playing + frame reached, then clears itself); each frontend
   performs its own local pause action. Windows and Cocoa both call it from
-  their frame loops, so the field is no longer inert on macOS. GTK can attach
-  the same one-shot check when its movie dialog is ported.
+  their frame loops, so the field is no longer inert on macOS or Linux.
 - **One input-processing block per frame, as on Windows** — Cocoa now commits
   input exactly once (`ClientInputHandler::CommitInputs()`), with the Lua
   `BEFOREEMULATION` hook running inside the open block alongside movie
@@ -316,6 +315,25 @@ feature. Each entry says what you can do with it — not how it is built.
 - **No development headers needed** — LuaJIT or Lua 5.1 is loaded at runtime;
   the console offers Run/Stop/Edit, file watching, drag-and-drop, an About
   dialog, frame stepping, popups, menus and host input APIs.
+
+### Movie dialogs (Play Movie / Record Movie)
+- **The same two dialogs as Windows and macOS** — File > Play movie and Record
+  movie now open full dialogs instead of a bare file chooser. Header parsing,
+  desync assessment, comment rewriting, unique-name generation, extension
+  handling, pause-frame validation and the default RTC all come from
+  `shared/movie_info_core.cpp`, the exact core the other two frontends use.
+- **Play** — file path with Browse/Refresh, read-only toggle, the complete
+  metadata preview (ROM serial/CRC, author, record date, core version, length,
+  frames, rerecords, comments), red fields plus a desync warning when the ROM or
+  core differs, a pause-at-frame field, and read-only recording/firmware/BIOS
+  groups. Opening read-write lets the Comment field be edited; only header
+  comment lines are rewritten, frame bytes are untouched.
+- **Record** — default `<ROM> - N.dsm` name, author and comment fields, the
+  three start points (power on, reset + SRAM with a `.dsv` picker, current
+  state), a Start RTC calendar/time, and read-only ROM/BIOS information.
+- **Stop movie is state-aware** — the menu action is disabled unless a movie is
+  actually playing or recording, matching Cocoa's `isMovieActive` check. Movie
+  preferences (directory, last author) persist in `[Movie]` of `config.cfg`.
 
 ### RAM Watch and RAM Search
 - **The same debugger as the other ports** — live watch lists and searches over

@@ -120,3 +120,10 @@ OPT(record_swap, bool, false, Recording, SwapScreens)
 OPT(record_gap, int, 0, Recording, ScreenGap)
 OPT(record_rotation, int, 0, Recording, Rotation)
 
+/* Movie (Play/Record dialogs). The header metadata and all decisions live in
+ * shared/movie_info_core.cpp; only host preferences are kept here. */
+OPT(movie_directory, std::string, std::string(), Movie, Directory)
+OPT(movie_read_only, bool, true, Movie, ReadOnly)
+OPT(movie_pause_enabled, bool, false, Movie, PauseEnabled)
+OPT(movie_author, std::string, std::string(), Movie, Author)
+
