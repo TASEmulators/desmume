@@ -29,6 +29,7 @@
 #include "armcpu.h"
 #include "instructions.h"
 #include "instruction_attributes.h"
+#include "jit_dma_event.h"
 #include "MMU.h"
 #include "MMU_timing.h"
 #include "arm_jit.h"
@@ -46,6 +47,21 @@ static const char *disassemble(u32 opcode);
 #else
 #include "arm_emit.cpp"
 #endif
+
+// Register that caches the address of mmu_dma_event_pending for the whole block,
+// so the DMA event check after a store costs one load instead of reloading the
+// pointer. It has to survive helper calls, so it must be callee-saved, and the
+// back end must not use it as scratch.
+//
+// AArch64: x24 is callee-saved (AAPCS64) and has no other use here; save() in
+//          emit_startfunc already pushes x23/x24.
+// ARM32:   there is no such register left. The emitters use r2-r11 as scratch
+//          (r11 is PTR_STORE_REG) and callR3 relies on them, so the check
+//          rematerialises the address instead.
+#ifdef __aarch64__
+#define JIT_DMA_FLAG_REG X24_REG
+#endif
+
 t_bytes *g_out = NULL;
 
 #ifdef __APPLE__
@@ -135,6 +151,8 @@ static GpVar bb_cpu;
 static GpVar bb_cycles;
 static GpVar bb_total_cycles;
 static u32 bb_constant_cycles;
+// true once the DMA event flag pointer has been materialised in JIT_DMA_FLAG_REG
+static bool bb_dma_flag_ptr_ready;
 
 #define cpu (&ARMPROC)
 
@@ -3989,50 +4007,23 @@ static void _armlog(u8 proc, u32 addr, u32 opcode)
 //   Event-boundary support
 //-----------------------------------------------------------------------------
 
-// Instructions that write to memory. A store is the only way the CPU can arm a
-// DMA channel, so these are the places where a compiled block has to be able to
-// end early.
-//
-// This mirrors instr_is_store() in arm_jit.cpp. Writing DMAxCNT in a mode that
-// starts immediately queues the transfer for the current timestamp
-// (DmaController::doSchedule() sets nextEvent = nds_timer), so it is due the
-// moment the store retires. The interpreter goes back to the sequencer after
-// every instruction and always runs the transfer first; a compiled block does
-// not, so two writes to the same channel landing inside one block make the
-// second overwrite the parameters latched by the first.
-static bool instr_is_store(u32 opcode)
+// Returns a register holding the address of mmu_dma_event_pending, which the
+// DMA event check loads from. The address never changes, so it is materialised
+// once per block, on the first store that needs it -- the same thing arm_jit.cpp
+// does with bb_dma_pending.
+static int emit_dma_event_flag_ptr()
 {
-	if(bb_thumb)
+#ifdef JIT_DMA_FLAG_REG
+	if(!bb_dma_flag_ptr_ready)
 	{
-		switch(opcode & 0xF800)
-		{
-			case 0x5000: return true; // STR/STRB/STRH (register offset, L clear)
-			case 0x6000: return true; // STR   (immediate offset)
-			case 0x7000: return true; // STRB  (immediate offset)
-			case 0x8000: return true; // STRH  (immediate offset)
-			case 0x9000: return true; // STR   (SP relative)
-			default: break;
-		}
-		if((opcode & 0xF000) == 0xC000) return true; // STMIA
-		if((opcode & 0xFE00) == 0xB400) return true; // PUSH
-		return false;
+		bb_dma_flag_ptr_ready = true;
+		emit_ptr(g_out, (uintptr_t)&mmu_dma_event_pending, JIT_DMA_FLAG_REG);
 	}
-
-	// ARM: single data transfer, L bit clear
-	if((opcode & 0x0C000000) == 0x04000000)
-		return (opcode & 0x00100000) == 0;
-	// ARM: block data transfer, L bit clear
-	if((opcode & 0x0E000000) == 0x08000000)
-		return (opcode & 0x00100000) == 0;
-	// ARM: SWP / SWPB
-	if((opcode & 0x0FB00000) == 0x01000000)
-		return true;
-	// ARM: STRD
-	if((opcode & 0x0E000000) == 0 && (opcode & 0x00400000) && (opcode & 0x00100000) == 0
-		&& ((opcode >> 4) & 0xF) == 0xD)
-		return true;
-
-	return false;
+	return JIT_DMA_FLAG_REG;
+#else
+	emit_ptr(g_out, (uintptr_t)&mmu_dma_event_pending, R3);
+	return R3;
+#endif
 }
 
 // Emit an early exit out of the current block.
@@ -4051,13 +4042,16 @@ static void emit_dma_event_check(u32 resume_adr)
 {
 	uint64_t skip = genlabel();
 
-	emit_read_ptr32_reg(g_out, (uintptr_t)&mmu_dma_event_pending, R0);
+	// The flag lives at a fixed address, so the pointer is materialised once per
+	// block, on the first store that needs it, instead of on every store.
+	const int flag_ptr = emit_dma_event_flag_ptr();
+
+	emit_read_ptr32_regptrFROM_regTO(g_out, flag_ptr, R0);
 	emit_testimm(g_out, R0, 1);
 	emit_branch_label(g_out, skip, 0x0);		// beq skip
 
 	JIT_COMMENT("DMA armed: leave block at %08Xh", resume_adr);
-	emit_ptr(g_out, (uintptr_t)&mmu_dma_event_pending, R1);
-	emit_write_ptr32_regptrTO_immFROM(g_out, R1, 0);
+	emit_write_ptr32_regptrTO_immFROM(g_out, flag_ptr, 0);
 
 	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(instruct_adr, R1, ADDRESS), resume_adr);
 	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(next_instruction, R2, ADDRESS), resume_adr);
@@ -4116,6 +4110,7 @@ static u32 compile_basicblock()
 #endif
 
 	bb_constant_cycles = 0;
+	bb_dma_flag_ptr_ready = false;
 	for(u32 i=0, bEndBlock = 0; bEndBlock == 0; i++)
 	{
 		bb_adr = start_adr + (i * bb_opcodesize);
@@ -4192,7 +4187,7 @@ static u32 compile_basicblock()
 		// immediately and has to run before the next instruction, otherwise a
 		// following write to the same DMA registers would overwrite the
 		// parameters that were just latched.
-		if(instr_is_store(opcode))
+		if(instr_is_store(opcode, bb_thumb))
 			emit_dma_event_check(bb_next_instruction);
 
 		interpreted_cycles += op_decode[PROCNUM][bb_thumb]();
