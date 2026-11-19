@@ -3985,6 +3985,92 @@ static void _armlog(u8 proc, u32 addr, u32 opcode)
 #endif
 }
 
+//-----------------------------------------------------------------------------
+//   Event-boundary support
+//-----------------------------------------------------------------------------
+
+// Instructions that write to memory. A store is the only way the CPU can arm a
+// DMA channel, so these are the places where a compiled block has to be able to
+// end early.
+//
+// This mirrors instr_is_store() in arm_jit.cpp. Writing DMAxCNT in a mode that
+// starts immediately queues the transfer for the current timestamp
+// (DmaController::doSchedule() sets nextEvent = nds_timer), so it is due the
+// moment the store retires. The interpreter goes back to the sequencer after
+// every instruction and always runs the transfer first; a compiled block does
+// not, so two writes to the same channel landing inside one block make the
+// second overwrite the parameters latched by the first.
+static bool instr_is_store(u32 opcode)
+{
+	if(bb_thumb)
+	{
+		switch(opcode & 0xF800)
+		{
+			case 0x5000: return true; // STR/STRB/STRH (register offset, L clear)
+			case 0x6000: return true; // STR   (immediate offset)
+			case 0x7000: return true; // STRB  (immediate offset)
+			case 0x8000: return true; // STRH  (immediate offset)
+			case 0x9000: return true; // STR   (SP relative)
+			default: break;
+		}
+		if((opcode & 0xF000) == 0xC000) return true; // STMIA
+		if((opcode & 0xFE00) == 0xB400) return true; // PUSH
+		return false;
+	}
+
+	// ARM: single data transfer, L bit clear
+	if((opcode & 0x0C000000) == 0x04000000)
+		return (opcode & 0x00100000) == 0;
+	// ARM: block data transfer, L bit clear
+	if((opcode & 0x0E000000) == 0x08000000)
+		return (opcode & 0x00100000) == 0;
+	// ARM: SWP / SWPB
+	if((opcode & 0x0FB00000) == 0x01000000)
+		return true;
+	// ARM: STRD
+	if((opcode & 0x0E000000) == 0 && (opcode & 0x00400000) && (opcode & 0x00100000) == 0
+		&& ((opcode >> 4) & 0xF) == 0xD)
+		return true;
+
+	return false;
+}
+
+// Emit an early exit out of the current block.
+//
+// A store just retired. If it programmed a DMA channel that starts immediately,
+// DmaController::write32() has set mmu_dma_event_pending; the transfer is due
+// *now* (nextEvent == nds_timer), so the CPU must not retire another instruction
+// before Sequencer::execHardware() has run it. Returning here reproduces what
+// the interpreter does after every single instruction.
+//
+// bb_total_cycles holds the runtime (variable) cycle count of the instructions
+// already emitted, bb_constant_cycles the constant part of exactly those
+// instructions, so together they are the correct cycle count for the partial
+// block.
+static void emit_dma_event_check(u32 resume_adr)
+{
+	uint64_t skip = genlabel();
+
+	emit_read_ptr32_reg(g_out, (uintptr_t)&mmu_dma_event_pending, R0);
+	emit_testimm(g_out, R0, 1);
+	emit_branch_label(g_out, skip, 0x0);		// beq skip
+
+	JIT_COMMENT("DMA armed: leave block at %08Xh", resume_adr);
+	emit_ptr(g_out, (uintptr_t)&mmu_dma_event_pending, R1);
+	emit_write_ptr32_regptrTO_immFROM(g_out, R1, 0);
+
+	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(instruct_adr, R1, ADDRESS), resume_adr);
+	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(next_instruction, R2, ADDRESS), resume_adr);
+
+	if(bb_constant_cycles > 0)
+		emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, bb_constant_cycles);
+
+	emit_read_ptr32_reg(g_out, (uintptr_t)&bb_total_cycles, R0);
+	emit_endfunc(g_out);
+
+	emit_label(g_out, skip);
+}
+
 ArmOpCompiled gf = NULL;
 
 template<int PROCNUM>
@@ -4101,6 +4187,13 @@ static u32 compile_basicblock()
 				emit_inc_ptr(g_out, (uintptr_t)&bb_total_cycles, (uintptr_t)&bb_cycles);
 			}
 		}
+
+		// A store may have armed a DMA channel. If it did, the transfer is due
+		// immediately and has to run before the next instruction, otherwise a
+		// following write to the same DMA registers would overwrite the
+		// parameters that were just latched.
+		if(instr_is_store(opcode))
+			emit_dma_event_check(bb_next_instruction);
 
 		interpreted_cycles += op_decode[PROCNUM][bb_thumb]();
 	}
