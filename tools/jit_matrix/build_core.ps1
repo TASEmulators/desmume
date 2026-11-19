@@ -130,6 +130,7 @@ $incCandidates = @(
     (Join-Path $baseDir 'userconfig')
     (Join-Path $baseDir 'defaultconfig')
     (Join-Path $Project '3rdparty\wgpu')
+    (Join-Path $Project '3rdparty')          # <asmjit/...> lives here (vendored master)
 )
 $incArgs = @($incCandidates | Where-Object { Test-Path $_ } | ForEach-Object { "/I$_" })
 
@@ -164,7 +165,15 @@ foreach ($s in $sources) {
         continue
     }
 
-    $log = & $Cl @baseArgs "/Fo$obj" $s 2>&1
+    # asmjit master requires C++20 and ASMJIT_STATIC. Keep every other core
+    # translation unit at C++14 so this change stays isolated to the JIT.
+    $compileArgs = $baseArgs
+    if ([IO.Path]::GetFileName($s) -eq 'arm_jit.cpp') {
+        $compileArgs = @('/c', '/nologo', '/EHsc', '/W1', '/std:c++20') +
+                       $optArgs + $defArgs + @('/DASMJIT_STATIC') + $incArgs
+    }
+
+    $log = & $Cl @compileArgs "/Fo$obj" $s 2>&1
     if ($LASTEXITCODE -ne 0) {
         $failures += [pscustomobject]@{ file = $rel; log = ($log | Select-Object -Last 8) -join "`n" }
         Write-Host ("  FAIL  {0}" -f $rel) -ForegroundColor Red

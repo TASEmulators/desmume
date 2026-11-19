@@ -219,6 +219,49 @@ static void x86_unresolved_label() {
 }
 
 // ---------------------------------------------------------------------------
+// Win64 argument slots: a u64 argument followed by an int. DeSmuME's LDM/STM
+// helper has exactly this signature and the differential harness showed the
+// int landing in R9 (as if u64 consumed two slots), so measure it directly.
+// ---------------------------------------------------------------------------
+static uint32_t probe_mix_args(uint32_t a, uint64_t b, int32_t c) {
+  printf("        callee saw a=%u b=0x%llX c=%d\n",
+         a, (unsigned long long)b, c);
+  return a + uint32_t(b) + uint32_t(c);
+}
+
+static void x86_mixed_args() {
+  printf("\n[x86] invoke with (u32, u64, int) -- argument slot check\n");
+
+  CodeHolder code;
+  code.init(Environment::host());
+
+  x86::Compiler cc(&code);
+  cc.add_func(FuncSignature::build<int32_t>());
+  InvokeNode* inv;
+  cc.invoke(Out(inv), (void*)&probe_mix_args,
+            FuncSignature::build<uint32_t, uint32_t, uint64_t, int32_t>());
+  inv->set_arg(0, 1);
+  inv->set_arg(1, uint64_t(0x200000002ull));
+  inv->set_arg(2, 3);
+
+  x86::Gp ret = cc.new_gp32();
+  inv->set_ret(0, ret);
+  cc.mov(x86::eax, ret);
+  cc.ret();
+  cc.end_func();
+  check_err(cc.finalize(), Error::kOk, "finalize()");
+
+  void* fn = nullptr;
+  check_err(commit(code, &fn), Error::kOk, "commit()");
+  if (!fn) return;
+
+  typedef int32_t (*Fn)();
+  int32_t got = reinterpret_cast<Fn>(fn)();
+  check(got == 6, "a + (uint32_t)b + c == 6");
+  if (got != 6) printf("        (got %d, expected 6)\n", got);
+}
+
+// ---------------------------------------------------------------------------
 // arm64: cannot run on this host, but must assemble.
 // ---------------------------------------------------------------------------
 static void a64_compile() {
@@ -313,6 +356,8 @@ int main() {
   x86_with_args();
   scratch_reset();
   x86_unresolved_label();
+  scratch_reset();
+  x86_mixed_args();
   scratch_reset();
   a64_compile();
   scratch_reset();

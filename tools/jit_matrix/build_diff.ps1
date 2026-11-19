@@ -19,9 +19,13 @@ $Project = Join-Path $Repo 'desmume'
 $Src     = Join-Path $Project 'src'
 $Out     = Join-Path $Repo 'build_core'
 $CoreLib = Join-Path $Out 'desmume_core.lib'
+$AsmJitLib = Join-Path $Out 'asmjit\asmjit_master.lib'
 
 if (-not (Test-Path $CoreLib)) {
     throw "missing $CoreLib - run tools/jit_matrix/build_core.ps1 first"
+}
+if (-not (Test-Path $AsmJitLib)) {
+    throw "missing $AsmJitLib - run tools/jit_matrix/build_asmjit.ps1 first"
 }
 
 # --- toolchain -------------------------------------------------------------
@@ -91,7 +95,7 @@ $exe = Join-Path $Out 'jit_diff.exe'
 # /MAP: the harness reports fault addresses, and without a map a fault is just a
 # number. RVAs are enough -- no PDB needed to name the function that faulted.
 $map = Join-Path $Out 'jit_diff.map'
-& $Cl /nologo @objs "/Fe$exe" "/link" "/MAP:$map" "/LIBPATH:$Out" 'desmume_core.lib' @sysLibs
+& $Cl /nologo @objs "/Fe$exe" "/link" "/MAP:$map" "/LIBPATH:$Out" 'desmume_core.lib' $AsmJitLib @sysLibs
 if ($LASTEXITCODE -ne 0) { throw 'link failed' }
 
 Write-Host "built: $exe"

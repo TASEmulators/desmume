@@ -808,6 +808,39 @@ build_core/asmjit_probe.exe                    # 21 项断言，exit=0
 **没验证到的**（需要 arm64 机器或真实块）：a64 块的实际执行、icache flush 关掉后能否
 复现崩溃、573 个 `emit_*` 调用点用 `int` 重载后能否原样编译。这三条留到 S2 收尾。
 
+**x86 侧骨架迁移已完成（2026-11-19）**：`arm_jit.cpp` 已从 asmjit 1.0 切到
+vendored master + `CodeHolder` / `x86::Compiler` / 手动落地，生产构建脚本与
+差分台都已接线。与迁移前逐条对照：
+
+| 项 | 迁移前 | 迁移后 |
+|---|---|---|
+| `probes` 288 次 | 0 mismatch | 0 mismatch |
+| `--full` 81920 次 R0-R14 | 0 | 0 |
+| `CPSR` / `instruct_adr` / 异常 | 0 / 0 / 0 | 0 / 0 / 0 |
+| cycle 差异 | 12067 | 12067 |
+| jit-not-repeatable | 3 | 3 |
+
+`asmjit_probe` 扩到 24/24（新增 `(u32,u64,int)` 参数槽位用例）。
+
+**迁移中实测出来的五个坑**（照着旧 API 直译必然踩，已写进代码注释）：
+
+1. **`ASMJIT_X64` 在 master 上不存在**。4 处 `#ifdef` 全落到 32 位分支，把
+   `u64` 参数拆成两个 `u32`；`OP_LDM_STM` 的 `n` 于是变成 0，Thumb POP/LDM
+   一个寄存器都不写，差分台报 140 处 R0-R14 差异。改用项目自己的 `HOST_64`。
+2. **void 签名 + `set_ret` 不再产生返回值**。旧代码有 5 处把返回 `void` 的
+   `mem_op` / `LDR` / `STR` 也用 `setReturn(bb_cycles)` 取周期；1.0 会读 eax，
+   master 不会，这些指令的 JIT 周期因此变成 0。签名改成 `u32` 后与基线逐条一致。
+3. **`ret(var)` 拆成 `mov eax, var; ret`**——master 的 `ret()` 不带返回值。
+   mid-block 的 DMA 早退由 PEI 统一生成 epilog，不再需要 naked function。
+4. `newGpVar(kX86VarTypeGpd/Gpz)` → `new_gp32()/new_gpz()`；`newLabel` →
+   `new_label`；`r8Lo()` → `r8_lo()`；`unuse()` 删除（新 RA 自己算活跃期）；
+   `kScaleNone` → `0`；`sysint_t` → `int32_t`；`ptr_abs` 基址显式转 `uint64_t`。
+5. **25 处 `X86CompilerFuncCall` → `InvokeNode`**：原型从 `setPrototype` 挪进
+   `FuncSignature::build<Ret, Args...>()`，参数用 `set_arg`，返回值用 `set_ret`；
+   周期返回值先落临时 `gp32` 再 `movzx` 进 `bb_cycles`，不直接写活跃虚拟寄存器。
+
+**尚未开始**：arm64 侧骨架（S2 的另一半）、573 个 `emit_*` 调用点的 `int` 兼容重载。
+
 目标只有一个：**两个后端都用 `CodeHolder` + `Compiler` 跑通最小块**。
 这一步不改任何 handler 语义，因此可以用差分台立刻验证"骨架对不对"。
 
