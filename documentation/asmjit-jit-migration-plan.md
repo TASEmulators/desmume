@@ -676,19 +676,36 @@ build_core/jit_diff.exe --full --all           # 5120 槽 × 8 向量 × 2 组�
 | cycle 数不一致（值合理） | 6869 |
 | cycle 数不一致（返回值根本不是周期数） | 2192 |
 
-**由此得到两条既有 bug，按约定不在迁移里顺手修**：
+**这一轮暴露了三个缺陷**，全部定位并修掉（根因、证据和上游位置见 `ISSUE.md`，
+代码在 `1f24820b`）：
 
-- **Thumb `ROR`（寄存器形式）的 N/Z 标志算错**。定向探针把 Rs==Rd 与 Rs!=Rd 分开：
-  `ROR r0,r0` 在 vec1/2/4、`ROR r0,r1` 在 vec0/4 与解释器不符，
-  而 `LSL`/`LSR`/`ASR` 两种形式全部一致 → 不是"读序"问题，是 ROR 的标志生成。
-  以解释器为准（例：`r0=1` 执行 `ROR r0,r0`，结果 `0x80000000`，N 应为 1，JIT 给 0）。
-- **访存类的 cycle 记账与解释器不同**：差异全部落在 LDM/STM 与 load/store 空间，
-  且多为退化形态（空寄存器列表、基址为 0）。其中 2192 次 JIT 返回的是
-  `opcode+1`、`CPSR+1` 这类值——不是"差几个周期"，而是返回值被别的量占了；
-  与 `emit_armop_call` 里"编译函数拒绝→回退调用解释器"那条路径重合。
+1. `bb_cycles` 只声明不初始化 —— `INSTR_CYCLES_V` 且 handler 不写它时（`op_b` / `op_swi`），
+   块返回的是寄存器分配器留下的垃圾（实测就是 opcode 本身）。
+2. 条件指令固定周期 `N>1` 取支时记 `-1` 而不是 `N-1`（上游 `440c6665` 的回归），
+   一条取支条件分支记 0 周期，解释器记 3。
+3. Thumb `ROR` 的 N/Z 取自 x86 `ror` 留下的标志 —— 而 Intel SDM 规定
+   RCL/RCR/ROL/ROR **从不修改 SF/ZF/AF/PF**，所以读到的是上一条指令的残值。
 
-**尚未完成**：整机基线（《恶魔城》HUD，block size 15/16/100）与性能基线（冷启动编译耗时、帧率、
-ALU 密集场景）。差分台只能覆盖单条指令，DMA 事件早退那类**块级**语义仍要靠整机回归。
+**为什么破例修了它们**：方案原本约定"迁移中不顺手修既有 bug，单独开 PR"。但这三个
+正好压在差分台的比较面上——不修，之后每一步迁移都要在 6869 + 2192 条噪声里分辨
+"是我改坏了"还是"本来就错"，差分台就失去了作为回归门槛的作用。修完之后噪声只剩
+**已知的模型差异**，新出现的差异才能一眼认出来。这三条仍然按"独立缺陷"记录，
+没有混进迁移的改动里。
+
+**第二轮（修复后）**：`probes` 288 次 0 不一致；`--full` 81920 次 →
+**0 异常 / 0 `R0-R14` / 0 `instruct_adr` / 0 `CPSR` / 12067 cycle 差**，
+且这 12067 条全部是"JIT 用 `emit_MMU_aluMemCycles`、解释器用 `MMU_aluMemAccessCycles`"
+的模型差异（多为 +1，load/store multiple 是 8-vs-3），属于设计层，不是缺陷。
+
+**尚未完成**：
+
+- **整机基线**（《恶魔城》HUD，block size 15/16/100 + 暂存写计数）：需要 ROM。仓库里
+  有前端 exe 和 `__bins/StateSlots/0121 - Castlevania*` 的即时存档，但没有 `.nds`，
+  要等用户给出 ROM 路径才能跑。差分台只覆盖单条指令，DMA 事件早退那类**块级**语义
+  仍然只能靠整机回归。
+- **性能基线**：**推迟到 S2 结束再取**。S2 会把落地路径、prolog/epilog 和寄存器分配
+  整套换掉，现在测出的编译耗时与帧率对 S4 的性能门槛没有参考价值。到时候在同一天、
+  同一台机器上取"解释器 / 当前 JIT / 迁移后 JIT"三组数字。
 
 **回退点**：无（不改任何生产代码）。
 
@@ -767,57 +784,100 @@ python tools/jit_matrix/gen_asmjit_sources.py --format make
 
 ### S2 · 骨架：两个后端都换成 Compiler（约 4 天）
 
-目标只有一个：**两个后端都用 `CodeHolder` + `Compiler` + `Target` 跑通最小块**。
+**S2.0 已完成（2026-11-19）**：`tools/jit_matrix/asmjit_probe.cpp` 用 vendored
+asmjit `677a10b` 把骨架假设逐条跑了一遍，**21/21 通过**。它不碰生产代码，单独构建：
+
+```
+pwsh -File tools/jit_matrix/build_asmjit.ps1   # 54 个 TU -> asmjit_master.lib，再编探针
+build_core/asmjit_probe.exe                    # 21 项断言，exit=0
+```
+
+| 断言 | 结果 |
+|---|---|
+| vendored master 编成静态库（C++20 + `ASMJIT_STATIC`） | 54/54 TU |
+| x86 `CodeHolder` + `x86::Compiler` 落地后可执行 | `ret 0`、`mov eax,42`、`f(a,b)=a*3+b` 全部正确 |
+| `code.reinit()` 复用同一 `CodeHolder` 产出第二块 | 两块地址不同，分别返回 11 / 22 |
+| 未绑定 label 被拦住、不留悬空指针 | `finalize()` → `InvalidState`，`*out == nullptr` |
+| a64 `Compiler` 在 x86 宿主上能编出正确编码 | 8 字节，末条 `0xD65F03C0` = `RET X30` |
+| `VirtMem::ProtectJitReadWriteScope` 存在且析构 flush | 签名与行为核对 `core/virt_mem.h:379-417` |
+
+**这一轮改掉了 rev4 的三处纸面错误**：`Target` 没有 `_add` 虚函数（那是 `JitRuntime` 的）、
+落地流程漏了 `resolve_cross_section_fixups()` 与 `has_unresolved_fixups()`、
+函数参数是 `FuncNode::set_arg` 而不是 `Compiler::set_arg`。详见 §2.1 / §2.2。
+
+**没验证到的**（需要 arm64 机器或真实块）：a64 块的实际执行、icache flush 关掉后能否
+复现崩溃、573 个 `emit_*` 调用点用 `int` 重载后能否原样编译。这三条留到 S2 收尾。
+
+目标只有一个：**两个后端都用 `CodeHolder` + `Compiler` 跑通最小块**。
 这一步不改任何 handler 语义，因此可以用差分台立刻验证"骨架对不对"。
 
-#### 2.1 两个 Target（内存落地策略各不相同）
+#### 2.1 落地路径（不是 Target 子类）
 
-x86：`StaticCodeGenerator`（`arm_jit.cpp:213`）从 `Context` 改成 `Target`，继续往 32MB 静态 scratchpad 里落地：
+> **2026-11-19 实测修正**（`tools/jit_matrix/asmjit_probe.cpp`，21/21 通过）：
+> rev4 这里写的是"继承 `asmjit::Target` 并 override `_add`/`_release`"，
+> 在 vendored `677a10b` 上**编译不过**。`Target` 现在只描述目标环境
+> （`environment()` / `cpu_features()` / `cpu_hints()`），**没有任何虚函数**；
+> `_add`/`_release` 是 `JitRuntime` 的虚函数（`core/jit_runtime.h:102/105`）。
+> DeSmuME 不用 `JitAllocator`（自管 scratchpad），所以**不继承任何类**，
+> 直接调 `CodeHolder` 的方法落地；x86 与 arm64 共用同一个落地函数。
 
-```cpp
-struct StaticCodeGenerator : public asmjit::Target {
-  asmjit::Error _add(void** dst, asmjit::CodeHolder* code) noexcept override {
-    *dst = nullptr;
-    ASMJIT_PROPAGATE(code->flatten());
-    size_t size = code->code_size();
-    if (size > (size_t)(scratchpad + sizeof(scratchpad) - scratchptr)) {
-      arm_jit_reset(1);
-      return asmjit::Error::kOutOfMemory;
-    }
-    ASMJIT_PROPAGATE(code->relocate_to_base((uint64_t)scratchptr)); // 只重定位，不拷贝
-    ASMJIT_PROPAGATE(code->copy_flattened_data(scratchptr, size));  // 这一步才落地
-    *dst = scratchptr;
-    scratchptr += size;
-    return asmjit::Error::kOk;
-  }
-  asmjit::Error _release(void*) noexcept override { return asmjit::Error::kOk; } // scratchpad 整块回收
-};
-```
-
-> 顺序不能反：`flatten()` → `relocate_to_base()` → `copy_flattened_data()`，且三者各自只能调一次。
-
-arm64：`ArmJitTarget`，继续往 40MB RWX 块（`emit_core.cpp:86` 的 `armjitarm_alloc_func`）里 bump，
-但把回填/memcpy 交给 asmjit：
+x86：`StaticCodeGenerator`（`arm_jit.cpp:213`）从 `Context` 改成这套落地路径，继续往 32MB 静态 scratchpad 里写：
 
 ```cpp
-struct ArmJitTarget : public asmjit::Target {
-  asmjit::Error _add(void** dst, asmjit::CodeHolder* code) noexcept override {
-    *dst = nullptr;
-    ASMJIT_PROPAGATE(code->flatten());
-    size_t size = code->code_size();
-    ASMJIT_PROPAGATE(code->relocate_to_base(0));   // 分支全是 PC 相对，位置无关
+// 照 core/jit_runtime.cpp 的 JitRuntime::_add() 逐步实现，只把 JitAllocator
+// 换成 bump。DeSmuME 的 scratchpad 是整块回收，不需要 _release。
+static asmjit::Error jit_commit(asmjit::CodeHolder& code, void** out) {
+  *out = nullptr;
 
-    // ProtectJitReadWriteScope：构造切 RW，析构切回 RX **并 flush icache**
-    asmjit::VirtMem::ProtectJitReadWriteScope scope(ptr, size);
-    ASMJIT_PROPAGATE(code->copy_flattened_data(ptr, size));
-    // 若改成 CachePolicy::kNeverFlush，就必须自己补 FlushInstructionCache / sys_icache_invalidate
-    *dst = ptr;
-    ptr += size;
-    return asmjit::Error::kOk;
+  ASMJIT_PROPAGATE(code.flatten());
+  ASMJIT_PROPAGATE(code.resolve_cross_section_fixups());   // ← rev4 漏了这一步
+
+  if (code.has_unresolved_fixups())                        // ← rev4 也漏了
+    return asmjit::Error::kUnresolvedFixups;
+
+  size_t estimated = code.code_size();
+  if (estimated == 0)
+    return asmjit::Error::kNoCodeGenerated;
+
+  if (estimated > (size_t)(scratchpad + sizeof(scratchpad) - scratchptr)) {
+    arm_jit_reset(1);
+    return asmjit::Error::kOutOfMemory;
   }
-  asmjit::Error _release(void*) noexcept override { return asmjit::Error::kOk; } // 40MB 块整体回收
-};
+
+  // 必须是最终运行地址：PC 相对分支与常量池引用都按这个基址重定位。
+  asmjit::CodeHolder::RelocationSummary summary;
+  ASMJIT_PROPAGATE(code.relocate_to_base((uint64_t)scratchptr, &summary));
+
+  // 重定位可能缩小代码（某些引用不再需要地址表条目），asmjit 自己也是这么算的。
+  size_t final_size = estimated - summary.code_size_reduction;
+
+  ASMJIT_PROPAGATE(code.copy_flattened_data(scratchptr, final_size)); // 这一步才落地
+  *out = scratchptr;
+  scratchptr += final_size;
+  return asmjit::Error::kOk;
+}
 ```
+
+顺序不能变：`flatten()` → `resolve_cross_section_fixups()` → `relocate_to_base()` →
+`copy_flattened_data()`，且前三者各自只能调一次。
+
+arm64 侧落地函数完全一样，只多一层：往 40MB RWX 块（`emit_core.cpp:86` 的
+`armjitarm_alloc_func`）里 bump 时，拷贝窗口必须可写、拷贝完必须切回可执行并 flush icache：
+
+```cpp
+// jit_commit() 的 arm64 版本，只把"拷贝"这一步包起来。
+{
+  asmjit::VirtMem::ProtectJitReadWriteScope scope(ptr, final_size);
+  ASMJIT_PROPAGATE(code.copy_flattened_data(ptr, final_size));
+}
+// 若改成 CachePolicy::kNeverFlush，就必须自己补 FlushInstructionCache /
+// sys_icache_invalidate，否则「小向量全过、一进游戏随机崩」。
+```
+
+> 实测签名：`VirtMem::ProtectJitReadWriteScope(void* rx_ptr, size_t size,
+> CachePolicy policy = kDefault)`；析构里调 `protect_jit_memory(kReadExecute)`，
+> 并且 `_policy != kNeverFlush` 时才 `flush_instruction_cache()`
+> （`core/virt_mem.h:379-417`）。与 rev4 的描述一致，可以直接用。
 
 > **icache 三种写法只能选一种，不能都不做**：① scope 覆盖精确区间（析构自动 flush）；
 > ② 自己 flush；③ `kNeverFlush` + 确保后续有统一 flush 点。
@@ -829,27 +889,39 @@ struct ArmJitTarget : public asmjit::Target {
 ```cpp
 // x86 —— 旧: static X86Compiler c(&codegen); c.clear(); c.newFunc(...); ... c.make()
 asmjit::CodeHolder code;
-code.init(codegen.environment(), codegen.cpu_features());
+ASMJIT_PROPAGATE(code.init(asmjit::Environment::host()));  // 实测：没有 codegen 对象可借了
 asmjit::x86::Compiler cc(&code);
 
-code.reinit();                                          // ≈ 老 c.clear()
+code.reinit();                                          // ≈ 老 c.clear()，在 add_func 之前
 asmjit::FuncNode* fn = cc.add_func(asmjit::FuncSignature::build<int32_t>());
+// 有参数时：x86::Gp a = cc.new_gp32("a"); fn->set_arg(0, a);
 ...
 cc.end_func();
 ASMJIT_PROPAGATE(cc.finalize());
 void* f = nullptr;
-ASMJIT_PROPAGATE(codegen._add(&f, &code));
+ASMJIT_PROPAGATE(jit_commit(code, &f));
 
 // arm64 —— 旧: g_out = allocBytes(); emit_startfunc(g_out); ... createFunc(g_out)
 asmjit::CodeHolder code;
-code.init(asmjit_env_aarch64());
+ASMJIT_PROPAGATE(code.init(asmjit::Environment(asmjit::Arch::kAArch64)));
 asmjit::a64::Compiler cc(&code);
 asmjit::FuncNode* fn = cc.add_func(asmjit::FuncSignature::build<uint32_t>());
 ...
 cc.end_func();
 ASMJIT_PROPAGATE(cc.finalize());
-ArmJitTarget::add(&f, &code);
+ASMJIT_PROPAGATE(jit_commit(code, &f));
 ```
+
+> **实测注记（asmjit_probe）**：
+> - `code.init(Environment::host())` 可用；`code.reinit()` 之后同一个 `CodeHolder`
+>   能再产出一个块，两个块地址不同、各自可执行（11 / 22 两个返回值都验过）。
+> - 函数参数**不是** `Compiler::set_arg`——`x86::Compiler` 没有这个成员。要用
+>   `FuncNode::set_arg(index, reg)`（`x86_compiler.h` 的示例也是这么写的）。
+> - `ptr(base, index, shift)` 的第三参是 **log2 缩放**（0..3），rev4 引用的
+>   `kScale2Times` 在 master 上不存在；`a*3` 写 `ptr(a, a, 1)`。
+> - unbound label 不需要等到落地：`finalize()` 就以 `InvalidState` 失败，
+>   随后 `code_size()==0`，`jit_commit()` 返回 `kNoCodeGenerated`，`*out` 保持 `nullptr`。
+>   所以 **`finalize()` 之后必须立刻查错并回退到解释器**，不能拖到 commit。
 
 prolog/epilog 由 PEI 生成，`emit_startfunc` / `emit_endfunc` 消失。
 若某块被判定需要保存寄存器，prolog 会多出 `stp/ldp`——必须确认不吃掉"块内不碰 callee-saved"的既有前提（R1）。
