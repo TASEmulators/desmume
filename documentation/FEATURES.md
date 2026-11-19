@@ -159,8 +159,12 @@ feature. Each entry says what you can do with it — not how it is built.
 - **Comments without re-recording** — opened read-write, the Comment field can
   be edited and only the header's comment lines are replaced; recorded input is
   left byte-for-byte untouched.
-- **Pause at a frame** — defaults to the last frame and is passed straight to
-  `FCEUI_LoadMovie`; no shell command or workaround needed.
+- **Pause at a frame (shared one-shot check)** — defaults to the last frame and
+  is passed to `FCEUI_LoadMovie`. The core's `FCEUMOV_ShouldPause()` owns the
+  decision (movie playing + frame reached, then clears itself); each frontend
+  performs its own local pause action. Windows and Cocoa both call it from
+  their frame loops, so the field is no longer inert on macOS. GTK can attach
+  the same one-shot check when its movie dialog is ported.
 - **One input-processing block per frame, as on Windows** — Cocoa now commits
   input exactly once (`ClientInputHandler::CommitInputs()`), with the Lua
   `BEFOREEMULATION` hook running inside the open block alongside movie

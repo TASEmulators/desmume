@@ -1564,13 +1564,11 @@ static void StepRunLoop_Core()
 	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
 	ServiceDisplayThreadInvocations();
 
-	// Pause at the frame requested by the Play Movie dialog. The core's own
-	// pauseframe is assigned on load but never read, so the Windows loop owns
-	// the one-shot check. It runs after NDS_exec, when the frame counter has
-	// already advanced, and only while a movie is actually playing.
-	if (moviePauseFrame >= 0 && movieMode == MOVIEMODE_PLAY && currFrameCounter >= moviePauseFrame)
+	// Pause at the frame requested by the Play Movie dialog. The one-shot
+	// decision lives in the shared core (FCEUMOV_ShouldPause) so Windows,
+	// Cocoa and GTK all behave identically; only the pause action is local.
+	if (FCEUMOV_ShouldPause())
 	{
-		moviePauseFrame = -1;
 		Pause();
 	}
 }

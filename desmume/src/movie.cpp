@@ -960,12 +960,11 @@ const char* FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM s
 			 }*/
 		 }
 
-		 //pause the movie at a specified frame 
-		 //if(FCEUMOV_ShouldPause() && FCEUI_EmulationPaused()==0)
-		 //{
-		 //	FCEUI_ToggleEmulationPause();
-		 //	FCEU_DispMessage("Paused at specified movie frame");
-		 //}
+		 // Pause-at-frame is decided by FCEUMOV_ShouldPause(), which each
+		 // frontend calls from its own frame loop AFTER NDS_exec() (when
+		 // currFrameCounter has advanced). Doing it here in playback injection
+		 // would use the pre-exec frame count and would also force the core to
+		 // know every frontend's pause action.
 
 		 // it's apparently un-threadsafe to do this here
 		 // (causes crazy flickering in other OSD elements, at least)
@@ -976,6 +975,20 @@ const char* FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM s
 
 	 }
  }
+
+bool FCEUMOV_ShouldPause()
+{
+	// One-shot: a movie pauses at the requested frame exactly once. The frame
+	// count has to be checked after NDS_exec() advanced it, which is why this
+	// is called from each frontend's frame loop and not from playback injection.
+	if (pauseframe < 0 || movieMode != MOVIEMODE_PLAY)
+		return false;
+	if (currFrameCounter < pauseframe)
+		return false;
+
+	pauseframe = -1;
+	return true;
+}
 
  void FCEUMOV_HandleRecording()
  {

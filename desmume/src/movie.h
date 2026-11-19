@@ -273,6 +273,16 @@ bool AreMovieEmulationSettingsActive();
 void FCEUI_StopMovie();
 void FCEUMOV_AddInputState();
 void FCEUMOV_HandlePlayback();
+
+// One-shot "pause at frame" check, shared by every frontend's frame loop.
+// FCEUI_LoadMovie() records the requested frame in the core's pauseframe;
+// call this once per frame AFTER NDS_exec() (when currFrameCounter has already
+// advanced) and pause the emulator when it returns true. The first matching
+// frame clears the request, so the emulator is paused exactly once. Returns
+// false outside movie playback or when no frame was requested.
+// The pause itself stays in the frontend: Windows calls Pause(), Cocoa sets
+// ExecutionBehavior_Pause, GTK uses its own pause action.
+bool FCEUMOV_ShouldPause();
 void FCEUMOV_HandleRecording();
 void mov_savestate(EMUFILE &fp);
 bool mov_loadstate(EMUFILE &fp, int size);

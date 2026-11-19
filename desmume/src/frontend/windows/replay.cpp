@@ -44,10 +44,6 @@
 #include "main.h"
 #include "rtc.h"
 
-// Set by the playback dialog and consumed once by the Windows frame loop.
-// The core has its own pauseframe variable, but nothing currently reads it.
-int moviePauseFrame = -1;
-
 static bool replayreadonly = true;
 static START_FROM startFrom = START_BLANK;
 
@@ -492,8 +488,6 @@ static INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 			int pauseFrame = MovieInfo::ParsePauseFrame(
 				GetTextA(hwndDlg, IDC_EDIT_PAUSEFRAME),
 				IsDlgButtonChecked(hwndDlg, IDC_CHECK_PAUSEFRAME) != 0);
-			moviePauseFrame = pauseFrame;
-
 			const char *error = FCEUI_LoadMovie(filename.c_str(), readOnly, false, pauseFrame);
 			if (error)
 				MessageBoxA(hwndDlg, error, "Failed to load movie", MB_OK | MB_ICONERROR);
@@ -502,7 +496,6 @@ static INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 		}
 
 		case IDCANCEL:
-			moviePauseFrame = -1;
 			EndDialog(hwndDlg, 0);
 			return TRUE;
 		}

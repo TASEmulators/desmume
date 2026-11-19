@@ -1258,6 +1258,14 @@ static void* RunCoreThread(void *arg)
 		inputHandler->CommitInputs();
 		NDS_exec<false>();
 		SPU_Emulate_user();
+
+		// Pause-at-frame is shared with Windows via the core's one-shot check.
+		// Cocoa's pause action is an execution-behavior change; it is applied
+		// at the next loop start, so this frame still completes normally.
+		if (FCEUMOV_ShouldPause())
+		{
+			execControl->SetExecutionBehavior(ExecutionBehavior_Pause);
+		}
 		
 		outputManager->NDSExecPostAll();
 		execControl->FetchOutputPostNDSExec();
