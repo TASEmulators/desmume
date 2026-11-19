@@ -158,14 +158,34 @@ static int runProbes(void)
 
 			_MMU_write32<0>(codeAdr, kProbes[p].opcode);
 
-			CpuSnapshot interp;
+			// Warm-up. The first execution of a given address pays a one-off
+			// cost that has nothing to do with instruction semantics: measured
+			// 52 cycles on the first interpreter run and 1 on the second, on
+			// identical state. Both engines are therefore run once and thrown
+			// away before either is measured -- the JIT needs it anyway, since
+			// its first run is the one that compiles the block.
 			primeState(codeAdr, ops, kProbes[p].opcode);
-			takeSnapshot(&interp, 0);
-			// Re-prime: takeSnapshot captured the primed state, and the run
-			// mutates it.
+			armcpu_exec<0, false>();
+			primeState(codeAdr, ops, kProbes[p].opcode);
+			armcpu_exec<0, true>();
+
+			CpuSnapshot interp;
 			primeState(codeAdr, ops, kProbes[p].opcode);
 			u32 c1 = armcpu_exec<0, false>();
 			takeSnapshot(&interp, c1);
+
+			// Guard against a regression in the warm-up assumption above: if the
+			// interpreter is still not repeatable, the cycle comparison is
+			// meaningless and must say so instead of failing silently.
+			primeState(codeAdr, ops, kProbes[p].opcode);
+			u32 c1b = armcpu_exec<0, false>();
+			if (c1b != c1)
+			{
+				printf("FAIL  %-22s vec%d  interpreter not repeatable: %u then %u\n",
+					kProbes[p].name, v, c1, c1b);
+				failures++;
+				continue;
+			}
 
 			_MMU_write32<0>(codeAdr, kProbes[p].opcode);
 
