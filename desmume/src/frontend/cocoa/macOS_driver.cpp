@@ -224,7 +224,10 @@ BaseDriver::eStepMainLoopResult macOS_driver::EMU_StepMainLoop(bool allowSleep, 
 #endif
 #ifdef HAVE_LUA
 		lua_script_clear_graphics_buffer();
-		NDS_beginProcessingInput();
+		// Second input-processing pass this frame: start from the already-final
+		// input so Lua can adjust it without dropping movie playback or the
+		// autohold/turbo processing done by ProcessInputs/ApplyInputs above.
+		NDS_beginProcessingInputFromFinal();
 		CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
 		NDS_endProcessingInput();
 #endif

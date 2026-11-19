@@ -1245,7 +1245,11 @@ static void* RunCoreThread(void *arg)
 #endif
 #ifdef HAVE_LUA
 		lua_script_clear_graphics_buffer();
-		NDS_beginProcessingInput();
+		// This is a second input-processing pass in the same frame. Start it
+		// from the already-final input so a Lua script can still adjust the
+		// game's input without discarding movie playback / autohold / turbo
+		// processing done by inputHandler->ApplyInputs() above.
+		NDS_beginProcessingInputFromFinal();
 		CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
 		NDS_endProcessingInput();
 #endif

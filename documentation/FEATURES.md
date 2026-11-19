@@ -161,6 +161,13 @@ feature. Each entry says what you can do with it — not how it is built.
   left byte-for-byte untouched.
 - **Pause at a frame** — defaults to the last frame and is passed straight to
   `FCEUI_LoadMovie`; no shell command or workaround needed.
+- **Recorded input actually reaches the game** — the per-frame Lua
+  `BEFOREEMULATION` hook is a second input-processing pass. It now starts from
+  the already-final input (`NDS_beginProcessingInputFromFinal()`) instead of
+  restarting from raw physical input, so it can no longer overwrite movie
+  playback (or autohold/turbo) with the keyboard state. Lua's own `joy_set`
+  still refuses to edit a playing movie, so physical/Lua input is ignored
+  during playback as intended.
 
 ### Record Movie dialog
 - **All three start points** — power on (cold boot), reset/SRAM with a `.dsv`
