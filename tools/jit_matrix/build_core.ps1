@@ -17,6 +17,7 @@
 
 param(
     [switch]$Clean,
+    [switch]$Force,
     [ValidateSet('Debug', 'Release')][string]$Config = 'Release'
 )
 
@@ -101,7 +102,18 @@ $sources = foreach ($inc in $includes) {
     $full
 }
 $sources = $sources | Sort-Object -Unique
-Write-Host "sources   : $($sources.Count)"
+
+# Sources the Windows project pulls in indirectly (or compiles through the GUI
+# project) but that the core genuinely needs. Kept explicit so the list is
+# auditable rather than discovered one link error at a time.
+$extraSources = @(
+    (Join-Path $Src 'mic.cpp')                                      # Mic_Init/Reset/DeInit
+    (Join-Path $Src 'libretro-common\utils\crc32.c')                # crc32
+    (Join-Path $Src 'libretro-common\features\features_cpu.c')      # cpu_features_get_core_amount
+) | Where-Object { Test-Path $_ }
+
+$sources = @($sources) + $extraSources | Sort-Object -Unique
+Write-Host "sources   : $($sources.Count) (incl. $($extraSources.Count) extra)"
 
 # --- include paths (only the ones that exist) ------------------------------
 $incCandidates = @(
@@ -135,13 +147,22 @@ $baseArgs = @('/c', '/nologo', '/EHsc', '/W1', '/std:c++14') + $optArgs + $defAr
 # --- compile ---------------------------------------------------------------
 $failures = @()
 $i = 0
+$skipped = 0
 $sw = [Diagnostics.Stopwatch]::StartNew()
 
 foreach ($s in $sources) {
     $i++
     $rel = $s.Substring($Src.Length + 1)
-    $objName = ('{0:d3}_{1}' -f $i, ($rel -replace '[\\/:*?"<>|]', '_')) -replace '\.cpp$', '.obj'
+    # Object name derived from the path (not its index) so that adding a source
+    # does not rename every other object and force a full rebuild.
+    $objName = ($rel -replace '[\\/:*?"<>|]', '_') -replace '\.(cpp|c)$', '.obj'
     $obj = Join-Path $ObjDir $objName
+
+    if (-not $script:Force -and (Test-Path $obj) -and
+        ((Get-Item $obj).LastWriteTimeUtc -ge (Get-Item $s).LastWriteTimeUtc)) {
+        $skipped++
+        continue
+    }
 
     $log = & $Cl @baseArgs "/Fo$obj" $s 2>&1
     if ($LASTEXITCODE -ne 0) {
@@ -154,7 +175,7 @@ foreach ($s in $sources) {
 
 $sw.Stop()
 Write-Host ""
-Write-Host ("compiled {0}/{1} in {2:n0}s, {3} failed" -f ($sources.Count - $failures.Count), $sources.Count, $sw.Elapsed.TotalSeconds, $failures.Count)
+Write-Host ("compiled {0}/{1} in {2:n0}s, {3} failed, {4} up to date" -f ($sources.Count - $failures.Count), $sources.Count, $sw.Elapsed.TotalSeconds, $failures.Count, $skipped)
 
 if ($failures.Count) {
     $failures | ForEach-Object { "=== $($_.file)`n$($_.log)" } | Set-Content (Join-Path $Out 'failures.txt') -Encoding utf8

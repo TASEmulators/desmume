@@ -64,7 +64,13 @@ static void takeSnapshot(CpuSnapshot *s, u32 cycles)
 // A clean starting point for every vector: supervisor mode, ARM state, all
 // conditions true (0xE), interrupts masked, and registers filled from the
 // operand table so both engines see identical inputs.
-static void primeState(u32 codeAdr, const u32 *ops)
+//
+// `opcode` must be stored into NDS_ARM9.instruction as well as into memory: the
+// interpreter executes the *prefetched* word, while the JIT re-reads memory at
+// instruct_adr. Leaving the prefetch at zero makes the interpreter execute
+// ANDeq r0,r0,r0 (condition false, i.e. a no-op) and every comparison then
+// looks like a JIT bug.
+static void primeState(u32 codeAdr, const u32 *ops, u32 opcode)
 {
 	memset(NDS_ARM9.R, 0, sizeof(NDS_ARM9.R));
 	NDS_ARM9.R[0] = ops[0];
@@ -81,8 +87,8 @@ static void primeState(u32 codeAdr, const u32 *ops)
 
 	NDS_ARM9.R[15] = codeAdr;
 	NDS_ARM9.instruct_adr = codeAdr;
-	NDS_ARM9.next_instruction = codeAdr + 4;
-	NDS_ARM9.instruction = 0;
+	NDS_ARM9.next_instruction = codeAdr;
+	NDS_ARM9.instruction = opcode;
 }
 
 static bool sameSnapshot(const CpuSnapshot *a, const CpuSnapshot *b, char *why, size_t whyLen)
@@ -153,18 +159,18 @@ static int runProbes(void)
 			_MMU_write32<0>(codeAdr, kProbes[p].opcode);
 
 			CpuSnapshot interp;
-			primeState(codeAdr, ops);
+			primeState(codeAdr, ops, kProbes[p].opcode);
 			takeSnapshot(&interp, 0);
 			// Re-prime: takeSnapshot captured the primed state, and the run
 			// mutates it.
-			primeState(codeAdr, ops);
+			primeState(codeAdr, ops, kProbes[p].opcode);
 			u32 c1 = armcpu_exec<0, false>();
 			takeSnapshot(&interp, c1);
 
 			_MMU_write32<0>(codeAdr, kProbes[p].opcode);
 
 			CpuSnapshot jit;
-			primeState(codeAdr, ops);
+			primeState(codeAdr, ops, kProbes[p].opcode);
 			u32 c2 = armcpu_exec<0, true>();
 			takeSnapshot(&jit, c2);
 
@@ -185,7 +191,9 @@ int main(int argc, char **argv)
 {
 	printf("DeSmuME JIT differential harness\n");
 
-	if (NDS_Init() != 0)
+	// NDS_Init() returns non-zero on success (it is a BOOL-style result, not an
+	// errno), so 0 means failure.
+	if (!NDS_Init())
 	{
 		printf("NDS_Init failed\n");
 		return 2;
