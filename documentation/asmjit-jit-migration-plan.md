@@ -779,6 +779,30 @@ python tools/jit_matrix/gen_asmjit_sources.py --format make
 **验收**：x86-64 与 aarch64 两个宿主的空项目都能编过 asmjit 静态库；
 `arm_jit.cpp` / `arm_jit_arm.cpp` 先 `#if 0` 掉，主程序能链接并运行解释器模式。
 
+**实际落地（2026-11-19，提交 `29f2a3fb`）**：S2 只把 `build_core.ps1` / `build_diff.ps1`
+这两条离线脚本接上了，两个**出货工程**一直没动——`DeSmuME.vcxproj` 还列着 AsmJit 1.0 的 29 个源，
+Xcode 工程里 asmjit 出现 0 次。两套类的名字还是重叠的（`asmjit::Assembler` 等），
+所以"两套都编"不是多几个符号而是直接链接失败。
+
+现在两个工程都由脚本生成，不再手抄：
+
+| 脚本 | 作用 |
+|---|---|
+| `tools/jit_matrix/wire_asmjit_vcxproj.py` | 摘掉 29 个旧源，换 54 个 vendored，逐文件 `<LanguageStandard>stdcpp20</LanguageStandard>`；`arm_jit.cpp` 同样；`desmume.props` 加 `..\..\..\3rdparty` 与 `ASMJIT_STATIC` |
+| `tools/jit_matrix/wire_asmjit_xcode.py` | 同样的活，落到 `project.pbxproj`：文件引用、每个 target 的 build file（带 `COMPILER_FLAGS`）、include 根、`ASMJIT_STATIC`、`GCC_PRECOMPILE_PREFIX_HEADER = NO` |
+| `tools/jit_matrix/check_xcode_asmjit.py` | 不开 Xcode 也能验：括号配平、54 个源都引用且存在、每个 JIT target 带 `-std=c++20`、每个配置都有三项设置 |
+
+两个"逐文件"设定都是被逼出来的：
+
+- 工程默认标准是 `gnu++0x` / `stdcpp17`，asmjit 要 C++17；但把整个 target 提到 C++20 会把
+  Cocoa 端几百个 `.cpp/.mm` 一起拖进去，风险远大于收益，所以只在 JIT 与 asmjit 这几个 TU 上开。
+- 前缀头必须继续**被包含**（`HAVE_JIT` 就在里面），但不能再**预编译**：PCH 是用 `gnu++0x` 生成的，
+  clang 拒绝把它交给 `-std=c++20` 的 TU。
+
+范围是"已经在编 JIT 的 10 个 target"（3 个 arm64 的编 `arm_jit_arm.cpp`，7 个 Intel 的编 `arm_jit.cpp`）。
+**Universal target 故意没接**：它两个 slice 都要编，会重复定义 `arm_jit_init()` 那一组符号，
+要做得先把 `arm_jit_arm.cpp` 的 `#error` 改成 `__aarch64__` 包体——属于独立改动，记在 §6 的风险表里。
+
 **回退点**：三个提交彼此独立（删 arm32 / vendor / 接线）。
 **风险**：xcodeproj 手改易错，建议先用 Xcode 打开让 IDE 重新生成引用。
 
@@ -851,7 +875,7 @@ vendored master + `CodeHolder` / `x86::Compiler` / 手动落地，生产构建�
 | 落地 | 仍是 `armjitarm_alloc_func()` 的 40MB bump 块（加了 16 字节对齐），icache flush 保留 |
 | 函数骨架 | `emit_startfunc` / `emit_endfunc` 保持手写 prolog/epilog：PEI 的 `FuncFrame` 为空，不生成任何指令，两者不冲突 |
 
-**这一层怎么验证的（没有 arm64 机器）**：比对**生成码**，不比字节比语义。
+**这一层怎么验证的（x86 宿主上没有 arm64 机器，后来补了真机，见下）**：比对**生成码**，不比字节比语义。
 
 ```
 pwsh -File tools/jit_matrix/check_a64.ps1
@@ -891,6 +915,33 @@ pwsh -File tools/jit_matrix/check_a64.ps1
 **asmjit 的一个校验缺口**（`emit_movimm` 的 bitmask 分支）：`orr wD, wzr, #imm` 是
 `mov wD, #imm` 的标准编码，但 asmjit 的 validator 拒绝 Rn = WZR，返回 `InvalidPhysId`。
 该分支暂时保留一处 `embed()`（`emit_orr_imm_wzr`），注释里写明了原因与上游位置。
+
+**aarch64 真机验证（2026-11-19，Android Termux）**
+
+编码等价只能说明"生成的字节一样"，说明不了"跑得对"。当晚拿到一台 aarch64 设备
+（Android 16 / clang 21.1.8 / 8 核，`ssh -p8022 192.168.1.4`），用
+`tools/jit_matrix/build_a64_termux.sh` 把整套离线工具原生编了一遍，于是多了两层证据：
+
+| 层次 | 工具 | 结果 |
+|---|---|---|
+| 编码等价 | `a64_dump_new` + `check_a64.py` | **236/236**（与 x86 宿主上的结论一致） |
+| **执行等价** | `a64_exec_probe.cpp` | **25/25** |
+| 块中途 `ret` | `a64_shape_probe` | 通过 |
+
+`a64_exec_probe` 用与后端相同的 `emit_*` 原语拼出单块函数，经 `emit_startfunc` /
+`emit_endfunc` 包好、`createFunc()` 落地后**直接调用**，比对返回值：ALU、移位、`movimm`
+的两种构造分支、`cmp`+`cset`、`emit_mov_cond` 的取支与跳过、`mul`、`str/ldr`、`strb/ldrb`。
+它同时验证了落地的四步（flatten / relocate / copy / icache flush）——这是纯字节比对覆盖不到的。
+
+写这个探针时踩到的三个点，也是后端的使用约束：
+
+1. `createFunc()` 里的 `end_func()` **只补 `ret`，不回滚栈**。真实块必须自己发
+   `emit_endfunc()`（先 `restore()` 再 `ret`），否则返回时 SP 少 64 字节，
+   表现为"跑几条之后在栈地址上 SEGV_ACCERR"。
+2. 三寄存器原语（`emit_add/sub/and/or/xor`）的**第三个参数才是目的寄存器**：
+   `add w_rt, w_rs1, w_rs2`。`emit_mul(rs1, rs2)` 是例外，写回 `rs1`。
+3. `emit_lsl` 把移位量放进 `SHIFT_REG`，也就是 **w0**，因此它会覆盖 w0；
+   `emit_lsr/asr/ror` 在 `n < 32` 时走立即数编码，不动 w0。测它们时源寄存器要避开 0。
 
 **尚未开始**：arm64 的寄存器级（`ArmRegCache`，属 S4）与 `emit_*` 的虚拟寄存器重载。
 
@@ -1443,12 +1494,16 @@ static inline asmjit::CondCode arm_cc(u8 c) {
 **构建**
 
 - [ ] Win32 / Win64 / macOS(arm64) / Linux(x86-64) / Linux(aarch64) 全部编译通过
-- [ ] `arm_jit.cpp`、`arm_jit_arm.cpp` 与 asmjit 用 C++20，其余仍 C++17
-- [ ] 不再引用 `src/utils/AsmJit` 任何头文件
+      （Windows 与 Xcode 两个工程已接线，见 §S1.3；macOS 待 MBP 实机构建，
+      清单见 `documentation/macos-arm64-test-plan.md`）
+- [x] `arm_jit.cpp`、`arm_jit_arm.cpp` 与 asmjit 用 C++20，其余仍 C++17（两个工程都按单文件设标准）
+- [x] 不再引用 `src/utils/AsmJit` 任何头文件，两个工程也不再编译它（旧的 29 个源已摘掉）
 - [x] `arm_emit.cpp` 已删除，`configure.ac` 不再为 `arm` 打开 `HAVE_JIT`（S1.1）
 - [x] asmjit master `677a10b` 已 vendor 到 `desmume/3rdparty/asmjit`，`VERSION.txt` 记录 pin（S1.2）
 - [x] `python tools/jit_matrix/gen_asmjit_sources.py --check` 退出码为 0（54 源 / 127 头，已通过）
 - [x] `pwsh -File tools/jit_matrix/check_a64.ps1` 退出码为 0（236 个原语 + 块中途 `ret` 形状，S2）
+- [x] `python tools/jit_matrix/check_xcode_asmjit.py` 退出码为 0（Xcode 工程接线自检）
+- [x] aarch64 真机：`a64_exec_probe` 25/25，`a64_dump_new` 236/236（Termux，见 §S2）
 
 **代码**
 
