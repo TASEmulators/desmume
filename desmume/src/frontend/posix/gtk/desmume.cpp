@@ -65,7 +65,8 @@ bool desmume_running( void)
 
 void desmume_cycle( void)
 {
-  FCEUMOV_AddInputState();
+  // Input (including movie playback/recording) is processed by the caller
+  // before this function runs, while NDS_getProcessingUserInput() is valid.
   NDS_exec<false>();
   SPU_Emulate_user();
 }

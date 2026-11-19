@@ -5611,6 +5611,30 @@ static inline void _updateDTools()
 // EMU_IsAtFrameBoundary() is always part of GtkDriver.
 static bool sLuaInFrame = false;
 
+// Process one frame's input the same way Windows' StepRunLoop_Core() does:
+// start processing, inject movie playback, let the Lua before-emulation hook
+// adjust that same input, commit it once, then record the final input.
+// Keeping playback inside begin/end is required because
+// FCEUMOV_HandlePlayback() writes through NDS_getProcessingUserInput().
+static void EmuProcessFrameInput()
+{
+    NDS_beginProcessingInput();
+    {
+        FCEUMOV_HandlePlayback();
+#ifdef HAVE_LUA
+        CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+#endif
+    }
+    NDS_endProcessingInput();
+    FCEUMOV_HandleRecording();
+}
+
+static void EmuRunCoreFrame()
+{
+    EmuProcessFrameInput();
+    desmume_cycle();    /* Emule ! */
+}
+
 #ifdef HAVE_LUA
 // One emulated frame for the Lua-driven path (emu.frameadvance() and friends).
 // Mirrors the body of EmuLoop() without its FPS/frameskip bookkeeping: while a
@@ -5629,9 +5653,7 @@ static void EmuStepFrame()
         touchpad.click = 0;
     }
 
-    NDS_beginProcessingInput();
-    CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
-    NDS_endProcessingInput();
+    EmuProcessFrameInput();
 
     sLuaInFrame = true;
     desmume_cycle();
@@ -5785,13 +5807,7 @@ static void EmuSingleFrame()
         touchpad.click = 0;
     }
 
-#ifdef HAVE_LUA
-    NDS_beginProcessingInput();
-    CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
-    NDS_endProcessingInput();
-#endif
-
-    desmume_cycle();    /* Emule ! */
+    EmuRunCoreFrame();
 
 #ifdef HAVE_LUA
     CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
@@ -5900,7 +5916,7 @@ gboolean EmuLoop(gpointer data)
 #ifdef HAVE_LIBAGG
                 Hud.fps3d = GPU->GetFPSRender3D();
 #endif
-                desmume_cycle();
+                EmuRunCoreFrame();
                 skipped_frames++;
             }
         }
@@ -5913,7 +5929,7 @@ gboolean EmuLoop(gpointer data)
 #ifdef HAVE_LIBAGG
                 Hud.fps3d = GPU->GetFPSRender3D();
 #endif
-                desmume_cycle();
+                EmuRunCoreFrame();
                 skipped_frames++;
                 // Update next frame time
                 frame_mod3 = (frame_mod3 + 1) % 3;
@@ -5935,7 +5951,7 @@ gboolean EmuLoop(gpointer data)
 #ifdef HAVE_LIBAGG
                 Hud.fps3d = GPU->GetFPSRender3D();
 #endif
-                desmume_cycle();
+                EmuRunCoreFrame();
                 skipped_frames++;
                 // Update next frame time
                 frame_mod3 = (frame_mod3 + 1) % 3;
