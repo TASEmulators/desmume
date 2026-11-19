@@ -624,6 +624,72 @@ python tools/jit_matrix/gen_opcode_matrix.py
 那就是"既有 bug 清单"，是本次迁移的额外产出（注意：这些**不要**在迁移里顺手修，单独开 PR，
 否则无法区分"迁移引入"和"顺手修引入"）。
 
+#### S0.1 已完成：差分台可跑，首轮基线落盘
+
+代码在 `src/utils/jit_diff/`（两文件：`jit_diff_main.cpp` + `jit_diff_stubs.cpp`），
+由 `tools/jit_matrix/build_diff.ps1` 编译链接到 `build_core/desmume_core.lib`。
+两条命令：
+
+```
+pwsh -File tools/jit_matrix/build_core.ps1     # 核心静态库（169 TU）
+pwsh -File tools/jit_matrix/build_diff.ps1     # 差分台
+build_core/jit_diff.exe                        # 18 条定向探针
+build_core/jit_diff.exe --sweep                # 5120 槽 × 1 向量 × 2 组标志
+build_core/jit_diff.exe --full --all           # 5120 槽 × 8 向量 × 2 组标志，全量列表
+```
+
+**跑通差分台踩到的三个坑，都是"测试台自己错"而不是 JIT 错**，已写进代码注释：
+
+1. **解释器执行的是预取字**（`ARMPROC.instruction`），JIT 从 `instruct_adr` 重新读内存。
+   只写内存、不写预取字，解释器实际执行的是 `ANDEQ r0,r0,r0`（条件假＝空操作）。
+2. **入口状态必须是"流水线中间"**：`R15 = codeAdr + 2*size`、`next_instruction = codeAdr + size`。
+   把 R15 设成指令地址，`B #0` 的 target 会算成 codeAdr（应为 codeAdr+8），看着像 JIT 分支错。
+3. **标志变体不能碰 T 位**：`0x000000F3` 是"看起来像 NZCV 全置位"的写法，实际置的是 I/F/T/模式位；
+   T=1 会让 ARM 扫描走进 `thumb_instructions_set[opcode>>6]`，索引 0x4000 直接越界崩溃
+   （`thumb_instructions_set` 只有 1024 项且解释器不做掩码）。正确值是 `0xF00000D3`。
+
+**比较面收窄到契约**：`R0-R14`、`CPSR`、`cycles`、`instruct_adr`。
+`R15` 与 `next_instruction` **不比**，理由是代码里写死的：
+
+- `sync_r15()` 只在"块末且不跳转"时写 `next_instruction`；跳转结尾只写 `instruct_adr`；
+- `R15` 仅在指令读 PC 时以编译期常量 `bb_r15` 回写，编译块平时不维护 `R[15]`；
+- 两个引擎的 `next_instruction` 差一拍（解释器已预取到下一条，JIT 指向下一条本身）。
+
+`instruct_adr` 是两边共同的续跑点，比它就够了；指令读 PC 的正确性由"它写出的寄存器"覆盖。
+另外保留一条解释器自检不变量：**发生顺序执行时** `R15 == next_instruction + size`。
+
+**环境问题（一次性排掉 880 个假故障）**：`NDS_Init()` 里 `SPU_Init(SNDCORE_DUMMY)` 按 id 在
+`SNDCoreList[]` 里查表，桩文件给的是空表 → 查不到 → 返回 -1 → `NDS_Init` 提前返回，
+`wifiHandler` 没有创建。于是每条未定义指令走到 `emu_halt() → wifiHandler->CommStop()` 就是空指针
+访问（880 次全崩在同一地址、同一偏移）。用真实核心表
+`{ &SNDDummy, NULL }` / `{ &gpu3DNull, &gpu3DRasterize, NULL }` 后故障归零，
+并且 `wifiHandler` 由 `NDS_Init` 正常创建。
+
+**首轮基线（`--full`，81920 次比较，两次运行逐字节一致）**：
+
+| 项 | 数量 |
+|---|---|
+| 引擎异常（访问冲突） | 0 |
+| `R0-R14` 不一致 | 0 |
+| `instruct_adr` 不一致 | 0 |
+| `CPSR` 不一致 | **3**（全是 Thumb `ROR r0,r0`） |
+| cycle 数不一致（值合理） | 6869 |
+| cycle 数不一致（返回值根本不是周期数） | 2192 |
+
+**由此得到两条既有 bug，按约定不在迁移里顺手修**：
+
+- **Thumb `ROR`（寄存器形式）的 N/Z 标志算错**。定向探针把 Rs==Rd 与 Rs!=Rd 分开：
+  `ROR r0,r0` 在 vec1/2/4、`ROR r0,r1` 在 vec0/4 与解释器不符，
+  而 `LSL`/`LSR`/`ASR` 两种形式全部一致 → 不是"读序"问题，是 ROR 的标志生成。
+  以解释器为准（例：`r0=1` 执行 `ROR r0,r0`，结果 `0x80000000`，N 应为 1，JIT 给 0）。
+- **访存类的 cycle 记账与解释器不同**：差异全部落在 LDM/STM 与 load/store 空间，
+  且多为退化形态（空寄存器列表、基址为 0）。其中 2192 次 JIT 返回的是
+  `opcode+1`、`CPSR+1` 这类值——不是"差几个周期"，而是返回值被别的量占了；
+  与 `emit_armop_call` 里"编译函数拒绝→回退调用解释器"那条路径重合。
+
+**尚未完成**：整机基线（《恶魔城》HUD，block size 15/16/100）与性能基线（冷启动编译耗时、帧率、
+ALU 密集场景）。差分台只能覆盖单条指令，DMA 事件早退那类**块级**语义仍要靠整机回归。
+
 **回退点**：无（不改任何生产代码）。
 
 ### S1 · 删 ARM32 + 换依赖 + 构建系统（约 1.5 天）
