@@ -341,16 +341,18 @@ static void CloseAllLuaScripts(GSimpleAction *action, GVariant *parameter, gpoin
 static void ShowAboutLuaScripting(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 #endif
 
+/* GAction names may only contain alphanumerics, '-' and '.', so hyphens are
+ * used instead of underscores.  Keep these names in sync with menu.ui. */
 static const GActionEntry app_entries[] = {
     // File
     { "open",          OpenNdsDialog },
     { "recent",        OpenRecent, "s" },
     { "run",           Launch },
     { "pause",         Pause },
-    { "frame_advance", FrameAdvance },
+    { "frame-advance", FrameAdvance },
     { "reset",         Reset },
-    { "save_state_to",   SaveStateDialog },
-    { "load_state_from", LoadStateDialog },
+    { "save-state-to",   SaveStateDialog },
+    { "load-state-from", LoadStateDialog },
     { "savestate",     MenuSave, "u" },
     { "loadstate",     MenuLoad, "u" },
     { "importbackup",  ImportBackupMemoryDialog },
@@ -358,14 +360,14 @@ static const GActionEntry app_entries[] = {
     { "recordmovie",   RecordMovieDialog },
     { "playmovie",     PlayMovieDialog },
     { "stopmovie",     StopMovie },
-    { "record_x264",   RecordAV_x264 },
-    { "record_flac",   RecordAV_flac },
+    { "record-x264",   RecordAV_x264 },
+    { "record-flac",   RecordAV_flac },
 #ifdef HAVE_FFMPEG_RECORD
-    { "record_video",  RecordAV_Video },
+    { "record-video",  RecordAV_Video },
 #else
-    { "record_video",  RecordAV_VideoUnavailable },
+    { "record-video",  RecordAV_VideoUnavailable },
 #endif
-    { "record_stop",   RecordAV_stop },
+    { "record-stop",   RecordAV_stop },
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
     { "loadfirmware",  SelectFirmwareFile },
 #endif
@@ -379,21 +381,21 @@ static const GActionEntry app_entries[] = {
     { "winsize",        SetWinsize,             "s",  "\"scale\"" },
     { "fullscreen",     ToggleFullscreen,       NULL, "false" },
     { "gap",            ToggleGap,              NULL, "false" },
-    { "pri_interpolation", Modify_PriInterpolation, "s", "\"none\"" },
+    { "pri-interpolation", Modify_PriInterpolation, "s", "\"none\"" },
     { "interpolation",  Modify_Interpolation,   "s",  "\"nearest\"" },
-    { "view_menu",      ToggleMenuVisible,      NULL, "true" },
-    { "view_toolbar",   ToggleToolbarVisible,   NULL, "true" },
-    { "view_statusbar", ToggleStatusbarVisible, NULL, "true" },
+    { "view-menu",      ToggleMenuVisible,      NULL, "true" },
+    { "view-toolbar",   ToggleToolbarVisible,   NULL, "true" },
+    { "view-statusbar", ToggleStatusbarVisible, NULL, "true" },
 #ifdef HAVE_LIBAGG
-    { "hud_fps",        HudFps,                 NULL, "false" },
-    { "hud_input",      HudInput,               NULL, "false" },
-    { "hud_graphicalinput", HudGraphicalInput,  NULL, "false" },
-    { "hud_framecounter", HudFrameCounter,      NULL, "false" },
-    { "hud_lagcounter", HudLagCounter,          NULL, "false" },
-    { "hud_rtc",        HudRtc,                 NULL, "false" },
-    { "hud_mic",        HudMic,                 NULL, "false" },
-    { "hud_editor",     HudEditor,              NULL, "false" },
-    { "hud_reset_layout", HudResetLayout},
+    { "hud-fps",        HudFps,                 NULL, "false" },
+    { "hud-input",      HudInput,               NULL, "false" },
+    { "hud-graphicalinput", HudGraphicalInput,  NULL, "false" },
+    { "hud-framecounter", HudFrameCounter,      NULL, "false" },
+    { "hud-lagcounter", HudLagCounter,          NULL, "false" },
+    { "hud-rtc",        HudRtc,                 NULL, "false" },
+    { "hud-mic",        HudMic,                 NULL, "false" },
+    { "hud-editor",     HudEditor,              NULL, "false" },
+    { "hud-reset-layout", HudResetLayout},
 #endif
 
     // Config
@@ -407,9 +409,9 @@ static const GActionEntry app_entries[] = {
 #ifdef HAVE_JIT
     { "emulationsettings",   EmulationSettingsDialog },
 #endif
-    { "graphics_settings",   GraphicsSettingsDialog },
-    { "spu_mode",            Modify_SPUMode,          "s", "\"dual-async\"" },
-    { "spu_interpolation",   Modify_SPUInterpolation, "s", "\"linear\"" },
+    { "graphics-settings",   GraphicsSettingsDialog },
+    { "spu-mode",            Modify_SPUMode,          "s", "\"dual-async\"" },
+    { "spu-interpolation",   Modify_SPUInterpolation, "s", "\"linear\"" },
     { "cheatsearch",         CheatSearch },
     { "cheatlist",           CheatList },
     { "cheatsdisable",       ToggleCheatsDisabled, NULL, "false" },
@@ -968,9 +970,9 @@ static void ToggleFullscreen(GSimpleAction *action, GVariant *parameter, gpointe
     gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(pWindow), FALSE);
     gtk_widget_hide(pToolBar);
     gtk_widget_hide(pStatusBar);
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_menu")), FALSE);
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_toolbar")), FALSE);
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_statusbar")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view-menu")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view-toolbar")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view-statusbar")), FALSE);
     gtk_window_fullscreen(GTK_WINDOW(pWindow));
   }
   else
@@ -984,9 +986,9 @@ static void ToggleFullscreen(GSimpleAction *action, GVariant *parameter, gpointe
     if (config.view_statusbar) {
       gtk_widget_show(pStatusBar);
     }
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_menu")), TRUE);
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_toolbar")), TRUE);
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view_statusbar")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view-menu")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view-toolbar")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "view-statusbar")), TRUE);
     gtk_window_unfullscreen(GTK_WINDOW(pWindow));
   }
 }
@@ -1010,7 +1012,7 @@ static int Open(const char *filename)
         LoadSaveStateInfo();
         g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "cheatlist")), TRUE);
         g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "cheatsearch")), TRUE);
-        g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "frame_advance")), TRUE);
+        g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "frame-advance")), TRUE);
     }
     return res;
 }
@@ -1040,8 +1042,8 @@ void Launch(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "savestate")), TRUE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "loadstate")), TRUE);
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "save_state_to")), TRUE);
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "load_state_from")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "save-state-to")), TRUE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "load-state-from")), TRUE);
 
     //pause = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/pause")));
     //gtk_widget_grab_focus(pause);
@@ -1425,7 +1427,7 @@ static void RecordAV_x264(GSimpleAction *action, GVariant *parameter, gpointer u
         gchar *sPath = g_file_get_path(file);
 
         if(avout_x264.begin(sPath)) {
-            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "record_x264")), FALSE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "record-x264")), FALSE);
         } else {
             GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
@@ -1474,7 +1476,7 @@ static void RecordAV_flac(GSimpleAction *action, GVariant *parameter, gpointer u
         gchar *sPath = g_file_get_path(file);
 
         if(avout_flac.begin(sPath)) {
-            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "record_flac")), FALSE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "record-flac")), FALSE);
         } else {
             GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
                     GTK_DIALOG_MODAL,
@@ -1507,10 +1509,10 @@ static void RecordAV_VideoUnavailable(GSimpleAction *action, GVariant *parameter
 static void RecordAV_SetStartActionsEnabled(bool enabled)
 {
     const char *names[] = {
-        "record_x264",
-        "record_flac",
+        "record-x264",
+        "record-flac",
 #ifdef HAVE_FFMPEG_RECORD
-        "record_video",
+        "record-video",
 #endif
     };
 
@@ -6308,13 +6310,13 @@ static void desmume_gtk_menu_view_hud(GtkApplication *app)
         bool active;
         bool& setting;
     } hud_menu[] = {
-        { "hud_fps", config.hud_fps, CommonSettings.hud.FpsDisplay },
-        { "hud_input", config.hud_input, CommonSettings.hud.ShowInputDisplay },
-        { "hud_graphicalinput", config.hud_graphicalInput, CommonSettings.hud.ShowGraphicalInputDisplay },
-        { "hud_framecounter", config.hud_frameCounter, CommonSettings.hud.FrameCounterDisplay },
-        { "hud_lagcounter", config.hud_lagCounter, CommonSettings.hud.ShowLagFrameCounter },
-        { "hud_rtc", config.hud_rtc, CommonSettings.hud.ShowRTC },
-        { "hud_mic", config.hud_mic, CommonSettings.hud.ShowMicrophone },
+        { "hud-fps", config.hud_fps, CommonSettings.hud.FpsDisplay },
+        { "hud-input", config.hud_input, CommonSettings.hud.ShowInputDisplay },
+        { "hud-graphicalinput", config.hud_graphicalInput, CommonSettings.hud.ShowGraphicalInputDisplay },
+        { "hud-framecounter", config.hud_frameCounter, CommonSettings.hud.FrameCounterDisplay },
+        { "hud-lagcounter", config.hud_lagCounter, CommonSettings.hud.ShowLagFrameCounter },
+        { "hud-rtc", config.hud_rtc, CommonSettings.hud.ShowRTC },
+        { "hud-mic", config.hud_mic, CommonSettings.hud.ShowMicrophone },
     };
     guint i;
 
@@ -6817,7 +6819,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 			string = "5xbrz";
 			break;
     }
-    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "pri_interpolation")), g_variant_new_string(string.c_str()));
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "pri-interpolation")), g_variant_new_string(string.c_str()));
 
     switch (config.audio_sync) {
         case SPUMODE_SYNCN:
@@ -6853,7 +6855,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
         string = "dual-async";
         break;
     }
-    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "spu_mode")), g_variant_new_string(string.c_str()));
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "spu-mode")), g_variant_new_string(string.c_str()));
 
     CommonSettings.spuInterpolationMode = (SPUInterpolationMode)(config.audio_interpolation.get());
     switch (CommonSettings.spuInterpolationMode) {
@@ -6867,7 +6869,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
             string = "cosine";
             break;
     }
-    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "spu_interpolation")), g_variant_new_string(string.c_str()));
+    g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "spu-interpolation")), g_variant_new_string(string.c_str()));
 
     string = std::to_string(config.frameskip);
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "frameskip")), g_variant_new_string(string.c_str()));
@@ -6962,7 +6964,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "pause")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "run")), FALSE);
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "frame_advance")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "frame-advance")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "reset")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "printscreen")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "cheatlist")), FALSE);
@@ -6972,8 +6974,8 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "savestate")), FALSE);
     g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "loadstate")), FALSE);
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "save_state_to")), FALSE);
-    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "load_state_from")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "save-state-to")), FALSE);
+    g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "load-state-from")), FALSE);
 
     nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
 
@@ -7003,7 +7005,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 #ifdef HAVE_LIBSOUNDTOUCH
     GMenu *audio_sync_menu = G_MENU(gtk_builder_get_object(builder, "audio-synchronisation"));
-    GMenuItem *sync_p = g_menu_item_new("_P: Time-stretch (keeps pitch)", "app.spu_mode(\"sync-p\")");
+    GMenuItem *sync_p = g_menu_item_new("_P: Time-stretch (keeps pitch)", "app.spu-mode(\"sync-p\")");
     g_menu_append_item(audio_sync_menu, sync_p);
 #endif
 
@@ -7087,9 +7089,9 @@ common_gtk_main(GApplication *app, gpointer user_data)
             gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(pWindow), FALSE);
 			gtk_widget_hide(pToolBar);
 			gtk_widget_hide(pStatusBar);
-            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_menu")), FALSE);
-            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_toolbar")), FALSE);
-            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_statusbar")), FALSE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view-menu")), FALSE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view-toolbar")), FALSE);
+            g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view-statusbar")), FALSE);
 			gtk_window_fullscreen(GTK_WINDOW(pWindow));
 		}
 	} else {
@@ -7098,15 +7100,15 @@ common_gtk_main(GApplication *app, gpointer user_data)
 	}
 	if (!config.view_menu) {
         gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(pWindow), FALSE);
-        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_menu")), g_variant_new_boolean(FALSE));
+        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view-menu")), g_variant_new_boolean(FALSE));
 	}
 	if (!config.view_toolbar) {
 		gtk_widget_hide(pToolBar);
-        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_toolbar")), g_variant_new_boolean(FALSE));
+        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view-toolbar")), g_variant_new_boolean(FALSE));
 	}
 	if (!config.view_statusbar) {
 		gtk_widget_hide(pStatusBar);
-        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view_statusbar")), g_variant_new_boolean(FALSE));
+        g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "view-statusbar")), g_variant_new_boolean(FALSE));
 	}
 
     /* Applied by the core on the next frame; the cheat list itself is loaded
