@@ -839,7 +839,60 @@ vendored master + `CodeHolder` / `x86::Compiler` / 手动落地，生产构建�
    `FuncSignature::build<Ret, Args...>()`，参数用 `set_arg`，返回值用 `set_ret`；
    周期返回值先落临时 `gp32` 再 `movzx` 进 `bb_cycles`，不直接写活跃虚拟寄存器。
 
-**尚未开始**：arm64 侧骨架（S2 的另一半）、573 个 `emit_*` 调用点的 `int` 兼容重载。
+**arm64 侧骨架与原语层已完成（2026-11-19）**：`arm_jit_arm.cpp` **一行未改**，
+改动全部落在 `arm64_emit.cpp`（原语层）与 `emit_core.cpp`（块生命周期）。
+
+| 项 | 改法 |
+|---|---|
+| 编码器 | 手写 `output_w32(魔数)` → asmjit 指令；**236 个原语调用点全部翻译完，零 `embed` 残留**（除两处见下） |
+| `t_bytes` | `typedef asmjit::a64::Compiler`——保留类型名，573 个 `emit_*(g_out, ...)` 调用点零改动 |
+| 块生命周期 | 链表式 `t_bytes` 分块 + `MOD_JUMP` 回填 + `memcpy` → `CodeHolder` + `a64::Compiler` + `flatten → resolve_cross_section_fixups → relocate_to_base → copy_flattened_data` |
+| 标签 | 全局 `g_LABELS`（id → 字节偏移）→ `std::map<uint64_t, asmjit::Label>` |
+| 落地 | 仍是 `armjitarm_alloc_func()` 的 40MB bump 块（加了 16 字节对齐），icache flush 保留 |
+| 函数骨架 | `emit_startfunc` / `emit_endfunc` 保持手写 prolog/epilog：PEI 的 `FuncFrame` 为空，不生成任何指令，两者不冲突 |
+
+**这一层怎么验证的（没有 arm64 机器）**：比对**生成码**，不比字节比语义。
+
+```
+pwsh -File tools/jit_matrix/check_a64.ps1
+```
+
+1. `tools/jit_matrix/a64_golden.txt` —— 迁移前用手写编码器跑 236 个原语样例（含每个原语内部分支的边界值）
+   冻结下来的指令字，作为金标准；
+2. `a64_dump_new.exe` 用 asmjit 跑同一份语料（`a64_corpus.inc`），`check_a64.py` 用 capstone
+   反汇编两侧再逐条比对助记符与操作数；
+3. `a64_shape_probe.cpp` 单独验证**块中途 `ret`** 这个结构（§3.7 的 DMA 早退形状）：
+   早退之后的尾巴没有被 asmjit 的 CFG 优化吃掉。
+
+结果：**236/236 一致**（其中 2 例见下面的"预期差异"）。MSVC 14.52 + C++20 编译该文件也通过
+（`cl /c` 产出 654KB obj，无 error），§6.3 那条 `_BitScanReverse` 的 C2664 已随之修掉。
+
+**预期差异（三条，都是语义等价，不是 bug）**
+
+| 现象 | 原因 |
+|---|---|
+| `b.al`（`0x54..E`）被编成 `b`（`0x14..`） | asmjit 把 AL 条件规范化成无条件分支；`b_al()` 也一样 |
+| `emit_mov_cond` / `emit_str_cond` 在 `cond=AL` 时少两条分支 | asmjit 建 CFG，删掉不可达的那一半；原写法里那两条本来就必有一条是死码 |
+| 函数末尾多一条 `ret` | `end_func()` 为没有 fallthrough 的函数补出口；实际块都以 `emit_endfunc` 结尾，不会多 |
+
+`check_a64.py` 显式处理这三类（去尾 `ret`、`b.al→b`、白名单两条死分支），其余任何差异都判失败。
+
+**迁移中发现的既有缺陷（按约定不修，只记录）**
+
+1. `emit_movs(rs, rt)` 的常量 `0x2A0003E0` 已经把 Rn 写成 `wzr`，`rs<<5` 于是 OR 进一个已满的字段
+   ——这条指令**一直是 `mov w<rt>, w0`，`rs` 从未生效**。当前没有 handler 用它。
+2. `emit_umlal` / `emit_umlals` 的注释写 UMADDL，实际常量 `0x9B200000` 是 **SMADDL**
+   ——`OP_UMLAL` / `OP_UMLAL_S` 走的是有符号乘加。
+3. `emit_ldrsw` 的常量 `0x79C00000` 是 **LDRSH**（32 位半字符号扩展），不是 LDRSW。
+   名字错了，行为被 `get_ptrSL/SH` 依赖。
+
+三条都按"迁移不改语义"原样保留，`check_a64.py` 因此能锁住它们；修它们要单独开 PR 并配差分用例。
+
+**asmjit 的一个校验缺口**（`emit_movimm` 的 bitmask 分支）：`orr wD, wzr, #imm` 是
+`mov wD, #imm` 的标准编码，但 asmjit 的 validator 拒绝 Rn = WZR，返回 `InvalidPhysId`。
+该分支暂时保留一处 `embed()`（`emit_orr_imm_wzr`），注释里写明了原因与上游位置。
+
+**尚未开始**：arm64 的寄存器级（`ArmRegCache`，属 S4）与 `emit_*` 的虚拟寄存器重载。
 
 目标只有一个：**两个后端都用 `CodeHolder` + `Compiler` 跑通最小块**。
 这一步不改任何 handler 语义，因此可以用差分台立刻验证"骨架对不对"。
@@ -1350,7 +1403,7 @@ static inline asmjit::CondCode arm_cc(u8 c) {
 | 中 | Apple hardened runtime + MAP_JIT | 写入被拒绝 / 段错误 | `VirtMem::ProtectJitReadWriteScope` 包住 copy |
 | 中 | `x18` 在 Win/macOS/Android 被保留 | 用了 x18 的路径在特定平台崩 | 现有 `X18_REG=23` 重映射保留，别"清理"它 |
 | 中 | `a64::Compiler` 本身较新 | RA 断言 / 生成码异常 | 版本钉死 `677a10b`；遇到可疑立即降级到 Assembler 路径做对照 |
-| 中 | **`_BitScanReverse` 形参类型**（既有问题） | `arm64_emit.cpp:129/134`、`:155/158` 把 `uint32_t*` 传给形参为 `unsigned long*` 的 intrinsic；Apple/Android 走 `__builtin_clzll` 所以没暴露，**Windows-on-ARM + MSVC 会 C2664** | 不进本次修复；S2 重写编码器时这几处一起消失。若 S2 前需要 Win-ARM 构建，先改成 `unsigned long` 临时变量 |
+| 中 | **`_BitScanReverse` 形参类型**（既有问题，**已修**） | `arm64_emit.cpp` 把 `uint32_t*` 传给形参为 `unsigned long*` 的 intrinsic；Apple/Android 走 `__builtin_clzll` 所以没暴露，**Windows-on-ARM + MSVC 会 C2664** | S2 重写时改成 `unsigned long` 临时变量并转回 `uint32_t`，MSVC 实测编译通过 |
 
 ---
 
@@ -1395,6 +1448,7 @@ static inline asmjit::CondCode arm_cc(u8 c) {
 - [x] `arm_emit.cpp` 已删除，`configure.ac` 不再为 `arm` 打开 `HAVE_JIT`（S1.1）
 - [x] asmjit master `677a10b` 已 vendor 到 `desmume/3rdparty/asmjit`，`VERSION.txt` 记录 pin（S1.2）
 - [x] `python tools/jit_matrix/gen_asmjit_sources.py --check` 退出码为 0（54 源 / 127 头，已通过）
+- [x] `pwsh -File tools/jit_matrix/check_a64.ps1` 退出码为 0（236 个原语 + 块中途 `ret` 形状，S2）
 
 **代码**
 
