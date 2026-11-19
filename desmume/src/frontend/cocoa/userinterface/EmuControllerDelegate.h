@@ -225,6 +225,7 @@ class AudioSampleBlockGenerator;
 - (IBAction) loadEmuSaveStateSlot:(id)sender;
 - (IBAction) saveEmuSaveStateSlot:(id)sender;
 - (IBAction) openReplay:(id)sender;
+- (void) playMovieFromController:(id)sender;
 - (IBAction) recordReplay:(id)sender;
 - (IBAction) stopReplay:(id)sender;
 - (IBAction) importRomSave:(id)sender;

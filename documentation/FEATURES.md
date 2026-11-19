@@ -62,6 +62,21 @@ feature. Each entry says what you can do with it — not how it is built.
 - **Preferences stay host-native** — Auto-load, window position and recent files
   are common state, saved by each frontend in its own way.
 
+### Movie metadata: one shared core
+- **Header parsing without loading the movie** — DSM headers are decoded only
+  up to the first frame line, so a preview can refresh on every file-selection
+  change without touching frame data.
+- **Every frontend shows the same numbers** — ROM serial/CRC, author, comments,
+  record date, core version, length, frame count and rerecord count come from
+  one place; ROM/core mismatch and the "desync expected" wording agree with
+  Windows.
+- **Comments go back without touching the timeline** — only comment lines are
+  rewritten; the author line, unknown keys and all frame bytes survive, with an
+  atomic replace on both Windows and POSIX.
+- **A ready-made playback contract** — `PlayRequest`, `ParsePauseFrame()` and
+  the formatting helpers let a future GTK dialog reuse the whole behaviour;
+  only the widgets and path settings are host-specific.
+
 ---
 
 ## macOS (Cocoa)
@@ -132,6 +147,19 @@ feature. Each entry says what you can do with it — not how it is built.
   refreshed every frame and throttled for very large sets; double-click a row to
   send it to RAM Watch.
 - **Tools > RAM Search… (Cmd+Opt+S)**
+
+### Play Movie dialog
+- **The full Windows dialog with native controls** — movie file name with
+  Browse/Refresh, read-only toggle, metadata preview, Comment editor,
+  pause-at-frame, and read-only recording-options / firmware / BIOS groups.
+- **Desync warnings before playback** — the movie's ROM serial/CRC and core
+  version are compared with the loaded ROM up front; mismatched fields turn red
+  and the status line says "desync expected".
+- **Comments without re-recording** — opened read-write, the Comment field can
+  be edited and only the header's comment lines are replaced; recorded input is
+  left byte-for-byte untouched.
+- **Pause at a frame** — defaults to the last frame and is passed straight to
+  `FCEUI_LoadMovie`; no shell command or workaround needed.
 
 ### Metal OSD for Lua and the HUD
 - **AGG-free rendering** — Lua drawing and OSD text go into a HUD layer shared by

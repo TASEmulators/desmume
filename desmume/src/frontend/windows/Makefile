@@ -108,6 +108,7 @@ SRCS = \
 	../shared/wgpu_present.cpp \
 	../shared/ram_debug_core.cpp \
 	../shared/ramwatch_core.cpp \
+	../shared/movie_info_core.cpp \
 	DPI.cpp \
 	UiFont.cpp \
 	fsnitroView.cpp \

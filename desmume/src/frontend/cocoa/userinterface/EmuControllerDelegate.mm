@@ -27,6 +27,7 @@
 #import "MemoryViewerWindow.h"
 #import "RAMWatchWindow.h"
 #import "RAMSearchWindow.h"
+#import "MoviePlayWindowController.h"
 
 #import "CocoaAudioController.h"
 #import "CocoaDisplayView.h"
@@ -604,47 +605,33 @@
 
 - (IBAction) openReplay:(id)sender
 {
-	NSURL *selectedFile = nil;
-	NSInteger buttonClicked = 0;
-	
-	NSOpenPanel *panel = [NSOpenPanel openPanel];
-	[panel setCanChooseDirectories:NO];
-	[panel setCanChooseFiles:YES];
-	[panel setResolvesAliases:YES];
-	[panel setAllowsMultipleSelection:NO];
-	[panel setTitle:@"Load Replay"];
-	NSArray *fileTypes = [NSArray arrayWithObjects:@"dsm", nil];
-	
-	// While [NSOpenPanel setAllowedFileTypes:] and [NSOpenPanel runModal]
-	// are available in Leopard, the allowedFileTypes property is ignored on
-	// that version of macOS. To maintain compatibility with Leopard, we need
-	// to call the deprecated method [NSOpenPanel runModalForDirectory:file:types]
-	// instead.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	if (IsOSXVersionSupported(10, 6, 0))
-	{
-		[panel setAllowedFileTypes:fileTypes];
-		buttonClicked = [panel runModal];
-	}
+	MoviePlayWindowController *playDialog = [[[MoviePlayWindowController alloc] init] autorelease];
+	NSString *movieName = [[[self currentRom] fileURL] lastPathComponent];
+	if ([movieName length] == 0)
+		movieName = @"movie";
 	else
-#endif
-	{
-		SILENCE_DEPRECATION_MACOS_10_6( buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes] );
-	}
-	
-	if (buttonClicked == GUI_RESPONSE_OK)
-	{
-		selectedFile = [[panel URLs] lastObject];
-		if(selectedFile == nil)
-		{
-			return;
-		}
-		
-		[self pauseCore];
-		const BOOL isMovieLoaded = [CocoaDSFile loadReplay:selectedFile];
-		[self setStatusTextWithString:(isMovieLoaded) ? NSSTRING_STATUS_REPLAY_LOADED : NSSTRING_STATUS_REPLAY_LOADING_FAILED];
-		[self restoreCoreState];
-	}
+		movieName = [movieName stringByDeletingPathExtension];
+
+	[playDialog setDefaultMovieName:movieName];
+	[playDialog setMoviesDirectory:[NSHomeDirectory() stringByAppendingPathComponent:@"Movies"]];
+	[playDialog setTarget:self action:@selector(playMovieFromController:)];
+	[playDialog runModal];
+}
+
+- (void) playMovieFromController:(id)sender
+{
+	MoviePlayWindowController *controller = (MoviePlayWindowController *)sender;
+	NSString *path = [controller moviePath];
+	if ([path length] == 0)
+		return;
+
+	NSURL *replayURL = [NSURL fileURLWithPath:path];
+	[self pauseCore];
+	const BOOL isMovieLoaded = [CocoaDSFile loadReplay:replayURL
+	                                           readOnly:[controller readOnly]
+	                                         pauseFrame:[controller pauseFrame]];
+	[self setStatusTextWithString:(isMovieLoaded) ? NSSTRING_STATUS_REPLAY_LOADED : NSSTRING_STATUS_REPLAY_LOADING_FAILED];
+	[self restoreCoreState];
 }
 
 - (IBAction) recordReplay:(id)sender

@@ -20,13 +20,11 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <commdlg.h>
-#include <ctype.h>
 #include <io.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include <string>
 #include <vector>
@@ -35,8 +33,12 @@
 #include "movie.h"
 #include "NDSSystem.h"
 #include "path.h"
-#include "version.h"
 #include "utils/xstring.h"
+
+// DSM header parsing, compatibility assessment and all display formatting live
+// in the frontend-independent shared layer, so the Cocoa and (future) GTK
+// previews show exactly the same values as this dialog.
+#include "../shared/movie_info_core.h"
 
 #include "resource.h"
 #include "main.h"
@@ -243,359 +245,9 @@ static void SetFileDialogInitialDirFromEdit(HWND dlg, int editId, OPENFILENAMEA 
 	ofn.lpstrInitialDir = dir[0] ? dir : NULL;
 }
 
-static std::string BaseName(const std::string &path)
-{
-	size_t p = path.find_last_of("\\/");
-	return p == std::string::npos ? path : path.substr(p + 1);
-}
-
-static std::string Shorten(const std::string &s, size_t maxChars)
-{
-	if (s.size() <= maxChars)
-		return s;
-	return s.substr(0, maxChars - 3) + "...";
-}
-
-// Real libraries store full ROM file names that can be 60+ characters long.
-// Put serial and CRC first so they stay visible, and pad both lines alike.
-static std::string FormatRomLine(const char *prefix, const std::string &serial,
-                                 const std::string &crc, const char *thirdLabel,
-                                 const std::string &thirdValue)
-{
-	char buf[512];
-	snprintf(buf, sizeof(buf), "%s serial=%-18s crc=%-12s %s%s", prefix,
-	         serial.c_str(), crc.c_str(), thirdLabel, thirdValue.c_str());
-	return buf;
-}
-
 //------------------------------------------------------------------------------
-// DSM header reader.
-//
-// The core's FCEUI_MovieGetInfo() is a stub and MovieData::installRomChecksum()
-// deliberately drops the checksum, so the dialog parses the header itself. Only
-// header lines are decoded; frame data is never touched. Every header line is
-// kept verbatim so rewriting comments cannot drop unknown keys.
+// Win32 helpers
 //------------------------------------------------------------------------------
-
-struct MovieHeader
-{
-	bool valid;
-	bool binary;
-	bool hasSram;
-	long fileSize;
-	long frameDataOffset;  // byte offset of the first '|' frame line, or fileSize
-	u32 frames;
-
-	std::vector<std::string> lines;
-	std::vector<std::string> comments;
-
-	std::string version, emuVersion, rerecordCount;
-	std::string romFilename, romSerial, romChecksum;
-	std::string recordDate;
-	std::string savestate;
-	std::string useExtBios, swiFromBios, useExtFirmware, bootFromFirmware;
-	std::string firmNickname, firmLanguage;
-
-	MovieHeader()
-		: valid(false), binary(false), hasSram(false)
-		, fileSize(0), frameDataOffset(0), frames(0)
-	{}
-};
-
-static void SplitKeyValue(const std::string &line, std::string &key, std::string &value)
-{
-	size_t i = line.find_first_not_of(" \t");
-	if (i == std::string::npos)
-	{
-		key.clear();
-		value.clear();
-		return;
-	}
-	size_t j = line.find_first_of(" \t", i);
-	key = line.substr(i, j - i);
-	if (j == std::string::npos)
-	{
-		value.clear();
-		return;
-	}
-	size_t k = line.find_first_not_of(" \t", j);
-	value = (k == std::string::npos) ? "" : line.substr(k);
-}
-
-static bool ReadMovieHeader(const char *path, MovieHeader &out)
-{
-	out = MovieHeader();
-	FILE *fp = fopen(path, "rb");
-	if (!fp)
-		return false;
-	if (fseek(fp, 0, SEEK_END) != 0)
-	{
-		fclose(fp);
-		return false;
-	}
-	out.fileSize = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-
-	std::string line;
-	long lineOffset = 0;
-	bool lineStart = true;
-	bool foundFrames = false;
-	int c;
-	while ((c = fgetc(fp)) != EOF)
-	{
-		if (c == '\n')
-		{
-			out.lines.push_back(line);
-			line.clear();
-			lineStart = true;
-			lineOffset = ftell(fp);
-			continue;
-		}
-		if (c == '\r')
-			continue;  // header lines are normalised to LF on rewrite
-		if (lineStart && c == '|')
-		{
-			out.frameDataOffset = lineOffset;
-			foundFrames = true;
-			break;
-		}
-		line += (char)c;
-		if (c != ' ' && c != '\t')
-			lineStart = false;
-	}
-	if (!line.empty())
-		out.lines.push_back(line);
-	if (!foundFrames)
-		out.frameDataOffset = out.fileSize;
-
-	for (size_t i = 0; i < out.lines.size(); i++)
-	{
-		std::string key, value;
-		SplitKeyValue(out.lines[i], key, value);
-		if (key.empty() || key[0] == '|')
-			continue;
-
-		if (key == "version") out.version = value;
-		else if (key == "emuVersion") out.emuVersion = value;
-		else if (key == "rerecordCount") out.rerecordCount = value;
-		else if (key == "romFilename") out.romFilename = value;
-		else if (key == "romSerial") out.romSerial = value;
-		else if (key == "romChecksum") out.romChecksum = value;
-		else if (key == "recordDate") out.recordDate = value;
-		else if (key == "savestate") out.savestate = value;
-		else if (key == "useExtBios") out.useExtBios = value;
-		else if (key == "swiFromBios") out.swiFromBios = value;
-		else if (key == "useExtFirmware") out.useExtFirmware = value;
-		else if (key == "bootFromFirmware") out.bootFromFirmware = value;
-		else if (key == "firmNickname") out.firmNickname = value;
-		else if (key == "firmLanguage") out.firmLanguage = value;
-		else if (key == "binary") out.binary = atoi(value.c_str()) != 0;
-		else if (key == "sram") out.hasSram = !value.empty();
-		else if (key == "comment") out.comments.push_back(value);
-		// Unknown keys are ignored here just as LoadFM2() ignores them.
-	}
-
-	// LoadFM2() only accepts "version 1" and "version 2".
-	if (out.version != "1" && out.version != "2")
-	{
-		fclose(fp);
-		return false;
-	}
-
-	if (out.binary)
-	{
-		// One '|' byte starts the chunk; each binary record is 6 bytes.
-		long dataStart = out.frameDataOffset + 1;
-		if (out.frameDataOffset < out.fileSize && out.fileSize > dataStart)
-			out.frames = (u32)((out.fileSize - dataStart) / 6);
-	}
-	else if (out.frameDataOffset < out.fileSize)
-	{
-		fseek(fp, out.frameDataOffset, SEEK_SET);
-		bool bol = true;
-		while ((c = fgetc(fp)) != EOF)
-		{
-			if (bol && c == '|')
-			{
-				out.frames++;
-				bol = false;
-			}
-			else if (c == '\n') bol = true;
-			else if (c == '\r') { /* keep the line-start state */ }
-			else if (c != ' ' && c != '\t') bol = false;
-		}
-	}
-
-	fclose(fp);
-	out.valid = true;
-	return true;
-}
-
-// Rewrites only the "comment" lines of the header. Every other header line,
-// including keys this build does not know, is kept; header line endings are
-// normalised to the LF that DeSmuME itself writes. Every byte from the first
-// frame line onwards is copied verbatim. The DSM format is not changed.
-static bool RewriteMovieComments(const char *path, const MovieHeader &hdr, const std::string &description)
-{
-	std::string tmpPath = std::string(path) + ".dsmtmp";
-	FILE *out = fopen(tmpPath.c_str(), "wb");
-	if (!out)
-		return false;
-
-	bool ok = true;
-	for (size_t i = 0; i < hdr.lines.size(); i++)
-	{
-		std::string key, value;
-		SplitKeyValue(hdr.lines[i], key, value);
-		if (key == "comment" && value.compare(0, 7, "author ") != 0)
-			continue;  // a description line; replaced below
-		if (fprintf(out, "%s\n", hdr.lines[i].c_str()) < 0)
-		{
-			ok = false;
-			break;
-		}
-	}
-	if (ok && !description.empty() && fprintf(out, "comment %s\n", description.c_str()) < 0)
-		ok = false;
-	if (ferror(out))
-		ok = false;
-	fclose(out);
-	if (!ok)
-	{
-		remove(tmpPath.c_str());
-		return false;
-	}
-
-	FILE *in = fopen(path, "rb");
-	if (!in)
-	{
-		remove(tmpPath.c_str());
-		return false;
-	}
-	if (fseek(in, hdr.frameDataOffset, SEEK_SET) != 0)
-		ok = false;
-	if (ok)
-	{
-		out = fopen(tmpPath.c_str(), "ab");
-		if (!out)
-			ok = false;
-		else
-		{
-			char buf[32768];
-			size_t n;
-			while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
-			{
-				if (fwrite(buf, 1, n, out) != n)
-				{
-					ok = false;
-					break;
-				}
-			}
-			if (fclose(out) != 0)
-				ok = false;
-		}
-	}
-	fclose(in);
-
-	if (!ok || !MoveFileExA(tmpPath.c_str(), path, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
-	{
-		remove(tmpPath.c_str());
-		return false;
-	}
-	return true;
-}
-
-//------------------------------------------------------------------------------
-// Formatting helpers
-//------------------------------------------------------------------------------
-
-// Old DSM files stored a base64 MD5 blob in romChecksum instead of the CRC32
-// that current builds write. It cannot be compared with gameInfo.crc, so it
-// must not be reported as a ROM mismatch.
-static bool IsHexCrc(const std::string &s)
-{
-	if (s.size() != 8)
-		return false;
-	for (size_t i = 0; i < s.size(); i++)
-		if (!isxdigit((unsigned char)s[i]))
-			return false;
-	return true;
-}
-
-static std::string FormatLength(u32 frames)
-{
-	double tempCount = (frames / (33513982.0 / 6 / 355 / 263)) + 0.005;
-	int num_seconds = (int)tempCount;
-	int fraction = (int)((tempCount - num_seconds) * 100);
-	int seconds = num_seconds % 60;
-	int minutes = (num_seconds / 60) % 60;
-	int hours = (num_seconds / 60 / 60) % 60;
-	char buf[64];
-	snprintf(buf, sizeof(buf), "%02d:%02d:%02d.%02d", hours, minutes, seconds, fraction);
-	return buf;
-}
-
-static std::string FormatRecordDate(const std::string &raw)
-{
-	if (raw.empty())
-		return "Unknown";
-	char *end = NULL;
-	long long t = strtoll(raw.c_str(), &end, 10);
-	if (end == raw.c_str() || t <= 0)
-		return "Unknown";
-	time_t tt = (time_t)t;
-	struct tm tmBuf;
-#if defined(_MSC_VER)
-	if (localtime_s(&tmBuf, &tt) != 0)
-		return "Unknown";
-#else
-	struct tm *tmp = localtime(&tt);
-	if (!tmp)
-		return "Unknown";
-	tmBuf = *tmp;
-#endif
-	char buf[64];
-	if (strftime(buf, sizeof(buf), "%a %b %d %H:%M:%S %Y", &tmBuf) == 0)
-		return "Unknown";
-	return buf;
-}
-
-static std::string DescribeFirmware(const std::string &raw)
-{
-	if (raw.empty())
-		return "-";
-	return atoi(raw.c_str()) != 0 ? "External file" : "Built-in";
-}
-
-static const char *kFwLanguages[] = { "Japanese", "English", "French", "German", "Italian", "Spanish", "Chinese" };
-
-static std::string DescribeLanguage(const std::string &raw)
-{
-	if (raw.empty())
-		return "-";
-	int v = atoi(raw.c_str());
-	if (v >= 0 && v < (int)(sizeof(kFwLanguages) / sizeof(kFwLanguages[0])))
-		return kFwLanguages[v];
-	return raw;
-}
-
-static void SplitComments(const MovieHeader &hdr, std::wstring &author, std::wstring &description)
-{
-	author.clear();
-	description.clear();
-	for (size_t i = 0; i < hdr.comments.size(); i++)
-	{
-		const std::string &c = hdr.comments[i];
-		if (c.compare(0, 7, "author ") == 0)
-			author = mbstowcs(c.substr(7));
-		else
-		{
-			if (!description.empty())
-				description += L"; ";
-			description += mbstowcs(c);
-		}
-	}
-}
 
 static void SetCheckFromValue(HWND dlg, int id, const std::string &raw)
 {
@@ -607,7 +259,7 @@ static void SetCheckFromValue(HWND dlg, int id, const std::string &raw)
 //------------------------------------------------------------------------------
 
 static std::string g_previewPath;
-static MovieHeader g_header;
+static MovieInfo::Header g_header;
 static std::wstring g_originalDescription;
 static bool g_coreMismatch = false;
 static bool g_romMismatch = false;
@@ -671,56 +323,43 @@ static void RefreshPlayDialog(HWND dlg, bool force)
 		return;
 	g_previewPath = filename;
 
-	MovieHeader hdr;
-	if (!readable || !ReadMovieHeader(filename.c_str(), hdr))
+	MovieInfo::Header hdr;
+	if (!readable || !MovieInfo::ReadHeader(filename, hdr))
 	{
 		ClearPlayFields(dlg);
 		return;
 	}
 	g_header = hdr;
 
-	// ROM comparison. The core stores only a filename, a serial and a CRC, so
-	// those are the three values we can show - there is no internal title or
-	// BIOS checksum in a DSM file.
-	bool crcComparable = IsHexCrc(hdr.romChecksum);
-	u32 movieCrc = crcComparable ? (u32)strtoul(hdr.romChecksum.c_str(), NULL, 16) : 0;
-	std::string yourSerial = gameInfo.ROMserial;
-	// A missing serial or a legacy base64 checksum is "unknown", not a mismatch.
-	g_romMismatch = (crcComparable && movieCrc != gameInfo.crc)
-	             || (!hdr.romSerial.empty() && hdr.romSerial != yourSerial);
+	// ROM/core comparison and all display text come from the shared layer.
+	const MovieInfo::RomIdentity rom = MovieInfo::CurrentRomIdentity();
+	const MovieInfo::Assessment assessment = MovieInfo::Assess(hdr, rom, MovieInfo::CurrentCoreVersion());
+	g_romMismatch = assessment.romMismatch;
+	g_coreMismatch = assessment.coreMismatch;
 
-	std::string movieName = BaseName(hdr.romFilename);
-	std::string movieCrcText = crcComparable ? hdr.romChecksum : std::string("n/a (legacy)");
-	SetTextA(dlg, IDC_MOVIE_ROM, FormatRomLine("Movie ROM: ",
+	const std::string movieCrcText = assessment.crcComparable
+	                                  ? hdr.romChecksum : std::string("n/a (legacy)");
+	const std::string movieName = MovieInfo::BaseName(hdr.romFilename);
+	SetTextA(dlg, IDC_MOVIE_ROM, MovieInfo::FormatRomLine("Movie ROM: ",
 	         hdr.romSerial.empty() ? "-" : hdr.romSerial, movieCrcText,
-	         "name=", movieName.empty() ? "-" : Shorten(movieName, 32)));
-	SetTextA(dlg, IDC_YOUR_ROM, FormatRomLine("Your ROM:  ",
-	         yourSerial.empty() ? "-" : yourSerial, u32ToHexString(gameInfo.crc),
-	         "title=", std::string(gameInfo.ROMname)));
+	         "name=", movieName.empty() ? "-" : MovieInfo::Shorten(movieName, 32)));
+	SetTextA(dlg, IDC_YOUR_ROM, MovieInfo::FormatRomLine("Your ROM:  ",
+	         rom.serial.empty() ? "-" : rom.serial, MovieInfo::FormatHexCrc(rom.crc),
+	         "title=", rom.internalName));
 
-	std::wstring author, description;
-	SplitComments(hdr, author, description);
+	std::string authorUtf8, descriptionUtf8;
+	MovieInfo::SplitComments(hdr, authorUtf8, descriptionUtf8);
+	const std::wstring author = mbstowcs(authorUtf8);
+	const std::wstring description = mbstowcs(descriptionUtf8);
 	SetTextW(dlg, IDC_EDIT_AUTHOR, author);
 	SetTextW(dlg, IDC_PLAY_DESCRIPTION, description);
 	g_originalDescription = description;
 
-	SetTextA(dlg, IDC_MRECORD_DATE, FormatRecordDate(hdr.recordDate));
-
-	u32 recorded = (u32)strtoul(hdr.emuVersion.c_str(), NULL, 10);
-	u32 current = EMU_DESMUME_VERSION_NUMERIC();
-	g_coreMismatch = !hdr.emuVersion.empty() && recorded != 0 && recorded != current;
-	char coreBuf[128];
-	if (hdr.emuVersion.empty())
-		snprintf(coreBuf, sizeof(coreBuf), "-");
-	else if (g_coreMismatch)
-		snprintf(coreBuf, sizeof(coreBuf), "%u (current %u - desync expected)", recorded, current);
-	else
-		snprintf(coreBuf, sizeof(coreBuf), "%u", recorded);
-	SetTextA(dlg, IDC_MCORE, coreBuf);
-
-	SetTextA(dlg, IDC_MLENGTH, FormatLength(hdr.frames));
+	SetTextA(dlg, IDC_MRECORD_DATE, MovieInfo::FormatRecordDate(hdr.recordDate));
+	SetTextA(dlg, IDC_MCORE, MovieInfo::CoreVersionText(hdr, assessment));
+	SetTextA(dlg, IDC_MLENGTH, MovieInfo::FormatLength(hdr.frames));
 	SetDlgItemInt(dlg, IDC_MFRAMES, hdr.frames, FALSE);
-	SetDlgItemInt(dlg, IDC_MRERECORDCOUNT, (UINT)strtoul(hdr.rerecordCount.c_str(), NULL, 10), FALSE);
+	SetDlgItemInt(dlg, IDC_MRERECORDCOUNT, (UINT)MovieInfo::ParseUInt(hdr.rerecordCount), FALSE);
 
 	// Recording start option, read-only here: playback cannot change where the
 	// movie begins.
@@ -733,8 +372,8 @@ static void RefreshPlayDialog(HWND dlg, bool force)
 	// Console / firmware: DSM has no console-type flag. Show the fixed target
 	// and the firmware settings the movie actually carries.
 	SetTextA(dlg, IDC_MSYSTEM, "Nintendo DS");
-	SetTextA(dlg, IDC_MFIRMWARE, DescribeFirmware(hdr.useExtFirmware));
-	SetTextA(dlg, IDC_MLANGUAGE, DescribeLanguage(hdr.firmLanguage));
+	SetTextA(dlg, IDC_MFIRMWARE, MovieInfo::DescribeFirmware(hdr.useExtFirmware));
+	SetTextA(dlg, IDC_MLANGUAGE, MovieInfo::DescribeLanguage(hdr.firmLanguage));
 	SetTextW(dlg, IDC_MNICKNAME, hdr.firmNickname.empty() ? std::wstring(L"-") : mbstowcs(hdr.firmNickname));
 
 	// Four independent DSM booleans, not VBA's single four-way BIOS choice.
@@ -759,7 +398,7 @@ static INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 	case WM_INITDIALOG:
 	{
 		g_previewPath.clear();
-		g_header = MovieHeader();
+		g_header = MovieInfo::Header();
 		g_originalDescription.clear();
 		g_coreMismatch = false;
 		g_romMismatch = false;
@@ -864,21 +503,16 @@ static INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 			{
 				// Re-read the header: the file may have changed since it was
 				// previewed, and the frame-data offset must be current.
-				MovieHeader fresh;
-				if (!ReadMovieHeader(filename.c_str(), fresh)
-				    || !RewriteMovieComments(filename.c_str(), fresh, wcstombs(description)))
+				MovieInfo::Header fresh;
+				if (!MovieInfo::ReadHeader(filename, fresh)
+				    || !MovieInfo::WriteComments(filename, fresh, wcstombs(description)))
 					MessageBoxA(hwndDlg, "The comment could not be saved. Playback will continue with the original file.",
 					            "Play Movie", MB_OK | MB_ICONWARNING);
 			}
 
-			int pauseFrame = -1;
-			if (IsDlgButtonChecked(hwndDlg, IDC_CHECK_PAUSEFRAME))
-			{
-				BOOL translated = FALSE;
-				UINT value = GetDlgItemInt(hwndDlg, IDC_EDIT_PAUSEFRAME, &translated, FALSE);
-				if (translated && value <= (UINT)INT_MAX)
-					pauseFrame = (int)value;
-			}
+			int pauseFrame = MovieInfo::ParsePauseFrame(
+				GetTextA(hwndDlg, IDC_EDIT_PAUSEFRAME),
+				IsDlgButtonChecked(hwndDlg, IDC_CHECK_PAUSEFRAME) != 0);
 			moviePauseFrame = pauseFrame;
 
 			const char *error = FCEUI_LoadMovie(filename.c_str(), readOnly, false, pauseFrame);
@@ -971,9 +605,9 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 		DateTime_SetRange(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDTR_MAX, &rtcMinMax);
 
 		// Current ROM, and the emulation settings the movie will record.
-		SetTextA(hwndDlg, IDC_REC_ROMINFO, FormatRomLine("Your ROM:  ",
-		         std::string(gameInfo.ROMserial), u32ToHexString(gameInfo.crc),
-		         "title=", std::string(gameInfo.ROMname)));
+		const MovieInfo::RomIdentity rom = MovieInfo::CurrentRomIdentity();
+		SetTextA(hwndDlg, IDC_REC_ROMINFO, MovieInfo::FormatRomLine("Your ROM:  ",
+		         rom.serial, MovieInfo::FormatHexCrc(rom.crc), "title=", rom.internalName));
 		CheckDlgButton(hwndDlg, IDC_REC_BIOSEXT, CommonSettings.UseExtBIOS ? BST_CHECKED : BST_UNCHECKED);
 		CheckDlgButton(hwndDlg, IDC_REC_BIOSWI, CommonSettings.SWIFromBIOS ? BST_CHECKED : BST_UNCHECKED);
 		CheckDlgButton(hwndDlg, IDC_REC_FIRMEXT, CommonSettings.UseExtFirmware ? BST_CHECKED : BST_UNCHECKED);

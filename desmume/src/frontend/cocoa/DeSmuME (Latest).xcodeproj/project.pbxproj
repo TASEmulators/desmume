@@ -5080,6 +5080,42 @@
 		A7E5CAFE0000000000002015 /* RAMSearchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE000000000000010A /* RAMSearchWindow.mm */; };
 		A7E5CAFE0000000000002016 /* ram_search_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000108 /* ram_search_core.cpp */; };
 		A7E5CAFE0000000000002017 /* RAMSearchWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE000000000000010A /* RAMSearchWindow.mm */; };
+		A7E5CAFE0000000000003000 /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE0000000000003001 /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE0000000000003002 /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE0000000000003003 /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE0000000000003004 /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE0000000000003005 /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE0000000000003006 /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE0000000000003007 /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE0000000000003008 /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE0000000000003009 /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE000000000000300A /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE000000000000300B /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE000000000000300C /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE000000000000300D /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE000000000000300E /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE000000000000300F /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE0000000000003010 /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE0000000000003011 /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE0000000000003012 /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE0000000000003013 /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE0000000000003014 /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE0000000000003015 /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE0000000000003016 /* movie_info_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000301 /* movie_info_core.cpp */; };
+		A7E5CAFE0000000000003017 /* MovieInfoPreview.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */; };
+		A7E5CAFE0000000000004000 /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
+		A7E5CAFE0000000000004002 /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
+		A7E5CAFE0000000000004004 /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
+		A7E5CAFE0000000000004006 /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
+		A7E5CAFE0000000000004008 /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
+		A7E5CAFE000000000000400A /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
+		A7E5CAFE000000000000400C /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
+		A7E5CAFE000000000000400E /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
+		A7E5CAFE0000000000004010 /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
+		A7E5CAFE0000000000004012 /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
+		A7E5CAFE0000000000004014 /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
+		A7E5CAFE0000000000004016 /* MoviePlayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -6029,6 +6065,12 @@
 		A7E5CAFE0000000000000108 /* ram_search_core.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "../../shared/ram_search_core.cpp"; sourceTree = "<group>"; };
 		A7E5CAFE0000000000000109 /* RAMSearchWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RAMSearchWindow.h"; sourceTree = "<group>"; };
 		A7E5CAFE000000000000010A /* RAMSearchWindow.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "RAMSearchWindow.mm"; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000300 /* movie_info_core.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../shared/movie_info_core.h"; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000301 /* movie_info_core.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "../../shared/movie_info_core.cpp"; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000302 /* MovieInfoPreview.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MovieInfoPreview.h; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MovieInfoPreview.mm; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000304 /* MoviePlayWindowController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MoviePlayWindowController.h; sourceTree = "<group>"; };
+		A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MoviePlayWindowController.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -6798,6 +6840,12 @@
 				A7E5CAFE0000000000000108 /* ram_search_core.cpp */,
 				A7E5CAFE0000000000000109 /* RAMSearchWindow.h */,
 				A7E5CAFE000000000000010A /* RAMSearchWindow.mm */,
+				A7E5CAFE0000000000000300 /* movie_info_core.h */,
+				A7E5CAFE0000000000000301 /* movie_info_core.cpp */,
+				A7E5CAFE0000000000000302 /* MovieInfoPreview.h */,
+				A7E5CAFE0000000000000303 /* MovieInfoPreview.mm */,
+				A7E5CAFE0000000000000304 /* MoviePlayWindowController.h */,
+				A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */,
 				A7E5CAFE0000000000000101 /* ram_debug_core.h */,
 				A7E5CAFE0000000000000102 /* ram_debug_core.cpp */,
 				A7E5CAFE0000000000000103 /* ramwatch_core.h */,
@@ -10636,6 +10684,9 @@
 				A7E5CAFE0000000000001001 /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE0000000000001002 /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE0000000000002000 /* ram_search_core.cpp in Sources */,
+				A7E5CAFE0000000000003000 /* movie_info_core.cpp in Sources */,
+				A7E5CAFE0000000000004000 /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE0000000000003001 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002001 /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -10862,6 +10913,9 @@
 				A7E5CAFE0000000000001004 /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE0000000000001005 /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE0000000000002002 /* ram_search_core.cpp in Sources */,
+				A7E5CAFE0000000000003002 /* movie_info_core.cpp in Sources */,
+				A7E5CAFE0000000000004002 /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE0000000000003003 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002003 /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -11087,6 +11141,9 @@
 				A7E5CAFE0000000000001007 /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE0000000000001008 /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE0000000000002004 /* ram_search_core.cpp in Sources */,
+				A7E5CAFE0000000000003004 /* movie_info_core.cpp in Sources */,
+				A7E5CAFE0000000000004004 /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE0000000000003005 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002005 /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -11336,6 +11393,9 @@
 				A7E5CAFE000000000000100A /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE000000000000100B /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE0000000000002006 /* ram_search_core.cpp in Sources */,
+				A7E5CAFE0000000000003006 /* movie_info_core.cpp in Sources */,
+				A7E5CAFE0000000000004006 /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE0000000000003007 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002007 /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -11562,6 +11622,9 @@
 				A7E5CAFE000000000000100D /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE000000000000100E /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE0000000000002008 /* ram_search_core.cpp in Sources */,
+				A7E5CAFE0000000000003008 /* movie_info_core.cpp in Sources */,
+				A7E5CAFE0000000000004008 /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE0000000000003009 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002009 /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -11816,6 +11879,9 @@
 				A7E5CAFE0000000000001010 /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE0000000000001011 /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE000000000000200A /* ram_search_core.cpp in Sources */,
+				A7E5CAFE000000000000300A /* movie_info_core.cpp in Sources */,
+				A7E5CAFE000000000000400A /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE000000000000300B /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE000000000000200B /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -12071,6 +12137,9 @@
 				A7E5CAFE0000000000001013 /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE0000000000001014 /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE000000000000200C /* ram_search_core.cpp in Sources */,
+				A7E5CAFE000000000000300C /* movie_info_core.cpp in Sources */,
+				A7E5CAFE000000000000400C /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE000000000000300D /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE000000000000200D /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -12325,6 +12394,9 @@
 				A7E5CAFE0000000000001016 /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE0000000000001017 /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE000000000000200E /* ram_search_core.cpp in Sources */,
+				A7E5CAFE000000000000300E /* movie_info_core.cpp in Sources */,
+				A7E5CAFE000000000000400E /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE000000000000300F /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE000000000000200F /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -12580,6 +12652,9 @@
 				A7E5CAFE0000000000001019 /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE000000000000101A /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE0000000000002010 /* ram_search_core.cpp in Sources */,
+				A7E5CAFE0000000000003010 /* movie_info_core.cpp in Sources */,
+				A7E5CAFE0000000000004010 /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE0000000000003011 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002011 /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -12772,6 +12847,9 @@
 				A7E5CAFE000000000000101C /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE000000000000101D /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE0000000000002012 /* ram_search_core.cpp in Sources */,
+				A7E5CAFE0000000000003012 /* movie_info_core.cpp in Sources */,
+				A7E5CAFE0000000000004012 /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE0000000000003013 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002013 /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -13026,6 +13104,9 @@
 				A7E5CAFE000000000000101F /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE0000000000001020 /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE0000000000002014 /* ram_search_core.cpp in Sources */,
+				A7E5CAFE0000000000003014 /* movie_info_core.cpp in Sources */,
+				A7E5CAFE0000000000004014 /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE0000000000003015 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002015 /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -13280,6 +13361,9 @@
 				A7E5CAFE0000000000001022 /* ramwatch_core.cpp in Sources */,
 				A7E5CAFE0000000000001023 /* RAMWatchWindow.mm in Sources */,
 				A7E5CAFE0000000000002016 /* ram_search_core.cpp in Sources */,
+				A7E5CAFE0000000000003016 /* movie_info_core.cpp in Sources */,
+				A7E5CAFE0000000000004016 /* MoviePlayWindowController.mm in Sources */,
+				A7E5CAFE0000000000003017 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002017 /* RAMSearchWindow.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

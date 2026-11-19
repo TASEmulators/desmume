@@ -110,11 +110,13 @@ Windows 侧：`dsmeditor.cpp`(73 KB) + `dsmcsv.cpp`(11 KB)。macOS 只做了播�
 
 ### P2 — 电影对话框的元数据部分
 
-- ☐ Play 前预览 ROM 序列号/CRC、作者、注释、录制时间、核心版本、帧数、rerecord 数
-- ☐ ROM / 核心版本不匹配时红色高亮并提示 desync
-- ☐ 播放暂停到指定帧（默认末帧）
-- ☐ 录制时可写注释，并可只改头部的注释行
-- ☐ 录制起点三选一：开机 / Reset+SRAM / 当前状态
+- ☑ Play 前预览 ROM 序列号/CRC、作者、注释、录制时间、核心版本、帧数、rerecord 数
+  （macOS `MoviePlayWindowController` + `MovieInfoPreview`，Windows 原有对话框，共用 `shared/movie_info_core`）
+- ☑ ROM / 核心版本不匹配时红色高亮并提示 desync
+- ☑ 播放暂停到指定帧（默认末帧）
+- ◐ 录制时可写注释，并可只改头部的注释行 —— Windows 与 macOS 的 **Play** 对话框已实现
+  （`MovieInfo::WriteComments` 只重写 comment 行，帧数据原样保留）；Record 对话框的注释输入尚未移植
+- ☐ 录制起点三选一：开机 / Reset+SRAM / 当前状态（Play 对话框里只读展示已完成，Record 对话框未移植）
 
 ### P2 — 窗口与显示细节
 
@@ -183,7 +185,8 @@ GTK3 这半年补得很快（RAM Watch/Search、金手指重写、FFmpeg 录制�
 ### P1 — 电影与录像
 
 - ☐ DSM 编辑器（同 macOS，共用同一套 core）
-- ☐ 电影元数据 / ROM 校验 / 暂停到帧 / 改注释
+- ☐ 电影元数据 / ROM 校验 / 暂停到帧 / 改注释 —— `shared/movie_info_core` 已提供全部逻辑，
+  GTK 只需接一个 `GtkDialog` 并照头文件里的 integration contract 调用
 - ☐ 录像暂停（`Pause Recording`），现在只能开始/停止
 
 ### P2 — 截图与显示

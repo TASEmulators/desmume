@@ -192,6 +192,11 @@ static NSMutableDictionary *_gURLDictionary = nil;
 
 + (BOOL) loadReplay:(NSURL *)replayURL
 {
+	return [CocoaDSFile loadReplay:replayURL readOnly:YES pauseFrame:-1];
+}
+
++ (BOOL) loadReplay:(NSURL *)replayURL readOnly:(BOOL)readOnly pauseFrame:(int)pauseFrame
+{
 	BOOL result = NO;
 	
 	if (replayURL == nil)
@@ -200,7 +205,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	}
 	
 	const char *replayPath = [CocoaDSUtil cPathFromFileURL:replayURL];
-	const char *resultCode = FCEUI_LoadMovie(replayPath, true, false, -1);
+	const char *resultCode = FCEUI_LoadMovie(replayPath, (readOnly) ? true : false, false, pauseFrame);
 	if (resultCode == NULL)
 	{
 		result = YES;
