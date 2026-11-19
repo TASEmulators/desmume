@@ -3188,6 +3188,15 @@ static int OP_ROR_REG(const u32 i)
 	c.jz(__zero_1F);
 	c.ror(reg_pos_thumb(0), imm);
 	c.setc(rcf.r8Lo());
+	// N and Z are re-derived from the rotated value instead of being taken from
+	// the flags the rotate leaves behind. This is an architectural property, not
+	// a host quirk: Intel SDM (RCL/RCR/ROL/ROR) states "The SF, ZF, AF, and PF
+	// flags are always unaffected" - a rotate only writes CF, and OF when the
+	// masked count is 1. So the sets/setz inside SET_NZC would read whatever SF
+	// and ZF the preceding instruction happened to leave, and the block reported
+	// N=0 for a result of 0x80000000. ARM defines N and Z from the result, and
+	// the interpreter does the same, so derive them here.
+	c.cmp(reg_pos_thumb(0), 0);
 	SET_NZC;
 	c.jmp(__done);
 	/* imm & 0x1F == 0 */
@@ -4195,6 +4204,15 @@ static u32 compile_basicblock()
 			has_variable_cycles = TRUE;
 #endif
 		bb_cycles = c.newGpVar(kX86VarTypeGpz);
+		// Instructions marked INSTR_CYCLES_V are charged from bb_cycles at
+		// runtime. Not every handler that can be reached with that marking
+		// writes it -- op_b and op_swi, for instance, only return 1 -- and an
+		// uninitialised virtual register is not zero: the block then returned
+		// whatever the register allocator happened to leave there, measured as
+		// the opcode itself (e.g. 0xA8000001 for `B`). Seeding it costs one
+		// move and makes the worst case "charges too few cycles" instead of
+		// "returns a value that is not a cycle count at all".
+		c.mov(bb_cycles, 0);
 
 		bb_constant_cycles += instr_is_conditional(opcode) ? 1 : cycles;
 
@@ -4226,8 +4244,13 @@ static u32 compile_basicblock()
 			else
 				if (cycles > 1)
 				{
+					// Conditional and taken: the constant above already charged
+					// 1 (the not-taken cost), so the remaining cycles-1 are due
+					// here. This used to subtract 1 unconditionally, which made
+					// a taken conditional branch charge 0 where the interpreter
+					// charges 3 (`B` is INSTR_CYCLES(3)).
 					JIT_COMMENT("cycles (%d)", cycles);
-					c.lea(bb_total_cycles, ptr(bb_total_cycles.r64(), -1));
+					c.lea(bb_total_cycles, ptr(bb_total_cycles.r64(), (s32)(cycles - 1)));
 				}
 			c.bind(skip);
 		}

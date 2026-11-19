@@ -50,6 +50,13 @@ static const u32 kOperands[8] = {
 // bad code" from "the harness primed an illegal state".
 static bool gTrace = false;
 
+// Counts comparisons where the first call into a compiled block produced a
+// different architectural result than a second call on identical state. Not a
+// failure by itself: the verdict uses the first call, and a difference means the
+// compile path and the steady-state block disagree -- a bug either way, but a
+// different one from "the block computes the wrong answer".
+static int gJitUnstable = 0;
+
 static const char *mnemonic(bool thumb, u32 opcode);
 
 struct CpuSnapshot
@@ -273,10 +280,11 @@ static bool faulted(char *why, size_t whyLen, const char *engine)
 // address pays a one-off cost that has nothing to do with instruction semantics
 // (measured 52 cycles, 1 on the second run of the same state).
 //
-// The JIT is deliberately NOT pre-run. Its first call takes the compile path
-// (arm_jit_compile) and leaves a different R15 than a call into an
-// already-compiled block; the first call is also what the emulator does when it
-// first reaches a block, so that is the behaviour worth pinning down.
+// The JIT is called twice and the second result is the one compared. The first
+// call at an address only compiles the block -- compile_basicblock() executes
+// the instruction through op_decode[] while emitting and returns that cycle
+// count -- so taking the first call would compare the interpreter with itself
+// and hide every defect in the emitted code.
 static bool compareOne(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr,
 	char *why, size_t whyLen, u32 *jitCycles)
 {
@@ -307,6 +315,20 @@ static bool compareOne(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr,
 	}
 
 	CpuSnapshot jit;
+	traceStep("prime+jit-compile", codeAdr, cpsr);
+	primeState(codeAdr, ops, opcode, cpsr);
+	u32 c2c = execJit();
+	if (faulted(why, whyLen, "jit (compile)"))
+		return false;
+	(void)c2c;
+
+	// The first call into an uncompiled address is NOT the JIT running the
+	// instruction: compile_basicblock() emits the block and then executes the
+	// instruction through op_decode[] at compile time, returning that cycle
+	// count (arm_jit.cpp:4252). Only the second call jumps into the emitted
+	// code. Comparing against the first call would therefore test the
+	// interpreter against itself and hide every JIT defect; the first call is
+	// still run, because it is what builds the block.
 	traceStep("prime+jit-run", codeAdr, cpsr);
 	primeState(codeAdr, ops, opcode, cpsr);
 	u32 c2 = execJit();
@@ -315,11 +337,33 @@ static bool compareOne(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr,
 	takeSnapshot(&jit, c2);
 	*jitCycles = c2;
 
+	// A compiled block must produce the same architectural result on every call.
+	// This is a diagnostic, not a failure: the verdict below uses the call above.
+	CpuSnapshot jit2;
+	primeState(codeAdr, ops, opcode, cpsr);
+	u32 c2b = execJit();
+	takeSnapshot(&jit2, c2b);
+	if (memcmp(&jit, &jit2, sizeof(jit)) != 0 || c2 != c2b)
+	{
+		if (gJitUnstable < 8)
+		{
+			printf("      note  jit not repeatable: %s slot/addr=%08X\n", "-", codeAdr);
+			printf("            first : cpsr=%08X R0=%08X cyc=%u\n", jit.cpsr, jit.r[0], c2);
+			printf("            second: cpsr=%08X R0=%08X cyc=%u\n", jit2.cpsr, jit2.r[0], c2b);
+			fflush(stdout);
+		}
+		gJitUnstable++;
+	}
+
 	if (gTrace)
 	{
 		printf("      interp pc=%08X nxt=%08X R15=%08X | jit pc=%08X nxt=%08X R15=%08X\n",
 			interp.instruct_adr, interp.next_instruction, interp.r[15],
 			jit.instruct_adr, jit.next_instruction, jit.r[15]);
+		printf("      interp R0-R3=%08X %08X %08X %08X cpsr=%08X\n",
+			interp.r[0], interp.r[1], interp.r[2], interp.r[3], interp.cpsr);
+		printf("      jit    R0-R3=%08X %08X %08X %08X cpsr=%08X\n",
+			jit.r[0], jit.r[1], jit.r[2], jit.r[3], jit.cpsr);
 		fflush(stdout);
 	}
 
@@ -589,6 +633,7 @@ int main(int argc, char **argv)
 	bool verbose = false;
 	bool listAll = false;
 	int onlySlot = -1;
+	u32 dumpBlockAdr = 0;
 	for (int i = 1; i < argc; i++)
 	{
 		if (strcmp(argv[i], "--sweep") == 0) sweep = true;
@@ -596,6 +641,8 @@ int main(int argc, char **argv)
 		else if (strcmp(argv[i], "--verbose") == 0) verbose = true;
 		else if (strcmp(argv[i], "--all") == 0) listAll = true;
 		else if (strcmp(argv[i], "--slot") == 0 && i + 1 < argc) onlySlot = atoi(argv[++i]);
+		else if (strcmp(argv[i], "--dump") == 0 && i + 1 < argc)
+			dumpBlockAdr = (u32)strtoul(argv[++i], NULL, 16);
 	}
 
 	printf("DeSmuME JIT differential harness\n");
@@ -645,6 +692,33 @@ int main(int argc, char **argv)
 	arm_jit_reset(true, true);
 
 	int failures = sweep ? runSweep(full, onlySlot, verbose, listAll) : runProbes();
+
+	// Reverse-engineering aid: dump the machine code a probe compiled to, so the
+	// host instruction sequence can be disassembled instead of assumed.
+	if (dumpBlockAdr != 0)
+	{
+		const uintptr_t fn = JIT_COMPILED_FUNC(dumpBlockAdr, 0);
+		printf("\nblock %08X -> %p\n", dumpBlockAdr, (void *)fn);
+		if (fn)
+		{
+			const unsigned char *p = (const unsigned char *)fn;
+			FILE *f = fopen("block.bin", "wb");
+			if (f)
+			{
+				fwrite(p, 1, 512, f);
+				fclose(f);
+			}
+			for (int i = 0; i < 512; i++)
+			{
+				printf("%02X", p[i]);
+				if ((i & 15) == 15) printf("\n");
+			}
+		}
+	}
+
+	if (gJitUnstable)
+		printf("jit not repeatable: %d comparison(s) where the first call and a\n"
+		       "second call on identical state disagreed\n", gJitUnstable);
 
 	arm_jit_close();
 	return failures == 0 ? 0 : 1;
