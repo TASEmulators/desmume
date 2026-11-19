@@ -80,6 +80,7 @@ public:
 	int texture_upscale;
 	int gpu_resolution_multiplier;
 	int language;
+	bool languageSet; // true when --lang was actually given
 	float scale;
 	std::string nds_file;
 	std::string play_movie_file;

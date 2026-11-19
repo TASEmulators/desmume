@@ -763,8 +763,8 @@
           <attribute name='action'>app.setaudiovolume</attribute>
         </item>
         <item>
-          <attribute name='label' translatable='yes'>Set firmware _language</attribute>
-          <attribute name='action'>app.setfirmwarelanguage</attribute>
+          <attribute name='label' translatable='yes'>Firmware _settings…</attribute>
+          <attribute name='action'>app.firmwaresettings</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>_Edit controls</attribute>

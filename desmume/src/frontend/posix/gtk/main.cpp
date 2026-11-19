@@ -284,7 +284,7 @@ static void LoadSaveStateInfo();
 static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Reset(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void SetAudioVolume(GSimpleAction *action, GVariant *parameter, gpointer user_data);
-static void SetFirmwareLanguage(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void FirmwareSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void MenuSave(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -419,7 +419,7 @@ static const GActionEntry app_entries[] = {
     { "cheatsdisable",       ToggleCheatsDisabled, NULL, "false" },
     { "savetype",            changesavetype,          "s", "\"autodetect\"" },
     { "setaudiovolume",      SetAudioVolume },
-    { "setfirmwarelanguage", SetFirmwareLanguage },
+    { "firmwaresettings",    FirmwareSettingsDialog },
     { "editctrls",           Edit_Controls },
     { "editjoyctrls",        Edit_Joystick_Controls },
 
@@ -642,7 +642,8 @@ init_configured_features( class configured_features *config	)
   config->firmware_language = -1;
 
   /* If specified by --lang option the lang will change to choosed one */
-  config->firmware_language = config->language;
+  if (config->languageSet)
+    config->firmware_language = config->language;
 }
 
 static int
@@ -4576,48 +4577,185 @@ static void SetAudioVolume(GSimpleAction *action, GVariant *parameter, gpointer 
 	gtk_widget_destroy(dialog);
 }
 
-/////////////////////////////// SET FIRMWARE LANGUAGE //////////////////////////////////////
+/////////////////////////////// FIRMWARE SETTINGS //////////////////////////////////////
 
-static void CallbackSetFirmwareLanguage(GtkWidget *check_button, gpointer data)
+// The firmware stores text as UTF-16 code units. GLib's gunichar2 is exactly
+// that width, so use its converters instead of going through wchar_t, which is
+// 32 bits here and pairs adjacent units into bogus code points.
+static char *FirmwareTextToUTF8(const u16 *text, size_t length)
 {
-	gtk_widget_set_sensitive(GTK_WIDGET(data), gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_button)));
+	return g_utf16_to_utf8((const gunichar2 *)text, (glong)length, NULL, NULL, NULL);
 }
 
-static void SetFirmwareLanguage(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+static void SetFirmwareTextFromUTF8(const char *utf8, u16 *text, u8 *textLength, size_t maxUnits)
 {
-	GtkWidget *dialog = NULL;
-	GtkWidget *combo_box_text = NULL;
-	GtkWidget *check_button = NULL;
-	const char *languages[6] = {"Japanese", "English", "French", "German", "Italian", "Spanish"};
-	gchar *text = NULL;
-	dialog = gtk_dialog_new_with_buttons("Set firmware language", GTK_WINDOW(pWindow), GTK_DIALOG_MODAL, "_OK", GTK_RESPONSE_OK, "_Cancel", GTK_RESPONSE_CANCEL, NULL);
-	combo_box_text = gtk_combo_box_text_new();
-	for(int index = 0; index < 6; index++)
-		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_box_text), languages[index]);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(combo_box_text), config.firmware_language);
-	gtk_widget_set_sensitive(combo_box_text, config.command_line_overriding_firmware_language);
-	check_button = gtk_check_button_new_with_mnemonic("_Enable command line overriding");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_button), config.command_line_overriding_firmware_language);
-	g_signal_connect(G_OBJECT(check_button), "toggled", G_CALLBACK(CallbackSetFirmwareLanguage), combo_box_text);
-	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), check_button, TRUE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), combo_box_text, TRUE, FALSE, 0);
-	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(dialog)));
-	switch(gtk_dialog_run(GTK_DIALOG(dialog)))
+	glong unitCount = 0;
+	gunichar2 *units = g_utf8_to_utf16(utf8 != NULL ? utf8 : "", -1, NULL, &unitCount, NULL);
+	size_t length = (units != NULL && unitCount > 0) ? (size_t)unitCount : 0;
+
+	if (length > maxUnits)
 	{
-		case GTK_RESPONSE_OK:
-			text = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box_text));
-			for(int index = 0; index < 6; index++)
-				if(strcmp(text, languages[index]) == 0)
-				{
-					CommonSettings.fwConfig.language = index;
-					config.firmware_language = index;
-				}
-			config.command_line_overriding_firmware_language = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_button));
-			break;
-		case GTK_RESPONSE_CANCEL:
-		case GTK_RESPONSE_NONE:
-			break;
+		length = maxUnits;
+		// Never keep half of a surrogate pair.
+		if (units[length - 1] >= 0xD800 && units[length - 1] <= 0xDBFF)
+			length--;
 	}
+
+	for (size_t i = 0; i < length; i++)
+		text[i] = units[i];
+	text[length] = 0;
+	*textLength = (u8)length;
+
+	g_free(units);
+}
+
+static std::string NormalizeMACAddress(const char *text)
+{
+	std::string digits;
+	for (const char *p = text; p != NULL && *p != '\0' && digits.size() < 12; p++)
+	{
+		if (g_ascii_isxdigit(*p))
+			digits += *p;
+	}
+	return digits;
+}
+
+// Apply the persisted [Firmware] settings to the core configuration. This runs
+// after config.load() and before the command-line --lang handling, so --lang
+// still wins.
+static void ApplyFirmwareSettingsConfig()
+{
+	FirmwareConfig &fw = CommonSettings.fwConfig;
+
+	SetFirmwareTextFromUTF8(config.fwconfig_nickname.get().c_str(), fw.nickname, &fw.nicknameLength, MAX_FW_NICKNAME_LENGTH);
+	SetFirmwareTextFromUTF8(config.fwconfig_message.get().c_str(), fw.message, &fw.messageLength, MAX_FW_MESSAGE_LENGTH);
+	fw.favoriteColor = (u8)CLAMP(config.fwconfig_favorite_color, 0, 15);
+	fw.birthdayMonth = (u8)CLAMP(config.fwconfig_birth_month, 1, 12);
+	fw.birthdayDay = (u8)CLAMP(config.fwconfig_birth_day, 1, 31);
+	fw.language = (u8)CLAMP(config.firmware_language, 0, 5);
+	NDS_SetFirmwareMACAddressFromStr(fw, config.fwconfig_mac_address.get().c_str());
+}
+
+static GtkWidget *FirmwareCombo(const char *const *items, int count, int active)
+{
+	GtkWidget *combo = gtk_combo_box_text_new();
+	for (int i = 0; i < count; i++)
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), items[i]);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), active);
+	return combo;
+}
+
+static void AttachFirmwareRow(GtkGrid *grid, int row, const char *labelText, GtkWidget *widget)
+{
+	GtkWidget *label = gtk_label_new_with_mnemonic(labelText);
+	gtk_label_set_xalign(GTK_LABEL(label), 1.0f);
+	gtk_widget_set_hexpand(widget, TRUE);
+	gtk_grid_attach(grid, label, 0, row, 1, 1);
+	gtk_grid_attach(grid, widget, 1, row, 1, 1);
+}
+
+static void FirmwareSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	static const char *const languageNames[] = {"Japanese", "English", "French", "German", "Italian", "Spanish"};
+	static const char *const colorNames[] = {
+		"Gray", "Brown", "Red", "Pink", "Orange", "Yellow", "Lime Green", "Green",
+		"Dark Green", "Sea Green", "Turquoise", "Blue", "Dark Blue", "Dark Purple",
+		"Violet", "Magenta"
+	};
+	static const char *const monthNames[] = {
+		"January", "February", "March", "April", "May", "June",
+		"July", "August", "September", "October", "November", "December"
+	};
+
+	FirmwareConfig &fw = CommonSettings.fwConfig;
+	char macBuffer[13];
+	NDS_GetFirmwareMACAddressAsStr(fw, macBuffer);
+
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Firmware Settings",
+	                        GTK_WINDOW(pWindow), GTK_DIALOG_MODAL,
+	                        "_OK", GTK_RESPONSE_OK,
+	                        "_Cancel", GTK_RESPONSE_CANCEL,
+	                        NULL);
+	gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
+
+	GtkWidget *grid = gtk_grid_new();
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+	gtk_container_set_border_width(GTK_CONTAINER(grid), 12);
+	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), grid, TRUE, TRUE, 0);
+
+	char *nickname = FirmwareTextToUTF8(fw.nickname, fw.nicknameLength);
+	char *message = FirmwareTextToUTF8(fw.message, fw.messageLength);
+
+	GtkWidget *nicknameEntry = gtk_entry_new();
+	gtk_entry_set_max_length(GTK_ENTRY(nicknameEntry), MAX_FW_NICKNAME_LENGTH);
+	gtk_entry_set_text(GTK_ENTRY(nicknameEntry), nickname != NULL ? nickname : "");
+	AttachFirmwareRow(GTK_GRID(grid), 0, "_Nickname:", nicknameEntry);
+
+	GtkWidget *messageEntry = gtk_entry_new();
+	gtk_entry_set_max_length(GTK_ENTRY(messageEntry), MAX_FW_MESSAGE_LENGTH);
+	gtk_entry_set_text(GTK_ENTRY(messageEntry), message != NULL ? message : "");
+	AttachFirmwareRow(GTK_GRID(grid), 1, "_Message:", messageEntry);
+
+	GtkWidget *colorCombo = FirmwareCombo(colorNames, (int)G_N_ELEMENTS(colorNames), CLAMP((int)fw.favoriteColor, 0, 15));
+	AttachFirmwareRow(GTK_GRID(grid), 2, "Favourite _color:", colorCombo);
+
+	GtkWidget *monthCombo = FirmwareCombo(monthNames, (int)G_N_ELEMENTS(monthNames), CLAMP((int)fw.birthdayMonth - 1, 0, 11));
+	AttachFirmwareRow(GTK_GRID(grid), 3, "Birth _month:", monthCombo);
+
+	GtkWidget *dayCombo = gtk_combo_box_text_new();
+	for (int day = 1; day <= 31; day++)
+	{
+		char text[4];
+		snprintf(text, sizeof(text), "%d", day);
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(dayCombo), text);
+	}
+	gtk_combo_box_set_active(GTK_COMBO_BOX(dayCombo), CLAMP((int)fw.birthdayDay - 1, 0, 30));
+	AttachFirmwareRow(GTK_GRID(grid), 4, "Birth_day:", dayCombo);
+
+	GtkWidget *languageCombo = FirmwareCombo(languageNames, (int)G_N_ELEMENTS(languageNames), CLAMP((int)fw.language, 0, 5));
+	AttachFirmwareRow(GTK_GRID(grid), 5, "_Language:", languageCombo);
+
+	GtkWidget *macEntry = gtk_entry_new();
+	gtk_entry_set_max_length(GTK_ENTRY(macEntry), 12);
+	gtk_entry_set_text(GTK_ENTRY(macEntry), macBuffer);
+	gtk_entry_set_placeholder_text(GTK_ENTRY(macEntry), "12 hex digits");
+	AttachFirmwareRow(GTK_GRID(grid), 6, "MA_C address:", macEntry);
+
+	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(dialog)));
+
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK)
+	{
+		const char *nicknameText = gtk_entry_get_text(GTK_ENTRY(nicknameEntry));
+		if (nicknameText[0] == '\0')
+			nicknameText = "DeSmuME";
+		SetFirmwareTextFromUTF8(nicknameText, fw.nickname, &fw.nicknameLength, MAX_FW_NICKNAME_LENGTH);
+		config.fwconfig_nickname = nicknameText;
+
+		const char *messageText = gtk_entry_get_text(GTK_ENTRY(messageEntry));
+		SetFirmwareTextFromUTF8(messageText, fw.message, &fw.messageLength, MAX_FW_MESSAGE_LENGTH);
+		config.fwconfig_message = messageText;
+
+		fw.favoriteColor = (u8)gtk_combo_box_get_active(GTK_COMBO_BOX(colorCombo));
+		config.fwconfig_favorite_color = fw.favoriteColor;
+
+		fw.birthdayMonth = (u8)(gtk_combo_box_get_active(GTK_COMBO_BOX(monthCombo)) + 1);
+		config.fwconfig_birth_month = fw.birthdayMonth;
+
+		fw.birthdayDay = (u8)(gtk_combo_box_get_active(GTK_COMBO_BOX(dayCombo)) + 1);
+		config.fwconfig_birth_day = fw.birthdayDay;
+
+		fw.language = (u8)gtk_combo_box_get_active(GTK_COMBO_BOX(languageCombo));
+		config.firmware_language = fw.language;
+
+		std::string mac = NormalizeMACAddress(gtk_entry_get_text(GTK_ENTRY(macEntry)));
+		NDS_SetFirmwareMACAddressFromStr(fw, mac.c_str());
+		NDS_GetFirmwareMACAddressAsStr(fw, macBuffer);
+		config.fwconfig_mac_address = macBuffer;
+	}
+
+	g_free(nickname);
+	g_free(message);
 	gtk_widget_destroy(dialog);
 }
 
@@ -6409,6 +6547,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     configured_features *my_config = static_cast<configured_features*>(user_data);
 
 	config.load();
+	ApplyFirmwareSettingsConfig();
 
 #if !defined(ENABLE_WGPU)
 	// A config written by a WebGPU build may still request the WebGPU
@@ -6448,10 +6587,6 @@ common_gtk_main(GApplication *app, gpointer user_data)
     if ( my_config->firmware_language != -1) {
 		CommonSettings.fwConfig.language = my_config->firmware_language;
     }
-
-    /* if the command line overriding is enabled then use the language set on the GUI */
-    if(config.command_line_overriding_firmware_language)
-		CommonSettings.fwConfig.language = config.firmware_language;
 
     //------------------addons----------
     my_config->process_addonCommands();

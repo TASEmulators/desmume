@@ -220,6 +220,7 @@ CommandLine::CommandLine()
 	texture_upscale           = -1;
 	gpu_resolution_multiplier = -1;
 	language                  = 1; //english by default
+	languageSet               = false;
 	scale                     = 1.0;
 	nds_file                  = "";
 	play_movie_file           = "";
@@ -400,7 +401,7 @@ bool CommandLine::parse(int argc,char **argv)
 
 		//utilities
 		case OPT_ADVANSCENE: CommonSettings.run_advanscene_import = optarg; break;
-		case OPT_LANGUAGE: language = atoi(optarg); break;
+		case OPT_LANGUAGE: language = atoi(optarg); languageSet = true; break;
 		}
 	} //arg parsing loop
 

@@ -73,9 +73,24 @@ OPT(gpuScaleFactor, float, 1.0, Config, GPUScaleFactor)
 OPT(highColorInterpolation, bool, true, Config, HighResolutionColorInterpolation)
 OPT(multisampling, bool, false, Config, OpenGLMultisampling)
 OPT(multisamplingSize, int, 0, Config, OpenGLMultisamplingSize)
-OPT(command_line_overriding_firmware_language, bool, false, Config, CommandLineOverridingFirmwareLanguage)
 OPT(firmware_language, int, 1, Config, FirmwareLanguage)
 OPT(savetype, int, 0, Config, SaveType)
+
+/* Firmware
+ *
+ * Settings written into the internal firmware image. The section and key
+ * names match the Windows desmume.ini [Firmware] section. Defaults are the
+ * same as NDS_GetDefaultFirmwareConfig(), so applying the saved values is a
+ * no-op until the user edits them. "Language" is not stored here: the
+ * existing Config/FirmwareLanguage option is the single source of truth, and
+ * the --lang command line option still overrides it at startup.
+ */
+OPT(fwconfig_nickname, std::string, "DeSmuME", Firmware, nickName)
+OPT(fwconfig_message, std::string, "DeSmuME makes you happy!", Firmware, Message)
+OPT(fwconfig_favorite_color, int, 7, Firmware, favColor)
+OPT(fwconfig_birth_month, int, 6, Firmware, bMonth)
+OPT(fwconfig_birth_day, int, 23, Firmware, bDay)
+OPT(fwconfig_mac_address, std::string, "0009BF123456", Firmware, macAddress)
 
 /* RAM Watch
  *
