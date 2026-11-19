@@ -889,6 +889,14 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 		bool success = MovieData::loadSramFrom(&currMovieData.sram);
 		if(!success) return;
 	}
+	else if (startFrom == START_BLANK)
+	{
+		// Playback of a movie with no "sram" header starts from a blank backup
+		// device. Do the same when recording from power on, otherwise the
+		// recorded input would be captured against the previous game's save
+		// and desync on playback.
+		MMU_new.backupDevice.load_movie_blank();
+	}
 
 	driver->USR_InfoMessage("Movie recording started.");
 }

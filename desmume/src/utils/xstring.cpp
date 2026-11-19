@@ -334,7 +334,46 @@ std::string wcstombs(std::wstring str)
 {
 	size_t len = str.length();
 	char *tmp8 = new char[len*4+1]; //allow space for string to inflate
-	utf16_to_char_string((u16*)str.c_str(),tmp8,len*4+1);
+
+	if (sizeof(wchar_t) == 4)
+	{
+		// macOS/Linux: wchar_t holds UTF-32. Casting it to u16* (the Windows
+		// path below) makes the high half of every code point look like a
+		// NUL, so "author X" becomes just "a". Encode the code points here.
+		char *out = tmp8;
+		for (size_t i = 0; i < len; i++)
+		{
+			const u32 cp = (u32)str[i];
+			if (cp == 0) break;
+			if (cp < 0x80)
+			{
+				*out++ = (char)cp;
+			}
+			else if (cp < 0x800)
+			{
+				*out++ = (char)(0xC0 | (cp >> 6));
+				*out++ = (char)(0x80 | (cp & 0x3F));
+			}
+			else if (cp < 0x10000)
+			{
+				*out++ = (char)(0xE0 | (cp >> 12));
+				*out++ = (char)(0x80 | ((cp >> 6) & 0x3F));
+				*out++ = (char)(0x80 | (cp & 0x3F));
+			}
+			else
+			{
+				*out++ = (char)(0xF0 | (cp >> 18));
+				*out++ = (char)(0x80 | ((cp >> 12) & 0x3F));
+				*out++ = (char)(0x80 | ((cp >> 6) & 0x3F));
+				*out++ = (char)(0x80 | (cp & 0x3F));
+			}
+		}
+		*out = '\0';
+	}
+	else
+	{
+		utf16_to_char_string((u16*)str.c_str(),tmp8,len*4+1);
+	}
 	std::string ret = tmp8;
 	delete[] tmp8;
 	return ret;
