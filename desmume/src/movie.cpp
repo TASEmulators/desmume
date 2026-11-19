@@ -24,6 +24,7 @@
 #include <time.h>
 #include <new>
 #include <string>
+#include <vector>
 
 #include "utils/guid.h"
 #include "utils/xstring.h"
@@ -206,6 +207,64 @@ DateTime FCEUI_MovieGetRTCDefault()
 	return DateTime(2009,1,1,0,0,0);
 }
 
+// The firmware configuration stores text as UTF-16 code units, which is what
+// the DS itself uses. The movie header stores the same text as UTF-8.
+// Windows can reinterpret the u16 buffer as wchar_t* because its wchar_t is
+// 16 bits wide, but on macOS/Linux wchar_t is 32 bits and doing so pairs up
+// adjacent code units into bogus code points. Convert explicitly instead.
+static std::string FirmwareTextToUTF8(const u16 *text, size_t length)
+{
+	std::vector<uint8_t> utf8(length * 4 + 1);
+	size_t utf8Length = 0;
+
+	utf16_conv_utf8(&utf8[0], &utf8Length, (const uint16_t *)text, length);
+
+	return std::string((const char *)&utf8[0], utf8Length);
+}
+
+// Convert UTF-8 back to UTF-16 code units, truncating to maxLength units.
+// Movies written by older POSIX builds contain bytes that are not valid
+// UTF-8; copy those byte-by-byte so they still load the way they used to.
+static size_t UTF8ToFirmwareText(const std::string &utf8, u16 *text, size_t maxLength)
+{
+	std::vector<uint32_t> codePoints(utf8.size() + 1);
+	const size_t codePointCount = utf8_conv_utf32(&codePoints[0], codePoints.size(),
+	                                              utf8.c_str(), utf8.size());
+
+	size_t length = 0;
+	for (size_t i = 0; i < codePointCount && length < maxLength; i++)
+	{
+		uint32_t cp = codePoints[i];
+		if (cp <= 0xFFFF)
+		{
+			text[length++] = (u16)cp;
+		}
+		else if (cp <= 0x10FFFF && length + 2 <= maxLength)
+		{
+			cp -= 0x10000;
+			text[length++] = (u16)(0xD800 + (cp >> 10));
+			text[length++] = (u16)(0xDC00 + (cp & 0x3FF));
+		}
+		else
+		{
+			// Out-of-range value (legacy garbage) or no room for a surrogate
+			// pair: stop at the last complete character.
+			break;
+		}
+	}
+
+	if (length == 0 && !utf8.empty())
+	{
+		length = utf8.size() > maxLength ? maxLength : utf8.size();
+		for (size_t i = 0; i < length; i++)
+			text[i] = (u8)utf8[i];
+	}
+
+	text[length] = 0;
+
+	return length;
+}
+
 MovieData::MovieData(bool fromCurrentSettings)
 	: version(MOVIE_VERSION)
 	, emuVersion(EMU_DESMUME_VERSION_NUMERIC())
@@ -278,12 +337,8 @@ MovieData::MovieData(bool fromCurrentSettings)
 			bootFromFirmware = CommonSettings.BootFromFirmware;
 		if (!CommonSettings.UseExtFirmware)
 		{
-			firmNickname.resize(CommonSettings.fwConfig.nicknameLength);
-			for (int i = 0; i < CommonSettings.fwConfig.nicknameLength; i++)
-				firmNickname[i] = CommonSettings.fwConfig.nickname[i];
-			firmMessage.resize(CommonSettings.fwConfig.messageLength);
-			for (int i = 0; i < CommonSettings.fwConfig.messageLength; i++)
-				firmMessage[i] = CommonSettings.fwConfig.message[i];
+			firmNickname = FirmwareTextToUTF8(CommonSettings.fwConfig.nickname, CommonSettings.fwConfig.nicknameLength);
+			firmMessage = FirmwareTextToUTF8(CommonSettings.fwConfig.message, CommonSettings.fwConfig.messageLength);
 
 			firmFavColour = CommonSettings.fwConfig.favoriteColor;
 			firmBirthMonth = CommonSettings.fwConfig.birthdayMonth;
@@ -382,11 +437,8 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	}
 	else
 	{
-		std::wstring wnick((wchar_t*)CommonSettings.fwConfig.nickname, CommonSettings.fwConfig.nicknameLength);
-		std::string nick = wcstombs(wnick);
-		
-		std::wstring wmessage((wchar_t*)CommonSettings.fwConfig.message, CommonSettings.fwConfig.messageLength);
-		std::string message = wcstombs(wmessage);
+		std::string nick = FirmwareTextToUTF8(CommonSettings.fwConfig.nickname, CommonSettings.fwConfig.nicknameLength);
+		std::string message = FirmwareTextToUTF8(CommonSettings.fwConfig.message, CommonSettings.fwConfig.messageLength);
 		
 		fp.fprintf("firmNickname %s\n", nick.c_str());
 		fp.fprintf("firmMessage %s\n", message.c_str());
@@ -620,15 +672,11 @@ static void LoadSettingsFromMovie(MovieData movieData)
 	{
 		if (movieData.firmNickname != "")
 		{
-			CommonSettings.fwConfig.nicknameLength = movieData.firmNickname.length() > MAX_FW_NICKNAME_LENGTH ? MAX_FW_NICKNAME_LENGTH : movieData.firmNickname.length();
-			for (int i = 0; i < CommonSettings.fwConfig.nicknameLength; i++)
-				CommonSettings.fwConfig.nickname[i] = movieData.firmNickname[i];
+			CommonSettings.fwConfig.nicknameLength = (u8)UTF8ToFirmwareText(movieData.firmNickname, CommonSettings.fwConfig.nickname, MAX_FW_NICKNAME_LENGTH);
 		}
 		if (movieData.firmMessage != "")
 		{
-			CommonSettings.fwConfig.messageLength = movieData.firmMessage.length() > MAX_FW_MESSAGE_LENGTH ? MAX_FW_MESSAGE_LENGTH : movieData.firmMessage.length();
-			for (int i = 0; i < CommonSettings.fwConfig.messageLength; i++)
-				CommonSettings.fwConfig.message[i] = movieData.firmMessage[i];
+			CommonSettings.fwConfig.messageLength = (u8)UTF8ToFirmwareText(movieData.firmMessage, CommonSettings.fwConfig.message, MAX_FW_MESSAGE_LENGTH);
 		}
 
 		if (movieData.firmFavColour != -1)
