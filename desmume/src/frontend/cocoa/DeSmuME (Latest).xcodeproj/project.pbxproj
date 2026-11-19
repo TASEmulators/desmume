@@ -1177,7 +1177,7 @@
 		AB36C83C27F2C8AE00C763C8 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
 		AB36C83D27F2C8AE00C763C8 /* ftdebug.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA77D1BB4EC1000B08C25 /* ftdebug.c */; };
 		AB36C83E27F2C8AE00C763C8 /* fttype1.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731611BB51F6700B26147 /* fttype1.c */; };
-		AB36C83F27F2C8AE00C763C8 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; };
+		AB36C83F27F2C8AE00C763C8 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
 		AB36C84027F2C8AE00C763C8 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */; };
 		AB36C84127F2C8AE00C763C8 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
 		AB36C84227F2C8AE00C763C8 /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405602169F5DBB0016AC3E /* assert.cpp */; };
@@ -1326,9 +1326,9 @@
 		AB455E0C2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
 		AB455E0D2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
 		AB455E0E2E8F77EB009DEF2B /* CocoaGraphicsController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB455E042E8F77EB009DEF2B /* CocoaGraphicsController.mm */; };
-		AB46E54F2814F42500A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; };
-		AB46E5502814F42700A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; };
-		AB46E5522814F43300A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; };
+		AB46E54F2814F42500A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		AB46E5502814F42700A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		AB46E5522814F43300A4E3D6 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
 		AB47B52F18A45C35009A42AF /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		AB4979BD27F2E97A00E8A244 /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
 		AB4979BE27F2E97A00E8A244 /* Icon_MicrophoneGray_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB0FBD81A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png */; };
@@ -2080,7 +2080,7 @@
 		AB7900EE215B84E50082AE82 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
 		AB7900EF215B84E50082AE82 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
 		AB7900F0215B84E50082AE82 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
-		AB7900F1215B84E50082AE82 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; };
+		AB7900F1215B84E50082AE82 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
 		AB7900F2215B84E50082AE82 /* smooth.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7E41BB4EC1000B08C25 /* smooth.c */; };
 		AB7900F3215B84E50082AE82 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */; };
 		AB7900F4215B84E50082AE82 /* macOS_driver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB28625320AE3E9E00EAED43 /* macOS_driver.cpp */; };
@@ -2405,7 +2405,7 @@
 		AB790252215B84F20082AE82 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
 		AB790253215B84F20082AE82 /* rsemaphore.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2AB9281C9F9CFA00173B15 /* rsemaphore.c */; };
 		AB790254215B84F20082AE82 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
-		AB790255215B84F20082AE82 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; };
+		AB790255215B84F20082AE82 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
 		AB790256215B84F20082AE82 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */; };
 		AB790257215B84F20082AE82 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
 		AB790258215B84F20082AE82 /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405602169F5DBB0016AC3E /* assert.cpp */; };
@@ -2631,7 +2631,7 @@
 		AB796D6115CDCBA200C59155 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
 		AB796D6215CDCBA200C59155 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
 		AB796D6315CDCBA200C59155 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
-		AB796D6415CDCBA200C59155 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; };
+		AB796D6415CDCBA200C59155 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
 		AB796D6615CDCBA200C59155 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		AB796D6715CDCBA200C59155 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */; };
 		AB796D6815CDCBA200C59155 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
@@ -3159,7 +3159,7 @@
 		AB8F3CEE1A53AC2600A80BF6 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
 		AB8F3CEF1A53AC2600A80BF6 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
 		AB8F3CF01A53AC2600A80BF6 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
-		AB8F3CF11A53AC2600A80BF6 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; };
+		AB8F3CF11A53AC2600A80BF6 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
 		AB8F3CF21A53AC2600A80BF6 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */; };
 		AB8F3CF31A53AC2600A80BF6 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
 		AB8F3CF41A53AC2600A80BF6 /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405602169F5DBB0016AC3E /* assert.cpp */; };
@@ -4377,7 +4377,7 @@
 		ABC8593B28273FEE00A03EA9 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
 		ABC8593C28273FEE00A03EA9 /* ftdebug.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA77D1BB4EC1000B08C25 /* ftdebug.c */; };
 		ABC8593D28273FEE00A03EA9 /* fttype1.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731611BB51F6700B26147 /* fttype1.c */; };
-		ABC8593E28273FEE00A03EA9 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; };
+		ABC8593E28273FEE00A03EA9 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
 		ABC8593F28273FEE00A03EA9 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */; };
 		ABC8594028273FEE00A03EA9 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
 		ABC8594128273FEE00A03EA9 /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405602169F5DBB0016AC3E /* assert.cpp */; };
@@ -4709,7 +4709,7 @@
 		ABD2CDEF26E05CB000FB15F7 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
 		ABD2CDF026E05CB000FB15F7 /* ftdebug.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA77D1BB4EC1000B08C25 /* ftdebug.c */; };
 		ABD2CDF126E05CB000FB15F7 /* fttype1.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731611BB51F6700B26147 /* fttype1.c */; };
-		ABD2CDF226E05CB000FB15F7 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; };
+		ABD2CDF226E05CB000FB15F7 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
 		ABD2CDF326E05CB000FB15F7 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */; };
 		ABD2CDF426E05CB000FB15F7 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
 		ABD2CDF526E05CB000FB15F7 /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405602169F5DBB0016AC3E /* assert.cpp */; };
@@ -5128,6 +5128,546 @@
 		A7E5CAFE0000000000005012 /* MovieRecordWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000307 /* MovieRecordWindowController.mm */; };
 		A7E5CAFE0000000000005014 /* MovieRecordWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000307 /* MovieRecordWindowController.mm */; };
 		A7E5CAFE0000000000005016 /* MovieRecordWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A7E5CAFE0000000000000307 /* MovieRecordWindowController.mm */; };
+		A5F000000000000000000037 /* a64_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000001 /* a64_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000038 /* a64_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000002 /* a64_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000039 /* a64_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000003 /* a64_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000003A /* a64_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000004 /* a64_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000003B /* a64_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000005 /* a64_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000003C /* a64_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000006 /* a64_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000003D /* a64_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000007 /* a64_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000003E /* a64_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000008 /* a64_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000003F /* a64_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000009 /* a64_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000040 /* arm_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000A /* arm_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000041 /* arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000B /* arena.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000042 /* arena_bit_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000C /* arena_bit_set.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000043 /* arena_hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000D /* arena_hash.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000044 /* arena_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000E /* arena_vector.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000045 /* arch_traits.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000F /* arch_traits.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000046 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000010 /* assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000047 /* builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000011 /* builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000048 /* code_holder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000012 /* code_holder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000049 /* code_writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000013 /* code_writer.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000004A /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000014 /* compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000004B /* const_pool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000015 /* const_pool.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000004C /* cpu_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000016 /* cpu_info.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000004D /* debug_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000017 /* debug_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000004E /* emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000018 /* emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000004F /* emitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000019 /* emitter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000050 /* emitter_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001A /* emitter_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000051 /* environment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001B /* environment.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000052 /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001C /* error.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000053 /* error_handler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001D /* error_handler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000054 /* formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001E /* formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000055 /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001F /* func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000056 /* func_args_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000020 /* func_args_context.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000057 /* inst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000021 /* inst.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000058 /* inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000022 /* inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000059 /* jit_allocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000023 /* jit_allocator.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000005A /* jit_runtime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000024 /* jit_runtime.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000005B /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000025 /* logger.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000005C /* pauth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000026 /* pauth.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000005D /* ra_local.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000027 /* ra_local.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000005E /* ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000028 /* ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000005F /* ra_stack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000029 /* ra_stack.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000060 /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002A /* string.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000061 /* target.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002B /* target.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000062 /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002C /* type.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000063 /* virt_mem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002D /* virt_mem.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000064 /* x86_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002E /* x86_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000065 /* x86_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002F /* x86_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000066 /* x86_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000030 /* x86_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000067 /* x86_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000031 /* x86_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000068 /* x86_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000032 /* x86_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000069 /* x86_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000033 /* x86_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000006A /* x86_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000034 /* x86_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000006B /* x86_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000035 /* x86_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000006C /* x86_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000036 /* x86_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000006D /* a64_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000001 /* a64_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000006E /* a64_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000002 /* a64_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000006F /* a64_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000003 /* a64_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000070 /* a64_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000004 /* a64_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000071 /* a64_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000005 /* a64_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000072 /* a64_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000006 /* a64_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000073 /* a64_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000007 /* a64_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000074 /* a64_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000008 /* a64_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000075 /* a64_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000009 /* a64_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000076 /* arm_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000A /* arm_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000077 /* arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000B /* arena.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000078 /* arena_bit_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000C /* arena_bit_set.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000079 /* arena_hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000D /* arena_hash.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000007A /* arena_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000E /* arena_vector.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000007B /* arch_traits.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000F /* arch_traits.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000007C /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000010 /* assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000007D /* builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000011 /* builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000007E /* code_holder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000012 /* code_holder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000007F /* code_writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000013 /* code_writer.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000080 /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000014 /* compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000081 /* const_pool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000015 /* const_pool.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000082 /* cpu_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000016 /* cpu_info.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000083 /* debug_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000017 /* debug_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000084 /* emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000018 /* emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000085 /* emitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000019 /* emitter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000086 /* emitter_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001A /* emitter_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000087 /* environment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001B /* environment.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000088 /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001C /* error.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000089 /* error_handler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001D /* error_handler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000008A /* formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001E /* formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000008B /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001F /* func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000008C /* func_args_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000020 /* func_args_context.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000008D /* inst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000021 /* inst.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000008E /* inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000022 /* inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000008F /* jit_allocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000023 /* jit_allocator.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000090 /* jit_runtime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000024 /* jit_runtime.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000091 /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000025 /* logger.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000092 /* pauth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000026 /* pauth.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000093 /* ra_local.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000027 /* ra_local.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000094 /* ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000028 /* ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000095 /* ra_stack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000029 /* ra_stack.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000096 /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002A /* string.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000097 /* target.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002B /* target.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000098 /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002C /* type.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000099 /* virt_mem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002D /* virt_mem.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000009A /* x86_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002E /* x86_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000009B /* x86_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002F /* x86_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000009C /* x86_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000030 /* x86_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000009D /* x86_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000031 /* x86_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000009E /* x86_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000032 /* x86_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000009F /* x86_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000033 /* x86_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000A0 /* x86_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000034 /* x86_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000A1 /* x86_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000035 /* x86_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000A2 /* x86_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000036 /* x86_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000A3 /* a64_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000001 /* a64_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000A4 /* a64_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000002 /* a64_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000A5 /* a64_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000003 /* a64_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000A6 /* a64_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000004 /* a64_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000A7 /* a64_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000005 /* a64_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000A8 /* a64_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000006 /* a64_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000A9 /* a64_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000007 /* a64_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000AA /* a64_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000008 /* a64_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000AB /* a64_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000009 /* a64_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000AC /* arm_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000A /* arm_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000AD /* arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000B /* arena.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000AE /* arena_bit_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000C /* arena_bit_set.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000AF /* arena_hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000D /* arena_hash.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000B0 /* arena_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000E /* arena_vector.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000B1 /* arch_traits.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000F /* arch_traits.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000B2 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000010 /* assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000B3 /* builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000011 /* builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000B4 /* code_holder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000012 /* code_holder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000B5 /* code_writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000013 /* code_writer.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000B6 /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000014 /* compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000B7 /* const_pool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000015 /* const_pool.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000B8 /* cpu_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000016 /* cpu_info.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000B9 /* debug_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000017 /* debug_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000BA /* emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000018 /* emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000BB /* emitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000019 /* emitter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000BC /* emitter_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001A /* emitter_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000BD /* environment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001B /* environment.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000BE /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001C /* error.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000BF /* error_handler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001D /* error_handler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000C0 /* formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001E /* formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000C1 /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001F /* func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000C2 /* func_args_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000020 /* func_args_context.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000C3 /* inst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000021 /* inst.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000C4 /* inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000022 /* inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000C5 /* jit_allocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000023 /* jit_allocator.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000C6 /* jit_runtime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000024 /* jit_runtime.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000C7 /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000025 /* logger.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000C8 /* pauth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000026 /* pauth.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000C9 /* ra_local.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000027 /* ra_local.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000CA /* ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000028 /* ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000CB /* ra_stack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000029 /* ra_stack.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000CC /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002A /* string.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000CD /* target.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002B /* target.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000CE /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002C /* type.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000CF /* virt_mem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002D /* virt_mem.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000D0 /* x86_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002E /* x86_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000D1 /* x86_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002F /* x86_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000D2 /* x86_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000030 /* x86_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000D3 /* x86_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000031 /* x86_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000D4 /* x86_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000032 /* x86_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000D5 /* x86_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000033 /* x86_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000D6 /* x86_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000034 /* x86_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000D7 /* x86_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000035 /* x86_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000D8 /* x86_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000036 /* x86_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000D9 /* a64_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000001 /* a64_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000DA /* a64_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000002 /* a64_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000DB /* a64_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000003 /* a64_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000DC /* a64_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000004 /* a64_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000DD /* a64_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000005 /* a64_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000DE /* a64_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000006 /* a64_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000DF /* a64_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000007 /* a64_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000E0 /* a64_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000008 /* a64_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000E1 /* a64_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000009 /* a64_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000E2 /* arm_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000A /* arm_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000E3 /* arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000B /* arena.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000E4 /* arena_bit_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000C /* arena_bit_set.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000E5 /* arena_hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000D /* arena_hash.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000E6 /* arena_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000E /* arena_vector.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000E7 /* arch_traits.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000F /* arch_traits.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000E8 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000010 /* assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000E9 /* builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000011 /* builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000EA /* code_holder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000012 /* code_holder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000EB /* code_writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000013 /* code_writer.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000EC /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000014 /* compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000ED /* const_pool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000015 /* const_pool.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000EE /* cpu_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000016 /* cpu_info.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000EF /* debug_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000017 /* debug_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000F0 /* emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000018 /* emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000F1 /* emitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000019 /* emitter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000F2 /* emitter_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001A /* emitter_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000F3 /* environment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001B /* environment.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000F4 /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001C /* error.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000F5 /* error_handler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001D /* error_handler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000F6 /* formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001E /* formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000F7 /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001F /* func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000F8 /* func_args_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000020 /* func_args_context.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000F9 /* inst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000021 /* inst.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000FA /* inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000022 /* inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000FB /* jit_allocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000023 /* jit_allocator.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000FC /* jit_runtime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000024 /* jit_runtime.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000FD /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000025 /* logger.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000FE /* pauth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000026 /* pauth.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000000FF /* ra_local.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000027 /* ra_local.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000100 /* ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000028 /* ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000101 /* ra_stack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000029 /* ra_stack.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000102 /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002A /* string.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000103 /* target.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002B /* target.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000104 /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002C /* type.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000105 /* virt_mem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002D /* virt_mem.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000106 /* x86_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002E /* x86_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000107 /* x86_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002F /* x86_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000108 /* x86_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000030 /* x86_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000109 /* x86_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000031 /* x86_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000010A /* x86_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000032 /* x86_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000010B /* x86_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000033 /* x86_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000010C /* x86_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000034 /* x86_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000010D /* x86_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000035 /* x86_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000010E /* x86_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000036 /* x86_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000010F /* a64_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000001 /* a64_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000110 /* a64_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000002 /* a64_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000111 /* a64_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000003 /* a64_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000112 /* a64_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000004 /* a64_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000113 /* a64_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000005 /* a64_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000114 /* a64_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000006 /* a64_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000115 /* a64_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000007 /* a64_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000116 /* a64_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000008 /* a64_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000117 /* a64_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000009 /* a64_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000118 /* arm_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000A /* arm_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000119 /* arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000B /* arena.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000011A /* arena_bit_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000C /* arena_bit_set.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000011B /* arena_hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000D /* arena_hash.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000011C /* arena_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000E /* arena_vector.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000011D /* arch_traits.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000F /* arch_traits.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000011E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000010 /* assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000011F /* builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000011 /* builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000120 /* code_holder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000012 /* code_holder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000121 /* code_writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000013 /* code_writer.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000122 /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000014 /* compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000123 /* const_pool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000015 /* const_pool.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000124 /* cpu_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000016 /* cpu_info.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000125 /* debug_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000017 /* debug_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000126 /* emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000018 /* emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000127 /* emitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000019 /* emitter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000128 /* emitter_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001A /* emitter_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000129 /* environment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001B /* environment.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000012A /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001C /* error.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000012B /* error_handler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001D /* error_handler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000012C /* formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001E /* formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000012D /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001F /* func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000012E /* func_args_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000020 /* func_args_context.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000012F /* inst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000021 /* inst.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000130 /* inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000022 /* inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000131 /* jit_allocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000023 /* jit_allocator.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000132 /* jit_runtime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000024 /* jit_runtime.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000133 /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000025 /* logger.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000134 /* pauth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000026 /* pauth.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000135 /* ra_local.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000027 /* ra_local.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000136 /* ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000028 /* ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000137 /* ra_stack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000029 /* ra_stack.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000138 /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002A /* string.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000139 /* target.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002B /* target.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000013A /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002C /* type.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000013B /* virt_mem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002D /* virt_mem.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000013C /* x86_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002E /* x86_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000013D /* x86_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002F /* x86_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000013E /* x86_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000030 /* x86_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000013F /* x86_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000031 /* x86_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000140 /* x86_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000032 /* x86_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000141 /* x86_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000033 /* x86_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000142 /* x86_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000034 /* x86_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000143 /* x86_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000035 /* x86_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000144 /* x86_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000036 /* x86_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000145 /* a64_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000001 /* a64_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000146 /* a64_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000002 /* a64_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000147 /* a64_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000003 /* a64_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000148 /* a64_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000004 /* a64_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000149 /* a64_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000005 /* a64_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000014A /* a64_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000006 /* a64_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000014B /* a64_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000007 /* a64_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000014C /* a64_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000008 /* a64_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000014D /* a64_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000009 /* a64_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000014E /* arm_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000A /* arm_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000014F /* arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000B /* arena.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000150 /* arena_bit_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000C /* arena_bit_set.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000151 /* arena_hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000D /* arena_hash.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000152 /* arena_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000E /* arena_vector.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000153 /* arch_traits.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000F /* arch_traits.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000154 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000010 /* assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000155 /* builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000011 /* builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000156 /* code_holder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000012 /* code_holder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000157 /* code_writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000013 /* code_writer.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000158 /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000014 /* compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000159 /* const_pool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000015 /* const_pool.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000015A /* cpu_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000016 /* cpu_info.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000015B /* debug_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000017 /* debug_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000015C /* emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000018 /* emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000015D /* emitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000019 /* emitter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000015E /* emitter_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001A /* emitter_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000015F /* environment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001B /* environment.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000160 /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001C /* error.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000161 /* error_handler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001D /* error_handler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000162 /* formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001E /* formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000163 /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001F /* func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000164 /* func_args_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000020 /* func_args_context.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000165 /* inst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000021 /* inst.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000166 /* inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000022 /* inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000167 /* jit_allocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000023 /* jit_allocator.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000168 /* jit_runtime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000024 /* jit_runtime.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000169 /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000025 /* logger.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000016A /* pauth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000026 /* pauth.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000016B /* ra_local.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000027 /* ra_local.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000016C /* ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000028 /* ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000016D /* ra_stack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000029 /* ra_stack.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000016E /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002A /* string.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000016F /* target.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002B /* target.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000170 /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002C /* type.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000171 /* virt_mem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002D /* virt_mem.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000172 /* x86_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002E /* x86_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000173 /* x86_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002F /* x86_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000174 /* x86_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000030 /* x86_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000175 /* x86_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000031 /* x86_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000176 /* x86_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000032 /* x86_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000177 /* x86_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000033 /* x86_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000178 /* x86_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000034 /* x86_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000179 /* x86_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000035 /* x86_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000017A /* x86_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000036 /* x86_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000017B /* a64_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000001 /* a64_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000017C /* a64_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000002 /* a64_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000017D /* a64_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000003 /* a64_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000017E /* a64_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000004 /* a64_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000017F /* a64_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000005 /* a64_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000180 /* a64_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000006 /* a64_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000181 /* a64_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000007 /* a64_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000182 /* a64_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000008 /* a64_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000183 /* a64_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000009 /* a64_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000184 /* arm_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000A /* arm_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000185 /* arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000B /* arena.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000186 /* arena_bit_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000C /* arena_bit_set.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000187 /* arena_hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000D /* arena_hash.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000188 /* arena_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000E /* arena_vector.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000189 /* arch_traits.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000F /* arch_traits.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000018A /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000010 /* assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000018B /* builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000011 /* builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000018C /* code_holder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000012 /* code_holder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000018D /* code_writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000013 /* code_writer.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000018E /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000014 /* compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000018F /* const_pool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000015 /* const_pool.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000190 /* cpu_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000016 /* cpu_info.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000191 /* debug_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000017 /* debug_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000192 /* emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000018 /* emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000193 /* emitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000019 /* emitter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000194 /* emitter_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001A /* emitter_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000195 /* environment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001B /* environment.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000196 /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001C /* error.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000197 /* error_handler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001D /* error_handler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000198 /* formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001E /* formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000199 /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001F /* func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000019A /* func_args_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000020 /* func_args_context.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000019B /* inst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000021 /* inst.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000019C /* inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000022 /* inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000019D /* jit_allocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000023 /* jit_allocator.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000019E /* jit_runtime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000024 /* jit_runtime.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000019F /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000025 /* logger.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001A0 /* pauth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000026 /* pauth.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001A1 /* ra_local.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000027 /* ra_local.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001A2 /* ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000028 /* ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001A3 /* ra_stack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000029 /* ra_stack.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001A4 /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002A /* string.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001A5 /* target.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002B /* target.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001A6 /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002C /* type.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001A7 /* virt_mem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002D /* virt_mem.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001A8 /* x86_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002E /* x86_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001A9 /* x86_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002F /* x86_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001AA /* x86_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000030 /* x86_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001AB /* x86_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000031 /* x86_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001AC /* x86_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000032 /* x86_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001AD /* x86_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000033 /* x86_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001AE /* x86_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000034 /* x86_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001AF /* x86_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000035 /* x86_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001B0 /* x86_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000036 /* x86_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001B1 /* a64_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000001 /* a64_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001B2 /* a64_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000002 /* a64_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001B3 /* a64_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000003 /* a64_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001B4 /* a64_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000004 /* a64_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001B5 /* a64_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000005 /* a64_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001B6 /* a64_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000006 /* a64_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001B7 /* a64_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000007 /* a64_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001B8 /* a64_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000008 /* a64_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001B9 /* a64_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000009 /* a64_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001BA /* arm_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000A /* arm_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001BB /* arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000B /* arena.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001BC /* arena_bit_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000C /* arena_bit_set.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001BD /* arena_hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000D /* arena_hash.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001BE /* arena_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000E /* arena_vector.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001BF /* arch_traits.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000F /* arch_traits.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001C0 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000010 /* assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001C1 /* builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000011 /* builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001C2 /* code_holder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000012 /* code_holder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001C3 /* code_writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000013 /* code_writer.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001C4 /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000014 /* compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001C5 /* const_pool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000015 /* const_pool.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001C6 /* cpu_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000016 /* cpu_info.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001C7 /* debug_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000017 /* debug_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001C8 /* emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000018 /* emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001C9 /* emitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000019 /* emitter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001CA /* emitter_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001A /* emitter_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001CB /* environment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001B /* environment.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001CC /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001C /* error.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001CD /* error_handler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001D /* error_handler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001CE /* formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001E /* formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001CF /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001F /* func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001D0 /* func_args_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000020 /* func_args_context.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001D1 /* inst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000021 /* inst.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001D2 /* inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000022 /* inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001D3 /* jit_allocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000023 /* jit_allocator.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001D4 /* jit_runtime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000024 /* jit_runtime.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001D5 /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000025 /* logger.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001D6 /* pauth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000026 /* pauth.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001D7 /* ra_local.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000027 /* ra_local.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001D8 /* ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000028 /* ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001D9 /* ra_stack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000029 /* ra_stack.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001DA /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002A /* string.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001DB /* target.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002B /* target.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001DC /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002C /* type.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001DD /* virt_mem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002D /* virt_mem.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001DE /* x86_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002E /* x86_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001DF /* x86_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002F /* x86_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001E0 /* x86_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000030 /* x86_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001E1 /* x86_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000031 /* x86_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001E2 /* x86_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000032 /* x86_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001E3 /* x86_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000033 /* x86_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001E4 /* x86_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000034 /* x86_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001E5 /* x86_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000035 /* x86_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001E6 /* x86_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000036 /* x86_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001E7 /* a64_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000001 /* a64_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001E8 /* a64_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000002 /* a64_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001E9 /* a64_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000003 /* a64_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001EA /* a64_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000004 /* a64_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001EB /* a64_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000005 /* a64_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001EC /* a64_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000006 /* a64_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001ED /* a64_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000007 /* a64_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001EE /* a64_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000008 /* a64_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001EF /* a64_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000009 /* a64_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001F0 /* arm_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000A /* arm_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001F1 /* arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000B /* arena.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001F2 /* arena_bit_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000C /* arena_bit_set.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001F3 /* arena_hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000D /* arena_hash.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001F4 /* arena_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000E /* arena_vector.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001F5 /* arch_traits.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000F /* arch_traits.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001F6 /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000010 /* assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001F7 /* builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000011 /* builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001F8 /* code_holder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000012 /* code_holder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001F9 /* code_writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000013 /* code_writer.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001FA /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000014 /* compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001FB /* const_pool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000015 /* const_pool.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001FC /* cpu_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000016 /* cpu_info.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001FD /* debug_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000017 /* debug_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001FE /* emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000018 /* emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F0000000000000000001FF /* emitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000019 /* emitter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000200 /* emitter_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001A /* emitter_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000201 /* environment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001B /* environment.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000202 /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001C /* error.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000203 /* error_handler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001D /* error_handler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000204 /* formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001E /* formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000205 /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001F /* func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000206 /* func_args_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000020 /* func_args_context.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000207 /* inst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000021 /* inst.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000208 /* inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000022 /* inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000209 /* jit_allocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000023 /* jit_allocator.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000020A /* jit_runtime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000024 /* jit_runtime.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000020B /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000025 /* logger.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000020C /* pauth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000026 /* pauth.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000020D /* ra_local.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000027 /* ra_local.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000020E /* ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000028 /* ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000020F /* ra_stack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000029 /* ra_stack.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000210 /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002A /* string.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000211 /* target.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002B /* target.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000212 /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002C /* type.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000213 /* virt_mem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002D /* virt_mem.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000214 /* x86_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002E /* x86_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000215 /* x86_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002F /* x86_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000216 /* x86_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000030 /* x86_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000217 /* x86_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000031 /* x86_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000218 /* x86_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000032 /* x86_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000219 /* x86_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000033 /* x86_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000021A /* x86_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000034 /* x86_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000021B /* x86_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000035 /* x86_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000021C /* x86_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000036 /* x86_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000021D /* a64_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000001 /* a64_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000021E /* a64_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000002 /* a64_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000021F /* a64_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000003 /* a64_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000220 /* a64_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000004 /* a64_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000221 /* a64_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000005 /* a64_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000222 /* a64_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000006 /* a64_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000223 /* a64_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000007 /* a64_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000224 /* a64_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000008 /* a64_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000225 /* a64_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000009 /* a64_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000226 /* arm_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000A /* arm_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000227 /* arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000B /* arena.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000228 /* arena_bit_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000C /* arena_bit_set.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000229 /* arena_hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000D /* arena_hash.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000022A /* arena_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000E /* arena_vector.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000022B /* arch_traits.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000000F /* arch_traits.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000022C /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000010 /* assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000022D /* builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000011 /* builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000022E /* code_holder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000012 /* code_holder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000022F /* code_writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000013 /* code_writer.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000230 /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000014 /* compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000231 /* const_pool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000015 /* const_pool.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000232 /* cpu_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000016 /* cpu_info.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000233 /* debug_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000017 /* debug_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000234 /* emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000018 /* emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000235 /* emitter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000019 /* emitter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000236 /* emitter_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001A /* emitter_utils.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000237 /* environment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001B /* environment.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000238 /* error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001C /* error.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000239 /* error_handler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001D /* error_handler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000023A /* formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001E /* formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000023B /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000001F /* func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000023C /* func_args_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000020 /* func_args_context.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000023D /* inst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000021 /* inst.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000023E /* inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000022 /* inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000023F /* jit_allocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000023 /* jit_allocator.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000240 /* jit_runtime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000024 /* jit_runtime.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000241 /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000025 /* logger.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000242 /* pauth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000026 /* pauth.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000243 /* ra_local.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000027 /* ra_local.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000244 /* ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000028 /* ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000245 /* ra_stack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000029 /* ra_stack.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000246 /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002A /* string.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000247 /* target.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002B /* target.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000248 /* type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002C /* type.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000249 /* virt_mem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002D /* virt_mem.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000024A /* x86_assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002E /* x86_assembler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000024B /* x86_builder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F00000000000000000002F /* x86_builder.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000024C /* x86_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000030 /* x86_compiler.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000024D /* x86_emit_helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000031 /* x86_emit_helper.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000024E /* x86_formatter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000032 /* x86_formatter.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F00000000000000000024F /* x86_func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000033 /* x86_func.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000250 /* x86_inst_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000034 /* x86_inst_api.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000251 /* x86_inst_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000035 /* x86_inst_db.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		A5F000000000000000000252 /* x86_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000036 /* x86_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -6084,6 +6624,60 @@
 		A7E5CAFE0000000000000305 /* MoviePlayWindowController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MoviePlayWindowController.mm; sourceTree = "<group>"; };
 		A7E5CAFE0000000000000306 /* MovieRecordWindowController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MovieRecordWindowController.h; sourceTree = "<group>"; };
 		A7E5CAFE0000000000000307 /* MovieRecordWindowController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MovieRecordWindowController.mm; sourceTree = "<group>"; };
+		A5F000000000000000000001 /* a64_assembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = a64_assembler.cpp; path = ../../../3rdparty/asmjit/arm/a64_assembler.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000002 /* a64_builder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = a64_builder.cpp; path = ../../../3rdparty/asmjit/arm/a64_builder.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000003 /* a64_compiler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = a64_compiler.cpp; path = ../../../3rdparty/asmjit/arm/a64_compiler.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000004 /* a64_emit_helper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = a64_emit_helper.cpp; path = ../../../3rdparty/asmjit/arm/a64_emit_helper.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000005 /* a64_formatter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = a64_formatter.cpp; path = ../../../3rdparty/asmjit/arm/a64_formatter.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000006 /* a64_func.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = a64_func.cpp; path = ../../../3rdparty/asmjit/arm/a64_func.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000007 /* a64_inst_api.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = a64_inst_api.cpp; path = ../../../3rdparty/asmjit/arm/a64_inst_api.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000008 /* a64_inst_db.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = a64_inst_db.cpp; path = ../../../3rdparty/asmjit/arm/a64_inst_db.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000009 /* a64_ra_pass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = a64_ra_pass.cpp; path = ../../../3rdparty/asmjit/arm/a64_ra_pass.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000000A /* arm_formatter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arm_formatter.cpp; path = ../../../3rdparty/asmjit/arm/arm_formatter.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000000B /* arena.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arena.cpp; path = ../../../3rdparty/asmjit/axl/arena.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000000C /* arena_bit_set.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arena_bit_set.cpp; path = ../../../3rdparty/asmjit/axl/arena_bit_set.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000000D /* arena_hash.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arena_hash.cpp; path = ../../../3rdparty/asmjit/axl/arena_hash.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000000E /* arena_vector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arena_vector.cpp; path = ../../../3rdparty/asmjit/axl/arena_vector.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000000F /* arch_traits.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arch_traits.cpp; path = ../../../3rdparty/asmjit/core/arch_traits.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000010 /* assembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = assembler.cpp; path = ../../../3rdparty/asmjit/core/assembler.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000011 /* builder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = builder.cpp; path = ../../../3rdparty/asmjit/core/builder.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000012 /* code_holder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = code_holder.cpp; path = ../../../3rdparty/asmjit/core/code_holder.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000013 /* code_writer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = code_writer.cpp; path = ../../../3rdparty/asmjit/core/code_writer.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000014 /* compiler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = compiler.cpp; path = ../../../3rdparty/asmjit/core/compiler.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000015 /* const_pool.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = const_pool.cpp; path = ../../../3rdparty/asmjit/core/const_pool.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000016 /* cpu_info.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cpu_info.cpp; path = ../../../3rdparty/asmjit/core/cpu_info.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000017 /* debug_utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = debug_utils.cpp; path = ../../../3rdparty/asmjit/core/debug_utils.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000018 /* emit_helper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = emit_helper.cpp; path = ../../../3rdparty/asmjit/core/emit_helper.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000019 /* emitter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = emitter.cpp; path = ../../../3rdparty/asmjit/core/emitter.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000001A /* emitter_utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = emitter_utils.cpp; path = ../../../3rdparty/asmjit/core/emitter_utils.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000001B /* environment.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = environment.cpp; path = ../../../3rdparty/asmjit/core/environment.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000001C /* error.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = error.cpp; path = ../../../3rdparty/asmjit/core/error.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000001D /* error_handler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = error_handler.cpp; path = ../../../3rdparty/asmjit/core/error_handler.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000001E /* formatter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = formatter.cpp; path = ../../../3rdparty/asmjit/core/formatter.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000001F /* func.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = func.cpp; path = ../../../3rdparty/asmjit/core/func.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000020 /* func_args_context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = func_args_context.cpp; path = ../../../3rdparty/asmjit/core/func_args_context.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000021 /* inst.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = inst.cpp; path = ../../../3rdparty/asmjit/core/inst.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000022 /* inst_db.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = inst_db.cpp; path = ../../../3rdparty/asmjit/core/inst_db.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000023 /* jit_allocator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = jit_allocator.cpp; path = ../../../3rdparty/asmjit/core/jit_allocator.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000024 /* jit_runtime.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = jit_runtime.cpp; path = ../../../3rdparty/asmjit/core/jit_runtime.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000025 /* logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = logger.cpp; path = ../../../3rdparty/asmjit/core/logger.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000026 /* pauth.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = pauth.cpp; path = ../../../3rdparty/asmjit/core/pauth.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000027 /* ra_local.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ra_local.cpp; path = ../../../3rdparty/asmjit/core/ra_local.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000028 /* ra_pass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ra_pass.cpp; path = ../../../3rdparty/asmjit/core/ra_pass.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000029 /* ra_stack.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ra_stack.cpp; path = ../../../3rdparty/asmjit/core/ra_stack.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000002A /* string.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = string.cpp; path = ../../../3rdparty/asmjit/core/string.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000002B /* target.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = target.cpp; path = ../../../3rdparty/asmjit/core/target.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000002C /* type.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = type.cpp; path = ../../../3rdparty/asmjit/core/type.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000002D /* virt_mem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = virt_mem.cpp; path = ../../../3rdparty/asmjit/core/virt_mem.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000002E /* x86_assembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_assembler.cpp; path = ../../../3rdparty/asmjit/x86/x86_assembler.cpp; sourceTree = SOURCE_ROOT; };
+		A5F00000000000000000002F /* x86_builder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_builder.cpp; path = ../../../3rdparty/asmjit/x86/x86_builder.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000030 /* x86_compiler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_compiler.cpp; path = ../../../3rdparty/asmjit/x86/x86_compiler.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000031 /* x86_emit_helper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_emit_helper.cpp; path = ../../../3rdparty/asmjit/x86/x86_emit_helper.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000032 /* x86_formatter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_formatter.cpp; path = ../../../3rdparty/asmjit/x86/x86_formatter.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000033 /* x86_func.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_func.cpp; path = ../../../3rdparty/asmjit/x86/x86_func.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000034 /* x86_inst_api.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_inst_api.cpp; path = ../../../3rdparty/asmjit/x86/x86_inst_api.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000035 /* x86_inst_db.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_inst_db.cpp; path = ../../../3rdparty/asmjit/x86/x86_inst_db.cpp; sourceTree = SOURCE_ROOT; };
+		A5F000000000000000000036 /* x86_ra_pass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_ra_pass.cpp; path = ../../../3rdparty/asmjit/x86/x86_ra_pass.cpp; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -6525,7 +7119,7 @@
 		};
 		29B97314FDCFA39411CA2CEA /* DeSmuME */ = {
 			isa = PBXGroup;
-			children = (
+			children = (A5F000000000000000000253 /* asmjit */,
 				080E96DDFE201D6D7F000001 /* Cocoa Port */,
 				AB35BD8C1DEBF1BD00844310 /* Modules */,
 				ABC572B7134592D900E7B0B1 /* Core */,
@@ -7822,6 +8416,67 @@
 				AB53C0022F9D8AB400025334 /* libwgpu_native.dylib */,
 			);
 			name = "Recovered References";
+			sourceTree = "<group>";
+		};
+		A5F000000000000000000253 /* asmjit */ = {
+			isa = PBXGroup;
+			children = (
+A5F000000000000000000001 /* a64_assembler.cpp */,
+A5F000000000000000000002 /* a64_builder.cpp */,
+A5F000000000000000000003 /* a64_compiler.cpp */,
+A5F000000000000000000004 /* a64_emit_helper.cpp */,
+A5F000000000000000000005 /* a64_formatter.cpp */,
+A5F000000000000000000006 /* a64_func.cpp */,
+A5F000000000000000000007 /* a64_inst_api.cpp */,
+A5F000000000000000000008 /* a64_inst_db.cpp */,
+A5F000000000000000000009 /* a64_ra_pass.cpp */,
+A5F00000000000000000000A /* arm_formatter.cpp */,
+A5F00000000000000000000B /* arena.cpp */,
+A5F00000000000000000000C /* arena_bit_set.cpp */,
+A5F00000000000000000000D /* arena_hash.cpp */,
+A5F00000000000000000000E /* arena_vector.cpp */,
+A5F00000000000000000000F /* arch_traits.cpp */,
+A5F000000000000000000010 /* assembler.cpp */,
+A5F000000000000000000011 /* builder.cpp */,
+A5F000000000000000000012 /* code_holder.cpp */,
+A5F000000000000000000013 /* code_writer.cpp */,
+A5F000000000000000000014 /* compiler.cpp */,
+A5F000000000000000000015 /* const_pool.cpp */,
+A5F000000000000000000016 /* cpu_info.cpp */,
+A5F000000000000000000017 /* debug_utils.cpp */,
+A5F000000000000000000018 /* emit_helper.cpp */,
+A5F000000000000000000019 /* emitter.cpp */,
+A5F00000000000000000001A /* emitter_utils.cpp */,
+A5F00000000000000000001B /* environment.cpp */,
+A5F00000000000000000001C /* error.cpp */,
+A5F00000000000000000001D /* error_handler.cpp */,
+A5F00000000000000000001E /* formatter.cpp */,
+A5F00000000000000000001F /* func.cpp */,
+A5F000000000000000000020 /* func_args_context.cpp */,
+A5F000000000000000000021 /* inst.cpp */,
+A5F000000000000000000022 /* inst_db.cpp */,
+A5F000000000000000000023 /* jit_allocator.cpp */,
+A5F000000000000000000024 /* jit_runtime.cpp */,
+A5F000000000000000000025 /* logger.cpp */,
+A5F000000000000000000026 /* pauth.cpp */,
+A5F000000000000000000027 /* ra_local.cpp */,
+A5F000000000000000000028 /* ra_pass.cpp */,
+A5F000000000000000000029 /* ra_stack.cpp */,
+A5F00000000000000000002A /* string.cpp */,
+A5F00000000000000000002B /* target.cpp */,
+A5F00000000000000000002C /* type.cpp */,
+A5F00000000000000000002D /* virt_mem.cpp */,
+A5F00000000000000000002E /* x86_assembler.cpp */,
+A5F00000000000000000002F /* x86_builder.cpp */,
+A5F000000000000000000030 /* x86_compiler.cpp */,
+A5F000000000000000000031 /* x86_emit_helper.cpp */,
+A5F000000000000000000032 /* x86_formatter.cpp */,
+A5F000000000000000000033 /* x86_func.cpp */,
+A5F000000000000000000034 /* x86_inst_api.cpp */,
+A5F000000000000000000035 /* x86_inst_db.cpp */,
+A5F000000000000000000036 /* x86_ra_pass.cpp */,
+			);
+			name = asmjit;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -10703,7 +11358,61 @@
 				A7E5CAFE0000000000005000 /* MovieRecordWindowController.mm in Sources */,
 				A7E5CAFE0000000000003001 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002001 /* RAMSearchWindow.mm in Sources */,
-			);
+							A5F000000000000000000037 /* a64_assembler.cpp in Sources */,
+				A5F000000000000000000038 /* a64_builder.cpp in Sources */,
+				A5F000000000000000000039 /* a64_compiler.cpp in Sources */,
+				A5F00000000000000000003A /* a64_emit_helper.cpp in Sources */,
+				A5F00000000000000000003B /* a64_formatter.cpp in Sources */,
+				A5F00000000000000000003C /* a64_func.cpp in Sources */,
+				A5F00000000000000000003D /* a64_inst_api.cpp in Sources */,
+				A5F00000000000000000003E /* a64_inst_db.cpp in Sources */,
+				A5F00000000000000000003F /* a64_ra_pass.cpp in Sources */,
+				A5F000000000000000000040 /* arm_formatter.cpp in Sources */,
+				A5F000000000000000000041 /* arena.cpp in Sources */,
+				A5F000000000000000000042 /* arena_bit_set.cpp in Sources */,
+				A5F000000000000000000043 /* arena_hash.cpp in Sources */,
+				A5F000000000000000000044 /* arena_vector.cpp in Sources */,
+				A5F000000000000000000045 /* arch_traits.cpp in Sources */,
+				A5F000000000000000000046 /* assembler.cpp in Sources */,
+				A5F000000000000000000047 /* builder.cpp in Sources */,
+				A5F000000000000000000048 /* code_holder.cpp in Sources */,
+				A5F000000000000000000049 /* code_writer.cpp in Sources */,
+				A5F00000000000000000004A /* compiler.cpp in Sources */,
+				A5F00000000000000000004B /* const_pool.cpp in Sources */,
+				A5F00000000000000000004C /* cpu_info.cpp in Sources */,
+				A5F00000000000000000004D /* debug_utils.cpp in Sources */,
+				A5F00000000000000000004E /* emit_helper.cpp in Sources */,
+				A5F00000000000000000004F /* emitter.cpp in Sources */,
+				A5F000000000000000000050 /* emitter_utils.cpp in Sources */,
+				A5F000000000000000000051 /* environment.cpp in Sources */,
+				A5F000000000000000000052 /* error.cpp in Sources */,
+				A5F000000000000000000053 /* error_handler.cpp in Sources */,
+				A5F000000000000000000054 /* formatter.cpp in Sources */,
+				A5F000000000000000000055 /* func.cpp in Sources */,
+				A5F000000000000000000056 /* func_args_context.cpp in Sources */,
+				A5F000000000000000000057 /* inst.cpp in Sources */,
+				A5F000000000000000000058 /* inst_db.cpp in Sources */,
+				A5F000000000000000000059 /* jit_allocator.cpp in Sources */,
+				A5F00000000000000000005A /* jit_runtime.cpp in Sources */,
+				A5F00000000000000000005B /* logger.cpp in Sources */,
+				A5F00000000000000000005C /* pauth.cpp in Sources */,
+				A5F00000000000000000005D /* ra_local.cpp in Sources */,
+				A5F00000000000000000005E /* ra_pass.cpp in Sources */,
+				A5F00000000000000000005F /* ra_stack.cpp in Sources */,
+				A5F000000000000000000060 /* string.cpp in Sources */,
+				A5F000000000000000000061 /* target.cpp in Sources */,
+				A5F000000000000000000062 /* type.cpp in Sources */,
+				A5F000000000000000000063 /* virt_mem.cpp in Sources */,
+				A5F000000000000000000064 /* x86_assembler.cpp in Sources */,
+				A5F000000000000000000065 /* x86_builder.cpp in Sources */,
+				A5F000000000000000000066 /* x86_compiler.cpp in Sources */,
+				A5F000000000000000000067 /* x86_emit_helper.cpp in Sources */,
+				A5F000000000000000000068 /* x86_formatter.cpp in Sources */,
+				A5F000000000000000000069 /* x86_func.cpp in Sources */,
+				A5F00000000000000000006A /* x86_inst_api.cpp in Sources */,
+				A5F00000000000000000006B /* x86_inst_db.cpp in Sources */,
+				A5F00000000000000000006C /* x86_ra_pass.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		8C43E90B27E3CD4C00A35F65 /* Sources */ = {
@@ -10933,7 +11642,61 @@
 				A7E5CAFE0000000000005002 /* MovieRecordWindowController.mm in Sources */,
 				A7E5CAFE0000000000003003 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002003 /* RAMSearchWindow.mm in Sources */,
-			);
+							A5F00000000000000000006D /* a64_assembler.cpp in Sources */,
+				A5F00000000000000000006E /* a64_builder.cpp in Sources */,
+				A5F00000000000000000006F /* a64_compiler.cpp in Sources */,
+				A5F000000000000000000070 /* a64_emit_helper.cpp in Sources */,
+				A5F000000000000000000071 /* a64_formatter.cpp in Sources */,
+				A5F000000000000000000072 /* a64_func.cpp in Sources */,
+				A5F000000000000000000073 /* a64_inst_api.cpp in Sources */,
+				A5F000000000000000000074 /* a64_inst_db.cpp in Sources */,
+				A5F000000000000000000075 /* a64_ra_pass.cpp in Sources */,
+				A5F000000000000000000076 /* arm_formatter.cpp in Sources */,
+				A5F000000000000000000077 /* arena.cpp in Sources */,
+				A5F000000000000000000078 /* arena_bit_set.cpp in Sources */,
+				A5F000000000000000000079 /* arena_hash.cpp in Sources */,
+				A5F00000000000000000007A /* arena_vector.cpp in Sources */,
+				A5F00000000000000000007B /* arch_traits.cpp in Sources */,
+				A5F00000000000000000007C /* assembler.cpp in Sources */,
+				A5F00000000000000000007D /* builder.cpp in Sources */,
+				A5F00000000000000000007E /* code_holder.cpp in Sources */,
+				A5F00000000000000000007F /* code_writer.cpp in Sources */,
+				A5F000000000000000000080 /* compiler.cpp in Sources */,
+				A5F000000000000000000081 /* const_pool.cpp in Sources */,
+				A5F000000000000000000082 /* cpu_info.cpp in Sources */,
+				A5F000000000000000000083 /* debug_utils.cpp in Sources */,
+				A5F000000000000000000084 /* emit_helper.cpp in Sources */,
+				A5F000000000000000000085 /* emitter.cpp in Sources */,
+				A5F000000000000000000086 /* emitter_utils.cpp in Sources */,
+				A5F000000000000000000087 /* environment.cpp in Sources */,
+				A5F000000000000000000088 /* error.cpp in Sources */,
+				A5F000000000000000000089 /* error_handler.cpp in Sources */,
+				A5F00000000000000000008A /* formatter.cpp in Sources */,
+				A5F00000000000000000008B /* func.cpp in Sources */,
+				A5F00000000000000000008C /* func_args_context.cpp in Sources */,
+				A5F00000000000000000008D /* inst.cpp in Sources */,
+				A5F00000000000000000008E /* inst_db.cpp in Sources */,
+				A5F00000000000000000008F /* jit_allocator.cpp in Sources */,
+				A5F000000000000000000090 /* jit_runtime.cpp in Sources */,
+				A5F000000000000000000091 /* logger.cpp in Sources */,
+				A5F000000000000000000092 /* pauth.cpp in Sources */,
+				A5F000000000000000000093 /* ra_local.cpp in Sources */,
+				A5F000000000000000000094 /* ra_pass.cpp in Sources */,
+				A5F000000000000000000095 /* ra_stack.cpp in Sources */,
+				A5F000000000000000000096 /* string.cpp in Sources */,
+				A5F000000000000000000097 /* target.cpp in Sources */,
+				A5F000000000000000000098 /* type.cpp in Sources */,
+				A5F000000000000000000099 /* virt_mem.cpp in Sources */,
+				A5F00000000000000000009A /* x86_assembler.cpp in Sources */,
+				A5F00000000000000000009B /* x86_builder.cpp in Sources */,
+				A5F00000000000000000009C /* x86_compiler.cpp in Sources */,
+				A5F00000000000000000009D /* x86_emit_helper.cpp in Sources */,
+				A5F00000000000000000009E /* x86_formatter.cpp in Sources */,
+				A5F00000000000000000009F /* x86_func.cpp in Sources */,
+				A5F0000000000000000000A0 /* x86_inst_api.cpp in Sources */,
+				A5F0000000000000000000A1 /* x86_inst_db.cpp in Sources */,
+				A5F0000000000000000000A2 /* x86_ra_pass.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		8CCD841E27E40B730024BDD5 /* Sources */ = {
@@ -11162,7 +11925,61 @@
 				A7E5CAFE0000000000005004 /* MovieRecordWindowController.mm in Sources */,
 				A7E5CAFE0000000000003005 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002005 /* RAMSearchWindow.mm in Sources */,
-			);
+							A5F0000000000000000000A3 /* a64_assembler.cpp in Sources */,
+				A5F0000000000000000000A4 /* a64_builder.cpp in Sources */,
+				A5F0000000000000000000A5 /* a64_compiler.cpp in Sources */,
+				A5F0000000000000000000A6 /* a64_emit_helper.cpp in Sources */,
+				A5F0000000000000000000A7 /* a64_formatter.cpp in Sources */,
+				A5F0000000000000000000A8 /* a64_func.cpp in Sources */,
+				A5F0000000000000000000A9 /* a64_inst_api.cpp in Sources */,
+				A5F0000000000000000000AA /* a64_inst_db.cpp in Sources */,
+				A5F0000000000000000000AB /* a64_ra_pass.cpp in Sources */,
+				A5F0000000000000000000AC /* arm_formatter.cpp in Sources */,
+				A5F0000000000000000000AD /* arena.cpp in Sources */,
+				A5F0000000000000000000AE /* arena_bit_set.cpp in Sources */,
+				A5F0000000000000000000AF /* arena_hash.cpp in Sources */,
+				A5F0000000000000000000B0 /* arena_vector.cpp in Sources */,
+				A5F0000000000000000000B1 /* arch_traits.cpp in Sources */,
+				A5F0000000000000000000B2 /* assembler.cpp in Sources */,
+				A5F0000000000000000000B3 /* builder.cpp in Sources */,
+				A5F0000000000000000000B4 /* code_holder.cpp in Sources */,
+				A5F0000000000000000000B5 /* code_writer.cpp in Sources */,
+				A5F0000000000000000000B6 /* compiler.cpp in Sources */,
+				A5F0000000000000000000B7 /* const_pool.cpp in Sources */,
+				A5F0000000000000000000B8 /* cpu_info.cpp in Sources */,
+				A5F0000000000000000000B9 /* debug_utils.cpp in Sources */,
+				A5F0000000000000000000BA /* emit_helper.cpp in Sources */,
+				A5F0000000000000000000BB /* emitter.cpp in Sources */,
+				A5F0000000000000000000BC /* emitter_utils.cpp in Sources */,
+				A5F0000000000000000000BD /* environment.cpp in Sources */,
+				A5F0000000000000000000BE /* error.cpp in Sources */,
+				A5F0000000000000000000BF /* error_handler.cpp in Sources */,
+				A5F0000000000000000000C0 /* formatter.cpp in Sources */,
+				A5F0000000000000000000C1 /* func.cpp in Sources */,
+				A5F0000000000000000000C2 /* func_args_context.cpp in Sources */,
+				A5F0000000000000000000C3 /* inst.cpp in Sources */,
+				A5F0000000000000000000C4 /* inst_db.cpp in Sources */,
+				A5F0000000000000000000C5 /* jit_allocator.cpp in Sources */,
+				A5F0000000000000000000C6 /* jit_runtime.cpp in Sources */,
+				A5F0000000000000000000C7 /* logger.cpp in Sources */,
+				A5F0000000000000000000C8 /* pauth.cpp in Sources */,
+				A5F0000000000000000000C9 /* ra_local.cpp in Sources */,
+				A5F0000000000000000000CA /* ra_pass.cpp in Sources */,
+				A5F0000000000000000000CB /* ra_stack.cpp in Sources */,
+				A5F0000000000000000000CC /* string.cpp in Sources */,
+				A5F0000000000000000000CD /* target.cpp in Sources */,
+				A5F0000000000000000000CE /* type.cpp in Sources */,
+				A5F0000000000000000000CF /* virt_mem.cpp in Sources */,
+				A5F0000000000000000000D0 /* x86_assembler.cpp in Sources */,
+				A5F0000000000000000000D1 /* x86_builder.cpp in Sources */,
+				A5F0000000000000000000D2 /* x86_compiler.cpp in Sources */,
+				A5F0000000000000000000D3 /* x86_emit_helper.cpp in Sources */,
+				A5F0000000000000000000D4 /* x86_formatter.cpp in Sources */,
+				A5F0000000000000000000D5 /* x86_func.cpp in Sources */,
+				A5F0000000000000000000D6 /* x86_inst_api.cpp in Sources */,
+				A5F0000000000000000000D7 /* x86_inst_db.cpp in Sources */,
+				A5F0000000000000000000D8 /* x86_ra_pass.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AB36C79E27F2C8AE00C763C8 /* Sources */ = {
@@ -11340,11 +12157,9 @@
 				AB36C83F27F2C8AE00C763C8 /* arm_jit.cpp in Sources */,
 				AB64DC4B2E78E3710092D8FC /* cgl_3Demu.cpp in Sources */,
 				AB36C84027F2C8AE00C763C8 /* troubleshootingWindowDelegate.mm in Sources */,
-				AB36C84127F2C8AE00C763C8 /* assembler.cpp in Sources */,
 				AB36C84227F2C8AE00C763C8 /* assert.cpp in Sources */,
 				AB36C84327F2C8AE00C763C8 /* buffer.cpp in Sources */,
 				AB36C84427F2C8AE00C763C8 /* ftotval.c in Sources */,
-				AB36C84527F2C8AE00C763C8 /* compiler.cpp in Sources */,
 				AB36C84627F2C8AE00C763C8 /* compilercontext.cpp in Sources */,
 				AB36C84727F2C8AE00C763C8 /* rthreads.c in Sources */,
 				AB36C84827F2C8AE00C763C8 /* macOS_driver.cpp in Sources */,
@@ -11356,8 +12171,6 @@
 				AB79912E2E70B1420030C0A6 /* CocoaDisplayView.mm in Sources */,
 				AB36C84E27F2C8AE00C763C8 /* cpuinfo.cpp in Sources */,
 				AB36C84F27F2C8AE00C763C8 /* defs.cpp in Sources */,
-				AB36C85027F2C8AE00C763C8 /* func.cpp in Sources */,
-				AB36C85127F2C8AE00C763C8 /* logger.cpp in Sources */,
 				AB36C85227F2C8AE00C763C8 /* retro_dirent.c in Sources */,
 				AB36C85327F2C8AE00C763C8 /* memorymanager.cpp in Sources */,
 				AB36C85427F2C8AE00C763C8 /* memorymarker.cpp in Sources */,
@@ -11415,7 +12228,61 @@
 				A7E5CAFE0000000000005006 /* MovieRecordWindowController.mm in Sources */,
 				A7E5CAFE0000000000003007 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002007 /* RAMSearchWindow.mm in Sources */,
-			);
+							A5F0000000000000000000D9 /* a64_assembler.cpp in Sources */,
+				A5F0000000000000000000DA /* a64_builder.cpp in Sources */,
+				A5F0000000000000000000DB /* a64_compiler.cpp in Sources */,
+				A5F0000000000000000000DC /* a64_emit_helper.cpp in Sources */,
+				A5F0000000000000000000DD /* a64_formatter.cpp in Sources */,
+				A5F0000000000000000000DE /* a64_func.cpp in Sources */,
+				A5F0000000000000000000DF /* a64_inst_api.cpp in Sources */,
+				A5F0000000000000000000E0 /* a64_inst_db.cpp in Sources */,
+				A5F0000000000000000000E1 /* a64_ra_pass.cpp in Sources */,
+				A5F0000000000000000000E2 /* arm_formatter.cpp in Sources */,
+				A5F0000000000000000000E3 /* arena.cpp in Sources */,
+				A5F0000000000000000000E4 /* arena_bit_set.cpp in Sources */,
+				A5F0000000000000000000E5 /* arena_hash.cpp in Sources */,
+				A5F0000000000000000000E6 /* arena_vector.cpp in Sources */,
+				A5F0000000000000000000E7 /* arch_traits.cpp in Sources */,
+				A5F0000000000000000000E8 /* assembler.cpp in Sources */,
+				A5F0000000000000000000E9 /* builder.cpp in Sources */,
+				A5F0000000000000000000EA /* code_holder.cpp in Sources */,
+				A5F0000000000000000000EB /* code_writer.cpp in Sources */,
+				A5F0000000000000000000EC /* compiler.cpp in Sources */,
+				A5F0000000000000000000ED /* const_pool.cpp in Sources */,
+				A5F0000000000000000000EE /* cpu_info.cpp in Sources */,
+				A5F0000000000000000000EF /* debug_utils.cpp in Sources */,
+				A5F0000000000000000000F0 /* emit_helper.cpp in Sources */,
+				A5F0000000000000000000F1 /* emitter.cpp in Sources */,
+				A5F0000000000000000000F2 /* emitter_utils.cpp in Sources */,
+				A5F0000000000000000000F3 /* environment.cpp in Sources */,
+				A5F0000000000000000000F4 /* error.cpp in Sources */,
+				A5F0000000000000000000F5 /* error_handler.cpp in Sources */,
+				A5F0000000000000000000F6 /* formatter.cpp in Sources */,
+				A5F0000000000000000000F7 /* func.cpp in Sources */,
+				A5F0000000000000000000F8 /* func_args_context.cpp in Sources */,
+				A5F0000000000000000000F9 /* inst.cpp in Sources */,
+				A5F0000000000000000000FA /* inst_db.cpp in Sources */,
+				A5F0000000000000000000FB /* jit_allocator.cpp in Sources */,
+				A5F0000000000000000000FC /* jit_runtime.cpp in Sources */,
+				A5F0000000000000000000FD /* logger.cpp in Sources */,
+				A5F0000000000000000000FE /* pauth.cpp in Sources */,
+				A5F0000000000000000000FF /* ra_local.cpp in Sources */,
+				A5F000000000000000000100 /* ra_pass.cpp in Sources */,
+				A5F000000000000000000101 /* ra_stack.cpp in Sources */,
+				A5F000000000000000000102 /* string.cpp in Sources */,
+				A5F000000000000000000103 /* target.cpp in Sources */,
+				A5F000000000000000000104 /* type.cpp in Sources */,
+				A5F000000000000000000105 /* virt_mem.cpp in Sources */,
+				A5F000000000000000000106 /* x86_assembler.cpp in Sources */,
+				A5F000000000000000000107 /* x86_builder.cpp in Sources */,
+				A5F000000000000000000108 /* x86_compiler.cpp in Sources */,
+				A5F000000000000000000109 /* x86_emit_helper.cpp in Sources */,
+				A5F00000000000000000010A /* x86_formatter.cpp in Sources */,
+				A5F00000000000000000010B /* x86_func.cpp in Sources */,
+				A5F00000000000000000010C /* x86_inst_api.cpp in Sources */,
+				A5F00000000000000000010D /* x86_inst_db.cpp in Sources */,
+				A5F00000000000000000010E /* x86_ra_pass.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AB53AFBF2F9D8AB400025334 /* Sources */ = {
@@ -11838,10 +12705,8 @@
 				AB7900F2215B84E50082AE82 /* smooth.c in Sources */,
 				AB7900F3215B84E50082AE82 /* troubleshootingWindowDelegate.mm in Sources */,
 				AB7900F4215B84E50082AE82 /* macOS_driver.cpp in Sources */,
-				AB7900F5215B84E50082AE82 /* assembler.cpp in Sources */,
 				AB7900F6215B84E50082AE82 /* assert.cpp in Sources */,
 				AB7900F7215B84E50082AE82 /* buffer.cpp in Sources */,
-				AB7900F8215B84E50082AE82 /* compiler.cpp in Sources */,
 				AB7900F9215B84E50082AE82 /* compilercontext.cpp in Sources */,
 				AB7900FA215B84E50082AE82 /* compilerfunc.cpp in Sources */,
 				AB7900FB215B84E50082AE82 /* compileritem.cpp in Sources */,
@@ -11849,8 +12714,6 @@
 				AB7900FD215B84E50082AE82 /* type1cid.c in Sources */,
 				AB7900FE215B84E50082AE82 /* cpuinfo.cpp in Sources */,
 				AB7900FF215B84E50082AE82 /* defs.cpp in Sources */,
-				AB790100215B84E50082AE82 /* func.cpp in Sources */,
-				AB790101215B84E50082AE82 /* logger.cpp in Sources */,
 				AB790102215B84E50082AE82 /* memorymanager.cpp in Sources */,
 				AB790103215B84E50082AE82 /* ftfstype.c in Sources */,
 				AB790104215B84E50082AE82 /* memorymarker.cpp in Sources */,
@@ -11903,7 +12766,61 @@
 				A7E5CAFE000000000000500A /* MovieRecordWindowController.mm in Sources */,
 				A7E5CAFE000000000000300B /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE000000000000200B /* RAMSearchWindow.mm in Sources */,
-			);
+							A5F00000000000000000017B /* a64_assembler.cpp in Sources */,
+				A5F00000000000000000017C /* a64_builder.cpp in Sources */,
+				A5F00000000000000000017D /* a64_compiler.cpp in Sources */,
+				A5F00000000000000000017E /* a64_emit_helper.cpp in Sources */,
+				A5F00000000000000000017F /* a64_formatter.cpp in Sources */,
+				A5F000000000000000000180 /* a64_func.cpp in Sources */,
+				A5F000000000000000000181 /* a64_inst_api.cpp in Sources */,
+				A5F000000000000000000182 /* a64_inst_db.cpp in Sources */,
+				A5F000000000000000000183 /* a64_ra_pass.cpp in Sources */,
+				A5F000000000000000000184 /* arm_formatter.cpp in Sources */,
+				A5F000000000000000000185 /* arena.cpp in Sources */,
+				A5F000000000000000000186 /* arena_bit_set.cpp in Sources */,
+				A5F000000000000000000187 /* arena_hash.cpp in Sources */,
+				A5F000000000000000000188 /* arena_vector.cpp in Sources */,
+				A5F000000000000000000189 /* arch_traits.cpp in Sources */,
+				A5F00000000000000000018A /* assembler.cpp in Sources */,
+				A5F00000000000000000018B /* builder.cpp in Sources */,
+				A5F00000000000000000018C /* code_holder.cpp in Sources */,
+				A5F00000000000000000018D /* code_writer.cpp in Sources */,
+				A5F00000000000000000018E /* compiler.cpp in Sources */,
+				A5F00000000000000000018F /* const_pool.cpp in Sources */,
+				A5F000000000000000000190 /* cpu_info.cpp in Sources */,
+				A5F000000000000000000191 /* debug_utils.cpp in Sources */,
+				A5F000000000000000000192 /* emit_helper.cpp in Sources */,
+				A5F000000000000000000193 /* emitter.cpp in Sources */,
+				A5F000000000000000000194 /* emitter_utils.cpp in Sources */,
+				A5F000000000000000000195 /* environment.cpp in Sources */,
+				A5F000000000000000000196 /* error.cpp in Sources */,
+				A5F000000000000000000197 /* error_handler.cpp in Sources */,
+				A5F000000000000000000198 /* formatter.cpp in Sources */,
+				A5F000000000000000000199 /* func.cpp in Sources */,
+				A5F00000000000000000019A /* func_args_context.cpp in Sources */,
+				A5F00000000000000000019B /* inst.cpp in Sources */,
+				A5F00000000000000000019C /* inst_db.cpp in Sources */,
+				A5F00000000000000000019D /* jit_allocator.cpp in Sources */,
+				A5F00000000000000000019E /* jit_runtime.cpp in Sources */,
+				A5F00000000000000000019F /* logger.cpp in Sources */,
+				A5F0000000000000000001A0 /* pauth.cpp in Sources */,
+				A5F0000000000000000001A1 /* ra_local.cpp in Sources */,
+				A5F0000000000000000001A2 /* ra_pass.cpp in Sources */,
+				A5F0000000000000000001A3 /* ra_stack.cpp in Sources */,
+				A5F0000000000000000001A4 /* string.cpp in Sources */,
+				A5F0000000000000000001A5 /* target.cpp in Sources */,
+				A5F0000000000000000001A6 /* type.cpp in Sources */,
+				A5F0000000000000000001A7 /* virt_mem.cpp in Sources */,
+				A5F0000000000000000001A8 /* x86_assembler.cpp in Sources */,
+				A5F0000000000000000001A9 /* x86_builder.cpp in Sources */,
+				A5F0000000000000000001AA /* x86_compiler.cpp in Sources */,
+				A5F0000000000000000001AB /* x86_emit_helper.cpp in Sources */,
+				A5F0000000000000000001AC /* x86_formatter.cpp in Sources */,
+				A5F0000000000000000001AD /* x86_func.cpp in Sources */,
+				A5F0000000000000000001AE /* x86_inst_api.cpp in Sources */,
+				A5F0000000000000000001AF /* x86_inst_db.cpp in Sources */,
+				A5F0000000000000000001B0 /* x86_ra_pass.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AB7901A9215B84F20082AE82 /* Sources */ = {
@@ -12100,10 +13017,8 @@
 				AB790254215B84F20082AE82 /* ringbuffer.cpp in Sources */,
 				AB790255215B84F20082AE82 /* arm_jit.cpp in Sources */,
 				AB790256215B84F20082AE82 /* troubleshootingWindowDelegate.mm in Sources */,
-				AB790257215B84F20082AE82 /* assembler.cpp in Sources */,
 				AB790258215B84F20082AE82 /* assert.cpp in Sources */,
 				AB790259215B84F20082AE82 /* buffer.cpp in Sources */,
-				AB79025A215B84F20082AE82 /* compiler.cpp in Sources */,
 				AB79025B215B84F20082AE82 /* compilercontext.cpp in Sources */,
 				AB79025C215B84F20082AE82 /* hq3x.cpp in Sources */,
 				AB79025D215B84F20082AE82 /* compilerfunc.cpp in Sources */,
@@ -12112,8 +13027,6 @@
 				AB790260215B84F20082AE82 /* file_path.c in Sources */,
 				AB790261215B84F20082AE82 /* cpuinfo.cpp in Sources */,
 				AB790262215B84F20082AE82 /* defs.cpp in Sources */,
-				AB790263215B84F20082AE82 /* func.cpp in Sources */,
-				AB790264215B84F20082AE82 /* logger.cpp in Sources */,
 				AB790265215B84F20082AE82 /* memorymanager.cpp in Sources */,
 				AB790266215B84F20082AE82 /* memorymarker.cpp in Sources */,
 				AB790267215B84F20082AE82 /* operand.cpp in Sources */,
@@ -12162,7 +13075,61 @@
 				A7E5CAFE000000000000500C /* MovieRecordWindowController.mm in Sources */,
 				A7E5CAFE000000000000300D /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE000000000000200D /* RAMSearchWindow.mm in Sources */,
-			);
+							A5F00000000000000000010F /* a64_assembler.cpp in Sources */,
+				A5F000000000000000000110 /* a64_builder.cpp in Sources */,
+				A5F000000000000000000111 /* a64_compiler.cpp in Sources */,
+				A5F000000000000000000112 /* a64_emit_helper.cpp in Sources */,
+				A5F000000000000000000113 /* a64_formatter.cpp in Sources */,
+				A5F000000000000000000114 /* a64_func.cpp in Sources */,
+				A5F000000000000000000115 /* a64_inst_api.cpp in Sources */,
+				A5F000000000000000000116 /* a64_inst_db.cpp in Sources */,
+				A5F000000000000000000117 /* a64_ra_pass.cpp in Sources */,
+				A5F000000000000000000118 /* arm_formatter.cpp in Sources */,
+				A5F000000000000000000119 /* arena.cpp in Sources */,
+				A5F00000000000000000011A /* arena_bit_set.cpp in Sources */,
+				A5F00000000000000000011B /* arena_hash.cpp in Sources */,
+				A5F00000000000000000011C /* arena_vector.cpp in Sources */,
+				A5F00000000000000000011D /* arch_traits.cpp in Sources */,
+				A5F00000000000000000011E /* assembler.cpp in Sources */,
+				A5F00000000000000000011F /* builder.cpp in Sources */,
+				A5F000000000000000000120 /* code_holder.cpp in Sources */,
+				A5F000000000000000000121 /* code_writer.cpp in Sources */,
+				A5F000000000000000000122 /* compiler.cpp in Sources */,
+				A5F000000000000000000123 /* const_pool.cpp in Sources */,
+				A5F000000000000000000124 /* cpu_info.cpp in Sources */,
+				A5F000000000000000000125 /* debug_utils.cpp in Sources */,
+				A5F000000000000000000126 /* emit_helper.cpp in Sources */,
+				A5F000000000000000000127 /* emitter.cpp in Sources */,
+				A5F000000000000000000128 /* emitter_utils.cpp in Sources */,
+				A5F000000000000000000129 /* environment.cpp in Sources */,
+				A5F00000000000000000012A /* error.cpp in Sources */,
+				A5F00000000000000000012B /* error_handler.cpp in Sources */,
+				A5F00000000000000000012C /* formatter.cpp in Sources */,
+				A5F00000000000000000012D /* func.cpp in Sources */,
+				A5F00000000000000000012E /* func_args_context.cpp in Sources */,
+				A5F00000000000000000012F /* inst.cpp in Sources */,
+				A5F000000000000000000130 /* inst_db.cpp in Sources */,
+				A5F000000000000000000131 /* jit_allocator.cpp in Sources */,
+				A5F000000000000000000132 /* jit_runtime.cpp in Sources */,
+				A5F000000000000000000133 /* logger.cpp in Sources */,
+				A5F000000000000000000134 /* pauth.cpp in Sources */,
+				A5F000000000000000000135 /* ra_local.cpp in Sources */,
+				A5F000000000000000000136 /* ra_pass.cpp in Sources */,
+				A5F000000000000000000137 /* ra_stack.cpp in Sources */,
+				A5F000000000000000000138 /* string.cpp in Sources */,
+				A5F000000000000000000139 /* target.cpp in Sources */,
+				A5F00000000000000000013A /* type.cpp in Sources */,
+				A5F00000000000000000013B /* virt_mem.cpp in Sources */,
+				A5F00000000000000000013C /* x86_assembler.cpp in Sources */,
+				A5F00000000000000000013D /* x86_builder.cpp in Sources */,
+				A5F00000000000000000013E /* x86_compiler.cpp in Sources */,
+				A5F00000000000000000013F /* x86_emit_helper.cpp in Sources */,
+				A5F000000000000000000140 /* x86_formatter.cpp in Sources */,
+				A5F000000000000000000141 /* x86_func.cpp in Sources */,
+				A5F000000000000000000142 /* x86_inst_api.cpp in Sources */,
+				A5F000000000000000000143 /* x86_inst_db.cpp in Sources */,
+				A5F000000000000000000144 /* x86_ra_pass.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AB796CEE15CDCBA200C59155 /* Sources */ = {
@@ -12355,10 +13322,8 @@
 				ABFEA8CA1BB4EC1100B08C25 /* smooth.c in Sources */,
 				ABF2B9FB16904133000FF7C0 /* troubleshootingWindowDelegate.mm in Sources */,
 				AB28625920AE3E9F00EAED43 /* macOS_driver.cpp in Sources */,
-				AB40562A169F5DBB0016AC3E /* assembler.cpp in Sources */,
 				AB40562D169F5DBB0016AC3E /* assert.cpp in Sources */,
 				AB405630169F5DBB0016AC3E /* buffer.cpp in Sources */,
-				AB405633169F5DBB0016AC3E /* compiler.cpp in Sources */,
 				AB405636169F5DBB0016AC3E /* compilercontext.cpp in Sources */,
 				AB405639169F5DBB0016AC3E /* compilerfunc.cpp in Sources */,
 				AB40563C169F5DBB0016AC3E /* compileritem.cpp in Sources */,
@@ -12366,8 +13331,6 @@
 				ABA731681BB51FDC00B26147 /* type1cid.c in Sources */,
 				AB405642169F5DBB0016AC3E /* cpuinfo.cpp in Sources */,
 				AB405645169F5DBB0016AC3E /* defs.cpp in Sources */,
-				AB405648169F5DBB0016AC3E /* func.cpp in Sources */,
-				AB40564B169F5DBB0016AC3E /* logger.cpp in Sources */,
 				AB40564E169F5DBB0016AC3E /* memorymanager.cpp in Sources */,
 				ABFEA81C1BB4EC1000B08C25 /* ftfstype.c in Sources */,
 				AB405651169F5DBB0016AC3E /* memorymarker.cpp in Sources */,
@@ -12420,7 +13383,61 @@
 				A7E5CAFE000000000000500E /* MovieRecordWindowController.mm in Sources */,
 				A7E5CAFE000000000000300F /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE000000000000200F /* RAMSearchWindow.mm in Sources */,
-			);
+							A5F000000000000000000145 /* a64_assembler.cpp in Sources */,
+				A5F000000000000000000146 /* a64_builder.cpp in Sources */,
+				A5F000000000000000000147 /* a64_compiler.cpp in Sources */,
+				A5F000000000000000000148 /* a64_emit_helper.cpp in Sources */,
+				A5F000000000000000000149 /* a64_formatter.cpp in Sources */,
+				A5F00000000000000000014A /* a64_func.cpp in Sources */,
+				A5F00000000000000000014B /* a64_inst_api.cpp in Sources */,
+				A5F00000000000000000014C /* a64_inst_db.cpp in Sources */,
+				A5F00000000000000000014D /* a64_ra_pass.cpp in Sources */,
+				A5F00000000000000000014E /* arm_formatter.cpp in Sources */,
+				A5F00000000000000000014F /* arena.cpp in Sources */,
+				A5F000000000000000000150 /* arena_bit_set.cpp in Sources */,
+				A5F000000000000000000151 /* arena_hash.cpp in Sources */,
+				A5F000000000000000000152 /* arena_vector.cpp in Sources */,
+				A5F000000000000000000153 /* arch_traits.cpp in Sources */,
+				A5F000000000000000000154 /* assembler.cpp in Sources */,
+				A5F000000000000000000155 /* builder.cpp in Sources */,
+				A5F000000000000000000156 /* code_holder.cpp in Sources */,
+				A5F000000000000000000157 /* code_writer.cpp in Sources */,
+				A5F000000000000000000158 /* compiler.cpp in Sources */,
+				A5F000000000000000000159 /* const_pool.cpp in Sources */,
+				A5F00000000000000000015A /* cpu_info.cpp in Sources */,
+				A5F00000000000000000015B /* debug_utils.cpp in Sources */,
+				A5F00000000000000000015C /* emit_helper.cpp in Sources */,
+				A5F00000000000000000015D /* emitter.cpp in Sources */,
+				A5F00000000000000000015E /* emitter_utils.cpp in Sources */,
+				A5F00000000000000000015F /* environment.cpp in Sources */,
+				A5F000000000000000000160 /* error.cpp in Sources */,
+				A5F000000000000000000161 /* error_handler.cpp in Sources */,
+				A5F000000000000000000162 /* formatter.cpp in Sources */,
+				A5F000000000000000000163 /* func.cpp in Sources */,
+				A5F000000000000000000164 /* func_args_context.cpp in Sources */,
+				A5F000000000000000000165 /* inst.cpp in Sources */,
+				A5F000000000000000000166 /* inst_db.cpp in Sources */,
+				A5F000000000000000000167 /* jit_allocator.cpp in Sources */,
+				A5F000000000000000000168 /* jit_runtime.cpp in Sources */,
+				A5F000000000000000000169 /* logger.cpp in Sources */,
+				A5F00000000000000000016A /* pauth.cpp in Sources */,
+				A5F00000000000000000016B /* ra_local.cpp in Sources */,
+				A5F00000000000000000016C /* ra_pass.cpp in Sources */,
+				A5F00000000000000000016D /* ra_stack.cpp in Sources */,
+				A5F00000000000000000016E /* string.cpp in Sources */,
+				A5F00000000000000000016F /* target.cpp in Sources */,
+				A5F000000000000000000170 /* type.cpp in Sources */,
+				A5F000000000000000000171 /* virt_mem.cpp in Sources */,
+				A5F000000000000000000172 /* x86_assembler.cpp in Sources */,
+				A5F000000000000000000173 /* x86_builder.cpp in Sources */,
+				A5F000000000000000000174 /* x86_compiler.cpp in Sources */,
+				A5F000000000000000000175 /* x86_emit_helper.cpp in Sources */,
+				A5F000000000000000000176 /* x86_formatter.cpp in Sources */,
+				A5F000000000000000000177 /* x86_func.cpp in Sources */,
+				A5F000000000000000000178 /* x86_inst_api.cpp in Sources */,
+				A5F000000000000000000179 /* x86_inst_db.cpp in Sources */,
+				A5F00000000000000000017A /* x86_ra_pass.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AB8F3C731A53AC2600A80BF6 /* Sources */ = {
@@ -12617,10 +13634,8 @@
 				AB8F3CF01A53AC2600A80BF6 /* ringbuffer.cpp in Sources */,
 				AB8F3CF11A53AC2600A80BF6 /* arm_jit.cpp in Sources */,
 				AB8F3CF21A53AC2600A80BF6 /* troubleshootingWindowDelegate.mm in Sources */,
-				AB8F3CF31A53AC2600A80BF6 /* assembler.cpp in Sources */,
 				AB8F3CF41A53AC2600A80BF6 /* assert.cpp in Sources */,
 				AB8F3CF51A53AC2600A80BF6 /* buffer.cpp in Sources */,
-				AB8F3CF61A53AC2600A80BF6 /* compiler.cpp in Sources */,
 				AB8F3CF71A53AC2600A80BF6 /* compilercontext.cpp in Sources */,
 				AB4C81E61B21676C00ACECD5 /* hq3x.cpp in Sources */,
 				AB8F3CF81A53AC2600A80BF6 /* compilerfunc.cpp in Sources */,
@@ -12629,8 +13644,6 @@
 				AB000DD11CCC6B3A00413F02 /* file_path.c in Sources */,
 				AB8F3CFB1A53AC2600A80BF6 /* cpuinfo.cpp in Sources */,
 				AB8F3CFC1A53AC2600A80BF6 /* defs.cpp in Sources */,
-				AB8F3CFD1A53AC2600A80BF6 /* func.cpp in Sources */,
-				AB8F3CFE1A53AC2600A80BF6 /* logger.cpp in Sources */,
 				AB8F3CFF1A53AC2600A80BF6 /* memorymanager.cpp in Sources */,
 				AB8F3D001A53AC2600A80BF6 /* memorymarker.cpp in Sources */,
 				AB8F3D011A53AC2600A80BF6 /* operand.cpp in Sources */,
@@ -12679,7 +13692,61 @@
 				A7E5CAFE0000000000005010 /* MovieRecordWindowController.mm in Sources */,
 				A7E5CAFE0000000000003011 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002011 /* RAMSearchWindow.mm in Sources */,
-			);
+							A5F0000000000000000001B1 /* a64_assembler.cpp in Sources */,
+				A5F0000000000000000001B2 /* a64_builder.cpp in Sources */,
+				A5F0000000000000000001B3 /* a64_compiler.cpp in Sources */,
+				A5F0000000000000000001B4 /* a64_emit_helper.cpp in Sources */,
+				A5F0000000000000000001B5 /* a64_formatter.cpp in Sources */,
+				A5F0000000000000000001B6 /* a64_func.cpp in Sources */,
+				A5F0000000000000000001B7 /* a64_inst_api.cpp in Sources */,
+				A5F0000000000000000001B8 /* a64_inst_db.cpp in Sources */,
+				A5F0000000000000000001B9 /* a64_ra_pass.cpp in Sources */,
+				A5F0000000000000000001BA /* arm_formatter.cpp in Sources */,
+				A5F0000000000000000001BB /* arena.cpp in Sources */,
+				A5F0000000000000000001BC /* arena_bit_set.cpp in Sources */,
+				A5F0000000000000000001BD /* arena_hash.cpp in Sources */,
+				A5F0000000000000000001BE /* arena_vector.cpp in Sources */,
+				A5F0000000000000000001BF /* arch_traits.cpp in Sources */,
+				A5F0000000000000000001C0 /* assembler.cpp in Sources */,
+				A5F0000000000000000001C1 /* builder.cpp in Sources */,
+				A5F0000000000000000001C2 /* code_holder.cpp in Sources */,
+				A5F0000000000000000001C3 /* code_writer.cpp in Sources */,
+				A5F0000000000000000001C4 /* compiler.cpp in Sources */,
+				A5F0000000000000000001C5 /* const_pool.cpp in Sources */,
+				A5F0000000000000000001C6 /* cpu_info.cpp in Sources */,
+				A5F0000000000000000001C7 /* debug_utils.cpp in Sources */,
+				A5F0000000000000000001C8 /* emit_helper.cpp in Sources */,
+				A5F0000000000000000001C9 /* emitter.cpp in Sources */,
+				A5F0000000000000000001CA /* emitter_utils.cpp in Sources */,
+				A5F0000000000000000001CB /* environment.cpp in Sources */,
+				A5F0000000000000000001CC /* error.cpp in Sources */,
+				A5F0000000000000000001CD /* error_handler.cpp in Sources */,
+				A5F0000000000000000001CE /* formatter.cpp in Sources */,
+				A5F0000000000000000001CF /* func.cpp in Sources */,
+				A5F0000000000000000001D0 /* func_args_context.cpp in Sources */,
+				A5F0000000000000000001D1 /* inst.cpp in Sources */,
+				A5F0000000000000000001D2 /* inst_db.cpp in Sources */,
+				A5F0000000000000000001D3 /* jit_allocator.cpp in Sources */,
+				A5F0000000000000000001D4 /* jit_runtime.cpp in Sources */,
+				A5F0000000000000000001D5 /* logger.cpp in Sources */,
+				A5F0000000000000000001D6 /* pauth.cpp in Sources */,
+				A5F0000000000000000001D7 /* ra_local.cpp in Sources */,
+				A5F0000000000000000001D8 /* ra_pass.cpp in Sources */,
+				A5F0000000000000000001D9 /* ra_stack.cpp in Sources */,
+				A5F0000000000000000001DA /* string.cpp in Sources */,
+				A5F0000000000000000001DB /* target.cpp in Sources */,
+				A5F0000000000000000001DC /* type.cpp in Sources */,
+				A5F0000000000000000001DD /* virt_mem.cpp in Sources */,
+				A5F0000000000000000001DE /* x86_assembler.cpp in Sources */,
+				A5F0000000000000000001DF /* x86_builder.cpp in Sources */,
+				A5F0000000000000000001E0 /* x86_compiler.cpp in Sources */,
+				A5F0000000000000000001E1 /* x86_emit_helper.cpp in Sources */,
+				A5F0000000000000000001E2 /* x86_formatter.cpp in Sources */,
+				A5F0000000000000000001E3 /* x86_func.cpp in Sources */,
+				A5F0000000000000000001E4 /* x86_inst_api.cpp in Sources */,
+				A5F0000000000000000001E5 /* x86_inst_db.cpp in Sources */,
+				A5F0000000000000000001E6 /* x86_ra_pass.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		ABB3C6431501BC6D00E0C22E /* Sources */ = {
@@ -13059,11 +14126,9 @@
 				ABC8593D28273FEE00A03EA9 /* fttype1.c in Sources */,
 				ABC8593E28273FEE00A03EA9 /* arm_jit.cpp in Sources */,
 				ABC8593F28273FEE00A03EA9 /* troubleshootingWindowDelegate.mm in Sources */,
-				ABC8594028273FEE00A03EA9 /* assembler.cpp in Sources */,
 				ABC8594128273FEE00A03EA9 /* assert.cpp in Sources */,
 				ABC8594228273FEE00A03EA9 /* buffer.cpp in Sources */,
 				ABC8594328273FEE00A03EA9 /* ftotval.c in Sources */,
-				ABC8594428273FEE00A03EA9 /* compiler.cpp in Sources */,
 				AB88005B2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				ABC8594528273FEE00A03EA9 /* compilercontext.cpp in Sources */,
 				ABC8594628273FEE00A03EA9 /* rthreads.c in Sources */,
@@ -13075,8 +14140,6 @@
 				ABC8594C28273FEE00A03EA9 /* context.cpp in Sources */,
 				ABC8594D28273FEE00A03EA9 /* cpuinfo.cpp in Sources */,
 				ABC8594E28273FEE00A03EA9 /* defs.cpp in Sources */,
-				ABC8594F28273FEE00A03EA9 /* func.cpp in Sources */,
-				ABC8595028273FEE00A03EA9 /* logger.cpp in Sources */,
 				ABC8595128273FEE00A03EA9 /* retro_dirent.c in Sources */,
 				ABC8595228273FEE00A03EA9 /* memorymanager.cpp in Sources */,
 				ABC8595328273FEE00A03EA9 /* memorymarker.cpp in Sources */,
@@ -13133,7 +14196,61 @@
 				A7E5CAFE0000000000005014 /* MovieRecordWindowController.mm in Sources */,
 				A7E5CAFE0000000000003015 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002015 /* RAMSearchWindow.mm in Sources */,
-			);
+							A5F0000000000000000001E7 /* a64_assembler.cpp in Sources */,
+				A5F0000000000000000001E8 /* a64_builder.cpp in Sources */,
+				A5F0000000000000000001E9 /* a64_compiler.cpp in Sources */,
+				A5F0000000000000000001EA /* a64_emit_helper.cpp in Sources */,
+				A5F0000000000000000001EB /* a64_formatter.cpp in Sources */,
+				A5F0000000000000000001EC /* a64_func.cpp in Sources */,
+				A5F0000000000000000001ED /* a64_inst_api.cpp in Sources */,
+				A5F0000000000000000001EE /* a64_inst_db.cpp in Sources */,
+				A5F0000000000000000001EF /* a64_ra_pass.cpp in Sources */,
+				A5F0000000000000000001F0 /* arm_formatter.cpp in Sources */,
+				A5F0000000000000000001F1 /* arena.cpp in Sources */,
+				A5F0000000000000000001F2 /* arena_bit_set.cpp in Sources */,
+				A5F0000000000000000001F3 /* arena_hash.cpp in Sources */,
+				A5F0000000000000000001F4 /* arena_vector.cpp in Sources */,
+				A5F0000000000000000001F5 /* arch_traits.cpp in Sources */,
+				A5F0000000000000000001F6 /* assembler.cpp in Sources */,
+				A5F0000000000000000001F7 /* builder.cpp in Sources */,
+				A5F0000000000000000001F8 /* code_holder.cpp in Sources */,
+				A5F0000000000000000001F9 /* code_writer.cpp in Sources */,
+				A5F0000000000000000001FA /* compiler.cpp in Sources */,
+				A5F0000000000000000001FB /* const_pool.cpp in Sources */,
+				A5F0000000000000000001FC /* cpu_info.cpp in Sources */,
+				A5F0000000000000000001FD /* debug_utils.cpp in Sources */,
+				A5F0000000000000000001FE /* emit_helper.cpp in Sources */,
+				A5F0000000000000000001FF /* emitter.cpp in Sources */,
+				A5F000000000000000000200 /* emitter_utils.cpp in Sources */,
+				A5F000000000000000000201 /* environment.cpp in Sources */,
+				A5F000000000000000000202 /* error.cpp in Sources */,
+				A5F000000000000000000203 /* error_handler.cpp in Sources */,
+				A5F000000000000000000204 /* formatter.cpp in Sources */,
+				A5F000000000000000000205 /* func.cpp in Sources */,
+				A5F000000000000000000206 /* func_args_context.cpp in Sources */,
+				A5F000000000000000000207 /* inst.cpp in Sources */,
+				A5F000000000000000000208 /* inst_db.cpp in Sources */,
+				A5F000000000000000000209 /* jit_allocator.cpp in Sources */,
+				A5F00000000000000000020A /* jit_runtime.cpp in Sources */,
+				A5F00000000000000000020B /* logger.cpp in Sources */,
+				A5F00000000000000000020C /* pauth.cpp in Sources */,
+				A5F00000000000000000020D /* ra_local.cpp in Sources */,
+				A5F00000000000000000020E /* ra_pass.cpp in Sources */,
+				A5F00000000000000000020F /* ra_stack.cpp in Sources */,
+				A5F000000000000000000210 /* string.cpp in Sources */,
+				A5F000000000000000000211 /* target.cpp in Sources */,
+				A5F000000000000000000212 /* type.cpp in Sources */,
+				A5F000000000000000000213 /* virt_mem.cpp in Sources */,
+				A5F000000000000000000214 /* x86_assembler.cpp in Sources */,
+				A5F000000000000000000215 /* x86_builder.cpp in Sources */,
+				A5F000000000000000000216 /* x86_compiler.cpp in Sources */,
+				A5F000000000000000000217 /* x86_emit_helper.cpp in Sources */,
+				A5F000000000000000000218 /* x86_formatter.cpp in Sources */,
+				A5F000000000000000000219 /* x86_func.cpp in Sources */,
+				A5F00000000000000000021A /* x86_inst_api.cpp in Sources */,
+				A5F00000000000000000021B /* x86_inst_db.cpp in Sources */,
+				A5F00000000000000000021C /* x86_ra_pass.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		ABD2CD5126E05CB000FB15F7 /* Sources */ = {
@@ -13317,11 +14434,9 @@
 				ABD2CDF126E05CB000FB15F7 /* fttype1.c in Sources */,
 				ABD2CDF226E05CB000FB15F7 /* arm_jit.cpp in Sources */,
 				ABD2CDF326E05CB000FB15F7 /* troubleshootingWindowDelegate.mm in Sources */,
-				ABD2CDF426E05CB000FB15F7 /* assembler.cpp in Sources */,
 				ABD2CDF526E05CB000FB15F7 /* assert.cpp in Sources */,
 				ABD2CDF626E05CB000FB15F7 /* buffer.cpp in Sources */,
 				ABD2CDF726E05CB000FB15F7 /* ftotval.c in Sources */,
-				ABD2CDF826E05CB000FB15F7 /* compiler.cpp in Sources */,
 				AB88005C2AD5EC500090D47F /* slot2_hcv1000.cpp in Sources */,
 				ABD2CDF926E05CB000FB15F7 /* compilercontext.cpp in Sources */,
 				ABD2CDFA26E05CB000FB15F7 /* rthreads.c in Sources */,
@@ -13333,8 +14448,6 @@
 				ABD2CE0026E05CB000FB15F7 /* context.cpp in Sources */,
 				ABD2CE0126E05CB000FB15F7 /* cpuinfo.cpp in Sources */,
 				ABD2CE0226E05CB000FB15F7 /* defs.cpp in Sources */,
-				ABD2CE0326E05CB000FB15F7 /* func.cpp in Sources */,
-				ABD2CE0426E05CB000FB15F7 /* logger.cpp in Sources */,
 				ABD2CE0526E05CB000FB15F7 /* retro_dirent.c in Sources */,
 				ABD2CE0626E05CB000FB15F7 /* memorymanager.cpp in Sources */,
 				ABD2CE0726E05CB000FB15F7 /* memorymarker.cpp in Sources */,
@@ -13391,7 +14504,61 @@
 				A7E5CAFE0000000000005016 /* MovieRecordWindowController.mm in Sources */,
 				A7E5CAFE0000000000003017 /* MovieInfoPreview.mm in Sources */,
 				A7E5CAFE0000000000002017 /* RAMSearchWindow.mm in Sources */,
-			);
+							A5F00000000000000000021D /* a64_assembler.cpp in Sources */,
+				A5F00000000000000000021E /* a64_builder.cpp in Sources */,
+				A5F00000000000000000021F /* a64_compiler.cpp in Sources */,
+				A5F000000000000000000220 /* a64_emit_helper.cpp in Sources */,
+				A5F000000000000000000221 /* a64_formatter.cpp in Sources */,
+				A5F000000000000000000222 /* a64_func.cpp in Sources */,
+				A5F000000000000000000223 /* a64_inst_api.cpp in Sources */,
+				A5F000000000000000000224 /* a64_inst_db.cpp in Sources */,
+				A5F000000000000000000225 /* a64_ra_pass.cpp in Sources */,
+				A5F000000000000000000226 /* arm_formatter.cpp in Sources */,
+				A5F000000000000000000227 /* arena.cpp in Sources */,
+				A5F000000000000000000228 /* arena_bit_set.cpp in Sources */,
+				A5F000000000000000000229 /* arena_hash.cpp in Sources */,
+				A5F00000000000000000022A /* arena_vector.cpp in Sources */,
+				A5F00000000000000000022B /* arch_traits.cpp in Sources */,
+				A5F00000000000000000022C /* assembler.cpp in Sources */,
+				A5F00000000000000000022D /* builder.cpp in Sources */,
+				A5F00000000000000000022E /* code_holder.cpp in Sources */,
+				A5F00000000000000000022F /* code_writer.cpp in Sources */,
+				A5F000000000000000000230 /* compiler.cpp in Sources */,
+				A5F000000000000000000231 /* const_pool.cpp in Sources */,
+				A5F000000000000000000232 /* cpu_info.cpp in Sources */,
+				A5F000000000000000000233 /* debug_utils.cpp in Sources */,
+				A5F000000000000000000234 /* emit_helper.cpp in Sources */,
+				A5F000000000000000000235 /* emitter.cpp in Sources */,
+				A5F000000000000000000236 /* emitter_utils.cpp in Sources */,
+				A5F000000000000000000237 /* environment.cpp in Sources */,
+				A5F000000000000000000238 /* error.cpp in Sources */,
+				A5F000000000000000000239 /* error_handler.cpp in Sources */,
+				A5F00000000000000000023A /* formatter.cpp in Sources */,
+				A5F00000000000000000023B /* func.cpp in Sources */,
+				A5F00000000000000000023C /* func_args_context.cpp in Sources */,
+				A5F00000000000000000023D /* inst.cpp in Sources */,
+				A5F00000000000000000023E /* inst_db.cpp in Sources */,
+				A5F00000000000000000023F /* jit_allocator.cpp in Sources */,
+				A5F000000000000000000240 /* jit_runtime.cpp in Sources */,
+				A5F000000000000000000241 /* logger.cpp in Sources */,
+				A5F000000000000000000242 /* pauth.cpp in Sources */,
+				A5F000000000000000000243 /* ra_local.cpp in Sources */,
+				A5F000000000000000000244 /* ra_pass.cpp in Sources */,
+				A5F000000000000000000245 /* ra_stack.cpp in Sources */,
+				A5F000000000000000000246 /* string.cpp in Sources */,
+				A5F000000000000000000247 /* target.cpp in Sources */,
+				A5F000000000000000000248 /* type.cpp in Sources */,
+				A5F000000000000000000249 /* virt_mem.cpp in Sources */,
+				A5F00000000000000000024A /* x86_assembler.cpp in Sources */,
+				A5F00000000000000000024B /* x86_builder.cpp in Sources */,
+				A5F00000000000000000024C /* x86_compiler.cpp in Sources */,
+				A5F00000000000000000024D /* x86_emit_helper.cpp in Sources */,
+				A5F00000000000000000024E /* x86_formatter.cpp in Sources */,
+				A5F00000000000000000024F /* x86_func.cpp in Sources */,
+				A5F000000000000000000250 /* x86_inst_api.cpp in Sources */,
+				A5F000000000000000000251 /* x86_inst_db.cpp in Sources */,
+				A5F000000000000000000252 /* x86_ra_pass.cpp in Sources */,
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
@@ -13451,6 +14618,15 @@
 		8C43E89D27E3CD0100A35F65 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					ASMJIT_STATIC,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = arm64;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_UNROLL_LOOPS = YES;
@@ -13462,6 +14638,15 @@
 		8C43E89E27E3CD0100A35F65 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					ASMJIT_STATIC,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = arm64;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_UNROLL_LOOPS = YES;
@@ -13473,12 +14658,18 @@
 		8C43E9FC27E3CD4C00A35F65 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = arm64;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					"DEBUG=1",
 					GDB_STUB,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.5;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -13489,11 +14680,17 @@
 		8C43E9FD27E3CD4C00A35F65 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = arm64;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					NDEBUG,
 					GDB_STUB,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.5;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -13504,6 +14701,11 @@
 		8CCD850E27E40B730024BDD5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = arm64;
 				CLANG_OPTIMIZATION_PROFILE_FILE = "$(SRCROOT)/OptimizationProfiles/DeSmuME_arm64.profdata";
 				GCC_FAST_OBJC_DISPATCH = YES;
@@ -13513,6 +14715,7 @@
 					NDEBUG,
 					PUBLIC_RELEASE,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_UNROLL_LOOPS = YES;
@@ -13531,6 +14734,11 @@
 		8CCD850F27E40B730024BDD5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = arm64;
 				CLANG_OPTIMIZATION_PROFILE_FILE = "$(SRCROOT)/OptimizationProfiles/DeSmuME_arm64.profdata";
 				GCC_FAST_OBJC_DISPATCH = YES;
@@ -13540,6 +14748,7 @@
 					NDEBUG,
 					PUBLIC_RELEASE,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_UNROLL_LOOPS = YES;
@@ -13555,6 +14764,11 @@
 		AB36C88E27F2C8AE00C763C8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = i386;
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_OPTIMIZATION_PROFILE_FILE = "$(SRCROOT)/OptimizationProfiles/DeSmuME_i386.profdata";
@@ -13566,6 +14780,7 @@
 					PUBLIC_RELEASE,
 					METAL_DISABLE_FOR_BUILD_TARGET,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_UNROLL_LOOPS = YES;
@@ -13583,6 +14798,11 @@
 		AB36C88F27F2C8AE00C763C8 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = i386;
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_OPTIMIZATION_PROFILE_FILE = "$(SRCROOT)/OptimizationProfiles/DeSmuME_i386.profdata";
@@ -13595,6 +14815,7 @@
 					PUBLIC_RELEASE,
 					METAL_DISABLE_FOR_BUILD_TARGET,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_UNROLL_LOOPS = YES;
@@ -13723,6 +14944,15 @@
 		AB79013B215B84E50082AE82 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					ASMJIT_STATIC,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = (
 					i386,
 					x86_64,
@@ -13737,6 +14967,15 @@
 		AB79013C215B84E50082AE82 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					ASMJIT_STATIC,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = (
 					i386,
 					x86_64,
@@ -13751,6 +14990,11 @@
 		AB790298215B84F20082AE82 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = (
 					i386,
 					x86_64,
@@ -13762,6 +15006,7 @@
 					"DEBUG=1",
 					GDB_STUB,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				PRODUCT_NAME = "DeSmuME (Debug, dev+)";
 			};
@@ -13770,6 +15015,11 @@
 		AB790299215B84F20082AE82 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = (
 					i386,
 					x86_64,
@@ -13780,6 +15030,7 @@
 					NDEBUG,
 					GDB_STUB,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				PRODUCT_NAME = "DeSmuME (dev+)";
 			};
@@ -13788,6 +15039,15 @@
 		AB796D6E15CDCBA200C59155 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					ASMJIT_STATIC,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = (
 					x86_64,
 					x86_64h,
@@ -13802,6 +15062,15 @@
 		AB796D6F15CDCBA200C59155 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					ASMJIT_STATIC,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = (
 					x86_64,
 					x86_64h,
@@ -13816,6 +15085,11 @@
 		AB8F3D2C1A53AC2600A80BF6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = (
 					x86_64,
 					x86_64h,
@@ -13825,6 +15099,7 @@
 					"DEBUG=1",
 					GDB_STUB,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -13835,6 +15110,11 @@
 		AB8F3D2D1A53AC2600A80BF6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = (
 					x86_64,
 					x86_64h,
@@ -13843,6 +15123,7 @@
 					NDEBUG,
 					GDB_STUB,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -13915,6 +15196,11 @@
 		ABC8598E28273FEE00A03EA9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = x86_64;
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_OPTIMIZATION_PROFILE_FILE = "$(SRCROOT)/OptimizationProfiles/DeSmuME_x86_64.profdata";
@@ -13925,6 +15211,7 @@
 					NDEBUG,
 					PUBLIC_RELEASE,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_UNROLL_LOOPS = YES;
@@ -13942,6 +15229,11 @@
 		ABC8598F28273FEE00A03EA9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = x86_64;
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_OPTIMIZATION_PROFILE_FILE = "$(SRCROOT)/OptimizationProfiles/DeSmuME_x86_64.profdata";
@@ -13952,6 +15244,7 @@
 					NDEBUG,
 					PUBLIC_RELEASE,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_UNROLL_LOOPS = YES;
@@ -13966,6 +15259,11 @@
 		ABD2CE4226E05CB000FB15F7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = x86_64h;
 				CLANG_OPTIMIZATION_PROFILE_FILE = "$(SRCROOT)/OptimizationProfiles/DeSmuME_x86_64h.profdata";
 				GCC_FAST_OBJC_DISPATCH = YES;
@@ -13975,6 +15273,7 @@
 					NDEBUG,
 					PUBLIC_RELEASE,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_UNROLL_LOOPS = YES;
@@ -13993,6 +15292,11 @@
 		ABD2CE4326E05CB000FB15F7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../../3rdparty",
+				);
 				ARCHS = x86_64h;
 				CLANG_OPTIMIZATION_PROFILE_FILE = "$(SRCROOT)/OptimizationProfiles/DeSmuME_x86_64h.profdata";
 				GCC_FAST_OBJC_DISPATCH = YES;
@@ -14002,6 +15306,7 @@
 					NDEBUG,
 					PUBLIC_RELEASE,
 					ENABLE_LUA_COCOA,
+									ASMJIT_STATIC,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_UNROLL_LOOPS = YES;

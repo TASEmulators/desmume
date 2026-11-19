@@ -94,7 +94,7 @@
 
 		<ClCompile>
 
-			<AdditionalIncludeDirectories>.;..\..;lua\include;glib-2.20.1\build;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\..\libretro-common\include;..\..\..\3rdparty\wgpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\..;lua\include;glib-2.20.1\build;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\..\libretro-common\include;..\..\..\3rdparty;..\..\..\3rdparty\wgpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 
 			<!-- universal definitions -->
 			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;WIN32_FRONTEND;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -157,7 +157,7 @@
 			<PreprocessorDefinitions>EXPERIMENTAL_WIFI_COMM=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 			<!-- desmume configuration: features we always have in windows -->
-			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;HAVE_LUA=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;ASMJIT_STATIC=1;HAVE_LUA=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 			<!-- Route 1 OSD backend: build the HUD with GDI+ instead of Agg2D.
 			     Pass /p:UseNativeOsd=false to msbuild to fall back to AGG. -->
