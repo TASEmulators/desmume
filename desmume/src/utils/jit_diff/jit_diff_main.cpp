@@ -34,6 +34,9 @@
 // NDS_Init().
 static const u32 kCodeBase = 0x02000000;
 
+// Top of ARM9 main RAM (4 MB at 0x02000000), used as the initial stack pointer.
+static const u32 kStackTop = 0x02400000;
+
 // Distinct operand sets. The first five are the boundary values that ARM
 // semantics turn on; the last three are patterned to catch byte/halfword bugs.
 static const u32 kOperands[8] = {
@@ -85,6 +88,10 @@ static void primeState(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr)
 	// CPSR: mode = supervisor (0x13), T = 0 (ARM), F/I masked, condition = AL.
 	NDS_ARM9.CPSR.val = cpsr;
 
+	// R13 must point at real memory: the JIT writes to the stack on some paths
+	// (measured as an access violation when SP was left at 0), and an emulated
+	// instruction may legitimately push. Keep it inside ARM9 main RAM.
+	NDS_ARM9.R[13] = kStackTop;
 	NDS_ARM9.R[15] = codeAdr;
 	NDS_ARM9.instruct_adr = codeAdr;
 	NDS_ARM9.next_instruction = codeAdr;
@@ -306,6 +313,11 @@ static int runSweep(bool full, int onlySlot, bool verbose)
 				{
 					char why[128] = {0};
 					checked++;
+					if (verbose)
+					{
+						printf("  try %s slot=%03X v=%d f=%d adr=%08X op=%08X\n", thumb ? "thumb" : "arm  ", slot, v, f, codeAdr, opcode);
+						fflush(stdout);
+					}
 					if (!compareOne(codeAdr, ops, opcode, kFlagVariants[f] | (thumb ? 0x20u : 0u), why, sizeof(why)))
 					{
 						failures++;
