@@ -440,12 +440,6 @@ UserInput& NDS_getProcessingUserInput();
 bool NDS_isProcessingUserInput();
 // call once per frame to prepare input for processing 
 void NDS_beginProcessingInput();
-// Prepare a processing pass from the already-final input instead of the raw
-// input. Use this for a second per-frame hook (such as a Lua
-// LUACALL_BEFOREEMULATION callback) that runs after NDS_endProcessingInput()
-// but still needs to modify the input the game will receive: starting from raw
-// would discard movie playback / autohold / turbo processing done earlier.
-void NDS_beginProcessingInputFromFinal();
 // call once per frame to copy the processed input to the final input
 void NDS_endProcessingInput();
 

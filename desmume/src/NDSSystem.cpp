@@ -3055,17 +3055,6 @@ void NDS_beginProcessingInput()
 	validToProcessInput = true;
 }
 
-void NDS_beginProcessingInputFromFinal()
-{
-	// Start a second processing pass from the input the game is about to
-	// receive. Unlike NDS_beginProcessingInput() this preserves earlier
-	// processing such as movie playback, autohold and turbo.
-	intermediateUserInput = finalUserInput;
-
-	// processing is valid now
-	validToProcessInput = true;
-}
-
 void NDS_endProcessingInput()
 {
 	// transfer the processed input

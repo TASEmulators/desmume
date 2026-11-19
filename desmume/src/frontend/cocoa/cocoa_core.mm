@@ -1213,7 +1213,10 @@ static void* RunCoreThread(void *arg)
 		frameJumpTarget = execControl->GetFrameJumpTargetApplied();
 		
 		inputHandler->ProcessInputs();
-		inputHandler->ApplyInputs();
+		// The input stays in the processing state (movie playback has injected
+		// its frames here) until CommitInputs() below, matching Windows'
+		// single begin/end block that also contains the Lua before-emulation
+		// hook. ApplySettingsOnNDSExec() does not depend on the final input.
 		execControl->ApplySettingsOnNDSExec();
 		
 		avCaptureObject = execControl->GetClientAVCaptureObjectApplied();
@@ -1245,14 +1248,14 @@ static void* RunCoreThread(void *arg)
 #endif
 #ifdef HAVE_LUA
 		lua_script_clear_graphics_buffer();
-		// This is a second input-processing pass in the same frame. Start it
-		// from the already-final input so a Lua script can still adjust the
-		// game's input without discarding movie playback / autohold / turbo
-		// processing done by inputHandler->ApplyInputs() above.
-		NDS_beginProcessingInputFromFinal();
+		// Same single processing block as Windows' StepRunLoop_Core(): the Lua
+		// before-emulation hook runs while the input is still open, so it can
+		// adjust the movie-injected input in place (joy_set itself refuses to
+		// touch a playing movie). No second begin/end is needed.
 		CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
-		NDS_endProcessingInput();
 #endif
+		// Commit once, after Lua, so the game receives one final input value.
+		inputHandler->CommitInputs();
 		NDS_exec<false>();
 		SPU_Emulate_user();
 		
