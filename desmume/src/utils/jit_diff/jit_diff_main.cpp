@@ -504,6 +504,39 @@ static const Probe kProbes[] = {
 	{ "ARM   MOV  r0,r1,LSL#4",  0xE1A00201u, false },
 	{ "ARM   ADD  r0,r1,r2,ASR2",0xE0810142u, false },
 	{ "ARM   MUL  r0,r1,r2",     0xE0000291u, false },
+	// Memory-access probes. The slot sweep only emits opcodes with the low 20
+	// bits zero (opcode = slot << 20), so every memory slot is exercised only in
+	// its degenerate form: base == dest, zero offset, no writeback. These cover
+	// the variants the sweep cannot reach: Rd != Rn, positive/negative offsets,
+	// pre/post-index writeback, byte/halfword widths, and register offsets.
+	// All use R13 (the primed stack pointer, kStackTop) as a legal base so both
+	// engines read/write the same mapped RAM; STR probes write an idempotent
+	// value (the same primed R0) and the harness compares register state only.
+	{ "ARM   LDR  r0,[r13,#4]",     0xE59D0004u, false },
+	{ "ARM   LDR  r0,[r13,#-4]",    0xE51D0004u, false },
+	{ "ARM   LDR  r0,[r13,#4]!",    0xE5BD0004u, false },  // pre-index writeback
+	{ "ARM   LDR  r0,[r13],#4",     0xE49D0004u, false },  // post-index writeback
+	{ "ARM   LDRB r0,[r13,#1]",     0xE5DD0001u, false },
+	{ "ARM   LDRH r0,[r13,#2]",     0xE1DD0002u, false },
+	{ "ARM   LDRSB r0,[r13,#1]",    0xE1DD000Du, false },
+	{ "ARM   LDRSH r0,[r13,#2]",    0xE1DD000Fu, false },
+	{ "ARM   LDR  r0,[r13,r1]",     0xE79D0001u, false },  // register offset
+	{ "ARM   STR  r0,[r13,#4]",     0xE58D0004u, false },
+	{ "ARM   STR  r0,[r13,#-4]",    0xE50D0004u, false },
+	{ "ARM   STR  r0,[r13,#4]!",    0xE5AD0004u, false },  // pre-index writeback
+	{ "ARM   STR  r0,[r13],#4",     0xE48D0004u, false },  // post-index writeback
+	{ "ARM   STRB r0,[r13,#1]",     0xE5CD0001u, false },
+	{ "ARM   STRH r0,[r13,#2]",     0xE1CD0002u, false },
+	// Thumb format 2 (LDR/STR immediate) and format 3 (register offset).
+	// LDR/STR immediate use SP as base (a legal mapped address) so the MMU
+	// access is deterministic; Rn=R1 would land on unmapped operands whose
+	// MMU timing differs per vector (cycle-only noise, not a semantic defect).
+	{ "THUMB LDR  r0,[sp,#4]",      0x9801u, true },
+	{ "THUMB STR  r0,[sp,#4]",      0x9001u, true },
+	{ "THUMB LDR  r0,[r1,r2]",      0x5088u, true },
+	// Thumb PUSH/POP (STMDB/LDMIA with SP): stack is legal mapped RAM.
+	{ "THUMB PUSH {r0,r1}",         0xB403u, true },
+	{ "THUMB POP  {r0,r1}",         0xC003u, true },
 	// Thumb format 4, register shifts: (Rs == Rd) then (Rs != Rd).
 	{ "THUMB LSL  r0,r0",        0x4080u, true },
 	{ "THUMB LSL  r0,r1",        0x4088u, true },
