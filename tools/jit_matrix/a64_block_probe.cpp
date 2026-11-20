@@ -28,16 +28,30 @@
 //     translation is the same code path the emulator uses (_MMU_read32's inline
 //     main-RAM case).
 //
-// Output is a per-case dump of R0..R14, CPSR and cycles, plus a handful of
-// self-checks against a C model of the multiply instructions. The dump is meant
-// to be diffed against a golden copy taken from the previous build: the
-// register-cache migration must not change a single bit of it.
+// Output is a per-case dump of R0..R14, CPSR and (for the second half of the
+// suite) SPSR plus every banked R13/R14, plus self-checks against a C model of
+// the instructions covered. The dump is meant to be diffed against a copy taken
+// from the previous build -- either by pointing the include below at the old
+// arm_jit_arm.cpp or by keeping the old dump around: the register-cache
+// migration must not change a single bit of it, except where the batch under
+// test deliberately changes behaviour.
+//
+// Two sections:
+//   * multiply/CLZ (batch 5): single-instruction blocks, three operand sets,
+//     two stores (one with the DMA flag armed) and a `mul`+`str` two-instruction
+//     block that guards the deferred-write path;
+//   * PSR / branch / exception (batch 6): MRS/MSR, B/BL/BX/BLX, SWI, BKPT, plus
+//     three `add sp,#4 ; <switch>` blocks. Those only mean something because
+//     armcpu_switchMode() below really moves the banked registers -- with a
+//     no-op stub the cache would look correct no matter what.
 //
 // Build and run (Termux / any aarch64 host):
 //     clang++ -std=c++20 -O1 -I desmume/3rdparty -I desmume/src -DASMJIT_STATIC \
 //         -DASMJIT_NO_X86 -DHAVE_JIT tools/jit_matrix/a64_block_probe.cpp \
 //         obj/*.o -o a64_block_probe
 //     ./a64_block_probe > block_new.txt
+//     ./a64_block_probe --dump N        # words of case N's block
+//     ./a64_block_probe --dump-psr N    # same, for the PSR/branch table
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,10 +89,62 @@ TCommonSettings CommonSettings;
 // multiply batch uses. NB: the parameter cannot be called `cpu` -- arm_jit_arm.cpp
 // defines that as a macro.
 void NDS_Reschedule() {}
+
+// A faithful copy of armcpu.cpp's banking, minus armcpu_changeCPSR() (that one
+// recomputes the cp15 region permissions and needs the full core). The copy has
+// to move registers through armcpu_t in *memory*, otherwise the cases below
+// could not tell a flushed cache from a stale one: the whole point is that
+// switchMode() reads R13/R14/SPSR out of the struct, so a dirty cache slot hands
+// it the pre-instruction value.
 u32 armcpu_switchMode(armcpu_t *cp, u8 mode)
 {
+	const u32 oldmode = cp->CPSR.bits.mode;
+	u32 t0, t1;
+
+	switch (oldmode)
+	{
+		case USR: case SYS:
+			cp->R13_usr = cp->R[13]; cp->R14_usr = cp->R[14];
+			break;
+		case FIQ:
+			t0 = cp->R[8];  cp->R[8]  = cp->R8_fiq;  cp->R8_fiq  = t0;
+			t0 = cp->R[9];  cp->R[9]  = cp->R9_fiq;  cp->R9_fiq  = t0;
+			t0 = cp->R[10]; cp->R[10] = cp->R10_fiq; cp->R10_fiq = t0;
+			t0 = cp->R[11]; cp->R[11] = cp->R11_fiq; cp->R11_fiq = t0;
+			t0 = cp->R[12]; cp->R[12] = cp->R12_fiq; cp->R12_fiq = t0;
+			cp->R13_fiq = cp->R[13]; cp->R14_fiq = cp->R[14];
+			cp->SPSR_fiq = cp->SPSR;
+			break;
+		case IRQ: cp->R13_irq = cp->R[13]; cp->R14_irq = cp->R[14]; cp->SPSR_irq = cp->SPSR; break;
+		case SVC: cp->R13_svc = cp->R[13]; cp->R14_svc = cp->R[14]; cp->SPSR_svc = cp->SPSR; break;
+		case ABT: cp->R13_abt = cp->R[13]; cp->R14_abt = cp->R[14]; cp->SPSR_abt = cp->SPSR; break;
+		case UND: cp->R13_und = cp->R[13]; cp->R14_und = cp->R[14]; cp->SPSR_und = cp->SPSR; break;
+		default: break;
+	}
+
+	switch (mode)
+	{
+		case USR: case SYS:
+			cp->R[13] = cp->R13_usr; cp->R[14] = cp->R14_usr;
+			break;
+		case FIQ:
+			t1 = cp->R[8];  cp->R[8]  = cp->R8_fiq;  cp->R8_fiq  = t1;
+			t1 = cp->R[9];  cp->R[9]  = cp->R9_fiq;  cp->R9_fiq  = t1;
+			t1 = cp->R[10]; cp->R[10] = cp->R10_fiq; cp->R10_fiq = t1;
+			t1 = cp->R[11]; cp->R[11] = cp->R11_fiq; cp->R11_fiq = t1;
+			t1 = cp->R[12]; cp->R[12] = cp->R12_fiq; cp->R12_fiq = t1;
+			cp->R[13] = cp->R13_fiq; cp->R[14] = cp->R14_fiq;
+			cp->SPSR = cp->SPSR_fiq;
+			break;
+		case IRQ: cp->R[13] = cp->R13_irq; cp->R[14] = cp->R14_irq; cp->SPSR = cp->SPSR_irq; break;
+		case SVC: cp->R[13] = cp->R13_svc; cp->R[14] = cp->R14_svc; cp->SPSR = cp->SPSR_svc; break;
+		case ABT: cp->R[13] = cp->R13_abt; cp->R[14] = cp->R14_abt; cp->SPSR = cp->SPSR_abt; break;
+		case UND: cp->R[13] = cp->R13_und; cp->R[14] = cp->R14_und; cp->SPSR = cp->SPSR_und; break;
+		default: break;
+	}
+
 	cp->CPSR.bits.mode = mode & 0x1F;
-	return 0;
+	return oldmode;
 }
 void armcp15_setSingleRegionAccess(armcp15_t *, u8, u32, u32) {}
 
@@ -206,6 +272,50 @@ static bool run_one(u32 adr, u32 opcode, const u32 *ops, u32 cpsr, Result *out)
 	return true;
 }
 
+// Same, for blocks of up to two instructions (a mode switch is only interesting
+// when a preceding instruction left a deferred write behind).
+static bool run_block(u32 adr, const u32 *words, int n, const u32 *ops, u32 cpsr, Result *out)
+{
+	for (int k = 0; k < n; k++)
+		*(u32 *)(MMU.MAIN_MEM + ((adr + 4 * k) & _MMU_MAIN_MEM_MASK32)) = words[k];
+
+	CommonSettings.jit_max_block_size = n;
+	prime_cpu(adr, words[0], ops, cpsr);
+	arm_jit_compile<0>();
+	prime_cpu(adr, words[0], ops, cpsr);
+	ArmOpCompiled f = (ArmOpCompiled)JIT_COMPILED_FUNC(adr, 0);
+	CommonSettings.jit_max_block_size = 1;
+
+	if (f == (ArmOpCompiled)interp_stub) {
+		printf("FAIL %08X: block did not compile (fell back to the interpreter)\n", words[0]);
+		return false;
+	}
+	out->cycles = f();
+	memcpy(out->r, NDS_ARM9.R, sizeof(out->r));
+	out->cpsr = NDS_ARM9.CPSR.val;
+	return true;
+}
+
+// Distinct sentinel in every banked register, so a case that banks the wrong
+// value shows *which* bank got it. SPSR is pre-loaded because `mrs r0,spsr` and
+// the exception entries both read it.
+static void reset_banks()
+{
+	NDS_ARM9.SPSR.val  = 0xA5A50013u;
+	NDS_ARM9.R13_usr   = 0x11111000u; NDS_ARM9.R14_usr = 0x11111111u;
+	NDS_ARM9.R13_svc   = 0x22222000u; NDS_ARM9.R14_svc = 0x22222222u;
+	NDS_ARM9.R13_abt   = 0x33333000u; NDS_ARM9.R14_abt = 0x33333333u;
+	NDS_ARM9.R13_und   = 0x44444000u; NDS_ARM9.R14_und = 0x44444444u;
+	NDS_ARM9.R13_irq   = 0x55555000u; NDS_ARM9.R14_irq = 0x55555555u;
+	NDS_ARM9.R13_fiq   = 0x66666000u; NDS_ARM9.R14_fiq = 0x66666666u;
+	NDS_ARM9.R8_fiq = 0x66666008u; NDS_ARM9.R9_fiq  = 0x66666009u;
+	NDS_ARM9.R10_fiq = 0x6666600Au; NDS_ARM9.R11_fiq = 0x6666600Bu;
+	NDS_ARM9.R12_fiq = 0x6666600Cu;
+	NDS_ARM9.SPSR_svc.val = 0x77777000u; NDS_ARM9.SPSR_abt.val = 0x77777001u;
+	NDS_ARM9.SPSR_und.val = 0x77777002u; NDS_ARM9.SPSR_irq.val = 0x77777003u;
+	NDS_ARM9.SPSR_fiq.val = 0x77777004u;
+}
+
 //-----------------------------------------------------------------------------
 //   Cases
 //---------------------------------------------------------------------------
@@ -322,6 +432,10 @@ int main(int argc, char **argv)
 	// --dump N prints the words of case N's block instead of running the suite.
 	// The encoding layer is where a register-plumbing change is easiest to see.
 	const int dump_case = (argc > 2 && strcmp(argv[1], "--dump") == 0) ? atoi(argv[2]) : -1;
+	// Same for the psr/branch table below: --dump-psr N prints the words of case
+	// N's block, which is how the order of the flush and the switchMode call gets
+	// checked without reading the emitter.
+	const int dump_psr = (argc > 2 && strcmp(argv[1], "--dump-psr") == 0) ? atoi(argv[2]) : -1;
 	memset(&MMU, 0, sizeof(MMU));
 	// A main-RAM mirror is compared against DTCMRegion with the low 14 bits
 	// masked off; park it far away so no case address can alias into it.
@@ -484,6 +598,128 @@ int main(int argc, char **argv)
 				g_fail++;
 			} else {
 				g_pass++;
+			}
+		}
+	}
+
+	// --- PSR / branch / exception ------------------------------------------
+	// Batch 6. Three things are being checked here that the multiply batch
+	// could not reach:
+	//   * MRS/MRS write a general register, so they exercise rc_store() with a
+	//     source that is not an emulated register;
+	//   * MSR/SWI/BKPT call armcpu_switchMode(), which banks R13/R14/SPSR by
+	//     reading armcpu_t -- a deferred write that has not landed yet gives the
+	//     old bank the wrong value and the new bank the old one;
+	//   * B/BL/BX/BLX report the branch target through instruct_adr.
+	printf("\n# psr / branch / exception\n");
+
+	static const u32 kOpsNone[16]  = {0};
+	static const u32 kOpsMode[16]  = {0x00000012u};             // R0 = IRQ
+	static const u32 kOpsFlags[16] = {0xF0000000u};             // R0 = top byte
+	static const u32 kOpsBx[16]    = {0x02000301u};             // -> 0x02000300, Thumb
+	static const u32 kOpsBlx[16]   = {0, 0, 0, 0x02000305u};    // R3 -> 0x02000304
+	static const u32 kOpsAdd1[16]  = {0x02000200u};
+
+	enum Chk { CHK_NONE, CHK_R0, CHK_R13, CHK_R14, CHK_R13_SVC, CHK_R13_ABT,
+	           CHK_CPSR, CHK_SPSR, CHK_IA };
+
+	struct PsrCase
+	{
+		const char *name;
+		u32 w[2];
+		int n;
+		const u32 *ops;
+		int chk;
+		u32 want;
+	};
+
+	// Encodings, checked against capstone: MRS/MSR, B/BL (+8 from the pipeline
+	// value), BX/BLX, SWI, BKPT and the two data-processing instructions the
+	// two-instruction cases use to leave a dirty cache entry behind.
+	static const PsrCase psr[] = {
+		{ "mrs r0, cpsr",            {0xE10F0000u}, 1, kOpsNone,  CHK_R0,       0x00000013u },
+		{ "mrs r0, spsr",            {0xE14F0000u}, 1, kOpsNone,  CHK_R0,       0xA5A50013u },
+		{ "msr cpsr_f, r0",          {0xE128F000u}, 1, kOpsFlags, CHK_CPSR,     0xF0000013u },
+		{ "msr spsr_f, r0",          {0xE168F000u}, 1, kOpsFlags, CHK_SPSR,     0xF0A50013u },
+		{ "msr cpsr_c, r0 (-> irq)", {0xE121F000u}, 1, kOpsMode,  CHK_R13,      0x55555000u },
+		{ "add sp,#4 ; msr cpsr_c",  {0xE28DD004u, 0xE121F000u}, 2, kOpsMode,  CHK_R13_SVC, 0x023FF004u },
+		{ "b #+8",                   {0xEA000002u}, 1, kOpsNone,  CHK_IA,       0 },
+		{ "bl #+8",                  {0xEB000002u}, 1, kOpsNone,  CHK_R14,      0 },
+		{ "bx r0",                   {0xE12FFF10u}, 1, kOpsBx,    CHK_IA,       0x02000300u },
+		{ "blx r3",                  {0xE12FFF33u}, 1, kOpsBlx,   CHK_R14,      0 },
+		{ "add r0,#1 ; bx r0",       {0xE2800001u, 0xE12FFF10u}, 2, kOpsAdd1,  CHK_IA,       0x02000200u },
+		{ "swi #0x123456",           {0xEF123456u}, 1, kOpsNone,  CHK_IA,       0x00000008u },
+		{ "add sp,#4 ; swi #0",      {0xE28DD004u, 0xEF000000u}, 2, kOpsNone,  CHK_R13_SVC, 0x023FF004u },
+		{ "bkpt #0",                 {0xE1200070u}, 1, kOpsNone,  CHK_IA,       0x0000000Cu },
+		{ "add sp,#4 ; bkpt #0",     {0xE28DD004u, 0xE1200070u}, 2, kOpsNone,  CHK_R13_SVC, 0x023FF004u },
+	};
+	const size_t psr_count = sizeof(psr) / sizeof(psr[0]);
+
+	for (size_t i = 0; i < psr_count; i++) {
+		const PsrCase &c = psr[i];
+		const u32 adr = kCodeBase + 0x20000u + (u32)i * kCaseStride;
+
+		reset_banks();
+		memset(NDS_ARM9.R, 0, sizeof(NDS_ARM9.R));
+		NDS_ARM9.CPSR.val = 0;               // prime_cpu below sets the real one
+		NDS_ARM9.SPSR.val = 0xA5A50013u;
+
+		Result res;
+		if (!run_block(adr, c.w, c.n, c.ops, kCpsrInit, &res)) {
+			g_fail++;
+			continue;
+		}
+
+		const u32 ia = NDS_ARM9.instruct_adr;
+		const u32 ni = NDS_ARM9.next_instruction;
+
+		if (dump_psr == (int)i) {
+			ArmOpCompiled pf = (ArmOpCompiled)JIT_COMPILED_FUNC(adr, 0);
+			printf("DUMP %s %d bytes:\n", c.name, g_TOTALBYTES);
+			for (int k = 0; k < g_TOTALBYTES; k += 4) {
+				u32 word;
+				memcpy(&word, (const u8 *)pf + k, 4);
+				printf(" %08X", word);
+				if ((k / 4) % 8 == 7) printf("\n");
+			}
+			printf("\n");
+		}
+
+		printf("%-26s cyc=%2u cpsr=%08X spsr=%08X ia=%08X ni=%08X\n",
+		       c.name, res.cycles, res.cpsr, NDS_ARM9.SPSR.val, ia, ni);
+		printf("   r:");
+		for (int r = 0; r < 15; r++)
+			printf(" %08X", res.r[r]);
+		printf("\n   bank: svc=%08X,%08X abt=%08X,%08X irq=%08X,%08X usr=%08X,%08X fiq=%08X,%08X sfc=%08X sabt=%08X sirq=%08X\n",
+		       NDS_ARM9.R13_svc, NDS_ARM9.R14_svc, NDS_ARM9.R13_abt, NDS_ARM9.R14_abt,
+		       NDS_ARM9.R13_irq, NDS_ARM9.R14_irq, NDS_ARM9.R13_usr, NDS_ARM9.R14_usr,
+		       NDS_ARM9.R13_fiq, NDS_ARM9.R14_fiq, NDS_ARM9.SPSR_svc.val,
+		       NDS_ARM9.SPSR_abt.val, NDS_ARM9.SPSR_irq.val);
+
+		u32 got = 0;
+		switch (c.chk) {
+			case CHK_R0:       got = res.r[0]; break;
+			case CHK_R13:      got = res.r[13]; break;
+			case CHK_R14:      got = res.r[14]; break;
+			case CHK_R13_SVC:  got = NDS_ARM9.R13_svc; break;
+			case CHK_R13_ABT:  got = NDS_ARM9.R13_abt; break;
+			case CHK_CPSR:     got = res.cpsr; break;
+			case CHK_SPSR:     got = NDS_ARM9.SPSR.val; break;
+			case CHK_IA:       got = ia; break;
+			default: break;
+		}
+		// B/BL/BL's expected value depends on the block address, which the
+		// table cannot spell out; compute it here instead.
+		u32 want = c.want;
+		if (c.chk == CHK_IA && want == 0) want = adr + 16;          // b/bl #+8
+		if (c.chk == CHK_R14 && want == 0) want = adr + 4;          // bl/blx link
+
+		if (c.chk != CHK_NONE) {
+			if (got == want) {
+				g_pass++;
+			} else {
+				printf("  FAIL %-22s got=%08X want=%08X\n", c.name, got, want);
+				g_fail++;
 			}
 		}
 	}
