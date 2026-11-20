@@ -4,7 +4,7 @@
 > 迁移目标：`desmume/src/frontend/posix/gtk4/`（新增目录，GTK4）
 > 原则：**`gtk/` 一行不改，保持可编译、可发布**；所有新工作只进 `gtk4/`
 > 基线版本：**GTK ≥ 4.10**（理由见 §3 D2），实际验证目标 4.14+
-> 状态：P0/P1 已落地（§14），P2 未开始
+> 状态：P0/P1 已完成；P2a（显示 widget）已落地，P2b/P3 待做（§14）
 > 日期：2026-11-20
 
 ---
@@ -943,7 +943,7 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 |---|---|---|
 | P0 骨架 | **进行中** | 目录、`frontend-gtk` 自动发现（gtk4→gtk3→gtk2）、最小窗口、CI |
 | P1 外壳/装饰 | **已完成** | gresource 菜单/快捷键/CSS、三个可见性开关、SSD/CSD 共用内容树；编译链接通过（§14） |
-| P2 显示/输入 | 未开始 | 依赖 P1 |
+| P2 显示/输入 | **P2a 已完成** | `DesmumeDisplay` + GdkTexture 呈现 + 基本布局/输入控制器；P2b（混合布局精调、触控笔、逐像素对齐）待做 |
 | P3 对话框 | 未开始 | |
 | P4 工具 | 未开始 | |
 | P5 金手指 | 未开始 | |
@@ -1039,6 +1039,26 @@ P0 刻意不做的事：不装 desktop/metainfo/man（app-id 与安装布局在 
 CSD/SSD 的实际观感仍需在 KWin/GNOME/X11 上人工验收（§10）。
 
 P1 刻意不做的事：不装 desktop/metainfo/man（留在 P8），不引入视频/模拟逻辑（P2/P3），不把 GTK3 的 70 多个尚未实现的动作塞进菜单。
+
+### P2a 已落地内容
+
+| 路径 | 说明 |
+|---|---|
+| `posix/gtk4/display.h` / `display.cpp` | `DesmumeDisplay : GtkWidget`：两块 `GdkMemoryTexture`（B8G8R8A8_PREMULTIPLIED），`snapshot()` 画黑底 + 两屏 + 间隙；布局/旋转/间隙/交换由 setter 控制 |
+| 同上 | `GtkGestureClick` / `GtkEventControllerMotion` / `GtkEventControllerKey` 转成 `touch-press` / `touch-release` / `touch-move` / `key-event` 信号；`desmume_display_map_touch()` 用 cairo_matrix 逆变换映射到下屏帧缓冲坐标 |
+| `posix/gtk4/main.cpp` | 用 `DesmumeDisplay` 替掉 `GtkDrawingArea`；`DESMUME_GTK4_TEST_FRAME=1` 时喂合成帧（默认仍是黑屏） |
+| `posix/gtk4/meson.build` | 把 `display.cpp` 并入 target |
+
+P2a 的边界（P2b/P3 再做）：
+
+- 混合布局（hybrid-equal/vertical）目前是近似放置，没有照搬 GTK3 `calc_hybrid_vertical_params()` 的比例运算，
+  也没有 `hybridBigScreenScale` 与两屏触控矩阵的逐像素对齐；
+- 纹理每帧多一次拷贝（为把 BGRX 的 X 强制成 `0xFF`）；§6.2 的双缓冲 `GBytes` 池留到 P2b；
+- 没有 `GtkGestureStylus`，触控笔走不到；
+- 帧来源只是测试钩子，真实帧缓冲与主循环在 P3 接入；`nds_screen.touch_matrix` 的转换同样留在 P3。
+
+验证：Arch/WSL GTK 4.24.1 下完整链接通过；编译期无 `display.cpp`/`main.cpp` 警告。
+视觉效果（KWin/GNOME/X11、旋转、混合布局）还需要带显示环境的人工验收。
 
 ---
 

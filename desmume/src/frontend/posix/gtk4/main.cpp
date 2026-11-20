@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "display.h"
 
 #if defined(HAVE_GTK4_WAYLAND)
 #include <gdk/wayland/gdkwayland.h>
@@ -138,31 +139,61 @@ static gboolean UseClientSideDecorations(void)
 	       (strstr(desktop, "Unity") != NULL);
 }
 
-static void DrawDisplay(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data)
+/* P2 ships the display widget and its input plumbing; the emulated frames
+ * arrive in P3 together with the main loop.  Set DESMUME_GTK4_TEST_FRAME=1
+ * to feed a synthetic frame so the texture path can be exercised on its own. */
+static gboolean PushTestFrame(gpointer user_data)
 {
-	(void)area;
-	(void)user_data;
-
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	cairo_paint(cr);
-
-	if ((width <= 0) || (height <= 0))
+	DesmumeDisplay *display = DESMUME_DISPLAY(user_data);
+	if (!gtk_widget_get_mapped(GTK_WIDGET(display)))
 	{
-		return;
+		return G_SOURCE_CONTINUE;
 	}
 
-	const char *message = "DeSmuME GTK4 - P0 skeleton";
-	cairo_text_extents_t extents;
+	static guchar buffer[256 * 192 * 2 * 4];
+	static int tick = 0;
 
-	cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-	cairo_set_font_size(cr, 15.0);
-	cairo_text_extents(cr, message, &extents);
+	const int marker_x = (tick++ / 3) % 256;
+	for (int screen = 0; screen < 2; ++screen)
+	{
+		for (int y = 0; y < 192; ++y)
+		{
+			for (int x = 0; x < 256; ++x)
+			{
+				guchar *pixel = buffer + ((screen * 192 + y) * 256 + x) * 4;
+				pixel[0] = (guchar)(screen == 0 ? y / 2 : 40);       /* B */
+				pixel[1] = (guchar)(screen == 0 ? 60 : x / 2);       /* G */
+				pixel[2] = (guchar)(screen == 0 ? 160 : 90);         /* R */
+				pixel[3] = 0xFF;
+			}
+		}
+	}
 
-	cairo_set_source_rgb(cr, 0.55, 0.55, 0.58);
-	cairo_move_to(cr,
-	              (width  - extents.width)  / 2.0 - extents.x_bearing,
-	              (height - extents.height) / 2.0 - extents.y_bearing);
-	cairo_show_text(cr, message);
+	for (int y = 90; y < 102; ++y)
+	{
+		for (int x = marker_x - 6; x < marker_x + 6; ++x)
+		{
+			if (x < 0 || x >= 256)
+			{
+				continue;
+			}
+			guchar *pixel = buffer + ((192 + y) * 256 + x) * 4;
+			pixel[0] = pixel[1] = pixel[2] = 0xFF;
+		}
+	}
+
+	desmume_display_push_frame(display, buffer, 256, 192 * 2);
+	return G_SOURCE_CONTINUE;
+}
+
+static void OnTouchPress(DesmumeDisplay *display, double x, double y, gpointer user_data)
+{
+	(void)display;
+	(void)user_data;
+
+	char *text = g_strdup_printf("Touch (%.0f, %.0f)", x, y);
+	SetStatus(text);
+	g_free(text);
 }
 
 static void OnAlertDone(GObject *source, GAsyncResult *result, gpointer user_data)
@@ -416,12 +447,10 @@ static void BuildWindow(GtkApplication *app)
 
 	gtk_box_append(GTK_BOX(root), pToolBar);
 
-	pDisplayArea = gtk_drawing_area_new();
+	pDisplayArea = desmume_display_new();
 	gtk_widget_set_hexpand(pDisplayArea, TRUE);
 	gtk_widget_set_vexpand(pDisplayArea, TRUE);
-	gtk_widget_add_css_class(pDisplayArea, "desmume-display");
-	gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(pDisplayArea),
-	                               DrawDisplay, NULL, NULL);
+	g_signal_connect(pDisplayArea, "touch-press", G_CALLBACK(OnTouchPress), NULL);
 	gtk_box_append(GTK_BOX(root), pDisplayArea);
 
 	pStatusBar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
@@ -489,6 +518,11 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 	g_simple_action_set_state(statusbar_action, g_variant_new_boolean(pConfig->view_statusbar.get()));
 
 	gtk_window_present(GTK_WINDOW(pWindow));
+
+	if (g_getenv("DESMUME_GTK4_TEST_FRAME") != NULL)
+	{
+		g_timeout_add(1000 / 60, PushTestFrame, pDisplayArea);
+	}
 
 	if (pConfig->window_fullscreen.get())
 	{

@@ -31,6 +31,7 @@ gresource = gnome.compile_resources(
 
 desmume_src = [
   'config.cpp',
+  'display.cpp',
   'main.cpp',
 ] + gresource
 
