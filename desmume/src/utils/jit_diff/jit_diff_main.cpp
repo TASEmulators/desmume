@@ -63,6 +63,10 @@ static int gJitUnstable = 0;
 
 static const char *mnemonic(bool thumb, u32 opcode);
 
+// Size of the last block the backend compiled (emit_core.cpp records it). Only
+// used by --dump, and only because the S4 acceptance gate is a code-size ratio.
+extern int g_TOTALBYTES;
+
 struct CpuSnapshot
 {
 	u32 r[16];
@@ -727,6 +731,75 @@ static int runSweep(bool full, int onlySlot, bool verbose, bool listAll)
 	return failures;
 }
 
+// Dumps the machine code a compiled block consists of.
+static void dumpCompiledBlock(u32 adr)
+{
+	const uintptr_t fn = JIT_COMPILED_FUNC(adr, 0);
+	printf("\nblock %08X -> %p, %d bytes (%d instructions)\n",
+		adr, (void *)fn, g_TOTALBYTES, g_TOTALBYTES / 4);
+	if (!fn)
+		return;
+
+	const unsigned char *p = (const unsigned char *)fn;
+	int size = g_TOTALBYTES;
+	if (size <= 0 || size > 4096) size = 512;   // unknown: keep the old bound
+	FILE *f = fopen("block.bin", "wb");
+	if (f)
+	{
+		fwrite(p, 1, size, f);
+		fclose(f);
+	}
+	for (int i = 0; i < size; i++)
+	{
+		printf("%02X", p[i]);
+		if ((i & 15) == 15) printf("\n");
+	}
+}
+
+// Code-size measurement: the S4 acceptance gate is stated as "generated
+// instructions per handler <= 50% of before", and that cannot be measured with
+// the sweep, which forces one instruction per block on purpose (a comparison
+// spanning several instructions is ambiguous). A real block is up to
+// CommonSettings.jit_max_block_size instructions long and the block prologue --
+// the CPU base pointer in particular -- is amortised over all of them, so a
+// one-instruction block understates the win. This plants the same opcode `n`
+// times, compiles the block once, and reports its size.
+static int measureBlockSize(int n, int slot, bool thumb, u32 dumpAdr)
+{
+	if (slot < 0)
+	{
+		printf("--block needs --slot (and --thumb for the Thumb set)\n");
+		return 2;
+	}
+	if (n < 1 || n > 100)
+	{
+		printf("--block must be 1..100\n");
+		return 2;
+	}
+
+	const u32 opcode = thumb ? ((u32)slot << 6) : ((u32)slot << 20);
+	const u32 insnSize = thumb ? 2u : 4u;
+	for (int i = 0; i < n; i++)
+	{
+		if (thumb) _MMU_write16<0>(kCodeBase + i * insnSize, (u16)opcode);
+		else _MMU_write32<0>(kCodeBase + i * insnSize, opcode);
+	}
+
+	CommonSettings.jit_max_block_size = n;
+	arm_jit_reset(true, true);
+
+	primeState(kCodeBase, kOperands, opcode, 0x00000013u | (thumb ? 0x20u : 0u));
+	execJit();   // compiles the block
+	execJit();   // runs it, so the size is of code that has been used
+
+	printf("block: %s slot %03X x %d instruction(s) -> %d bytes (%d host instructions)\n",
+		thumb ? "thumb" : "arm", slot, n, g_TOTALBYTES, g_TOTALBYTES / 4);
+
+	if (dumpAdr)
+		dumpCompiledBlock(dumpAdr);
+	return 0;
+}
+
 // Base address the map file's RVAs are relative to. Only used to turn a fault
 // address into something a debugger can name, so a NULL here costs information,
 // not correctness.
@@ -749,6 +822,8 @@ int main(int argc, char **argv)
 	bool verbose = false;
 	bool listAll = false;
 	int onlySlot = -1;
+	int measureBlock = 0;
+	bool measureThumb = false;
 	u32 dumpBlockAdr = 0;
 	for (int i = 1; i < argc; i++)
 	{
@@ -757,6 +832,8 @@ int main(int argc, char **argv)
 		else if (strcmp(argv[i], "--verbose") == 0) verbose = true;
 		else if (strcmp(argv[i], "--all") == 0) listAll = true;
 		else if (strcmp(argv[i], "--slot") == 0 && i + 1 < argc) onlySlot = atoi(argv[++i]);
+		else if (strcmp(argv[i], "--block") == 0 && i + 1 < argc) measureBlock = atoi(argv[++i]);
+		else if (strcmp(argv[i], "--thumb") == 0) measureThumb = true;
 		else if (strcmp(argv[i], "--dump") == 0 && i + 1 < argc)
 			dumpBlockAdr = (u32)strtoul(argv[++i], NULL, 16);
 	}
@@ -811,30 +888,15 @@ int main(int argc, char **argv)
 	CommonSettings.jit_max_block_size = 1;
 	arm_jit_reset(true, true);
 
+	if (measureBlock > 0)
+		return measureBlockSize(measureBlock, onlySlot, measureThumb, dumpBlockAdr);
+
 	int failures = sweep ? runSweep(full, onlySlot, verbose, listAll) : runProbes();
 
 	// Reverse-engineering aid: dump the machine code a probe compiled to, so the
 	// host instruction sequence can be disassembled instead of assumed.
 	if (dumpBlockAdr != 0)
-	{
-		const uintptr_t fn = JIT_COMPILED_FUNC(dumpBlockAdr, 0);
-		printf("\nblock %08X -> %p\n", dumpBlockAdr, (void *)fn);
-		if (fn)
-		{
-			const unsigned char *p = (const unsigned char *)fn;
-			FILE *f = fopen("block.bin", "wb");
-			if (f)
-			{
-				fwrite(p, 1, 512, f);
-				fclose(f);
-			}
-			for (int i = 0; i < 512; i++)
-			{
-				printf("%02X", p[i]);
-				if ((i & 15) == 15) printf("\n");
-			}
-		}
-	}
+		dumpCompiledBlock(dumpBlockAdr);
 
 	if (gJitUnstable)
 		printf("jit not repeatable: %d comparison(s) where the first call and a\n"

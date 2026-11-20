@@ -92,3 +92,6 @@ xcuserdata/
 /.build
 /build_core/
 /build_check/
+
+## Written by the differential harness on --dump
+block.bin
