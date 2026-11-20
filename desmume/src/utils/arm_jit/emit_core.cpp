@@ -109,6 +109,13 @@ static std::map<uint64_t, asmjit::Label> g_labels;
 // read it; the backend itself does not need it.
 int g_TOTALBYTES = 0;
 
+// Sum of every block createFunc() has landed since the last reset. The S4
+// acceptance gate is a code-size ratio, and a single block's size is a poor
+// proxy: it is dominated by the prologue, and a test block is not the same
+// length as a real one. The total over a full 5120-slot sweep is comparable
+// between builds without any of those caveats.
+uint64_t g_all_block_bytes = 0;
+
 static asmjit::Label a64_label(t_bytes *out, uint64_t id) {
 	std::map<uint64_t, asmjit::Label>::iterator it = g_labels.find(id);
 	if (it != g_labels.end())
@@ -285,6 +292,7 @@ JittedFunc createFunc(t_bytes *bytes) {
 	}
 
 	g_TOTALBYTES = (int)final_size;
+	g_all_block_bytes += final_size;
 
 	// copy_flattened_data() does not flush the instruction cache. Without this
 	// the CPU keeps executing the previous contents of the block, which shows up

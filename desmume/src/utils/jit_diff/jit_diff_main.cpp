@@ -67,6 +67,9 @@ static const char *mnemonic(bool thumb, u32 opcode);
 // used by --dump, and only because the S4 acceptance gate is a code-size ratio.
 extern int g_TOTALBYTES;
 
+// Total bytes of every block compiled so far (see emit_core.cpp).
+extern uint64_t g_all_block_bytes;
+
 struct CpuSnapshot
 {
 	u32 r[16];
@@ -897,6 +900,9 @@ int main(int argc, char **argv)
 	// host instruction sequence can be disassembled instead of assumed.
 	if (dumpBlockAdr != 0)
 		dumpCompiledBlock(dumpBlockAdr);
+
+	if (sweep)
+		printf("jit code: %llu bytes total\n", (unsigned long long)g_all_block_bytes);
 
 	if (gJitUnstable)
 		printf("jit not repeatable: %d comparison(s) where the first call and a\n"
