@@ -15,7 +15,8 @@
 | rev1 | 只针对 x86/x64 宿主后端（`arm_jit.cpp`），分 S0–S7 七阶段 |
 | rev2 | ① x86-64 与 AArch64 两个后端同时迁移；② ARM32 后端删除；③ 迁移单位改为"一条指令"；④ 新增三方言语义对账 |
 | rev3 | ① **arm64 侧改用 `a64::Compiler`**（不再用 Assembler 平移手写编码器）——为统一、为减 bug、为性能；② 新增 §1.4 性能账（带实测证据）；③ 新增 §3.7：`2d4919aa` 块级边界事故复盘，并把它变成可自动化的判据；④ 阶段重排为 S0–S8 |
-| **rev4（本文）** | 按 rev3 开工后的落地修正：① vendor 目录改用仓库既有约定的 `3rdparty/asmjit`（原文写 `third_party`，但仓库已有 `3rdparty/` 且被 vcxproj 引用）；② 新增 `tools/jit_matrix/gen_asmjit_sources.py`——asmjit 编译清单**由脚本生成**，不手抄；③ S1 拆成 S1.1（删 ARM32，**已完成**）/ S1.2（vendor，**已完成**）/ S1.3（构建接线，推迟到 S2 首个提交）；④ 记录 MSVC 构建验证的实际结论与阻塞点 |
+| **rev4** | 按 rev3 开工后的落地修正：① vendor 目录改用仓库既有约定的 `3rdparty/asmjit`（原文写 `third_party`，但仓库已有 `3rdparty/` 且被 vcxproj 引用）；② 新增 `tools/jit_matrix/gen_asmjit_sources.py`——asmjit 编译清单**由脚本生成**，不手抄；③ S1 拆成 S1.1（删 ARM32，**已完成**）/ S1.2（vendor，**已完成**）/ S1.3（构建接线，推迟到 S2 首个提交）；④ 记录 MSVC 构建验证的实际结论与阻塞点 |
+| **rev5（本文）** | S2 收官：① macOS arm64 实机构建通过（两处真实阻塞已修，见 §2.6）；② 差分台移植到 POSIX 宿主机，`build_diff_macos.sh` 复用 Xcode 产物——**arm64 后端第一次以"模拟器的调用方式"跑起来**；③ 首次全量扫描发现 2 个真实缺陷，均按 §3.5 以 ARM ARM 仲裁后修复（arm64 Thumb `ASR #32` 的 C、解释器 `NEG INT_MIN` 的 V）；④ §3.5 补充"周期数不可用 ARM ARM 裁决"的边界 |
 
 ---
 
@@ -448,6 +449,21 @@ x86 宿主机跑不了 arm64 JIT 生成的代码，反之亦然。所以三方�
 把结论写进工单的"已知偏差"字段。**不要为了让测试变绿而去改解释器**——
 除非能引用条款或 armwrestler 用例证明解释器确实错了；那种情况必须单独开一个 commit，
 并在 commit message 里标注"解释器行为变更（附依据）"，方便将来 bisect。
+
+**哪些东西 ARM ARM 裁不了**：只有**架构可见状态**（R0–R15、CPSR、内存写入、`instruct_adr`）
+能用条款裁决。周期数是实现定义的——ARM ARM 不规定一条指令几拍，`OC`/`SH` 的具体时序取决于
+核的微架构。所以差分台里的"周期数不一致"是**记录项**，不进仲裁、不据此改代码；
+真要收口那是 S4 的性能门槛（§1.4）和 S5 的收尾项，判据是"整机帧率不退化"，不是"逐槽位拍数相等"。
+
+**已按此流程裁定的先例**（写在这里是为了下次遇到时不用重新发明判断）：
+
+| 分歧 | 三方表现 | ARM 条款 | 结论 |
+|---|---|---|---|
+| Thumb `ASR #0` 的 C | 解释器 = bit31；arm64 后端 = bit30；x86 后端 = bit31（借 `sets` 从 SF 取，恰好对） | `DecodeImmShift`：`imm5 == 0 → shift_n = 32`；`ASR_C`：`x[Min(shift-1, N-1)]` | arm64 错，改后端 |
+| Thumb `NEG` 的 V（操作数 `0x80000000`） | 解释器（clang -O3）= 0；两个 JIT = 1 | `RSB (immediate)` T1 = `AddWithCarry(NOT(Rn), Zeros(32), '1')`；E1.2.2：减法有符号溢出则 `nzcv[0] = 1` | 解释器错，改解释器（单独 commit） |
+
+两者的教训是同一条：**"多数一致"不是判据**。第二例里"两个 JIT 都偏、且偏法相同"按上面的流程
+本该优先怀疑解释器——事实也确实如此，但别停在这个启发式上，条款才是终点。
 
 ### 3.6 逐族语义契约清单（写测试用例时按这个查）
 
@@ -1152,6 +1168,61 @@ struct ArmRegCache {
 - **故意把 icache flush 关掉**，确认测试能复现"执行到旧指令"的崩溃——验证用例真的抓得住这类错误。
 
 **回退点**：S2 结束时功能应与改前完全等价（差分 dump 应逐行相同），可整段 revert。
+
+#### 2.6 macOS arm64 实机验收（已完成，2026-11-20）
+
+S2 的"能在真机上编、能按模拟器的方式跑"两项，在 Apple Silicon（Xcode 27 / Apple clang）上补齐。
+
+**构建**：`DeSmuME (macOS App; AppleSilicon dev+ -- Latest Xcode)`，Release，`BUILD SUCCEEDED`。
+失败过两次，都不是环境问题：
+
+| 症状 | 根因 | 修法 |
+|---|---|---|
+| `no member named 'memory_order_relaxed' in 'std::memory_order'`（12 处） | `types.h` 写成 `std::memory_order::memory_order_relaxed`——用枚举类型限定自己的枚举项，C++17 及以前是扩展，clang 在 C++20 下直接拒绝 | 改为 `std::memory_order_relaxed`（任何标准都合法，MSVC 侧行为不变） |
+| `use of undeclared identifier 'sys_icache_invalidate'` | `emit_core.cpp` 的 `__APPLE__` 分支用了它，却没 include `<libkern/OSCacheControl.h>` | 补 include |
+
+> **环境注意**：该 target 把 `MACOSX_DEPLOYMENT_TARGET` 钉在 11.5，Xcode 27 的最低支持是 12.0。
+> 这是工程设置不是代码问题，验收时用命令行覆盖 `MACOSX_DEPLOYMENT_TARGET=12.0`，
+> **没有改 pbxproj**——发布部署版本是维护者的决定，不该被一次验证顺手改掉。
+
+**差分（这是 arm64 后端第一次在 sim 语义下被逐槽位对照）**：
+
+```bash
+tools/jit_matrix/build_diff_macos.sh          # 复用 Xcode 产物打包成 .a，再链差分台
+.build/diff-mac/jit_diff --full --all
+```
+
+| 指标 | 首次（修复前） | 修复后 |
+|---|---|---|
+| 比较次数 | 81920（5120 槽 × 8 向量 × 2 标志组） | 同左 |
+| 引擎异常（崩溃/访问冲突） | **0** | **0** |
+| R0–R14 | **0** | **0** |
+| CPSR | **6** | **0** |
+| `instruct_adr` | 0 | 0 |
+| 周期数 | 14755 | 14755 |
+| JIT 自身不可重复 | 3（与 x86 基线同址同数） | 3 |
+
+也就是说：**arm64 后端在 5120 个分派槽位上算出的寄存器结果与解释器完全一致**，
+唯一的功能性差异是 6 条 CPSR，归并为 2 个根因。两个都按 §3.5 用 ARM ARM 裁定：
+
+1. **arm64 后端 Thumb `ASR #0`（= `ASR #32`）进位错**。原实现移位 31 次。
+   `DecodeImmShift()`（DDI 0597 共享伪代码）明写 `imm5 == '00000'` 时 `shift_n = 32`；
+   `ASR_C()`（同手册标准库）为 `(ASR{N}(x, shift), x[Min(shift-1, N-1)])`，
+   即 #32 的进位取 **bit31**、#31 取 bit30。两者结果相同（`ASR{}` 把 shift 钳到 `N-1`），
+   所以只有 C 错——解释器本来就是对的。改 `emit_asrs(..., 32)` 走"count ≥ 32"分支。
+2. **解释器 `NEG INT_MIN` 丢 V**。`(s32)0 - (s32)Rm` 在 `Rm == 0x80000000` 时是有符号溢出（UB），
+   clang -O3 据此把 `OverflowFromSUB` 折叠成常量假，**V 整个从编译结果里消失**（源码里那行还在，
+   所以肉眼审不出来）。RSB (immediate) T1 是 `AddWithCarry(NOT(R[n]), Zeros(32), '1')`，
+   ARM ARM E1.2.2 说 `nzcv[0] == '1'` 当减法发生有符号溢出——`0 - INT_MIN` 溢出，故 V=1。
+   arm64 与 x86 两个 JIT 都对，只有 clang 编出来的解释器错；MSVC 不利用这个 UB，所以 x86 基线从未暴露。
+
+**周期数 14755 条不做仲裁**：ARM ARM 不规定指令执行拍数（实现定义），
+这一项没有"真实硬件行为"可对照，属于两个后端各自的周期模型（§3.3 的不可比项）。
+它是**记录项不是缺陷**，S4 的性能门槛另算（§1.4）。
+
+**这一步的价值**：S2 之前 arm64 侧的所有证据都停在"生成的指令字与旧编码器一致"（236 例）
+和"25 个原语能在 AArch64 上跑对"——都没经过模拟器的条件执行、周期记账和块级边界。
+现在补上了，而且第一次跑就抓到 2 个既有 bug，其中一个是解释器的、还是只在 clang 下存在的那种。
 
 ### S3 · x86 机械替换（约 3–5 天）
 

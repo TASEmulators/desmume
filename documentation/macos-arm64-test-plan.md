@@ -2,9 +2,43 @@
 
 > 目的：在真机上确认 S2 之后 arm64 后端可用、且 §3.7 的块级语义没有退化。
 > 前置状态：x86 与 arm64 两个后端都已在 asmjit master 上（提交 `49e5fe6c` / `da517591`），
-> 两个构建工程刚接线完成（`29f2a3fb`），**尚未在任何 Apple 编译器上构建过**。
+> 两个构建工程刚接线完成（`29f2a3fb`）。
+>
+> **2026-11-20 更新：第 1、2 节已经在这台机器上跑通，并且多了一层更强的检查——
+> macOS 本地差分台（见 §0.2）。§5 之后的整机验收仍然需要 ROM，尚未做。**
 
-## 0. 已经验证到哪一步（今晚，Android Termux / aarch64）
+## 0. 已经验证到哪一步
+
+### 0.1 构建 + 逐槽位差分（已完成）
+
+| 检查 | 结果 |
+|---|---|
+| `check_xcode_asmjit.py` 接线自检 | `wiring looks complete`（10 个 JIT target、54 个 asmjit 源、逐文件 C++20、PCH 关闭） |
+| AppleSilicon dev+ target Release 构建 | **BUILD SUCCEEDED**（需覆盖 `MACOSX_DEPLOYMENT_TARGET=12.0`，见 §3） |
+| 差分台 `--full --all`（5120 槽 × 8 向量 × 2 标志组） | 81920 次比较：**引擎异常 0、R0–R14 差异 0、CPSR 差异 0**、`instruct_adr` 0 |
+| 周期数差异 | 14755 条，**记录项**（实现定义，ARM ARM 不可裁决，见方案 §3.5） |
+
+首次扫描（修复前）有 6 条 CPSR 差异，已经定位成 2 个真实缺陷并修复，两处都以 ARM 手册条款裁定：
+
+- arm64 后端 Thumb `ASR #0`（= `ASR #32`）的 C 取错位（bit30 而非 bit31）——`DecodeImmShift` /
+  `ASR_C`；
+- 解释器 Thumb `NEG 0x80000000` 丢 V——clang -O3 利用 `(s32)0 - (s32)Rm` 的有符号溢出 UB 把
+  V 折叠掉了，而 `RSB (immediate)` + `AddWithCarry` 规定 V=1。
+
+### 0.2 本地差分台（不需要 ROM，优先用这个）
+
+```bash
+tools/jit_matrix/build_diff_macos.sh
+.build/diff-mac/jit_diff            # 18 个探针 × 8 向量 × 2 标志组
+.build/diff-mac/jit_diff --full --all   # 全量 81920 次比较
+.build/diff-mac/jit_diff --full --slot 64   # 只看某个槽位（两个指令集同名槽位都跑）
+```
+
+它复用 Xcode 构建出来的目标文件（同一批 TU、同一套宏），所以不需要另配一套编译参数；
+Cocoa 前端顺带提供了 core 引用的那几个全局（`execute` / `paused` / `driver`），因此没有桩文件。
+改动 core 之后必须先重跑一次 xcodebuild，脚本只负责打包和链接。
+
+### 0.3 Android/Termux 侧（较早的证据，保留对照）
 
 设备：`192.168.1.4:8022`，Android 16，clang 21.1.8，8 核。
 
@@ -12,12 +46,12 @@
 |---|---|
 | asmjit + 后端在真实 aarch64 上编译 | 45 个 asmjit TU + `a64_dump_new` / `a64_shape_probe` / `a64_exec_probe` 全部通过 |
 | 编码等价（236 个原语样例，capstone 逐条反汇编比对） | **236/236 一致**（2 例为 asmjit 的 dead-branch 消除，已登记） |
-| 生成代码**真的执行**（25 个用例：ALU / 移位 / 立即数构造 / cmp+cset / 条件分支 / 乘法 / 存取） | **25/25 通过** |
+| 生成代码**真的执行**（25 个用例） | **25/25 通过** |
 | 块中途 `ret` 形状 | 通过（早退后的尾巴没被吃掉） |
 
-也就是说：`emit_*` 生成的代码在 AArch64 硬件上跑得对，落地路径（flatten → relocate →
-copy → icache flush）也是通的。**还没有验证的**是 Apple clang + libc++、Metal/Xcode 工程本身、
-以及整机行为（下面这些步骤）。
+这批证据只覆盖原语层（`emit_*` 生成的代码字），不经过模拟器的条件执行与周期记账——
+所以上面 §0.1 的差分才是"后端作为模拟器的一部分"的第一次验证。
+
 
 ## 1. 构建前自检（30 秒）
 
@@ -43,10 +77,16 @@ python3 tools/jit_matrix/check_xcode_asmjit.py
 cd desmume/src/frontend/cocoa
 xcodebuild -project "DeSmuME (Latest).xcodeproj" \
   -target "DeSmuME (macOS App; AppleSilicon dev+ -- Latest Xcode)" \
-  -configuration Release build
+  -configuration Release MACOSX_DEPLOYMENT_TARGET=12.0 build
 ```
 
-GUI 也可以：打开工程，scheme 选同一个 target，Configuration 选 Release，⌘B。
+`MACOSX_DEPLOYMENT_TARGET=12.0` 在 Xcode 26 之前不需要（target 里钉的是 11.5）。
+Xcode 27 起最低支持 12.0，不覆盖就直接报
+`deployment target 'MACOSX_DEPLOYMENT_TARGET' is set to 11.5, but the range of supported
+deployment target versions is 12.0 to ...`。用命令行覆盖，别改 pbxproj——发布部署版本是维护者的决定。
+
+GUI 也可以：打开工程，scheme 选同一个 target，Configuration 选 Release，⌘B
+（但 GUI 里改不了部署目标，所以 Xcode 27 上只能走命令行）。
 
 ## 3. 构建失败对照
 
@@ -57,6 +97,10 @@ GUI 也可以：打开工程，scheme 选同一个 target，Configuration 选 Re
 | `PCH file was compiled with a different language standard` | 前缀头还在预编译 | 同上（会设 `GCC_PRECOMPILE_PREFIX_HEADER = NO`） |
 | `#error "arm_jit_arm.cpp is the AArch64 host backend only"` | 选到了 Intel / Universal target | 换 AppleSilicon target |
 | `asmjit::Assembler` 重复定义 | 旧 `src/utils/AsmJit` 又被编进去了 | 同上（会把旧源从 Sources 里摘掉） |
+| `deployment target ... 11.5 ... supported ... 12.0` | target 钉的部署目标低于当前 Xcode 下限 | 命令行加 `MACOSX_DEPLOYMENT_TARGET=12.0`（见 §2） |
+| `no member named 'memory_order_relaxed' in 'std::memory_order'` | `types.h` 用枚举类型限定自己的枚举项，C++20 下非法 | **已修**（`0cdd84c6`）；若复现说明在旧分支上 |
+| `use of undeclared identifier 'sys_icache_invalidate'` | `emit_core.cpp` 缺 `<libkern/OSCacheControl.h>` | **已修**（同上） |
+
 
 接线脚本是幂等的，重跑不会重复插入。要整体回退：
 `git checkout -- "desmume/src/frontend/cocoa/DeSmuME (Latest).xcodeproj/project.pbxproj"`。
