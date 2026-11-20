@@ -3,20 +3,20 @@
 > 本文把 `asmjit-jit-migration-plan.md`（下称「主文档」）中散落的未完成项集中成一份可勾选清单。
 > **主文档仍是权威来源**，本文是索引视图；状态变化时两处同步更新。
 >
-> 快照：2026-11-20，HEAD `7246f4bd` + 本轮未提交改动（族 6 迁移与 bank 串值修复，见主文档 §S4 族 6）。
+> 快照：2026-11-20，HEAD `b56acec3` + 本轮未提交改动（族 3+4 访存与 LDM/STM，见主文档 §S4）。
 
 ## 当前进度快照
 
 | 项 | 状态 |
 |---|---|
-| 迁移主线（571 组 `diff-pass`） | **293 / 571**：族 1 数据处理 28 + 族 2 ARM 移位 224 + 族 5 乘法/乘加 28 + CLZ + **族 6 分支/状态/异常 12**；余 278 组 |
-| P0 访存 ABI（arm64 `call_mem`） | **已落地提交**：`call_mem` / `_r7` / `_r2` 三变体，24 处调用点中 15 处转轻量（commits `b7225baa`、`b1f5b455`）；**原语级真机执行已验证**（`a64_memcall_probe` 15/15），块级语义待 macOS |
-| 族3 代码迁移 | **x86 结构 + arm64 结构级已完成**；卡 `diff-pass` 的是 arm64 接入 `ArmRegCache`（§9.5 P3）+ macOS 三方差分 |
-| 访存差分安全网 | **本机已加固**（主文档 §10.8）：`kProbes` 新增 20 条访存定向探针，38/38 全绿；此前 `--full` 只测 `LDR r0,[r0]` 退化形式 |
-| **arm64 handler 级真机验证** | `a64_block_probe` 在 Termux aarch64 上跑真实的 `compile_basicblock()` 生成块（68 个桩符号补齐核心）；族 5、族 6 都是"迁移前后逐字节相同 + 少数刻意变化"的判据 |
-| **bank 搬移不变量** | 本轮确立：`armcpu_switchMode()` 靠读内存完成 bank 搬移 → **调用前必须 `flush()`**。6 处调用点全部满足（`S_DST_R15` 原本就有）；真机两指令块证明不修会双向串值 |
+| 迁移主线（571 组 `diff-pass`） | **497 / 571**：族 1 数据处理 28 + 族 2 ARM 移位 224 + 族 3+4 访存 172 + LDM/STM 32 + 族 5 乘法/乘加 28 + CLZ + 族 6 分支/状态/异常 12；余 74 组（Thumb 68 + 饱和 4 + 协处理器 2） |
+| P0 访存 ABI（arm64 `call_mem`） | **已落地提交**：`call_mem` / `_r7` / `_r2` 三变体，24 处调用点中 15 处转轻量（commits `b7225baa`、`b1f5b455`）；原语级 + 块级真机均已验证 |
+| 族3 代码迁移 | **arm64 缓存接入完成**（本批）；x86 侧结构早已完成 |
+| 访存差分安全网 | **本机已加固**（主文档 §10.8）：`kProbes` 新增 20 条访存定向探针，38/38 全绿 |
+| **arm64 handler 级真机验证** | `a64_block_probe` 90 个块（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + 37 访存），71 项自检全绿 |
+| **helper 读 `armcpu_t` 的不变量** | `armcpu_switchMode()`（族 6）与 `OP_LDM_STM`/`OP_LDRD`/`op_swp`（本批）都直接读写 `cpu->R[]`：**调用前必须把涉及的寄存器落盘**。两处都已修，其中 STM 存旧值属于线上会踩到的 bug |
 | x64 fastmem | **已评估放弃**（主文档 §10.6），x64 保持现状 |
-| 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0；arm64 编码层 `check_a64` 4/241 已知基线差异；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` 38/38 |
+| 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0；arm64 编码层 `check_a64` 4/241 已知基线差异；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` 71/71 |
 | 未跟踪文件 | `issue.md`（会话开始前既有，不属本次迁移） |
 
 ---
@@ -29,6 +29,8 @@
 - [x] **`call_mem` 原语级真机验证（Termux aarch64，本轮）**：`tools/jit_matrix/a64_memcall_probe.cpp` 15/15。负对照（同函数去掉 stp/ldp）证明 helper 真的把 x12/x15/x2 毁成 `BEEF0000`/`F00D0000`/`DEAD0000`，正例证明 `call_mem` 保 x12/x15、`call_mem_r2` 保 x2+x12+x15，x21 靠 AAPCS64 callee-saved 免费保住；1e6 次调用验 `call_mem_r2` 的栈收支与 canary。
 - [x] **handler 级真机验证通道（族 5 建立，族 6 扩展）**：`tools/jit_matrix/a64_block_probe.cpp` 直接 include `arm_jit_arm.cpp`、用 68 个桩符号补齐核心，在真机上执行 `compile_basicblock()` 生成的块。族 6 把其中的 `armcpu_switchMode` 桩换成**真正搬移 bank 的实现**（否则"缓存没 flush"这类 bug 一条都测不出来），并支持两指令块。**新增族时优先扩这个探针，而不是等 macOS。**
 - [ ] **§10.5/§10.7 访存差分（macOS / arm64）**：`build_diff_macos.sh` 重建后跑 `jit_diff --full`，确认访存槽位功能桶（R0–R14 / CPSR / `instruct_adr` / 内存写集）全 0。重点覆盖：LDR/STR 的 Rd==15 与写回变体、**LDRD/STRD 的 W 位写回、Thumb PUSH/POP、SWP、LDM/STM**。注意 macOS 的 `kProbes` 与本机同步后同样是 38 条。
+- [ ] **`ldmda`/`stmda` 的有效地址对解释器核对（新增，需 oracle）**：探针里这两条只做了 pin（迁移前后相同），没有断言——它们的地址推进跟 ARM ARM 的写法对不上，而块级探针链不到解释器，判不了谁对。macOS 上拿 `jit_diff` 的 LDM/STM 槽位对比即可定性；若 JIT 与解释器一致而与 ARM ARM 不一致，那是既有语义，另开 issue。
+- [ ] **带移位寄存器偏移的 LDR/STR 仍是全内存路径（新增）**：`ldr r0,[r1,r2,lsl #2]` 的 Rm 走 `reg_pos_ptr`（`arg` 宏与族 1/2 共用）。要提速得先让族 1/2 的 `rhs` 也吃缓存，属 §9.5 P3 的连带项。
 - [ ] **§10.5 代码体积**：`jit_diff --block --slot` 实测 LDR/STR 边际指令数，与 §10.5 推算的「下降约 25–40%」对照。
 - [ ] **§10.5 整机 ROM**：花屏 / DMA 提前退出路径回归，确认缓存脏值在 helper 调用后未丢失。
   - 回退预案：任一族差分报错，把该族调用点单独换回 `callR3`/`callR7`（改动按族分点，回退粒度细）。
@@ -48,21 +50,21 @@
 - [x] **x86 JIT 全量重跑（新核心库，2026-11-20）**：修复 `build_core.ps1` 让 vendored asmjit 源用 C++20 编译（此前 52 个 asmjit 文件按 c++14 编译失败，核心库停在 11/19），重建出含 11/20 全部 x86 修复的 `desmume_core.lib`（194/194 源，0 失败）。重链 `jit_diff.exe` 后：`--full` 81920 比较功能桶全 0（12067 是 cycle 记录项）；`--seq 2/3/4` 共 19776 比较全 0 mismatch；38 探针全绿。接线自检（vcxproj/xcode/gen_sources）全绿。
 - [ ] **§8 x86 运行时补测**：6 处 `ptr_abs` 改造现已在**真实 x86 运行时**覆盖——`jit_diff.exe` 是 x86 后端且跑通全量/序列差分（不再是 `-fsyntax-only`）；若需 GUI 整机层面确认，仍可在 Windows / Intel Mac 补做。
 
-## 三、迁移主线进度（核心，剩 278 组）
+## 三、迁移主线进度（核心，剩 74 组）
 
-- [ ] **§8 矩阵状态**：571 组全部 `diff-pass`，其余 20 组保持 `interp-fallback`（当前 293 组，见 §S4）。
+- [ ] **§8 矩阵状态**：571 组全部 `diff-pass`，其余 20 组保持 `interp-fallback`（当前 497 组，见 §S4）。
 - 按 §7 分组的未完成批次（数字取自重新生成的 `documentation/jit-opcode-matrix.csv`）：
 
 | 组 | 内容 | 组数 | 状态 |
 |---|---|---|---|
-| C | 访存 + LDM/STM（批次 3 + 4） | 204 | 未开始语义迁移（ABI 优化已先行；缓存接入属 §9.5 P3）。**注意**：`op_ldm_stm2` 的两处 `switchMode` 已按本批不变量补了 `flush()`，但还没被探针覆盖 |
-| D | 乘法 + 分支 + 状态 + 异常（批次 5 + 6） | 41 | **完成**（`UND` 除外，它一直 `interp-fallback`）：乘法 28 + CLZ（§S4 族 5）、分支/状态/异常 12（§S4 族 6） |
+| C | 访存 + LDM/STM（批次 3 + 4） | 204 | **完成**（§S4 族 3+4）；遗留两条 DA 形式待 macOS 对解释器 |
+| D | 乘法 + 分支 + 状态 + 异常（批次 5 + 6） | 41 | **完成**（`UND` 一直 `interp-fallback`） |
 | E | 协处理器 + 饱和 + Thumb（批次 7 + 8） | 74 | 未开始（coproc 2 + sat 4 + Thumb 68） |
 
-- 本轮抓到并修掉两个既有缺陷（都是"缓存与外部世界"的边界）：
-  1. `emit_dma_event_check` 在分支内 `flush()` 会丢延迟回写（主文档 §S4 族 5）；
-  2. `armcpu_switchMode()` 之前没有 `flush()`，导致 bank 双向串值（主文档 §S4 族 6）。
-  共同点：**单指令块测不出来**，都要靠 `a64_block_probe` 里的两指令块。后续族一律先加两指令用例。
+- 三个"缓存 vs 外部世界"的既有缺陷都是这一路抓出来并修掉的，共同点是**单指令块测不出来**：
+  1. `emit_dma_event_check` 在分支内 `flush()` 会丢延迟回写（§S4 族 5）；
+  2. `armcpu_switchMode()` 之前没有 `flush()`，bank 双向串值（§S4 族 6）；
+  3. `OP_LDM_STM` 只 evict 基址，`add r4,#1 ; stmia {r4}` 存旧值（§S4 族 3+4）。
 - 后续批次纪律（§S4）：族 1/2 的**整机帧率门槛仍未验证**，代码尺寸达标不等于帧率达标；若 ALU 族只拿到 1.0~1.1×，应停下来重定目标，而非继续把 571 条全改完。
 
 ## 四、性能优化类

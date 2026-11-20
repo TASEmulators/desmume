@@ -25,6 +25,7 @@
 | **rev11** | 修复核心库验证盲点：`build_core.ps1` 此前把 vendored asmjit 的 52 个源按 c++14 编译全部失败，导致 `desmume_core.lib` 停在 11/19、不含 11/20 的 x86 修复——过去所有 x86 差分其实在验旧代码。给 asmjit 源加 C++20 特判后重建（194/194，0 失败），重链 `jit_diff.exe` 整体重跑：`--full` 功能桶全 0、`--seq 2/3/4` 19776 比较全 0 mismatch（§10.9） |
 | **rev12** | 主线推进 + **handler 级真机验证首次落地**：① 族 5（乘法 28 handler + CLZ）迁到 `ArmRegCache`，为此新增 `read_into()` 入口与 `rc_read`/`rc_store`（§S4 族 5）；② 新增 `tools/jit_matrix/a64_block_probe.cpp`——在 AArch64 真机上直接执行 `compile_basicblock()` 生成的块（68 个桩符号补齐核心），**终结了"arm64 handler 语义只能等 macOS"的不对称**；③ 真机抓到并修复一个既有 bug：`emit_dma_event_check` 在分支内 `flush()` 会清掉编译期 dirty 位，导致延迟回写在落空路径上丢失 |
 | **rev13** | 族 6（分支 + 状态寄存器 + 异常，13 handler）：① 确立并落实一条不变量——**任何 `armcpu_switchMode()` 调用前必须先 `flush()`**，因为它靠读 `armcpu_t` 完成 bank 搬移；MSR/SWI/BKPT/LDM 共 4 处补齐（`S_DST_R15` 本来就有）；② `MRS`/`MSR`/`BX` 的源与目的改走缓存；③ `OP_BKPT` 由"打印 + 回退解释器"改为按解释器逐行内联；④ 真机探针把 `armcpu_switchMode` 桩换成**真正搬移 bank 的实现**，用两指令块抓到 bank 串值（§S4 族 6）；⑤ 矩阵账本补齐族 5 漏记的 29 个 handler：293/571 |
+| **rev14** | 族 3+4（访存 + LDM/STM，204 handler）：① `OP_LDR_`/`OP_STR_`/`LDRD`/`STRD`/`SWP`/`op_ldm_stm` 的基址与存储值改走 `ArmRegCache`；② 抓到既有 bug：`OP_LDM_STM` 直接读 `cpu->R[]`，而只有基址被 evict，于是 `add r4,#1 ; stmia r0,{r4}` 存的是旧值（族 1 之后一直存在）；③ 抓到第二个既有 bug：LDM 基址在列表里的写回用的是 `call_mem_r7` 之后已失效的 x4；④ 探针新增 36 个访存块（含 6 个两指令块），82/89 逐字节相同、7 个刻意变化；⑤ 矩阵：497/571 |
 
 ---
 
@@ -1598,6 +1599,58 @@ for (int i = 0; i < ARM_RC_SLOTS; i++)
 
 1. `cpu->swi_tab` 在 `NDSSystem.cpp` 里是被赋成 `ARM_swi_tab[...]` 的，所以 `op_swi` 的内联路径**在真机上根本不会走**（`if(cpu->swi_tab) return 0;` → 回退解释器）。那处 flush 是正确性保险，不是修了一个线上 bug。
 2. `op_ldm_stm2` 的两处 flush 属于族 4（LDM/STM，矩阵里仍是 `todo`），本批只是把不变量补上；它的独立验证要等到族 C 的探针用例。
+
+#### 族 3 + 4：访存 + LDM/STM（172 + 32 handler）
+
+**为什么这两个族一起做**：它们共用同一条不变量——**helper 直接读写 `armcpu_t`**。`OP_LDR`/`OP_STR` 拿的是 `u32* dstreg`（`&cpu->R[Rd]`），`OP_LDM_STM` 拿的是一串寄存器号，`op_swp` 拿的也是 `u32* Rd`。换句话说，寄存器缓存里的"最新值"对这些 helper 是不可见的，凡是被它们碰到的寄存器都必须先落盘。
+
+**改动**
+
+| 位置 | 改动 | 说明 |
+|---|---|---|
+| `OP_LDR_` 基址 | `reg_pos_ptr(16,…)` → `rc_read` | `add r1,#4 ; ldr r0,[r1]` 不再 store+load |
+| `OP_LDR_` 目的 | 保持 `reg_pos_ptr(12, dst, ADDRESS)` | ABI 要求 `&R[Rd]`，这个寄存器没法留在槽里；evict 保证脏值先落盘 |
+| `OP_LDR_` 写回 | `LDR_WB`：Rn≠Rd 走 `rc_store`，Rn==Rd 立即存 | Rn==Rd 时 helper 会覆写 `R[Rd]`，延迟回写会盖掉载入值 |
+| `OP_STR_` 值/基址 | 均 `rc_read` | `add r0,#1 ; str r0,[r1]` 的值直接来自槽 |
+| `OP_STR_` 写回 | `rc_store` | store 不写 `R[]`，任何情况下都可以延迟 |
+| `LDRD`/`STRD` | 基址 `rc_read`；目的对 `evict`/`discard` | helper 按 `Rnum` 索引直接访问 `cpu->R[]` |
+| `SWP` | Rs 改 `rc_read` | SWPB 的 helper 自己截低字节，槽里的 dword 等价 |
+| `op_ldm_stm` | 基址 `rc_read`；**列表内每个寄存器** `evict`（store）/`discard`（load） | 见下面两个 bug |
+
+`ArmRegCache` 为此加了 `discard(n)`：丢掉槽位但不回写。载入型 helper 马上会覆盖这个寄存器，把待回写的值写进内存纯属浪费。store 型必须用 `evict`—— helper 要读的就是那个值。
+
+**抓到的既有 bug 1：STM 存的是旧值**
+
+`OP_LDM_STM` 通过寄存器号列表直接读 `cpu->R[Rd]`，而 `op_ldm_stm` 原来只 evict 了**基址**。于是族 1 之后，任何"刚算出来的值 + 立即 STM"都存旧值：
+
+| 块 | 迁移前内存 | 迁移后 |
+|---|---|---|
+| `add r4,#1 ; stmia r0,{r4}` | `40000000`（old r4） | `40000001` ✅ |
+| `add r4,#1 ; stmdb r0!,{r4}` | `40000000` | `40000001` ✅ |
+
+`push {r4}` 紧跟一条改 r4 的指令就会踩到，这是**线上会出错**的一类，不是理论问题。
+
+**抓到的既有 bug 2：基址在列表里的 LDM 写回是野值**
+
+`op_ldm_stm` 里"基址也在列表且列表里有更高寄存器"的写回，原来在 helper 调用**之后**用 x4 算新基址。而 `call_mem_r7` 只保存 x12/x15，x4 早被 helper 用掉了：
+
+```
+ldmia r0!,{r0,r1}   x4 被毁 → R0 = BEB3DF20（每次运行都不一样）
+```
+
+改成**调用前**算好、放进缓存槽（`rc_store`），尾部 flush 落盘——顺序也正好对上解释器（它最后才赋 `R[Rn]`）。修好后 `R0 = 02003008`（= 原基址 + 2*4）。
+
+**探针：37 个访存块**
+
+新增 `--dump-mem N`。覆盖：LDR/STR 的立即数（正负）、PC 相对、寄存器偏移、前/后索引写回；LDRB/LDRH/LDRSB/LDRSH/STRB/STRH；LDRD/STRD（含高字）；SWP/SWPB；LDMIA/STMIA/STMDB/LDMIA!/LDMDB/STMIB/LDMDA/STMDA；以及 6 个两指令块（脏基址 + LDR/STR/LDM、脏数据 + STR、脏源 + STM×2）。
+
+结果：90 个块里 **83 个逐字节相同**，7 个变化——4 个是族 6 的（已记录），3 个是上面两个 bug + 基址在列表的写回。71 项自检全绿。
+
+**三条边界**
+
+1. **LDR 的目的寄存器不可能留在缓存里**：helper 的 ABI 是 `u32* dstreg`。要改这一点得先改 ABI（让 helper 把值返回在寄存器里），不在本批范围。
+2. 带**移位寄存器偏移**的 LDR/STR（`ldr r0,[r1,r2,lsl #2]`）仍然用 `reg_pos_ptr` 读 Rm——那些 `arg` 宏与族 1/2 共用，本批没动。所以这一族是"基址缓存化"，不是"全寄存器缓存化"。
+3. **DA 方向的两条（`ldmda`/`stmda`）只做了 pin（pre == post），没有断言**：它们的有效地址跟 ARM ARM 的写法对不上，要判定得拿解释器当 oracle，而这个探针链不到解释器。已在 `jit-open-tasks.md` 里列为待 macOS 核对项。
 
 ### S5 · 语义收尾（约 3 天）
 

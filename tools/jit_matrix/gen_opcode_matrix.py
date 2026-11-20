@@ -151,6 +151,16 @@ class Handler:
         # Thumb shifts stay todo (batch 8).
         if self.isa == "ARM" and self.family == "shift":
             return "diff-pass"
+        # Family 3+4 (2026-11-20): every LDR/STR/LDRD/STRD/SWP and LDM/STM
+        # handler now goes through the register cache for its base (and for the
+        # stored value / SWP source). Verified on AArch64 hardware with
+        # a64_block_probe: 33 blocks over every addressing mode the macros share,
+        # plus the two-instruction cases that put a dirty base or value under a
+        # helper call. Not covered by the probe: the shifted-register offset
+        # forms still load Rm from memory, and the DA forms are only pinned
+        # (pre == post), not asserted against the interpreter.
+        if self.isa == "ARM" and self.family in ("mem", "ldm"):
+            return "diff-pass"
         return "diff-pass" if self.name in DIFF_PASS_HANDLERS else "todo"
 
     @property
