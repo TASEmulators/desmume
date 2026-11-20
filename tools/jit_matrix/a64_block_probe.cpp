@@ -436,6 +436,7 @@ int main(int argc, char **argv)
 	// N's block, which is how the order of the flush and the switchMode call gets
 	// checked without reading the emitter.
 	const int dump_psr = (argc > 2 && strcmp(argv[1], "--dump-psr") == 0) ? atoi(argv[2]) : -1;
+	const int dump_mem = (argc > 2 && strcmp(argv[1], "--dump-mem") == 0) ? atoi(argv[2]) : -1;
 	memset(&MMU, 0, sizeof(MMU));
 	// A main-RAM mirror is compared against DTCMRegion with the low 14 bits
 	// masked off; park it far away so no case address can alias into it.
@@ -720,6 +721,138 @@ int main(int argc, char **argv)
 			} else {
 				printf("  FAIL %-22s got=%08X want=%08X\n", c.name, got, want);
 				g_fail++;
+			}
+		}
+	}
+
+	// --- memory access ------------------------------------------------------
+	// Group C. The single-instruction cases pin the addressing modes; the
+	// two-instruction ones are the point -- a preceding ALU instruction leaves
+	// the base or the value in a cache slot, and every helper here works on
+	// armcpu_t (or on a register-number list) rather than on the cache.
+	printf("\n# memory access\n");
+	{
+		struct MemCase
+		{
+			const char *name;
+			u32 w[2];
+			int n;
+			u32 ops[8];      // R0..R7
+			u32 mem[2];      // primed at kDataAdr (+0, +4)
+			int reg_chk;     // -1 = none
+			u32 reg_want;
+			int mem_chk;     // -1 = none, index into the primed pair
+			u32 mem_want;
+		};
+
+		const u32 kDataAdr = 0x02003000u;
+		// R1 = kDataAdr unless a case says otherwise; R0 is the store value.
+		#define B kDataAdr
+		#define D 0xDEADBEEFu
+
+		static const MemCase m[] = {
+			{ "ldr r0,[r1,#4]",       {0xE5910004u}, 1, {0,B},      {0x11223344u,0x55667788u}, 0, 0x55667788u, -1, 0 },
+			// PC-relative: the base is R15, which never enters the cache, and
+			// the value at pc-8 is the instruction itself.
+			{ "ldr r0,[pc,#-8]",      {0xE51F0008u}, 1, {0,0},      {0,0},                      0, 0xE51F0008u, -1, 0 },
+			{ "ldr r0,[r1,#-4]",      {0xE5110004u}, 1, {0,0x02003004u}, {0x11223344u,0x55667788u}, 0, 0x11223344u, -1, 0 },
+			{ "ldr r0,[r1,r2]",       {0xE7910002u}, 1, {0,B,4},    {0x11223344u,0x55667788u}, 0, 0x55667788u, -1, 0 },
+			{ "ldr r0,[r1,#4]!",      {0xE5B10004u}, 1, {0,B},      {0x11223344u,0x55667788u}, 1, 0x02003004u, -1, 0 },
+			{ "ldr r0,[r1],#4",       {0xE4910004u}, 1, {0,B},      {0x11223344u,0x55667788u}, 1, 0x02003004u, -1, 0 },
+			{ "str r0,[r1,#4]",       {0xE5810004u}, 1, {D,B},      {0,0},                      -1, 0,           1, D },
+			{ "str r0,[r1],#4",       {0xE4810004u}, 1, {D,B},      {0,0},                      1, 0x02003004u,   0, D },
+			{ "str r0,[r1,#4]!",      {0xE5A10004u}, 1, {D,B},      {0,0},                      1, 0x02003004u,   1, D },
+			{ "ldrb r2,[r1,#1]",      {0xE5D12001u}, 1, {0,B},      {0x0000AB00u,0},            2, 0x000000ABu,  -1, 0 },
+			{ "ldrsb r2,[r1,#1]",     {0xE1D120D1u}, 1, {0,B},      {0x00008000u,0},            2, 0xFFFFFF80u,  -1, 0 },
+			{ "ldrh r2,[r1,#2]",      {0xE1D120B2u}, 1, {0,B},      {0xBEEF0000u,0},            2, 0x0000BEEFu,  -1, 0 },
+			{ "ldrsh r2,[r1,#2]",     {0xE1D120F2u}, 1, {0,B},      {0x80000000u,0},            2, 0xFFFF8000u,  -1, 0 },
+			{ "strh r0,[r1,#2]",      {0xE1C100B2u}, 1, {D,B},      {0xAAAAAAAAu,0},            -1, 0,           0, 0xBEEFAAAAu },
+			{ "strb r0,[r1,#1]",      {0xE5C10001u}, 1, {D,B},      {0xAAAAAAAAu,0},            -1, 0,           0, 0xAAAAEFAAu },
+			{ "strd r2,[r1]",         {0xE1C120F0u}, 1, {0,B,0xAABBCCDDu,0x11223344u}, {0,0},      -1, 0,           0, 0xAABBCCDDu },
+			{ "strd r2,[r1] (hi)",    {0xE1C120F0u}, 1, {0,B,0xAABBCCDDu,0x11223344u}, {0,0},      -1, 0,           1, 0x11223344u },
+			{ "ldrd r2,[r1]",         {0xE1C120D0u}, 1, {0,B},      {0x11223344u,0x55667788u},  2, 0x11223344u,  -1, 0 },
+			{ "ldrd r2,[r1] (hi)",    {0xE1C120D0u}, 1, {0,B},      {0x11223344u,0x55667788u},  3, 0x55667788u,  -1, 0 },
+			{ "swp r0,r2,[r1]",       {0xE1010092u}, 1, {0,B,0xCAFEBABEu}, {0x12345678u,0},    0, 0x12345678u,   0, 0xCAFEBABEu },
+			{ "swpb r0,r2,[r1]",      {0xE1410092u}, 1, {0,B,0xCAFEBABEu}, {0x00000078u,0},    0, 0x00000078u,   0, 0x000000BEu },
+			{ "stmia r0,{r1,r2,r3}",  {0xE880000Eu}, 1, {kDataAdr,1,2,3}, {0,0},                  -1, 0,           0, 1 },
+			{ "stmia r0 (hi)",        {0xE880000Eu}, 1, {kDataAdr,1,2,3}, {0,0},                  -1, 0,           1, 2 },
+			{ "ldmia r0,{r1,r2,r3}",  {0xE890000Eu}, 1, {kDataAdr}, {0x11u,0x22u},              2, 0x22u,         -1, 0 },
+			{ "stmdb r0!,{r1,r2}",    {0xE9200006u}, 1, {0x02003008u,1,2}, {0,0},               0, 0x02003000u,   0, 1 },
+			{ "ldmia r0!,{r1,r2}",    {0xE8B00006u}, 1, {kDataAdr}, {0x11u,0x22u},              0, 0x02003008u,   -1, 0 },
+			// The other three dir/before combinations, so all four code paths
+			// through op_ldm_stm/stm are executed at least once.
+			{ "ldmdb r0,{r1,r2}",     {0xE9100006u}, 1, {0x02003008u}, {0x11u,0x22u},          2, 0x22u,         -1, 0 },
+			{ "stmib r0!,{r1,r2}",    {0xE9A00006u}, 1, {kDataAdr,1,2}, {0,0},                   -1, 0,           1, 1 },
+			// The DA forms are pinned but not asserted: their effective
+			// addresses follow desmume's own convention rather than the ARM
+			// ARM's, and settling that needs the interpreter as the oracle --
+			// which this probe cannot link. Both builds agree, which is what
+			// this batch has to show.
+			{ "ldmda r0,{r1,r2}",     {0xE8100006u}, 1, {kDataAdr}, {0x11u,0x22u},              -1, 0,           -1, 0 },
+			{ "stmda r0,{r1,r2}",     {0xE8000006u}, 1, {0x02003008u,1,2}, {0,0},               -1, 0,           -1, 0 },
+
+			// --- two instructions: the producer leaves a slot dirty ----------
+			{ "add r1,#4 ; ldr r0,[r1]",  {0xE2811004u,0xE5910000u}, 2, {0,B}, {0x11223344u,0x55667788u}, 0, 0x55667788u, -1, 0 },
+			{ "add r1,#4 ; str r0,[r1]",  {0xE2811004u,0xE5810000u}, 2, {D,B}, {0,0},                     -1, 0,           1, D },
+			{ "add r0,#1 ; str r0,[r1]",  {0xE2800001u,0xE5810000u}, 2, {0x11111110u,B}, {0,0},            -1, 0,           0, 0x11111111u },
+			// The one that was wrong before this batch: STM reads cpu->R[r4]
+			// straight out of armcpu_t, so a dirty slot stored the stale value.
+			{ "add r4,#1 ; stmia {r4}",   {0xE2844001u,0xE8800010u}, 2, {kDataAdr,0,0,0,0x40000000u}, {0,0}, -1, 0,  0, 0x40000001u },
+			{ "add r4,#1 ; stmdb r0!",    {0xE2844001u,0xE9200010u}, 2, {kDataAdr + 4,0,0,0,0x40000000u}, {0,0}, -1, 0, 0, 0x40000001u },
+			{ "add r1,#4 ; ldmia {r2}",   {0xE2811004u,0xE8B10004u}, 2, {0,B}, {0x11223344u,0x55667788u}, 2, 0x55667788u, -1, 0 },
+			// Base in the list: the write-back value is the one ARM leaves
+			// unspecified. Printed, not asserted -- it needs the interpreter as
+			// the oracle, which this probe cannot link (see the doc note).
+			{ "ldmia r0!,{r0,r1}",        {0xE8B00003u}, 1, {kDataAdr}, {0x11u,0x22u},              -1, 0,           -1, 0 },
+		};
+		#undef B
+		#undef D
+
+		for (size_t i = 0; i < sizeof(m) / sizeof(m[0]); i++) {
+			const MemCase &c = m[i];
+			const u32 adr = kCodeBase + 0x30000u + (u32)i * kCaseStride;
+			u32 ops[16] = {0};
+			memcpy(ops, c.ops, sizeof(c.ops));
+
+			memset(MMU.MAIN_MEM + (kDataAdr & _MMU_MAIN_MEM_MASK), 0, 0x40);
+			for (int k = 0; k < 2; k++)
+				memcpy(MMU.MAIN_MEM + ((kDataAdr + 4 * k) & _MMU_MAIN_MEM_MASK32), &c.mem[k], 4);
+
+			Result res;
+			if (!run_block(adr, c.w, c.n, ops, kCpsrInit, &res)) {
+				g_fail++;
+				continue;
+			}
+
+			u32 got[2];
+			memcpy(&got[0], MMU.MAIN_MEM + (kDataAdr & _MMU_MAIN_MEM_MASK32), 4);
+			memcpy(&got[1], MMU.MAIN_MEM + ((kDataAdr + 4) & _MMU_MAIN_MEM_MASK32), 4);
+
+			printf("%-26s cyc=%2u cpsr=%08X R0=%08X R1=%08X R2=%08X R3=%08X mem=%08X,%08X\n",
+			       c.name, res.cycles, res.cpsr, res.r[0], res.r[1], res.r[2], res.r[3],
+			       got[0], got[1]);
+
+			if ((int)i == dump_mem) {
+				ArmOpCompiled pf = (ArmOpCompiled)JIT_COMPILED_FUNC(adr, 0);
+				printf("DUMP %s %d bytes:\n", c.name, g_TOTALBYTES);
+				for (int k = 0; k < g_TOTALBYTES; k += 4) {
+					u32 word;
+					memcpy(&word, (const u8 *)pf + k, 4);
+					printf(" %08X", word);
+					if ((k / 4) % 8 == 7) printf("\n");
+				}
+				printf("\n");
+			}
+
+			if (c.reg_chk >= 0) {
+				if (res.r[c.reg_chk] == c.reg_want) g_pass++;
+				else { printf("  FAIL %-22s R%d=%08X want=%08X\n", c.name, c.reg_chk,
+				              res.r[c.reg_chk], c.reg_want); g_fail++; }
+			}
+			if (c.mem_chk >= 0) {
+				if (got[c.mem_chk] == c.mem_want) g_pass++;
+				else { printf("  FAIL %-22s mem[%d]=%08X want=%08X\n", c.name, c.mem_chk,
+				              got[c.mem_chk], c.mem_want); g_fail++; }
 			}
 		}
 	}
