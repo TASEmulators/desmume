@@ -24,6 +24,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__APPLE__)
+	#include <mach-o/dyld.h>
+#endif
+
 #include "armcpu.h"
 #include "MMU.h"
 #include "NDSSystem.h"
@@ -226,11 +230,75 @@ static uintptr_t gFaultOp = 0;
 	 (gFaultAccess = (GetExceptionInformation()->ExceptionRecord->NumberParameters > 1) \
 	     ? GetExceptionInformation()->ExceptionRecord->ExceptionInformation[1] : 0), \
 	 EXCEPTION_EXECUTE_HANDLER)
+#elif defined(__APPLE__) || defined(__linux__)
+// Same idea on a POSIX host, where there is no SEH: a signal handler records the
+// fault and siglongjmp()s back to the caller. This is what makes the arm64 side
+// measurable at all -- a hand-written encoder that emits a broken instruction
+// faults on the first slot that reaches it, and without this the whole sweep
+// would die there instead of reporting the slot.
+//
+// Longjmping out of a signal handler is only safe because the only state that
+// survives is the CPU snapshot, which is re-primed from scratch for every
+// vector. The handler stays armed only across the engine call itself.
+#define HARNESS_HAVE_POSIX_GUARD 1
+#include <signal.h>
+#include <setjmp.h>
+
+static unsigned long gFaultCode = 0;
+static uintptr_t gFaultAddr = 0;
+static uintptr_t gFaultAccess = 0;
+static unsigned long gFaultOp = 0;
+static sigjmp_buf gFaultJump;
+static volatile sig_atomic_t gFaultArmed = 0;
+
+static void harnessFaultHandler(int sig, siginfo_t *info, void *ctx)
+{
+	(void)ctx;
+	if (!gFaultArmed)
+	{
+		// Not inside a guarded engine call: this is a real crash, so restore the
+		// default action instead of letting the faulting instruction re-execute.
+		signal(sig, SIG_DFL);
+		raise(sig);
+		return;
+	}
+	gFaultArmed = 0;
+	gFaultCode = (unsigned long)sig;
+	gFaultAddr = (uintptr_t)info->si_addr;
+	gFaultAccess = (uintptr_t)info->si_addr;
+	gFaultOp = 0;
+	siglongjmp(gFaultJump, 1);
+}
+
+static void harnessInstallFaultHandlers(void)
+{
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_sigaction = harnessFaultHandler;
+	sa.sa_flags = SA_SIGINFO | SA_NODEFER;
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGSEGV, &sa, NULL);
+	sigaction(SIGBUS, &sa, NULL);
+	sigaction(SIGILL, &sa, NULL);
+	sigaction(SIGFPE, &sa, NULL);
+}
+
+static const char *harnessSignalName(unsigned long sig)
+{
+	switch ((int)sig)
+	{
+		case SIGSEGV: return "SIGSEGV";
+		case SIGBUS:  return "SIGBUS";
+		case SIGILL:  return "SIGILL";
+		case SIGFPE:  return "SIGFPE";
+		default:      return "signal";
+	}
+}
 #endif
 
 static u32 execInterp(void)
 {
-#ifdef HARNESS_HAVE_SEH
+#if defined(HARNESS_HAVE_SEH)
 	u32 cycles = 0;
 	gFaultCode = 0;
 	gFaultAddr = 0;
@@ -239,6 +307,16 @@ static u32 execInterp(void)
 	__try { cycles = armcpu_exec<0, false>(); }
 	__except (HARNESS_EXCEPT_FILTER) { }
 	return cycles;
+#elif defined(HARNESS_HAVE_POSIX_GUARD)
+	u32 cycles = 0;
+	gFaultCode = 0;
+	if (sigsetjmp(gFaultJump, 1) == 0)
+	{
+		gFaultArmed = 1;
+		cycles = armcpu_exec<0, false>();
+		gFaultArmed = 0;
+	}
+	return cycles;
 #else
 	return armcpu_exec<0, false>();
 #endif
@@ -246,7 +324,7 @@ static u32 execInterp(void)
 
 static u32 execJit(void)
 {
-#ifdef HARNESS_HAVE_SEH
+#if defined(HARNESS_HAVE_SEH)
 	u32 cycles = 0;
 	gFaultCode = 0;
 	gFaultAddr = 0;
@@ -255,6 +333,16 @@ static u32 execJit(void)
 	__try { cycles = armcpu_exec<0, true>(); }
 	__except (HARNESS_EXCEPT_FILTER) { }
 	return cycles;
+#elif defined(HARNESS_HAVE_POSIX_GUARD)
+	u32 cycles = 0;
+	gFaultCode = 0;
+	if (sigsetjmp(gFaultJump, 1) == 0)
+	{
+		gFaultArmed = 1;
+		cycles = armcpu_exec<0, true>();
+		gFaultArmed = 0;
+	}
+	return cycles;
 #else
 	return armcpu_exec<0, true>();
 #endif
@@ -262,11 +350,18 @@ static u32 execJit(void)
 
 static bool faulted(char *why, size_t whyLen, const char *engine)
 {
-#ifdef HARNESS_HAVE_SEH
+#if defined(HARNESS_HAVE_SEH)
 	if (gFaultCode != 0)
 	{
 		snprintf(why, whyLen, "%s: exception %08lX at %p op=%lu access=%p",
 			engine, gFaultCode, (void *)gFaultAddr, (unsigned long)gFaultOp, (void *)gFaultAccess);
+		return true;
+	}
+#elif defined(HARNESS_HAVE_POSIX_GUARD)
+	if (gFaultCode != 0)
+	{
+		snprintf(why, whyLen, "%s: %s at %p",
+			engine, harnessSignalName(gFaultCode), (void *)gFaultAddr);
 		return true;
 	}
 #endif
@@ -597,8 +692,14 @@ static int runSweep(bool full, int onlySlot, bool verbose, bool listAll)
 						buckets.add(why, jitCycles);
 						if (shown < showCap)
 						{
+							// The operand vector is printed with the failure: a flag or
+							// cycle mismatch is only diagnosable if you know the inputs
+							// that produced it, and re-deriving them from v/op by hand is
+							// how a two-minute investigation turns into an hour.
 							printf("FAIL  %s slot=%03X v=%d flags=%d op=%08X %s  %s\n",
 								thumb ? "thumb" : "arm  ", slot, v, f, opcode, mnemonic(thumb, opcode), why);
+							printf("      R0-R7 = %08X %08X %08X %08X %08X %08X %08X %08X\n",
+								ops[0], ops[1], ops[2], ops[3], ops[4], ops[5], ops[6], ops[7]);
 							fflush(stdout);
 							shown++;
 						}
@@ -626,6 +727,21 @@ static int runSweep(bool full, int onlySlot, bool verbose, bool listAll)
 	return failures;
 }
 
+// Base address the map file's RVAs are relative to. Only used to turn a fault
+// address into something a debugger can name, so a NULL here costs information,
+// not correctness.
+static void *harnessModuleBase(void)
+{
+#ifdef _WIN32
+	return (void *)GetModuleHandleA(NULL);
+#elif defined(__APPLE__)
+	// Image 0 is the executable; dyld reports its slide, not its link-time base.
+	return (void *)(uintptr_t)_dyld_get_image_vmaddr_slide(0);
+#else
+	return NULL;
+#endif
+}
+
 int main(int argc, char **argv)
 {
 	bool sweep = false;
@@ -648,8 +764,12 @@ int main(int argc, char **argv)
 	printf("DeSmuME JIT differential harness\n");
 	// Fault addresses are absolute; without the load address the map file cannot
 	// be used to name the function that faulted.
-	printf("module base %p\n", (void *)GetModuleHandleA(NULL));
+	printf("module base %p\n", harnessModuleBase());
 	gTrace = verbose;
+
+#ifdef HARNESS_HAVE_POSIX_GUARD
+	harnessInstallFaultHandlers();
+#endif
 
 	// The flag variants must differ only in N/Z/C/V. T and the mode field are
 	// chosen per instruction set by compareOne; a variant that also touches them
