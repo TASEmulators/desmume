@@ -748,17 +748,18 @@ static int runSweep(bool full, int onlySlot, bool verbose, bool listAll)
 	return failures;
 }
 
-// Dumps the machine code a compiled block consists of.
-static void dumpCompiledBlock(u32 adr)
+// Dumps the machine code a compiled block consists of. `size` is the block's
+// own size, not g_TOTALBYTES: by the time this runs the backend may already have
+// compiled the follow-on block (see measureBlockSize), and printing that one's
+// length would truncate or over-read this one.
+static void dumpCompiledBlock(u32 adr, uintptr_t fn, int size)
 {
-	const uintptr_t fn = JIT_COMPILED_FUNC(adr, 0);
 	printf("\nblock %08X -> %p, %d bytes (%d instructions)\n",
-		adr, (void *)fn, g_TOTALBYTES, g_TOTALBYTES / 4);
+		adr, (void *)fn, size, size / 4);
 	if (!fn)
 		return;
 
 	const unsigned char *p = (const unsigned char *)fn;
-	int size = g_TOTALBYTES;
 	if (size <= 0 || size > 4096) size = 512;   // unknown: keep the old bound
 	FILE *f = fopen("block.bin", "wb");
 	if (f)
@@ -806,14 +807,23 @@ static int measureBlockSize(int n, int slot, bool thumb, u32 dumpAdr)
 	arm_jit_reset(true, true);
 
 	primeState(kCodeBase, kOperands, opcode, 0x00000013u | (thumb ? 0x20u : 0u));
-	execJit();   // compiles the block
-	execJit();   // runs it, so the size is of code that has been used
+	execJit();   // compiles the block at kCodeBase
+
+	// The size has to be read here, not after the run below. A block whose last
+	// instruction falls through leaves instruct_adr at kCodeBase + n*size, so the
+	// second execJit() compiles *another* block there and leaves its size in
+	// g_TOTALBYTES -- which is what this function used to print. The number then
+	// belonged to the follow-on block and did not move when the handler changed.
+	const int blockBytes = g_TOTALBYTES;
+	const uintptr_t blockFn = JIT_COMPILED_FUNC(kCodeBase, 0);
+
+	execJit();   // runs it, so what is measured is code that has been executed
 
 	printf("block: %s slot %03X x %d instruction(s) -> %d bytes (%d host instructions)\n",
-		thumb ? "thumb" : "arm", slot, n, g_TOTALBYTES, g_TOTALBYTES / 4);
+		thumb ? "thumb" : "arm", slot, n, blockBytes, blockBytes / 4);
 
 	if (dumpAdr)
-		dumpCompiledBlock(dumpAdr);
+		dumpCompiledBlock(blockFn ? dumpAdr : kCodeBase, blockFn, blockBytes);
 	return 0;
 }
 
@@ -1101,7 +1111,7 @@ static int runSequenceSweep(int n, bool full, int onlySlot, bool verbose, bool l
 				// block that was just compared, so a mismatch can be read off the
 				// host instructions instead of guessed at.
 				if (dumpAdr != 0 && v == 0 && f == 0)
-					dumpCompiledBlock(codeAdr);
+					dumpCompiledBlock(codeAdr, JIT_COMPILED_FUNC(codeAdr, 0), g_TOTALBYTES);
 			}
 
 			codeAdr += 4u * (u32)n;
@@ -1239,7 +1249,7 @@ int main(int argc, char **argv)
 	// Reverse-engineering aid: dump the machine code a probe compiled to, so the
 	// host instruction sequence can be disassembled instead of assumed.
 	if (dumpBlockAdr != 0)
-		dumpCompiledBlock(dumpBlockAdr);
+		dumpCompiledBlock(dumpBlockAdr, JIT_COMPILED_FUNC(dumpBlockAdr, 0), g_TOTALBYTES);
 
 	if (sweep)
 		printf("jit code: %llu bytes total\n", (unsigned long long)g_all_block_bytes);
