@@ -71,9 +71,14 @@
 
 ## 五、收尾类（S7 / §8）
 
-- [ ] **§S7.1** 删除 `asmjit_compat.h`（最后 22 处 `*_ptr` 宏直接写成 `x86::ptr`）。
-- [ ] **§S7.2** 删除 `src/utils/AsmJit`，清理 5 个构建文件里的遗留条目。
-- [ ] **§S7.3** 删除 `arm64_emit.cpp` 里被 asmjit 取代的编码函数（`output_w32`/`MOD_JUMP`/手写 imm 编码/`genimm2`），保留纯语义辅助。
+- [x] **§S7.1** `asmjit_compat.h` 已不存在（此前已完成）；`*_ptr` 宏已直接写成 `x86::ptr`。
+- [x] **§S7.2** 删除 `src/utils/AsmJit`（69 文件）+ 清理 **9 个**构建文件（不是 5 个：
+  `meson.build`×2、`Makefile.am`、`desmume.cbp`、`windows/Makefile`、
+  `DeSmuME_Interface.vcxproj(.filters)`、`DeSmuME.vcxproj(.filters)`）——本轮完成。
+  `build_check.bat` 同步改为编 vendored asmjit（C++20）；`VERSION.txt` / `wire_asmjit_xcode.py`
+  注释已更新。验证：`arm_jit.cpp` MSVC C++20 编译 exit=0、接线自检全绿、harness 38/38。
+  **POSIX 构建本机无法编译，待 Linux/macOS 侧验证**。
+- [ ] **§S7.3** 删除 `arm64_emit.cpp` 里被 asmjit 取代的编码函数（`output_w32`/`MOD_JUMP`/手写 imm 编码/`genimm2`），保留纯语义辅助。（本机无 aarch64 编译能力，留待 macOS）
 - [ ] **§S7.4** CI 增加「仅编译 arm_jit.cpp + arm_jit_arm.cpp + asmjit」档，防 C++17 配置破坏。
 - [ ] **§S7.5** 把 §3.6 契约清单、§3.7 分类测试与差分 dump 归档到 `documentation/jit-semantics-baseline/`。
 - [ ] **§8** 旧实现遗留失败项归档为「既有 bug 清单」，且不混入迁移 PR。

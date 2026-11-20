@@ -340,7 +340,7 @@
 | A-0219 | `0x0DB` | `OP_LDRH_POS_INDE_P_IMM_OFF` | arm_instructions.cpp:2604 | arm_jit.cpp:1677 | `OP_LDR_` | arm_jit_arm.cpp:2098 | todo | |
 | A-0221 | `0x0DD` | `OP_LDRSB_POS_INDE_P_IMM_OFF` | arm_instructions.cpp:2930 | arm_jit.cpp:1740 | `OP_LDR_` | arm_jit_arm.cpp:2161 | todo | |
 | A-0223 | `0x0DF` | `OP_LDRSH_POS_INDE_P_IMM_OFF` | arm_instructions.cpp:2821 | arm_jit.cpp:1692 | `OP_LDR_` | arm_jit_arm.cpp:2113 | todo | |
-| A-0265 | `0x109` | `OP_SWP` | arm_instructions.cpp:2506 | arm_jit.cpp:2059 | — | arm_jit_arm.cpp:2533 | todo | |
+| A-0265 | `0x109` | `OP_SWP` | arm_instructions.cpp:2506 | arm_jit.cpp:2059 | — | arm_jit_arm.cpp:2531 | todo | |
 | A-0267 | `0x10B` | `OP_STRH_M_REG_OFF` | arm_instructions.cpp:2668 | arm_jit.cpp:1842 | `OP_STR_` | arm_jit_arm.cpp:2265 | todo | |
 | A-0269 | `0x10D,0x10F,0x12D,0x12F,0x14D,0x14F,…（共 16 槽）` | `OP_LDRD_STRD_OFFSET_PRE_INDEX` | arm_instructions.cpp:6049 | arm_jit.cpp:1963 | — | arm_jit_arm.cpp:2401 | todo | |
 | A-0283 | `0x11B` | `OP_LDRH_M_REG_OFF` | arm_instructions.cpp:2559 | arm_jit.cpp:1671 | `OP_LDR_` | arm_jit_arm.cpp:2092 | todo | |
@@ -350,7 +350,7 @@
 | A-0315 | `0x13B` | `OP_LDRH_PRE_INDE_M_REG_OFF` | arm_instructions.cpp:2595 | arm_jit.cpp:1676 | `OP_LDR_` | arm_jit_arm.cpp:2097 | todo | |
 | A-0317 | `0x13D` | `OP_LDRSB_PRE_INDE_M_REG_OFF` | arm_instructions.cpp:2921 | arm_jit.cpp:1739 | `OP_LDR_` | arm_jit_arm.cpp:2160 | todo | |
 | A-0319 | `0x13F` | `OP_LDRSH_PRE_INDE_M_REG_OFF` | arm_instructions.cpp:2812 | arm_jit.cpp:1691 | `OP_LDR_` | arm_jit_arm.cpp:2112 | todo | |
-| A-0329 | `0x149` | `OP_SWPB` | arm_instructions.cpp:2519 | arm_jit.cpp:2060 | — | arm_jit_arm.cpp:2534 | todo | |
+| A-0329 | `0x149` | `OP_SWPB` | arm_instructions.cpp:2519 | arm_jit.cpp:2060 | — | arm_jit_arm.cpp:2532 | todo | |
 | A-0331 | `0x14B` | `OP_STRH_M_IMM_OFF` | arm_instructions.cpp:2652 | arm_jit.cpp:1840 | `OP_STR_` | arm_jit_arm.cpp:2263 | todo | |
 | A-0347 | `0x15B` | `OP_LDRH_M_IMM_OFF` | arm_instructions.cpp:2543 | arm_jit.cpp:1669 | `OP_LDR_` | arm_jit_arm.cpp:2090 | todo | |
 | A-0349 | `0x15D` | `OP_LDRSB_M_IMM_OFF` | arm_instructions.cpp:2869 | arm_jit.cpp:1732 | `OP_LDR_` | arm_jit_arm.cpp:2153 | todo | |
@@ -502,38 +502,38 @@
 
 | id | 槽位 | handler | 解释器 | x86 | x86 宏体 | arm64 | 状态 | 偏差 |
 |---|---|---|---|---|---|---|---|---|
-| A-2048 | `0x800..0x80F` | `OP_STMDA` | arm_instructions.cpp:5660 | arm_jit.cpp:2319 | — | arm_jit_arm.cpp:2787 | todo | |
-| A-2064 | `0x810..0x81F` | `OP_LDMDA` | arm_instructions.cpp:4820 | arm_jit.cpp:2310 | — | arm_jit_arm.cpp:2778 | todo | |
-| A-2080 | `0x820..0x82F` | `OP_STMDA_W` | arm_instructions.cpp:5731 | arm_jit.cpp:2323 | — | arm_jit_arm.cpp:2791 | todo | |
-| A-2096 | `0x830..0x83F` | `OP_LDMDA_W` | arm_instructions.cpp:5024 | arm_jit.cpp:2314 | — | arm_jit_arm.cpp:2782 | todo | |
-| A-2112 | `0x840..0x84F` | `OP_STMDA2` | arm_instructions.cpp:5827 | arm_jit.cpp:2400 | — | arm_jit_arm.cpp:2869 | todo | |
-| A-2128 | `0x850..0x85F` | `OP_LDMDA2` | arm_instructions.cpp:5255 | arm_jit.cpp:2391 | — | arm_jit_arm.cpp:2860 | todo | |
-| A-2144 | `0x860..0x86F` | `OP_STMDA2_W` | arm_instructions.cpp:5941 | arm_jit.cpp:2404 | — | arm_jit_arm.cpp:2873 | todo | |
-| A-2160 | `0x870..0x87F` | `OP_LDMDA2_W` | arm_instructions.cpp:5501 | arm_jit.cpp:2395 | — | arm_jit_arm.cpp:2864 | todo | |
-| A-2176 | `0x880..0x88F` | `OP_STMIA` | arm_instructions.cpp:5626 | arm_jit.cpp:2317 | — | arm_jit_arm.cpp:2785 | todo | |
-| A-2192 | `0x890..0x89F` | `OP_LDMIA` | arm_instructions.cpp:4710 | arm_jit.cpp:2308 | — | arm_jit_arm.cpp:2776 | todo | |
-| A-2208 | `0x8A0..0x8AF` | `OP_STMIA_W` | arm_instructions.cpp:5694 | arm_jit.cpp:2321 | — | arm_jit_arm.cpp:2789 | todo | |
-| A-2224 | `0x8B0..0x8BF` | `OP_LDMIA_W` | arm_instructions.cpp:4914 | arm_jit.cpp:2312 | — | arm_jit_arm.cpp:2780 | todo | |
-| A-2240 | `0x8C0..0x8CF` | `OP_STMIA2` | arm_instructions.cpp:5769 | arm_jit.cpp:2398 | — | arm_jit_arm.cpp:2867 | todo | |
-| A-2256 | `0x8D0..0x8DF` | `OP_LDMIA2` | arm_instructions.cpp:5134 | arm_jit.cpp:2389 | — | arm_jit_arm.cpp:2858 | todo | |
-| A-2272 | `0x8E0..0x8EF` | `OP_STMIA2_W` | arm_instructions.cpp:5883 | arm_jit.cpp:2402 | — | arm_jit_arm.cpp:2871 | todo | |
-| A-2288 | `0x8F0..0x8FF` | `OP_LDMIA2_W` | arm_instructions.cpp:5386 | arm_jit.cpp:2393 | — | arm_jit_arm.cpp:2862 | todo | |
-| A-2304 | `0x900..0x90F` | `OP_STMDB` | arm_instructions.cpp:5677 | arm_jit.cpp:2320 | — | arm_jit_arm.cpp:2788 | todo | |
-| A-2320 | `0x910..0x91F` | `OP_LDMDB` | arm_instructions.cpp:4867 | arm_jit.cpp:2311 | — | arm_jit_arm.cpp:2779 | todo | |
-| A-2336 | `0x920..0x92F` | `OP_STMDB_W` | arm_instructions.cpp:5750 | arm_jit.cpp:2324 | — | arm_jit_arm.cpp:2792 | todo | |
-| A-2352 | `0x930..0x93F` | `OP_LDMDB_W` | arm_instructions.cpp:5079 | arm_jit.cpp:2315 | — | arm_jit_arm.cpp:2783 | todo | |
-| A-2368 | `0x940..0x94F` | `OP_STMDB2` | arm_instructions.cpp:5856 | arm_jit.cpp:2401 | — | arm_jit_arm.cpp:2870 | todo | |
-| A-2384 | `0x950..0x95F` | `OP_LDMDB2` | arm_instructions.cpp:5322 | arm_jit.cpp:2392 | — | arm_jit_arm.cpp:2861 | todo | |
-| A-2400 | `0x960..0x96F` | `OP_STMDB2_W` | arm_instructions.cpp:5972 | arm_jit.cpp:2405 | — | arm_jit_arm.cpp:2874 | todo | |
-| A-2416 | `0x970..0x97F` | `OP_LDMDB2_W` | arm_instructions.cpp:5560 | arm_jit.cpp:2396 | — | arm_jit_arm.cpp:2865 | todo | |
-| A-2432 | `0x980..0x98F` | `OP_STMIB` | arm_instructions.cpp:5643 | arm_jit.cpp:2318 | — | arm_jit_arm.cpp:2786 | todo | |
-| A-2448 | `0x990..0x99F` | `OP_LDMIB` | arm_instructions.cpp:4772 | arm_jit.cpp:2309 | — | arm_jit_arm.cpp:2777 | todo | |
-| A-2464 | `0x9A0..0x9AF` | `OP_STMIB_W` | arm_instructions.cpp:5713 | arm_jit.cpp:2322 | — | arm_jit_arm.cpp:2790 | todo | |
-| A-2480 | `0x9B0..0x9BF` | `OP_LDMIB_W` | arm_instructions.cpp:4968 | arm_jit.cpp:2313 | — | arm_jit_arm.cpp:2781 | todo | |
-| A-2496 | `0x9C0..0x9CF` | `OP_STMIB2` | arm_instructions.cpp:5798 | arm_jit.cpp:2399 | — | arm_jit_arm.cpp:2868 | todo | |
-| A-2512 | `0x9D0..0x9DF` | `OP_LDMIB2` | arm_instructions.cpp:5194 | arm_jit.cpp:2390 | — | arm_jit_arm.cpp:2859 | todo | |
-| A-2528 | `0x9E0..0x9EF` | `OP_STMIB2_W` | arm_instructions.cpp:5914 | arm_jit.cpp:2403 | — | arm_jit_arm.cpp:2872 | todo | |
-| A-2544 | `0x9F0..0x9FF` | `OP_LDMIB2_W` | arm_instructions.cpp:5442 | arm_jit.cpp:2394 | — | arm_jit_arm.cpp:2863 | todo | |
+| A-2048 | `0x800..0x80F` | `OP_STMDA` | arm_instructions.cpp:5660 | arm_jit.cpp:2319 | — | arm_jit_arm.cpp:2785 | todo | |
+| A-2064 | `0x810..0x81F` | `OP_LDMDA` | arm_instructions.cpp:4820 | arm_jit.cpp:2310 | — | arm_jit_arm.cpp:2776 | todo | |
+| A-2080 | `0x820..0x82F` | `OP_STMDA_W` | arm_instructions.cpp:5731 | arm_jit.cpp:2323 | — | arm_jit_arm.cpp:2789 | todo | |
+| A-2096 | `0x830..0x83F` | `OP_LDMDA_W` | arm_instructions.cpp:5024 | arm_jit.cpp:2314 | — | arm_jit_arm.cpp:2780 | todo | |
+| A-2112 | `0x840..0x84F` | `OP_STMDA2` | arm_instructions.cpp:5827 | arm_jit.cpp:2400 | — | arm_jit_arm.cpp:2867 | todo | |
+| A-2128 | `0x850..0x85F` | `OP_LDMDA2` | arm_instructions.cpp:5255 | arm_jit.cpp:2391 | — | arm_jit_arm.cpp:2858 | todo | |
+| A-2144 | `0x860..0x86F` | `OP_STMDA2_W` | arm_instructions.cpp:5941 | arm_jit.cpp:2404 | — | arm_jit_arm.cpp:2871 | todo | |
+| A-2160 | `0x870..0x87F` | `OP_LDMDA2_W` | arm_instructions.cpp:5501 | arm_jit.cpp:2395 | — | arm_jit_arm.cpp:2862 | todo | |
+| A-2176 | `0x880..0x88F` | `OP_STMIA` | arm_instructions.cpp:5626 | arm_jit.cpp:2317 | — | arm_jit_arm.cpp:2783 | todo | |
+| A-2192 | `0x890..0x89F` | `OP_LDMIA` | arm_instructions.cpp:4710 | arm_jit.cpp:2308 | — | arm_jit_arm.cpp:2774 | todo | |
+| A-2208 | `0x8A0..0x8AF` | `OP_STMIA_W` | arm_instructions.cpp:5694 | arm_jit.cpp:2321 | — | arm_jit_arm.cpp:2787 | todo | |
+| A-2224 | `0x8B0..0x8BF` | `OP_LDMIA_W` | arm_instructions.cpp:4914 | arm_jit.cpp:2312 | — | arm_jit_arm.cpp:2778 | todo | |
+| A-2240 | `0x8C0..0x8CF` | `OP_STMIA2` | arm_instructions.cpp:5769 | arm_jit.cpp:2398 | — | arm_jit_arm.cpp:2865 | todo | |
+| A-2256 | `0x8D0..0x8DF` | `OP_LDMIA2` | arm_instructions.cpp:5134 | arm_jit.cpp:2389 | — | arm_jit_arm.cpp:2856 | todo | |
+| A-2272 | `0x8E0..0x8EF` | `OP_STMIA2_W` | arm_instructions.cpp:5883 | arm_jit.cpp:2402 | — | arm_jit_arm.cpp:2869 | todo | |
+| A-2288 | `0x8F0..0x8FF` | `OP_LDMIA2_W` | arm_instructions.cpp:5386 | arm_jit.cpp:2393 | — | arm_jit_arm.cpp:2860 | todo | |
+| A-2304 | `0x900..0x90F` | `OP_STMDB` | arm_instructions.cpp:5677 | arm_jit.cpp:2320 | — | arm_jit_arm.cpp:2786 | todo | |
+| A-2320 | `0x910..0x91F` | `OP_LDMDB` | arm_instructions.cpp:4867 | arm_jit.cpp:2311 | — | arm_jit_arm.cpp:2777 | todo | |
+| A-2336 | `0x920..0x92F` | `OP_STMDB_W` | arm_instructions.cpp:5750 | arm_jit.cpp:2324 | — | arm_jit_arm.cpp:2790 | todo | |
+| A-2352 | `0x930..0x93F` | `OP_LDMDB_W` | arm_instructions.cpp:5079 | arm_jit.cpp:2315 | — | arm_jit_arm.cpp:2781 | todo | |
+| A-2368 | `0x940..0x94F` | `OP_STMDB2` | arm_instructions.cpp:5856 | arm_jit.cpp:2401 | — | arm_jit_arm.cpp:2868 | todo | |
+| A-2384 | `0x950..0x95F` | `OP_LDMDB2` | arm_instructions.cpp:5322 | arm_jit.cpp:2392 | — | arm_jit_arm.cpp:2859 | todo | |
+| A-2400 | `0x960..0x96F` | `OP_STMDB2_W` | arm_instructions.cpp:5972 | arm_jit.cpp:2405 | — | arm_jit_arm.cpp:2872 | todo | |
+| A-2416 | `0x970..0x97F` | `OP_LDMDB2_W` | arm_instructions.cpp:5560 | arm_jit.cpp:2396 | — | arm_jit_arm.cpp:2863 | todo | |
+| A-2432 | `0x980..0x98F` | `OP_STMIB` | arm_instructions.cpp:5643 | arm_jit.cpp:2318 | — | arm_jit_arm.cpp:2784 | todo | |
+| A-2448 | `0x990..0x99F` | `OP_LDMIB` | arm_instructions.cpp:4772 | arm_jit.cpp:2309 | — | arm_jit_arm.cpp:2775 | todo | |
+| A-2464 | `0x9A0..0x9AF` | `OP_STMIB_W` | arm_instructions.cpp:5713 | arm_jit.cpp:2322 | — | arm_jit_arm.cpp:2788 | todo | |
+| A-2480 | `0x9B0..0x9BF` | `OP_LDMIB_W` | arm_instructions.cpp:4968 | arm_jit.cpp:2313 | — | arm_jit_arm.cpp:2779 | todo | |
+| A-2496 | `0x9C0..0x9CF` | `OP_STMIB2` | arm_instructions.cpp:5798 | arm_jit.cpp:2399 | — | arm_jit_arm.cpp:2866 | todo | |
+| A-2512 | `0x9D0..0x9DF` | `OP_LDMIB2` | arm_instructions.cpp:5194 | arm_jit.cpp:2390 | — | arm_jit_arm.cpp:2857 | todo | |
+| A-2528 | `0x9E0..0x9EF` | `OP_STMIB2_W` | arm_instructions.cpp:5914 | arm_jit.cpp:2403 | — | arm_jit_arm.cpp:2870 | todo | |
+| A-2544 | `0x9F0..0x9FF` | `OP_LDMIB2_W` | arm_instructions.cpp:5442 | arm_jit.cpp:2394 | — | arm_jit_arm.cpp:2861 | todo | |
 
 ### 乘法/乘加（28）
 
@@ -587,8 +587,8 @@
 | A-3488 | `0xDA0..0xDAF,0xDE0..0xDEF` | `OP_STC_P_PREIND` | arm_instructions.cpp:6114 | `NULL` | — | `NULL` | interp-fallback | |
 | A-3504 | `0xDB0..0xDBF,0xDF0..0xDFF` | `OP_LDC_P_PREIND` | arm_instructions.cpp:6163 | `NULL` | — | `NULL` | interp-fallback | |
 | A-3584 | `0xE00,0xE02,0xE04,0xE06,0xE08,0xE0A,…（共 128 槽）` | `OP_CDP` | arm_instructions.cpp:6352 | `NULL` | — | `NULL` | interp-fallback | |
-| A-3585 | `0xE01,0xE03,0xE05,0xE07,0xE09,0xE0B,…（共 64 槽）` | `OP_MCR` | arm_instructions.cpp:6197 | arm_jit.cpp:2531 | — | arm_jit_arm.cpp:3006 | todo | |
-| A-3601 | `0xE11,0xE13,0xE15,0xE17,0xE19,0xE1B,…（共 64 槽）` | `OP_MRC` | arm_instructions.cpp:6215 | arm_jit.cpp:2738 | — | arm_jit_arm.cpp:3213 | todo | |
+| A-3585 | `0xE01,0xE03,0xE05,0xE07,0xE09,0xE0B,…（共 64 槽）` | `OP_MCR` | arm_instructions.cpp:6197 | arm_jit.cpp:2531 | — | arm_jit_arm.cpp:3004 | todo | |
+| A-3601 | `0xE11,0xE13,0xE15,0xE17,0xE19,0xE1B,…（共 64 槽）` | `OP_MRC` | arm_instructions.cpp:6215 | arm_jit.cpp:2738 | — | arm_jit_arm.cpp:3211 | todo | |
 
 ### 状态寄存器（6）
 
@@ -608,25 +608,25 @@
 | A-0261 | `0x105` | `OP_QADD` | arm_instructions.cpp:3209 | arm_jit.cpp:1177 | — | arm_jit_arm.cpp:1630 | todo | |
 | A-0293 | `0x125` | `OP_QSUB` | arm_instructions.cpp:3230 | arm_jit.cpp:1178 | — | arm_jit_arm.cpp:1631 | todo | |
 | A-0325 | `0x145` | `OP_QDADD` | arm_instructions.cpp:3251 | arm_jit.cpp:1179 | — | arm_jit_arm.cpp:1632 | todo | |
-| A-0353 | `0x161` | `OP_CLZ` | arm_instructions.cpp:3173 | arm_jit.cpp:2465 | — | arm_jit_arm.cpp:2943 | todo | |
+| A-0353 | `0x161` | `OP_CLZ` | arm_instructions.cpp:3173 | arm_jit.cpp:2465 | — | arm_jit_arm.cpp:2941 | todo | |
 | A-0357 | `0x165` | `OP_QDSUB` | arm_instructions.cpp:3280 | arm_jit.cpp:1180 | — | arm_jit_arm.cpp:1633 | todo | |
 
 ### 分支（5）
 
 | id | 槽位 | handler | 解释器 | x86 | x86 宏体 | arm64 | 状态 | 偏差 |
 |---|---|---|---|---|---|---|---|---|
-| A-0289 | `0x121` | `OP_BX` | arm_instructions.cpp:3084 | arm_jit.cpp:2459 | — | arm_jit_arm.cpp:2937 | todo | |
-| A-0291 | `0x123` | `OP_BLX_REG` | arm_instructions.cpp:3099 | arm_jit.cpp:2460 | — | arm_jit_arm.cpp:2938 | todo | |
-| A-0295 | `0x127` | `OP_BKPT` | arm_instructions.cpp:6306 | arm_jit.cpp:2992 | — | arm_jit_arm.cpp:3447 | todo | |
-| A-2560 | `0xA00..0xAFF` | `OP_B` | arm_instructions.cpp:3116 | arm_jit.cpp:2429 | — | arm_jit_arm.cpp:2899 | todo | |
-| A-2816 | `0xB00..0xBFF` | `OP_BL` | arm_instructions.cpp:3140 | arm_jit.cpp:2430 | — | arm_jit_arm.cpp:2900 | todo | |
+| A-0289 | `0x121` | `OP_BX` | arm_instructions.cpp:3084 | arm_jit.cpp:2459 | — | arm_jit_arm.cpp:2935 | todo | |
+| A-0291 | `0x123` | `OP_BLX_REG` | arm_instructions.cpp:3099 | arm_jit.cpp:2460 | — | arm_jit_arm.cpp:2936 | todo | |
+| A-0295 | `0x127` | `OP_BKPT` | arm_instructions.cpp:6306 | arm_jit.cpp:2992 | — | arm_jit_arm.cpp:3445 | todo | |
+| A-2560 | `0xA00..0xAFF` | `OP_B` | arm_instructions.cpp:3116 | arm_jit.cpp:2429 | — | arm_jit_arm.cpp:2897 | todo | |
+| A-2816 | `0xB00..0xBFF` | `OP_BL` | arm_instructions.cpp:3140 | arm_jit.cpp:2430 | — | arm_jit_arm.cpp:2898 | todo | |
 
 ### 异常/未定义（2）
 
 | id | 槽位 | handler | 解释器 | x86 | x86 宏体 | arm64 | 状态 | 偏差 |
 |---|---|---|---|---|---|---|---|---|
 | A-0043 | `0x02B,0x02D,0x02F,0x03B,0x03D,0x03F,…（共 348 槽）` | `OP_UND` | arm_instructions.cpp:255 | `NULL` | — | `NULL` | interp-fallback | |
-| A-3840 | `0xF00..0xFFF` | `OP_SWI` | arm_instructions.cpp:6259 | arm_jit.cpp:2987 | — | arm_jit_arm.cpp:3442 | todo | |
+| A-3840 | `0xF00..0xFFF` | `OP_SWI` | arm_instructions.cpp:6259 | arm_jit.cpp:2987 | — | arm_jit_arm.cpp:3440 | todo | |
 
 ## Thumb
 
@@ -634,104 +634,104 @@
 
 | id | 槽位 | handler | 解释器 | x86 | x86 宏体 | arm64 | 状态 | 偏差 |
 |---|---|---|---|---|---|---|---|---|
-| T-0096 | `0x060..0x067` | `OP_ADD_REG` | thumb_instructions.cpp:250 | arm_jit.cpp:3251 | — | arm_jit_arm.cpp:3647 | todo | |
-| T-0104 | `0x068..0x06F` | `OP_SUB_REG` | thumb_instructions.cpp:327 | arm_jit.cpp:3340 | — | arm_jit_arm.cpp:3733 | todo | |
-| T-0112 | `0x070..0x077` | `OP_ADD_IMM3` | thumb_instructions.cpp:211 | arm_jit.cpp:3217 | — | arm_jit_arm.cpp:3613 | todo | |
-| T-0120 | `0x078..0x07F` | `OP_SUB_IMM3` | thumb_instructions.cpp:297 | arm_jit.cpp:3314 | — | arm_jit_arm.cpp:3707 | todo | |
-| T-0128 | `0x080..0x09F` | `OP_MOV_IMM8` | thumb_instructions.cpp:346 | arm_jit.cpp:3389 | — | arm_jit_arm.cpp:3789 | todo | |
-| T-0160 | `0x0A0..0x0BF` | `OP_CMP_IMM8` | thumb_instructions.cpp:373 | arm_jit.cpp:3445 | — | arm_jit_arm.cpp:3844 | todo | |
-| T-0192 | `0x0C0..0x0DF` | `OP_ADD_IMM8` | thumb_instructions.cpp:236 | arm_jit.cpp:3244 | — | arm_jit_arm.cpp:3640 | todo | |
-| T-0224 | `0x0E0..0x0FF` | `OP_SUB_IMM8` | thumb_instructions.cpp:312 | arm_jit.cpp:3333 | — | arm_jit_arm.cpp:3726 | todo | |
-| T-0256 | `0x100` | `OP_AND` | thumb_instructions.cpp:415 | arm_jit.cpp:3191 | `OP_LOGIC` | arm_jit_arm.cpp:3587 | todo | |
-| T-0257 | `0x101` | `OP_EOR` | thumb_instructions.cpp:427 | arm_jit.cpp:3193 | `OP_LOGIC` | arm_jit_arm.cpp:3589 | todo | |
-| T-0261 | `0x105` | `OP_ADC_REG` | thumb_instructions.cpp:440 | arm_jit.cpp:3363 | — | arm_jit_arm.cpp:3758 | todo | |
-| T-0262 | `0x106` | `OP_SBC_REG` | thumb_instructions.cpp:465 | arm_jit.cpp:3376 | — | arm_jit_arm.cpp:3774 | todo | |
-| T-0264 | `0x108` | `OP_TST` | thumb_instructions.cpp:523 | arm_jit.cpp:3483 | — | arm_jit_arm.cpp:3887 | todo | |
-| T-0265 | `0x109` | `OP_NEG` | thumb_instructions.cpp:536 | arm_jit.cpp:3199 | — | arm_jit_arm.cpp:3595 | todo | |
-| T-0266 | `0x10A` | `OP_CMP` | thumb_instructions.cpp:385 | arm_jit.cpp:3452 | — | arm_jit_arm.cpp:3853 | todo | |
-| T-0267 | `0x10B` | `OP_CMN` | thumb_instructions.cpp:571 | arm_jit.cpp:3471 | — | arm_jit_arm.cpp:3874 | todo | |
-| T-0268 | `0x10C` | `OP_ORR` | thumb_instructions.cpp:587 | arm_jit.cpp:3192 | `OP_LOGIC` | arm_jit_arm.cpp:3588 | todo | |
-| T-0270 | `0x10E` | `OP_BIC` | thumb_instructions.cpp:601 | arm_jit.cpp:3194 | `OP_LOGIC` | arm_jit_arm.cpp:3590 | todo | |
-| T-0271 | `0x10F` | `OP_MVN` | thumb_instructions.cpp:615 | arm_jit.cpp:3413 | — | arm_jit_arm.cpp:3812 | todo | |
-| T-0272 | `0x110..0x113` | `OP_ADD_SPE` | thumb_instructions.cpp:264 | arm_jit.cpp:3277 | — | arm_jit_arm.cpp:3672 | todo | |
-| T-0276 | `0x114..0x117` | `OP_CMP_SPE` | thumb_instructions.cpp:397 | arm_jit.cpp:3461 | — | arm_jit_arm.cpp:3863 | todo | |
-| T-0280 | `0x118..0x11B` | `OP_MOV_SPE` | thumb_instructions.cpp:355 | arm_jit.cpp:3397 | — | arm_jit_arm.cpp:3798 | todo | |
-| T-0640 | `0x280..0x29F` | `OP_ADD_2PC` | thumb_instructions.cpp:279 | arm_jit.cpp:3292 | — | arm_jit_arm.cpp:3686 | todo | |
-| T-0672 | `0x2A0..0x2BF` | `OP_ADD_2SP` | thumb_instructions.cpp:286 | arm_jit.cpp:3299 | — | arm_jit_arm.cpp:3694 | todo | |
-| T-0704 | `0x2C0..0x2C1` | `OP_ADJUST_P_SP` | thumb_instructions.cpp:834 | arm_jit.cpp:3655 | — | arm_jit_arm.cpp:4078 | todo | |
-| T-0706 | `0x2C2..0x2C3` | `OP_ADJUST_M_SP` | thumb_instructions.cpp:841 | arm_jit.cpp:3656 | — | arm_jit_arm.cpp:4079 | todo | |
+| T-0096 | `0x060..0x067` | `OP_ADD_REG` | thumb_instructions.cpp:250 | arm_jit.cpp:3251 | — | arm_jit_arm.cpp:3645 | todo | |
+| T-0104 | `0x068..0x06F` | `OP_SUB_REG` | thumb_instructions.cpp:327 | arm_jit.cpp:3340 | — | arm_jit_arm.cpp:3731 | todo | |
+| T-0112 | `0x070..0x077` | `OP_ADD_IMM3` | thumb_instructions.cpp:211 | arm_jit.cpp:3217 | — | arm_jit_arm.cpp:3611 | todo | |
+| T-0120 | `0x078..0x07F` | `OP_SUB_IMM3` | thumb_instructions.cpp:297 | arm_jit.cpp:3314 | — | arm_jit_arm.cpp:3705 | todo | |
+| T-0128 | `0x080..0x09F` | `OP_MOV_IMM8` | thumb_instructions.cpp:346 | arm_jit.cpp:3389 | — | arm_jit_arm.cpp:3787 | todo | |
+| T-0160 | `0x0A0..0x0BF` | `OP_CMP_IMM8` | thumb_instructions.cpp:373 | arm_jit.cpp:3445 | — | arm_jit_arm.cpp:3842 | todo | |
+| T-0192 | `0x0C0..0x0DF` | `OP_ADD_IMM8` | thumb_instructions.cpp:236 | arm_jit.cpp:3244 | — | arm_jit_arm.cpp:3638 | todo | |
+| T-0224 | `0x0E0..0x0FF` | `OP_SUB_IMM8` | thumb_instructions.cpp:312 | arm_jit.cpp:3333 | — | arm_jit_arm.cpp:3724 | todo | |
+| T-0256 | `0x100` | `OP_AND` | thumb_instructions.cpp:415 | arm_jit.cpp:3191 | `OP_LOGIC` | arm_jit_arm.cpp:3585 | todo | |
+| T-0257 | `0x101` | `OP_EOR` | thumb_instructions.cpp:427 | arm_jit.cpp:3193 | `OP_LOGIC` | arm_jit_arm.cpp:3587 | todo | |
+| T-0261 | `0x105` | `OP_ADC_REG` | thumb_instructions.cpp:440 | arm_jit.cpp:3363 | — | arm_jit_arm.cpp:3756 | todo | |
+| T-0262 | `0x106` | `OP_SBC_REG` | thumb_instructions.cpp:465 | arm_jit.cpp:3376 | — | arm_jit_arm.cpp:3772 | todo | |
+| T-0264 | `0x108` | `OP_TST` | thumb_instructions.cpp:523 | arm_jit.cpp:3483 | — | arm_jit_arm.cpp:3885 | todo | |
+| T-0265 | `0x109` | `OP_NEG` | thumb_instructions.cpp:536 | arm_jit.cpp:3199 | — | arm_jit_arm.cpp:3593 | todo | |
+| T-0266 | `0x10A` | `OP_CMP` | thumb_instructions.cpp:385 | arm_jit.cpp:3452 | — | arm_jit_arm.cpp:3851 | todo | |
+| T-0267 | `0x10B` | `OP_CMN` | thumb_instructions.cpp:571 | arm_jit.cpp:3471 | — | arm_jit_arm.cpp:3872 | todo | |
+| T-0268 | `0x10C` | `OP_ORR` | thumb_instructions.cpp:587 | arm_jit.cpp:3192 | `OP_LOGIC` | arm_jit_arm.cpp:3586 | todo | |
+| T-0270 | `0x10E` | `OP_BIC` | thumb_instructions.cpp:601 | arm_jit.cpp:3194 | `OP_LOGIC` | arm_jit_arm.cpp:3588 | todo | |
+| T-0271 | `0x10F` | `OP_MVN` | thumb_instructions.cpp:615 | arm_jit.cpp:3413 | — | arm_jit_arm.cpp:3810 | todo | |
+| T-0272 | `0x110..0x113` | `OP_ADD_SPE` | thumb_instructions.cpp:264 | arm_jit.cpp:3277 | — | arm_jit_arm.cpp:3670 | todo | |
+| T-0276 | `0x114..0x117` | `OP_CMP_SPE` | thumb_instructions.cpp:397 | arm_jit.cpp:3461 | — | arm_jit_arm.cpp:3861 | todo | |
+| T-0280 | `0x118..0x11B` | `OP_MOV_SPE` | thumb_instructions.cpp:355 | arm_jit.cpp:3397 | — | arm_jit_arm.cpp:3796 | todo | |
+| T-0640 | `0x280..0x29F` | `OP_ADD_2PC` | thumb_instructions.cpp:279 | arm_jit.cpp:3292 | — | arm_jit_arm.cpp:3684 | todo | |
+| T-0672 | `0x2A0..0x2BF` | `OP_ADD_2SP` | thumb_instructions.cpp:286 | arm_jit.cpp:3299 | — | arm_jit_arm.cpp:3692 | todo | |
+| T-0704 | `0x2C0..0x2C1` | `OP_ADJUST_P_SP` | thumb_instructions.cpp:834 | arm_jit.cpp:3655 | — | arm_jit_arm.cpp:4076 | todo | |
+| T-0706 | `0x2C2..0x2C3` | `OP_ADJUST_M_SP` | thumb_instructions.cpp:841 | arm_jit.cpp:3656 | — | arm_jit_arm.cpp:4077 | todo | |
 
 ### 移位（10）
 
 | id | 槽位 | handler | 解释器 | x86 | x86 宏体 | arm64 | 状态 | 偏差 |
 |---|---|---|---|---|---|---|---|---|
-| T-0000 | `0x000` | `OP_LSL_0` | thumb_instructions.cpp:51 | arm_jit.cpp:3064 | — | arm_jit_arm.cpp:3490 | todo | |
-| T-0001 | `0x001..0x01F` | `OP_LSL` | thumb_instructions.cpp:60 | arm_jit.cpp:3078 | `OP_SHIFTS_IMM` | arm_jit_arm.cpp:3508 | todo | |
-| T-0032 | `0x020` | `OP_LSR_0` | thumb_instructions.cpp:105 | arm_jit.cpp:3080 | — | arm_jit_arm.cpp:3511 | todo | |
-| T-0033 | `0x021..0x03F` | `OP_LSR` | thumb_instructions.cpp:115 | arm_jit.cpp:3089 | `OP_SHIFTS_IMM` | arm_jit_arm.cpp:3521 | todo | |
-| T-0064 | `0x040` | `OP_ASR_0` | thumb_instructions.cpp:159 | arm_jit.cpp:3091 | — | arm_jit_arm.cpp:3524 | todo | |
-| T-0065 | `0x041..0x05F` | `OP_ASR` | thumb_instructions.cpp:169 | arm_jit.cpp:3108 | `OP_SHIFTS_IMM` | arm_jit_arm.cpp:3557 | todo | |
-| T-0258 | `0x102` | `OP_LSL_REG` | thumb_instructions.cpp:71 | arm_jit.cpp:3079 | `OP_SHIFTS_REG` | arm_jit_arm.cpp:3509 | todo | |
-| T-0259 | `0x103` | `OP_LSR_REG` | thumb_instructions.cpp:126 | arm_jit.cpp:3090 | `OP_SHIFTS_REG` | arm_jit_arm.cpp:3522 | todo | |
-| T-0260 | `0x104` | `OP_ASR_REG` | thumb_instructions.cpp:180 | arm_jit.cpp:3109 | — | arm_jit_arm.cpp:3558 | todo | |
-| T-0263 | `0x107` | `OP_ROR_REG` | thumb_instructions.cpp:492 | arm_jit.cpp:3146 | — | arm_jit_arm.cpp:3572 | todo | |
+| T-0000 | `0x000` | `OP_LSL_0` | thumb_instructions.cpp:51 | arm_jit.cpp:3064 | — | arm_jit_arm.cpp:3488 | todo | |
+| T-0001 | `0x001..0x01F` | `OP_LSL` | thumb_instructions.cpp:60 | arm_jit.cpp:3078 | `OP_SHIFTS_IMM` | arm_jit_arm.cpp:3506 | todo | |
+| T-0032 | `0x020` | `OP_LSR_0` | thumb_instructions.cpp:105 | arm_jit.cpp:3080 | — | arm_jit_arm.cpp:3509 | todo | |
+| T-0033 | `0x021..0x03F` | `OP_LSR` | thumb_instructions.cpp:115 | arm_jit.cpp:3089 | `OP_SHIFTS_IMM` | arm_jit_arm.cpp:3519 | todo | |
+| T-0064 | `0x040` | `OP_ASR_0` | thumb_instructions.cpp:159 | arm_jit.cpp:3091 | — | arm_jit_arm.cpp:3522 | todo | |
+| T-0065 | `0x041..0x05F` | `OP_ASR` | thumb_instructions.cpp:169 | arm_jit.cpp:3108 | `OP_SHIFTS_IMM` | arm_jit_arm.cpp:3555 | todo | |
+| T-0258 | `0x102` | `OP_LSL_REG` | thumb_instructions.cpp:71 | arm_jit.cpp:3079 | `OP_SHIFTS_REG` | arm_jit_arm.cpp:3507 | todo | |
+| T-0259 | `0x103` | `OP_LSR_REG` | thumb_instructions.cpp:126 | arm_jit.cpp:3090 | `OP_SHIFTS_REG` | arm_jit_arm.cpp:3520 | todo | |
+| T-0260 | `0x104` | `OP_ASR_REG` | thumb_instructions.cpp:180 | arm_jit.cpp:3109 | — | arm_jit_arm.cpp:3556 | todo | |
+| T-0263 | `0x107` | `OP_ROR_REG` | thumb_instructions.cpp:492 | arm_jit.cpp:3146 | — | arm_jit_arm.cpp:3570 | todo | |
 
 ### 访存（17）
 
 | id | 槽位 | handler | 解释器 | x86 | x86 宏体 | arm64 | 状态 | 偏差 |
 |---|---|---|---|---|---|---|---|---|
-| T-0288 | `0x120..0x13F` | `OP_LDR_PCREL` | thumb_instructions.cpp:821 | arm_jit.cpp:3602 | — | arm_jit_arm.cpp:4014 | todo | |
-| T-0320 | `0x140..0x147` | `OP_STR_REG_OFF` | thumb_instructions.cpp:786 | arm_jit.cpp:3563 | — | arm_jit_arm.cpp:3960 | todo | |
-| T-0328 | `0x148..0x14F` | `OP_STRH_REG_OFF` | thumb_instructions.cpp:734 | arm_jit.cpp:3557 | — | arm_jit_arm.cpp:3954 | todo | |
-| T-0336 | `0x150..0x157` | `OP_STRB_REG_OFF` | thumb_instructions.cpp:685 | arm_jit.cpp:3551 | — | arm_jit_arm.cpp:3948 | todo | |
-| T-0344 | `0x158..0x15F` | `OP_LDRSB_REG_OFF` | thumb_instructions.cpp:705 | arm_jit.cpp:3553 | — | arm_jit_arm.cpp:3950 | todo | |
-| T-0352 | `0x160..0x167` | `OP_LDR_REG_OFF` | thumb_instructions.cpp:794 | arm_jit.cpp:3564 | — | arm_jit_arm.cpp:3961 | todo | |
-| T-0360 | `0x168..0x16F` | `OP_LDRH_REG_OFF` | thumb_instructions.cpp:742 | arm_jit.cpp:3558 | — | arm_jit_arm.cpp:3955 | todo | |
-| T-0368 | `0x170..0x177` | `OP_LDRB_REG_OFF` | thumb_instructions.cpp:693 | arm_jit.cpp:3552 | — | arm_jit_arm.cpp:3949 | todo | |
-| T-0376 | `0x178..0x17F` | `OP_LDRSH_REG_OFF` | thumb_instructions.cpp:754 | arm_jit.cpp:3559 | — | arm_jit_arm.cpp:3956 | todo | |
-| T-0384 | `0x180..0x19F` | `OP_STR_IMM_OFF` | thumb_instructions.cpp:766 | arm_jit.cpp:3561 | — | arm_jit_arm.cpp:3958 | todo | |
-| T-0416 | `0x1A0..0x1BF` | `OP_LDR_IMM_OFF` | thumb_instructions.cpp:774 | arm_jit.cpp:3562 | — | arm_jit_arm.cpp:3959 | todo | |
-| T-0448 | `0x1C0..0x1DF` | `OP_STRB_IMM_OFF` | thumb_instructions.cpp:668 | arm_jit.cpp:3549 | — | arm_jit_arm.cpp:3946 | todo | |
-| T-0480 | `0x1E0..0x1FF` | `OP_LDRB_IMM_OFF` | thumb_instructions.cpp:676 | arm_jit.cpp:3550 | — | arm_jit_arm.cpp:3947 | todo | |
-| T-0512 | `0x200..0x21F` | `OP_STRH_IMM_OFF` | thumb_instructions.cpp:717 | arm_jit.cpp:3555 | — | arm_jit_arm.cpp:3952 | todo | |
-| T-0544 | `0x220..0x23F` | `OP_LDRH_IMM_OFF` | thumb_instructions.cpp:725 | arm_jit.cpp:3556 | — | arm_jit_arm.cpp:3953 | todo | |
-| T-0576 | `0x240..0x25F` | `OP_STR_SPREL` | thumb_instructions.cpp:805 | arm_jit.cpp:3566 | — | arm_jit_arm.cpp:3963 | todo | |
-| T-0608 | `0x260..0x27F` | `OP_LDR_SPREL` | thumb_instructions.cpp:813 | arm_jit.cpp:3584 | — | arm_jit_arm.cpp:3988 | todo | |
+| T-0288 | `0x120..0x13F` | `OP_LDR_PCREL` | thumb_instructions.cpp:821 | arm_jit.cpp:3602 | — | arm_jit_arm.cpp:4012 | todo | |
+| T-0320 | `0x140..0x147` | `OP_STR_REG_OFF` | thumb_instructions.cpp:786 | arm_jit.cpp:3563 | — | arm_jit_arm.cpp:3958 | todo | |
+| T-0328 | `0x148..0x14F` | `OP_STRH_REG_OFF` | thumb_instructions.cpp:734 | arm_jit.cpp:3557 | — | arm_jit_arm.cpp:3952 | todo | |
+| T-0336 | `0x150..0x157` | `OP_STRB_REG_OFF` | thumb_instructions.cpp:685 | arm_jit.cpp:3551 | — | arm_jit_arm.cpp:3946 | todo | |
+| T-0344 | `0x158..0x15F` | `OP_LDRSB_REG_OFF` | thumb_instructions.cpp:705 | arm_jit.cpp:3553 | — | arm_jit_arm.cpp:3948 | todo | |
+| T-0352 | `0x160..0x167` | `OP_LDR_REG_OFF` | thumb_instructions.cpp:794 | arm_jit.cpp:3564 | — | arm_jit_arm.cpp:3959 | todo | |
+| T-0360 | `0x168..0x16F` | `OP_LDRH_REG_OFF` | thumb_instructions.cpp:742 | arm_jit.cpp:3558 | — | arm_jit_arm.cpp:3953 | todo | |
+| T-0368 | `0x170..0x177` | `OP_LDRB_REG_OFF` | thumb_instructions.cpp:693 | arm_jit.cpp:3552 | — | arm_jit_arm.cpp:3947 | todo | |
+| T-0376 | `0x178..0x17F` | `OP_LDRSH_REG_OFF` | thumb_instructions.cpp:754 | arm_jit.cpp:3559 | — | arm_jit_arm.cpp:3954 | todo | |
+| T-0384 | `0x180..0x19F` | `OP_STR_IMM_OFF` | thumb_instructions.cpp:766 | arm_jit.cpp:3561 | — | arm_jit_arm.cpp:3956 | todo | |
+| T-0416 | `0x1A0..0x1BF` | `OP_LDR_IMM_OFF` | thumb_instructions.cpp:774 | arm_jit.cpp:3562 | — | arm_jit_arm.cpp:3957 | todo | |
+| T-0448 | `0x1C0..0x1DF` | `OP_STRB_IMM_OFF` | thumb_instructions.cpp:668 | arm_jit.cpp:3549 | — | arm_jit_arm.cpp:3944 | todo | |
+| T-0480 | `0x1E0..0x1FF` | `OP_LDRB_IMM_OFF` | thumb_instructions.cpp:676 | arm_jit.cpp:3550 | — | arm_jit_arm.cpp:3945 | todo | |
+| T-0512 | `0x200..0x21F` | `OP_STRH_IMM_OFF` | thumb_instructions.cpp:717 | arm_jit.cpp:3555 | — | arm_jit_arm.cpp:3950 | todo | |
+| T-0544 | `0x220..0x23F` | `OP_LDRH_IMM_OFF` | thumb_instructions.cpp:725 | arm_jit.cpp:3556 | — | arm_jit_arm.cpp:3951 | todo | |
+| T-0576 | `0x240..0x25F` | `OP_STR_SPREL` | thumb_instructions.cpp:805 | arm_jit.cpp:3566 | — | arm_jit_arm.cpp:3961 | todo | |
+| T-0608 | `0x260..0x27F` | `OP_LDR_SPREL` | thumb_instructions.cpp:813 | arm_jit.cpp:3584 | — | arm_jit_arm.cpp:3986 | todo | |
 
 ### LDM/STM（6）
 
 | id | 槽位 | handler | 解释器 | x86 | x86 宏体 | arm64 | 状态 | 偏差 |
 |---|---|---|---|---|---|---|---|---|
-| T-0720 | `0x2D0..0x2D3` | `OP_PUSH` | thumb_instructions.cpp:852 | arm_jit.cpp:3683 | — | arm_jit_arm.cpp:4110 | todo | |
-| T-0724 | `0x2D4..0x2D7` | `OP_PUSH_LR` | thumb_instructions.cpp:869 | arm_jit.cpp:3684 | — | arm_jit_arm.cpp:4111 | todo | |
-| T-0752 | `0x2F0..0x2F3` | `OP_POP` | thumb_instructions.cpp:890 | arm_jit.cpp:3685 | — | arm_jit_arm.cpp:4112 | todo | |
-| T-0756 | `0x2F4..0x2F7` | `OP_POP_PC` | thumb_instructions.cpp:914 | arm_jit.cpp:3686 | — | arm_jit_arm.cpp:4113 | todo | |
-| T-0768 | `0x300..0x31F` | `OP_STMIA_THUMB` | thumb_instructions.cpp:944 | arm_jit.cpp:3650 | — | arm_jit_arm.cpp:4073 | todo | |
-| T-0800 | `0x320..0x33F` | `OP_LDMIA_THUMB` | thumb_instructions.cpp:975 | arm_jit.cpp:3649 | — | arm_jit_arm.cpp:4072 | todo | |
+| T-0720 | `0x2D0..0x2D3` | `OP_PUSH` | thumb_instructions.cpp:852 | arm_jit.cpp:3683 | — | arm_jit_arm.cpp:4108 | todo | |
+| T-0724 | `0x2D4..0x2D7` | `OP_PUSH_LR` | thumb_instructions.cpp:869 | arm_jit.cpp:3684 | — | arm_jit_arm.cpp:4109 | todo | |
+| T-0752 | `0x2F0..0x2F3` | `OP_POP` | thumb_instructions.cpp:890 | arm_jit.cpp:3685 | — | arm_jit_arm.cpp:4110 | todo | |
+| T-0756 | `0x2F4..0x2F7` | `OP_POP_PC` | thumb_instructions.cpp:914 | arm_jit.cpp:3686 | — | arm_jit_arm.cpp:4111 | todo | |
+| T-0768 | `0x300..0x31F` | `OP_STMIA_THUMB` | thumb_instructions.cpp:944 | arm_jit.cpp:3650 | — | arm_jit_arm.cpp:4071 | todo | |
+| T-0800 | `0x320..0x33F` | `OP_LDMIA_THUMB` | thumb_instructions.cpp:975 | arm_jit.cpp:3649 | — | arm_jit_arm.cpp:4070 | todo | |
 
 ### 乘法/乘加（1）
 
 | id | 槽位 | handler | 解释器 | x86 | x86 宏体 | arm64 | 状态 | 偏差 |
 |---|---|---|---|---|---|---|---|---|
-| T-0269 | `0x10D` | `OP_MUL_REG` | thumb_instructions.cpp:641 | arm_jit.cpp:3427 | — | arm_jit_arm.cpp:3825 | todo | |
+| T-0269 | `0x10D` | `OP_MUL_REG` | thumb_instructions.cpp:641 | arm_jit.cpp:3427 | — | arm_jit_arm.cpp:3823 | todo | |
 
 ### 分支（8）
 
 | id | 槽位 | handler | 解释器 | x86 | x86 宏体 | arm64 | 状态 | 偏差 |
 |---|---|---|---|---|---|---|---|---|
-| T-0284 | `0x11C..0x11D` | `OP_BX_THUMB` | thumb_instructions.cpp:1129 | arm_jit.cpp:3784 | — | arm_jit_arm.cpp:4232 | todo | |
-| T-0286 | `0x11E..0x11F` | `OP_BLX_THUMB` | thumb_instructions.cpp:1169 | arm_jit.cpp:3785 | — | arm_jit_arm.cpp:4233 | todo | |
+| T-0284 | `0x11C..0x11D` | `OP_BX_THUMB` | thumb_instructions.cpp:1129 | arm_jit.cpp:3784 | — | arm_jit_arm.cpp:4230 | todo | |
+| T-0286 | `0x11E..0x11F` | `OP_BLX_THUMB` | thumb_instructions.cpp:1169 | arm_jit.cpp:3785 | — | arm_jit_arm.cpp:4231 | todo | |
 | T-0760 | `0x2F8..0x2FB` | `OP_BKPT_THUMB` | thumb_instructions.cpp:1012 | `NULL` | — | `NULL` | interp-fallback | |
-| T-0832 | `0x340..0x37B` | `OP_B_COND` | thumb_instructions.cpp:1080 | arm_jit.cpp:3691 | — | arm_jit_arm.cpp:4118 | todo | |
-| T-0896 | `0x380..0x39F` | `OP_B_UNCOND` | thumb_instructions.cpp:1090 | arm_jit.cpp:3707 | — | arm_jit_arm.cpp:4135 | todo | |
-| T-0928 | `0x3A0..0x3BF` | `OP_BLX` | thumb_instructions.cpp:1106 | arm_jit.cpp:3714 | — | arm_jit_arm.cpp:4143 | todo | |
-| T-0960 | `0x3C0..0x3DF` | `OP_BL_10` | thumb_instructions.cpp:1115 | arm_jit.cpp:3727 | — | arm_jit_arm.cpp:4161 | todo | |
-| T-0992 | `0x3E0..0x3FF` | `OP_BL_11` | thumb_instructions.cpp:1121 | arm_jit.cpp:3734 | — | arm_jit_arm.cpp:4168 | todo | |
+| T-0832 | `0x340..0x37B` | `OP_B_COND` | thumb_instructions.cpp:1080 | arm_jit.cpp:3691 | — | arm_jit_arm.cpp:4116 | todo | |
+| T-0896 | `0x380..0x39F` | `OP_B_UNCOND` | thumb_instructions.cpp:1090 | arm_jit.cpp:3707 | — | arm_jit_arm.cpp:4133 | todo | |
+| T-0928 | `0x3A0..0x3BF` | `OP_BLX` | thumb_instructions.cpp:1106 | arm_jit.cpp:3714 | — | arm_jit_arm.cpp:4141 | todo | |
+| T-0960 | `0x3C0..0x3DF` | `OP_BL_10` | thumb_instructions.cpp:1115 | arm_jit.cpp:3727 | — | arm_jit_arm.cpp:4159 | todo | |
+| T-0992 | `0x3E0..0x3FF` | `OP_BL_11` | thumb_instructions.cpp:1121 | arm_jit.cpp:3734 | — | arm_jit_arm.cpp:4166 | todo | |
 
 ### 异常/未定义（2）
 
 | id | 槽位 | handler | 解释器 | x86 | x86 宏体 | arm64 | 状态 | 偏差 |
 |---|---|---|---|---|---|---|---|---|
 | T-0708 | `0x2C4..0x2CF,0x2D8..0x2EF,0x2FC..0x2FF` | `OP_UND_THUMB` | thumb_instructions.cpp:40 | `NULL` | — | `NULL` | interp-fallback | |
-| T-0892 | `0x37C..0x37F` | `OP_SWI_THUMB` | thumb_instructions.cpp:1031 | arm_jit.cpp:3787 | — | arm_jit_arm.cpp:4235 | todo | |
+| T-0892 | `0x37C..0x37F` | `OP_SWI_THUMB` | thumb_instructions.cpp:1031 | arm_jit.cpp:3787 | — | arm_jit_arm.cpp:4233 | todo | |
 

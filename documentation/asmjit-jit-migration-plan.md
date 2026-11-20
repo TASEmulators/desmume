@@ -20,7 +20,8 @@
 | rev6 | 只补现状量化，不改代码：① 新增 §9，记录当前 arm64 JIT 的 Guest:Host 指令膨胀率、访存回调路径、`ArmRegCache` 的实际覆盖边界；② 明确"1 条指令块"的 36.9 条/块不能当比例，避免后续拿错基线；③ 给出下一步优化优先级（P0 访存 ABI） |
 | rev7 | 落地 §9.5 的 P0 第一刀：① 新增 `call_mem` 轻量 helper 调用（arm64），把访存热点 `OP_LDR_`/`OP_STR_` 的调用开销从 15 条降到 3 条；② 逐调用点论证寄存器存活面，不全局删 `save_call`；③ 编码层 golden 增加 3 个 case，x86 全量差分功能桶仍全 0；④ 记录本机验证边界与 macOS 待验项（§10） |
 | rev8 | P0 第二刀：① `call_mem` 扩展到 SWP/LDM-STM/Thumb LDR-STR/SPREL/PCREL，新增 `call_mem_r7` / `call_mem_r2` 变体，24 处调用点中 15 处转轻量（§10.7）；② 记录 x64 fastmem 评估结论——三项硬障碍下主动放弃，两后端以安全方法对齐（§10.6）；③ 编码层 golden 增至 241 case |
-| **rev9（本文）** | 主线验证网加固：① 差分台 `kProbes` 新增 20 个访存定向探针，覆盖写回 / Rd≠Rn / 字节·半字·符号扩展 / 寄存器偏移 / Thumb SP 相对 / PUSH-POP（此前 `--full` 的 `slot<<20` 只测 `LDR r0,[r0]` 退化形式，零覆盖这些变体）；② 38/38 探针全绿、`--full` 功能桶全 0；③ 新增独立待办追踪文档 `jit-open-tasks.md`（§10.8） |
+| rev9 | 主线验证网加固：① 差分台 `kProbes` 新增 20 个访存定向探针，覆盖写回 / Rd≠Rn / 字节·半字·符号扩展 / 寄存器偏移 / Thumb SP 相对 / PUSH-POP（此前 `--full` 的 `slot<<20` 只测 `LDR r0,[r0]` 退化形式，零覆盖这些变体）；② 38/38 探针全绿、`--full` 功能桶全 0；③ 新增独立待办追踪文档 `jit-open-tasks.md`（§10.8） |
+| **rev10（本文）** | S7.2 收尾：删除旧 `src/utils/AsmJit`（69 文件）并清理 **9 个**构建文件的遗留引用（原计划写 5 个，实测为 9 个）；`build_check.bat` 同步改为编 vendored asmjit + C++20；矩阵行号随代码同步。验证：`arm_jit.cpp` MSVC C++20 编译 exit=0、接线自检全绿、harness 38/38；POSIX 构建待 Linux/macOS 验证 |
 
 ---
 
@@ -1562,6 +1563,19 @@ arm64 侧 `freeFuncs()` 的 `munmap`/`VirtualFree` 整块回收**保留**（`Arm
    保留纯语义辅助（`count_leading_zeros` 之类）。
 4. CI 增加一档"仅编译 arm_jit.cpp + arm_jit_arm.cpp + asmjit"，防止将来有人用 C++17 配置把它编译坏。
 5. 把 §3.6 的契约清单、§3.7 的分类测试和差分 dump 一起归档到 `documentation/jit-semantics-baseline/`。
+
+> **S7.2 已落地（rev10，2026-11-20）**：上面第 2 条原文估计"5 个构建文件"，实测是
+> **9 个**——`interface/meson.build`、`posix/meson.build`、`posix/Makefile.am`、
+> `posix/codeblocks/desmume.cbp`、`windows/Makefile` 各自仍把旧 AsmJit 的 29 个 `.cpp`
+> 列进编译源（`DeSmuME.vcxproj` 主体已在早前摘掉 ClCompile，但两个 `.vcxproj.filters`
+> 和 `DeSmuME_Interface.vcxproj` 仍有残留条目）。本轮全部清除并删除旧目录（69 文件）。
+> 附带更新：`build_check.bat` 改为调用 `build_asmjit.ps1 -LibOnly` + `arm_jit.cpp` 用
+> `/std:c++20`（旧版编 asmjit 1.0、用 c++14，迁移后已双重过时）；`VERSION.txt` 与
+> `wire_asmjit_xcode.py` 里"旧目录保留作参照"的注释改为"已删除"。
+> 本机证据：旧目录零残留追踪文件、`arm_jit.cpp` MSVC C++20 编译 exit=0、
+> `wire_asmjit_vcxproj.py` / `gen_asmjit_sources.py` / `wire_asmjit_xcode.py` 三个自检全绿、
+> harness 重建后 38/38 探针 0 mismatch。**POSIX 构建本机无法编译，需 Linux/macOS 侧确认**
+> （旧 29 源此前被编进二进制但无人引用，删除后只会减少编译负担）。
 
 ### S8 · 可选优化（独立 PR，不要混在迁移里）
 
