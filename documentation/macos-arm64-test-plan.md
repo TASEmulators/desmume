@@ -52,6 +52,13 @@ Cocoa 前端顺带提供了 core 引用的那几个全局（`execute` / `paused`
 这批证据只覆盖原语层（`emit_*` 生成的代码字），不经过模拟器的条件执行与周期记账——
 所以上面 §0.1 的差分才是"后端作为模拟器的一部分"的第一次验证。
 
+**一个已知缺口**：`a64_dump_new`（236 例原语语料的 dump 工具）在 macOS 上跑不起来，
+`createFunc()` 里就 SIGBUS，连表头都没输出。`build_a64_termux.sh` 里的编译参数搬过来只差
+`-include sys/types.h`（`arm64_emit.cpp` 自己没 include，正式构建里靠 `types.h` 带进来），
+编得过、跑不过；具体是 `mmap(MAP_JIT)` 还是 asmjit 侧的问题还没查。所以语料比对目前仍然只在
+Android 侧做。对"行为是否正确"来说差分扫描更强，这个缺口不影响结论，只影响"逐字编码"这一层
+在 macOS 上没有本地复现手段。
+
 
 ## 1. 构建前自检（30 秒）
 
