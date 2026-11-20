@@ -67,6 +67,10 @@ static const char *disassemble(u32 opcode);
 // push it, so it survives helper calls and the return to the caller.
 #define JIT_CPU_BASE_REG X25_REG
 
+// Same trick for the cycle counters. x26 is already pushed by save()/restore()
+// (as the pair to x25), so this costs one load in the prologue.
+#define JIT_COUNTERS_REG X26_REG
+
 t_bytes *g_out = NULL;
 
 #ifdef __APPLE__
@@ -153,8 +157,21 @@ static int bb_opcodesize;
 static int bb_adr;
 static bool bb_thumb;
 static GpVar bb_cpu;
-static GpVar bb_cycles;
-static GpVar bb_total_cycles;
+// The two cycle counters are one object on purpose: a single block-resident
+// base register (JIT_COUNTERS_REG) then addresses both, which removes an
+// address materialisation per touch -- and they are touched several times
+// per emulated instruction.
+struct BbCounters
+{
+	u32 cycles;        // cycles of the instruction just emitted
+	u32 total_cycles;  // accumulated over the block, returned in w0
+};
+static BbCounters bb_counters;
+#define bb_cycles       bb_counters.cycles
+#define bb_total_cycles bb_counters.total_cycles
+
+#define BB_CYCLES_FIELD (int)offsetof(BbCounters, cycles)
+#define BB_TOTAL_FIELD  (int)offsetof(BbCounters, total_cycles)
 static u32 bb_constant_cycles;
 // true once the DMA event flag pointer has been materialised in JIT_DMA_FLAG_REG
 static bool bb_dma_flag_ptr_ready;
@@ -307,6 +324,39 @@ static int inline get_ptrSW(void *start, int o, int r, int v) {
 	emit_addimm64(g_out, r, o, r);
 	if (v) emit_ldrsw(g_out, r, r);
 	return r;
+}
+
+// Cycle-counter access through the resident base. These replace
+// emit_read_ptr32_reg/emit_write_ptr32_reg/emit_inc_ptr* on &bb_cycles and
+// &bb_total_cycles, which each rebuilt the address with movz/movk.
+static inline void emit_ld_counters(int field, int rt) {
+	ASMJIT_ASSUME_OK(g_out->ldr(gw(rt), asmjit::a64::ptr(gx(JIT_COUNTERS_REG), field)));
+}
+
+static inline void emit_st_counters(int field, int rt) {
+	ASMJIT_ASSUME_OK(g_out->str(gw(rt), asmjit::a64::ptr(gx(JIT_COUNTERS_REG), field)));
+}
+
+static inline void emit_st_counters_zero(int field) {
+	ASMJIT_ASSUME_OK(g_out->str(asmjit::a64::wzr, asmjit::a64::ptr(gx(JIT_COUNTERS_REG), field)));
+}
+
+// counters[field] += add
+static inline void emit_add_counters_imm(int field, int add) {
+	emit_ld_counters(field, X10_REG);
+	if (add > 0)
+		ASMJIT_ASSUME_OK(g_out->add(gw(X10_REG), gw(X10_REG), asmjit::Imm(add)));
+	else if (add < 0)
+		ASMJIT_ASSUME_OK(g_out->sub(gw(X10_REG), gw(X10_REG), asmjit::Imm(-add)));
+	emit_st_counters(field, X10_REG);
+}
+
+// counters[dst] += counters[src]
+static inline void emit_add_counters(int dstField, int srcField) {
+	emit_ld_counters(dstField, X10_REG);
+	emit_ld_counters(srcField, X9_REG);
+	ASMJIT_ASSUME_OK(g_out->add(gw(X10_REG), gw(X10_REG), gw(X9_REG)));
+	emit_st_counters(dstField, X10_REG);
 }
 
 #define cpu_dword_ptr(z, o, r, v) cpu_get_ptr(&z, o, r, v)
@@ -798,7 +848,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 		if(REG_POS(i,12)==15) \
 		{ \
 			S_DST_R15; \
-			emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+			emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 			return 1; \
 		} \
 		SET_NZCV(!symmetric); \
@@ -809,7 +859,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 		{ \
 			reg_ptr(15, tmp_reg, VALUE); \
 			emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), tmp_reg); \
-			emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+			emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 		} \
 	} \
 	return 1;
@@ -824,7 +874,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 		if(REG_POS(i,12)==15) \
 		{ \
 			S_DST_R15; \
-			emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+			emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 			return 1; \
 		} \
 		SET_NZCV(1); \
@@ -834,7 +884,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 		if(REG_POS(i,12)==15) \
 		{ \
 			emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), lhs); \
-			emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+			emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 		} \
 	} \
 	return 1;
@@ -861,7 +911,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 	if(REG_POS(i,12)==15) \
 	{ \
 		S_DST_R15; \
-		emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+		emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 		return 1; \
 	} \
 	SET_NZC; \
@@ -1183,7 +1233,7 @@ static int OP_MOV_IMM_VAL(const u32 i) { OP_MOV(IMM_VAL); }
 	if(REG_POS(i,12)==15) \
 	{ \
 		S_DST_R15; \
-		emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+		emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 		return 1; \
 	} \
 	if(!rhs_is_imm) \
@@ -1253,7 +1303,7 @@ static void MUL_Mxx_END(int reg, bool sign, int cycles)
 	emit_sub(g_out, R0, tmp, tmp);
 	emit_lsr(g_out, tmp, 3);
 	emit_addimm(g_out, tmp, cycles+1, tmp);
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, tmp);
+	emit_st_counters(BB_CYCLES_FIELD, tmp);
 }
 
 #define OP_MUL_(op, width, sign, accum, flags) \
@@ -1632,7 +1682,7 @@ static u32 sub(u32 lhst, u32 rhst) { return lhst - rhst; }
 	emit_mov64(g_out, dst, R1); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,0)], R3); \
 	callR3(g_out); \
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0); \
+	emit_st_counters(BB_CYCLES_FIELD, R0); \
 	if(REG_POS(i,12)==15) \
 	{ \
 		reg_ptr(15, tmp_reg, VALUE); \
@@ -1824,7 +1874,7 @@ static const OpSTR STRB_tab[2][3]  = { T(OP_STRB) };
 	u32 adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,1)], R3); \
 	callR3(g_out); \
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0); \
+	emit_st_counters(BB_CYCLES_FIELD, R0); \
 	return 1;
 	
 #define data R1
@@ -1990,7 +2040,7 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 	emit_ptr(g_out, (uintptr_t)(BIT5(i) ? op_strd_tab[PROCNUM][Rd_num] : op_ldrd_tab[PROCNUM][Rd_num]), R3);
 	// Call function
 	callR3(g_out);
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 
 	emit_MMU_aluMemCycles(3, &bb_cycles, 0);	
 
@@ -2043,7 +2093,7 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		// Call function
 		callR3(g_out);
 		// Return
-		emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+		emit_st_counters(BB_CYCLES_FIELD, R0);
 		
 		if (BIT21(i)) // W bit - writeback
 			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), addr);
@@ -2061,7 +2111,7 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		// Call function
 		callR3(g_out);
 		// Return
-		emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);			
+		emit_st_counters(BB_CYCLES_FIELD, R0);			
 
 		emit_MMU_aluMemCycles(3, &bb_cycles, 0);
 	}
@@ -2122,7 +2172,7 @@ static int op_swp_(const u32 i, int b)
 	//emit_mov(g_out, PC, LR);
 	//emit_jmpreg(g_out, R3);
 	// Return
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 
 	emit_MMU_aluMemCycles(4, &bb_cycles, 0);
 	
@@ -2317,7 +2367,7 @@ static void call_ldm_stm(int reg, u32 bitmask, bool store, int dir)
 		// Call function
 		callR7(g_out);
 		
-		emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+		emit_st_counters(BB_CYCLES_FIELD, R0);
 
 	}
 	else
@@ -3013,7 +3063,7 @@ u32 op_swi(u8 swinum)
 
 		emit_ptr(g_out, (uintptr_t)ARM_swi_tab[PROCNUM][swinum], R3);
 		callR3(g_out);
-		emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+		emit_st_counters(BB_CYCLES_FIELD, R0);
 		emit_inc_ptr_imm(g_out, (uintptr_t)&bb_cycles, 3);
 		return 1;
 	}
@@ -3520,7 +3570,7 @@ static int OP_TST(const u32 i)
 	reg_pos_thumb(0, R1, VALUE); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,1)], R3); \
 	callR3(g_out); \
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);\
+	emit_st_counters(BB_CYCLES_FIELD, R0);\
 	return 1;
 
 #define LDR_THUMB(mem_op, offset) \
@@ -3543,7 +3593,7 @@ static int OP_TST(const u32 i)
 	reg_pos_thumb(0, R1, ADDRESS); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,0)], R3); \
 	callR3(g_out); \
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);\
+	emit_st_counters(BB_CYCLES_FIELD, R0);\
 	return 1;
 
 static int OP_STRB_IMM_OFF(const u32 i) { STR_THUMB(STRB, ((i>>6)&0x1F)); }
@@ -3580,7 +3630,7 @@ static int OP_STR_SPREL(const u32 i)
 	
 	// Call function
 	callR3(g_out);
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 	
 	#undef addr
 	#undef data
@@ -3606,7 +3656,7 @@ static int OP_LDR_SPREL(const u32 i)
 	// Call function
 	callR3(g_out);
 	
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 	
 	#undef addr
 	#undef data
@@ -3631,7 +3681,7 @@ static int OP_LDR_PCREL(const u32 i)
 	// Call function
 	callR3(g_out);
 	
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 	
 	#undef addr
 	#undef data
@@ -3729,7 +3779,7 @@ static int OP_B_COND(const u32 i)
 	emit_branch((i>>8)&0xF, skip);
 	emit_write_ptr32_regptrTO_immFROM(g_out,12/*cpu_ptr(instruct_adr, R1, ADDRESS)*/, dst);
 	
-	emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2);
+	emit_add_counters_imm(BB_TOTAL_FIELD, 2);
 	emit_label(g_out, skip);
 
 	return 1;
@@ -4060,7 +4110,7 @@ static void emit_armop_call(u32 opcode)
 	// Call function
 	callR3(g_out);
 	
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);	
+	emit_st_counters(BB_CYCLES_FIELD, R0);	
 }
 
 static void _armlog(u8 proc, u32 addr, u32 opcode)
@@ -4134,9 +4184,9 @@ static void emit_dma_event_check(u32 resume_adr)
 	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(next_instruction, R2, ADDRESS), resume_adr);
 
 	if(bb_constant_cycles > 0)
-		emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, bb_constant_cycles);
+		emit_add_counters_imm(BB_TOTAL_FIELD, bb_constant_cycles);
 
-	emit_read_ptr32_reg(g_out, (uintptr_t)&bb_total_cycles, R0);
+	emit_ld_counters(BB_TOTAL_FIELD, R0);
 	emit_endfunc(g_out);
 
 	emit_label(g_out, skip);
@@ -4183,7 +4233,11 @@ static u32 compile_basicblock()
 
 	JIT_COMMENT("reset bb_total_cycles");
 
-	emit_write_ptr32(g_out, (uintptr_t)&bb_total_cycles, (uintptr_t)0);
+	JIT_COMMENT("counters base");
+
+	emit_ptr(g_out, (uintptr_t)&bb_counters, JIT_COUNTERS_REG);
+
+	emit_st_counters_zero(BB_TOTAL_FIELD);
 
 #if (PROFILER_JIT_LEVEL > 0)
 	JIT_COMMENT("Profiler ptr");
@@ -4241,14 +4295,14 @@ static u32 compile_basicblock()
 			if(cycles == 0)
 			{
 				JIT_COMMENT("variable cycles");
-				emit_inc_ptr(g_out, (uintptr_t)&bb_total_cycles, (uintptr_t)&bb_cycles);
-				emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, -1);
+				emit_add_counters(BB_TOTAL_FIELD, BB_CYCLES_FIELD);
+				emit_add_counters_imm(BB_TOTAL_FIELD, -1);
 			}
 			else
 				if (cycles > 1)
 				{
 					JIT_COMMENT("cycles (%d)", cycles);
-					emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, -1);
+					emit_add_counters_imm(BB_TOTAL_FIELD, -1);
 				}
 			emit_label(g_out, skip);
 		}
@@ -4260,7 +4314,7 @@ static u32 compile_basicblock()
 			if(cycles == 0)
 			{
 				JIT_COMMENT("variable cycles");
-				emit_inc_ptr(g_out, (uintptr_t)&bb_total_cycles, (uintptr_t)&bb_cycles);
+				emit_add_counters(BB_TOTAL_FIELD, BB_CYCLES_FIELD);
 			}
 		}
 
@@ -4282,13 +4336,13 @@ static u32 compile_basicblock()
 	JIT_COMMENT("total cycles (block)");
 
 	if (bb_constant_cycles > 0)
-		emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, bb_constant_cycles);
+		emit_add_counters_imm(BB_TOTAL_FIELD, bb_constant_cycles);
 
 #if LOG_JIT
 	fprintf(stderr, "cycles %d%s\n", bb_constant_cycles, has_variable_cycles ? " + variable" : "");
 #endif
 	
-	emit_read_ptr32_reg(g_out, (uintptr_t)&bb_total_cycles, R0);
+	emit_ld_counters(BB_TOTAL_FIELD, R0);
 	
 	emit_endfunc(g_out);
 	
