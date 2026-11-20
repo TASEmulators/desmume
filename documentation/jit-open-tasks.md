@@ -40,8 +40,9 @@
 
 - [ ] **§0.3 全量 msbuild**：本机沙箱把 `MSBuild.exe`/`cmd.exe` 判为 LOLBin 拦掉，能否出 exe 仍未验证。需在沙箱外跑 `tools\jit_matrix\build_check.bat`。
 - [ ] **§8 多平台编译**：Win32 / Win64 / macOS arm64 / Linux x86-64 / Linux aarch64 全部编译通过（Windows 与 Xcode 工程已接线；macOS 实测清单见 `macos-arm64-test-plan.md`）。
-- [ ] **§8 矩阵生成自检**：`python tools/jit_matrix/gen_opcode_matrix.py` 退出码为 0（含 §3.8 六项断言）。
-- [ ] **§8 x86 运行时补测**：6 处 `ptr_abs` 改造的运行时验证需在 Windows / Intel Mac 补做（本机无 x86 运行环境；`-fsyntax-only` 已 0 错误）。
+- [x] **§8 矩阵生成自检**：`gen_opcode_matrix.py --check` 退出码 0（2026-11-20 重跑）。
+- [x] **x86 JIT 全量重跑（新核心库，2026-11-20）**：修复 `build_core.ps1` 让 vendored asmjit 源用 C++20 编译（此前 52 个 asmjit 文件按 c++14 编译失败，核心库停在 11/19），重建出含 11/20 全部 x86 修复的 `desmume_core.lib`（194/194 源，0 失败）。重链 `jit_diff.exe` 后：`--full` 81920 比较功能桶全 0（12067 是 cycle 记录项）；`--seq 2/3/4` 共 19776 比较全 0 mismatch；38 探针全绿。接线自检（vcxproj/xcode/gen_sources）全绿。
+- [ ] **§8 x86 运行时补测**：6 处 `ptr_abs` 改造现已在**真实 x86 运行时**覆盖——`jit_diff.exe` 是 x86 后端且跑通全量/序列差分（不再是 `-fsyntax-only`）；若需 GUI 整机层面确认，仍可在 Windows / Intel Mac 补做。
 
 ## 三、迁移主线进度（核心，剩 319 组）
 

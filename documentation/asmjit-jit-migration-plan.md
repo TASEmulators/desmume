@@ -21,7 +21,8 @@
 | rev7 | 落地 §9.5 的 P0 第一刀：① 新增 `call_mem` 轻量 helper 调用（arm64），把访存热点 `OP_LDR_`/`OP_STR_` 的调用开销从 15 条降到 3 条；② 逐调用点论证寄存器存活面，不全局删 `save_call`；③ 编码层 golden 增加 3 个 case，x86 全量差分功能桶仍全 0；④ 记录本机验证边界与 macOS 待验项（§10） |
 | rev8 | P0 第二刀：① `call_mem` 扩展到 SWP/LDM-STM/Thumb LDR-STR/SPREL/PCREL，新增 `call_mem_r7` / `call_mem_r2` 变体，24 处调用点中 15 处转轻量（§10.7）；② 记录 x64 fastmem 评估结论——三项硬障碍下主动放弃，两后端以安全方法对齐（§10.6）；③ 编码层 golden 增至 241 case |
 | rev9 | 主线验证网加固：① 差分台 `kProbes` 新增 20 个访存定向探针，覆盖写回 / Rd≠Rn / 字节·半字·符号扩展 / 寄存器偏移 / Thumb SP 相对 / PUSH-POP（此前 `--full` 的 `slot<<20` 只测 `LDR r0,[r0]` 退化形式，零覆盖这些变体）；② 38/38 探针全绿、`--full` 功能桶全 0；③ 新增独立待办追踪文档 `jit-open-tasks.md`（§10.8） |
-| **rev10（本文）** | S7.2 收尾：删除旧 `src/utils/AsmJit`（69 文件）并清理 **9 个**构建文件的遗留引用（原计划写 5 个，实测为 9 个）；`build_check.bat` 同步改为编 vendored asmjit + C++20；矩阵行号随代码同步。验证：`arm_jit.cpp` MSVC C++20 编译 exit=0、接线自检全绿、harness 38/38；POSIX 构建待 Linux/macOS 验证 |
+| rev10 | S7.2 收尾：删除旧 `src/utils/AsmJit`（69 文件）并清理 **9 个**构建文件的遗留引用（原计划写 5 个，实测为 9 个）；`build_check.bat` 同步改为编 vendored asmjit + C++20；矩阵行号随代码同步。验证：`arm_jit.cpp` MSVC C++20 编译 exit=0、接线自检全绿、harness 38/38；POSIX 构建待 Linux/macOS 验证 |
+| **rev11（本文）** | 修复核心库验证盲点：`build_core.ps1` 此前把 vendored asmjit 的 52 个源按 c++14 编译全部失败，导致 `desmume_core.lib` 停在 11/19、不含 11/20 的 x86 修复——过去所有 x86 差分其实在验旧代码。给 asmjit 源加 C++20 特判后重建（194/194，0 失败），重链 `jit_diff.exe` 整体重跑：`--full` 功能桶全 0、`--seq 2/3/4` 19776 比较全 0 mismatch（§10.9） |
 
 ---
 
@@ -2127,3 +2128,40 @@ prime 后的 R0），harness 只比寄存器状态，不受内存副作用干扰
 **边界不变**：这些探针加固的是 **x86 侧**差分网；arm64 访存语义（尤其 `call_mem`
 两刀改的 15 个调用点）仍需按 §10.7 在 macOS 上验证，本机无法替代。族 3 的 174 组
 `diff-pass` 仍要等 macOS 三方差分 + §9.5 P3（访存接入 `ArmRegCache`）之后才能置位。
+
+### 10.9 核心库验证盲点与 x64 全量重跑（2026-11-20）
+
+**发现**：整体重跑 x64 验证前核对二进制时间戳，发现 `desmume_core.lib` 停在
+**11/19 21:56**，而 arm_jit.cpp 此后有 5 个提交（`f5722fb6` JitRuntime、
+`dbc5ab53` cycle 修正、`4d1d5545` Universal 接线、`15e8409c` 移除 ptr_abs）。
+也就是说 §10.5–§10.8 里"x86 `--full` 功能桶全 0"验证的其实是**旧 JIT 代码**，
+不包含 11/20 的 x86 修复。这是个真实的验证盲点：harness 源码是新的，但它链接的
+核心库是旧的。
+
+**根因**：`build_core.ps1` 只对 `arm_jit.cpp` 设了 `/std:c++20`，vendored asmjit 的
+52 个源仍按 c++14 编译，撞上 axl 头里的 `requires` / `std::is_const_v` 全部失败
+（见旧 `build_core/failures.txt`）。结果核心库一直没能在迁移后重建。
+
+**修复**：`build_core.ps1` 里把 C++20 特判从"仅 arm_jit.cpp"扩到"arm_jit.cpp 或
+路径含 `3rdparty/asmjit`"，两者都带 `/DASMJIT_STATIC`。`-Force` 重建：
+**194/194 源编译、0 失败**，新库 23.6 MB / 223 objects，含全部 11/20 x86 修复。
+
+**整体重跑结果**（新库重链 `jit_diff.exe` 后）：
+
+| 验证 | 规模 | 结果 |
+|---|---|---|
+| `--full` 单指令 sweep | 81920 比较 | 功能桶（R0–R14 / CPSR / `instruct_adr` / invariant / fault）全 0；12067 为 cycle 记录项 |
+| `--seq 2` | 6848 比较 | 0 mismatch（4012 跳过为有内存副作用的槽） |
+| `--seq 3` | 6592 比较 | 0 mismatch |
+| `--seq 4` | 6336 比较 | 0 mismatch |
+| 默认 38 探针 | 38×8×2 | 0 mismatch |
+| `wire_asmjit_vcxproj` / `wire_asmjit_xcode` / `gen_asmjit_sources` / `gen_opcode_matrix` `--check` | — | 全 exit=0 |
+
+**结论**：`15e8409c` 等 11/20 的 x86 修复在新的核心库下功能正确；上一轮 S7.2 删除
+旧 AsmJit 后，x86 后端完全自足（新 asmjit + C++20），无回归。
+`--block`/`--sweep` 的代码体积统计仍依赖 arm64 专有的 `g_TOTALBYTES`，在 x64 上恒为 0，
+本节的结论只针对功能差分，不含性能数字。
+
+**经验（写进流程）**：差分前必须核对 `desmume_core.lib` 的时间戳 ≥ 所有 JIT 源的最后
+提交时间；否则"全绿"验证的是过期二进制。改 harness 或核心源后要同时重编核心库、
+重链 harness。
