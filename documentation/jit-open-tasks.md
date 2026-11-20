@@ -3,7 +3,7 @@
 > 本文把 `asmjit-jit-migration-plan.md`（下称「主文档」）中散落的未完成项集中成一份可勾选清单。
 > **主文档仍是权威来源**，本文是索引视图；状态变化时两处同步更新。
 >
-> 快照：2026-11-20，HEAD `19b5ef00` + 本轮未提交改动（族 7+8 Thumb/饱和/协处理器，见主文档 §S4）。
+> 快照：2026-11-20，HEAD `fc6577ba` + 本轮未提交改动（x86 侧饱和算术内联，见主文档 §S4 族 7+8）。
 
 ## 当前进度快照
 
@@ -11,12 +11,13 @@
 |---|---|
 | 迁移主线（571 组 `diff-pass`） | **571 / 571，todo 归零**：族 1 数据处理 28 + 族 2 ARM 移位 224 + 族 3+4 访存 172 + LDM/STM 32 + 族 5 乘法/乘加 28 + CLZ + 族 6 分支/状态/异常 12 + **族 7+8 Thumb 68 + 饱和 4 + 协处理器 2**。余下 20 个 `interp-fallback`（`OP_UND`/`OP_CDP`/LDC-STC 全系/`LDREX`/`STREX`/Thumb 的 `BKPT`+`UND`）是有意不编译的 |
 | P0 访存 ABI（arm64 `call_mem`） | **已落地提交**：`call_mem` / `_r7` / `_r2` 三变体，24 处调用点中 15 处转轻量（commits `b7225baa`、`b1f5b455`）；原语级 + 块级真机均已验证 |
-| 族3 代码迁移 | **arm64 缓存接入完成**（本批）；x86 侧结构早已完成 |
+| 族3 代码迁移 | **arm64 缓存接入完成**；x86 侧结构早已完成 |
+| **饱和算术（Q 系列）** | **两端都已内联**：arm64 见 §S4 族 7+8；x86 `arm_jit.cpp` 用同一份 DDI 0403E 语义（`seto` + `cmovnz`，两段饱和分别置 Q）。x86 侧 6 条 Q 探针 × 8 组操作数 × 2 种标志 = 704 次比较 0 mismatch，负对照（`cmovz`）确认探针有效 |
 | 访存差分安全网 | **本机已加固**（主文档 §10.8）：`kProbes` 新增 20 条访存定向探针，38/38 全绿 |
 | **arm64 handler 级真机验证** | `a64_block_probe` 170 个块（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + 37 访存 + **78 Thumb + 4 Q 指令 + 2 cp15**），**894 项自检全绿**（其中 768 组是 Q 系列对 ARM 伪代码的模型比对） |
 | **helper 读 `armcpu_t` 的不变量** | `armcpu_switchMode()`（族 6）与 `OP_LDM_STM`/`OP_LDRD`/`op_swp`/Thumb 的 `PUSH`/`POP`/`STM`/`LDM`（族 7）都直接读写 `cpu->R[]`：**调用前必须把涉及的寄存器落盘**。族 7 把同一条规则套到 Thumb 的寄存器列表上（8 位掩码 + LR/PC 位） |
 | x64 fastmem | **已评估放弃**（主文档 §10.6），x64 保持现状 |
-| 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0；arm64 编码层 `check_a64` 4/241 已知基线差异（全部是 save/restore/startfunc/endfunc 的既有基线）；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` 126/126 |
+| 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0（`R0-R14`/`CPSR`/`instruct_adr`/异常/不变量），仅周期差 12067 与既有 3 条 `jit not repeatable`；arm64 编码层 `check_a64` 4/241 已知基线差异（全部是 save/restore/startfunc/endfunc 的既有基线）；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` **894/894**（含 768 组 Q 对伪代码的模型比对） |
 | 未跟踪文件 | `issue.md`（会话开始前既有，不属本次迁移） |
 
 ---

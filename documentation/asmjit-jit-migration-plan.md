@@ -28,6 +28,7 @@
 | **rev14** | 族 3+4（访存 + LDM/STM，204 handler）：① `OP_LDR_`/`OP_STR_`/`LDRD`/`STRD`/`SWP`/`op_ldm_stm` 的基址与存储值改走 `ArmRegCache`；② 抓到既有 bug：`OP_LDM_STM` 直接读 `cpu->R[]`，而只有基址被 evict，于是 `add r4,#1 ; stmia r0,{r4}` 存的是旧值（族 1 之后一直存在）；③ 抓到第二个既有 bug：LDM 基址在列表里的写回用的是 `call_mem_r7` 之后已失效的 x4；④ 探针新增 36 个访存块（含 6 个两指令块），82/89 逐字节相同、7 个刻意变化；⑤ 矩阵：497/571 |
 | **rev15** | 族 7+8，**主线收尾**：① Thumb 全表 68 handler 迁到 `ArmRegCache`（3 位字段的 `rc_t_*` 入口 + 高寄存器组的 `rc_read_at`）；② `OP_QADD`/`QSUB`/`QDADD`/`QDSUB` 从"`printf` + 回退解释器"改为内联实现，操作数顺序按 DDI 0403E 的 `op{Rd}, Rm, Rn`（解释器本来就对；此前记为"与 ARM ARM 相反"是记错了字段，见 rev16）；③ `OP_MUL_REG` 的周期尾部改喂乘数而非乘积，与 ARM 路径一致（`muls r0,r2` 5→2 cycles，状态不变）；④ 探针新增 78 个 Thumb 块与 4 个 Q 指令 + 2 个 cp15 用例：170 块中 164 逐字节相同、6 个刻意变化，126 项自检全绿；⑤ 矩阵 **571/571 `diff-pass`，todo 归零** |
 | **rev16** | **更正 rev15 里的一处错误结论**：族 7+8 曾写"Q 系列操作数顺序按解释器、不按 ARM ARM"。查 ARM 官方文档（DDI 0403E 的 `QADD`/`QSUB`/`QDADD`/`QDSUB` Operation 伪代码、DUI 0489 的 Usage 段）后确认：这一族用 `op{Rd}, Rm, Rn` 语法，`Rm` 是 bits 3-0、`Rn` 是 bits 19-16，`QDADD` 双倍的是 `Rn`——`arm_instructions.cpp` 四个 handler 与之逐条相符，**解释器没有 bug**，错的是 rev15 的表述（把字段名记反）。代码只改注释；另把探针的 Q 判据从"迁移前后相同"升级为"对照伪代码参考模型"，768 组操作数全过（§S4 族 7+8） |
+| **rev17** | **x86 侧补齐饱和算术**：① `arm_jit.cpp` 的 `OP_QADD`/`QSUB`/`QDADD`/`QDSUB` 从"`printf` + 回退解释器"改为内联，与 arm64/解释器同一份 DDI 0403E 语义（`seto` + `cmovnz`，两段饱和分别置 Q，N/Z/C/V 不动）；② `jit_diff` 新增 6 条 Q 探针（含 `Rd` 别名），704 次比较 0 mismatch，负对照（`cmovz`）证明探针有效，`--full` 81920 次比较功能桶全 0；③ 修掉 x86 侧 `g_TOTALBYTES`/`g_all_block_bytes` 无定义、导致新建核心库链接不出差分台的缺陷（§S4 族 7+8） |
 
 ---
 
@@ -1679,6 +1680,18 @@ Thumb 的操作数在 3 位字段里（bit 0/3/6/8），所以 `reg_pos_thumb(x,
 2. **饱和是 `Rd = 0x80000000 - BIT31(res)`，Q 是粘性的**。落地成三对 XOR/AND 而不是分支：`dst = res ^ ((res ^ sat) & -ovf)`，`ovf` 由 `adds`/`subs` 的 V 经 `cset` 取出，Q 用 `OR` 写回 CPSR 第 3 字节（bit 27）。
 
 写这段时踩了一个自造的坑：先把公式写成 `0x7FFFFFFF + BIT31(res)`，正好是正确值的反相，四个饱和用例全部失败（`0x80000000` vs `0x7FFFFFFF`）。探针的自检当场抓住了它——这也说明**饱和这类"值错了但状态看着正常"的指令必须带断言**，不能只靠 pre/post 相同。
+
+**x86 侧补齐（同一份语义，另一套原语）**
+
+`arm_jit.cpp` 里这四个 handler 之前也是 `printf("JIT: unimplemented …") + return 0`，所以在 x86 上含饱和指令的块同样整块退回解释器。现在按同一份伪代码实现，只是把 arm64 的 `cset`/`cmov` 换成 x86 的 `seto` + `cmovnz`：
+
+- 饱和值仍是 `0x80000000 - BIT31(res)`：`shr 31` → `xor 1` → `add 0x7FFFFFFF`，再按 OF 用 `cmovnz` 选回；
+- `QDADD`/`QDSUB` 分两段饱和，两段的 OF 分别取、累加成 0/1 的 `anyq`，最后 `shl 3` 一次性 OR 进 CPSR 第 3 字节（bit 27）；N/Z/C/V 一个都不碰，与解释器一致；
+- 一个必须记住的细节：`seto` 只写 8 位，而且**任何插在中间的其他指令都会清 OF**。所以它必须紧贴 `add`/`sub`，再用 `and 0xFF` 把上位垃圾清掉、得到干净的 0/1（第一版先 `xor` 再 `seto`，读到的是被 `xor` 清掉的 OF）。
+
+**验证（本机 x86 差分台，oracle 是解释器）**：`jit_diff` 的 `kProbes` 加了 6 条（四条基础形式 + `Rd==Rn` / `Rd==Rm` 两种别名，源寄存器 R1/R2 刻意分开），44 条探针 × 8 组操作数 × 2 种标志 = **704 次比较 0 mismatch**；`--full` 81920 次比较，`R0-R14` / `CPSR` / `instruct_adr` / 异常 / harness 不变量**全 0**，只剩 12067 条周期差（实现定义，不仲裁）和既有的 3 条 `jit not repeatable`。负对照：把 `cmovnz` 改成 `cmovz` 重编，Q 探针立刻全线报错（`QADD r0,r2,r1 vec0: interp=7FFFFFFF jit=80000000`），证明这 6 条探针确实在跑编译后的代码，而不是悄悄回退。
+
+**顺带修掉一个链接缺陷**：`jit_diff_main.cpp` 里的 `extern int g_TOTALBYTES` / `g_all_block_bytes` 只有 arm64 的 `emit_core.cpp` 定义，x86 侧没有定义——所以**用新建的 `desmume_core.lib` 根本链接不出 `jit_diff.exe`**（一直在用 AArch64 核心拆分之前留下的旧二进制，这也是为什么这个缺口一直没被发现）。现在由 `arm_jit.cpp` 自己维护这两个计数，并在 `jit_commit()` 里记录真实块大小，`--dump` 与代码总量统计在 x86 上终于有了意义。
 
 **MCR / MRC**
 

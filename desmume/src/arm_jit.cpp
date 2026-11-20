@@ -220,11 +220,22 @@ struct JitCodeHolderInit
 static JitCodeHolderInit jit_code_holder_init;
 static asmjit::x86::Compiler c(&jit_code);
 
+// Block-size counters. The AArch64 backend keeps its pair in emit_core.cpp;
+// this backend is the other half of the same interface (jit_diff_main.cpp
+// declares both `extern` and prints them for --dump and for the code-size
+// total). Nothing defined them for x86, so a freshly built desmume_core.lib
+// could not link jit_diff at all -- the numbers stayed frozen in whatever
+// binary was linked before the AArch64 core was split out.
+int g_TOTALBYTES = 0;               // size of the block compiled last
+uint64_t g_all_block_bytes = 0;     // every block compiled so far
+
 // Lands finalized code into memory allocated by JitRuntime. The allocator
 // handles relocation, the instruction-cache flush and W^X transitions, so the
 // only error worth reporting here is the one asmjit itself returns.
 static asmjit::Error jit_commit(asmjit::CodeHolder& code, void** out)
 {
+	g_TOTALBYTES = (int)code.code_size();
+	g_all_block_bytes += (uint64_t)g_TOTALBYTES;
 	return jit_runtime.add(out, &code);
 }
 
@@ -1280,11 +1291,94 @@ static int OP_MVN_S_IMM_VAL(const u32 i) { OP_MOV_S(S_IMM_VAL; rhs = ~rhs); }
 //-----------------------------------------------------------------------------
 //   QADD / QDADD / QSUB / QDSUB
 //-----------------------------------------------------------------------------
-// TODO
-static int OP_QADD(const u32 i) { printf("JIT: unimplemented OP_QADD\n"); return 0; }
-static int OP_QSUB(const u32 i) { printf("JIT: unimplemented OP_QSUB\n"); return 0; }
-static int OP_QDADD(const u32 i) { printf("JIT: unimplemented OP_QDADD\n"); return 0; }
-static int OP_QDSUB(const u32 i) { printf("JIT: unimplemented OP_QDSUB\n"); return 0; }
+// Saturating add/subtract (ARMv5TE). ARM DDI 0403E, Operation:
+//
+//   QADD  Rd = SAT(Rm + Rn)         QSUB  Rd = SAT(Rm - Rn)
+//   QDADD Rd = SAT(Rm + SAT(2*Rn))  QDSUB Rd = SAT(Rm - SAT(2*Rn))
+//
+// The syntax is `op{Rd}, Rm, Rn`, so bits 3-0 (Rm) is the *first* source and
+// bits 19-16 (Rn) is the second -- and Rn is the one that doubles. Reading it
+// as if it were SUB's `Rd, Rn, Rm` gets QDADD/QDSUB backwards, which is the
+// trap with this family.
+//
+// Only CPSR.Q is written, and it is sticky, so both saturations OR into it;
+// N/Z/C/V are left alone. Note that the doubling saturating on its own sets Q
+// even when the following add/sub does not, so the two stages are separate.
+static void qsaturate(x86::Gp dst, x86::Gp ovf)
+{
+	// dst = ovf ? 0x80000000 - BIT31(dst) : dst
+	//     = 0x7FFFFFFF for a positive overflow, 0x80000000 for a negative one.
+	x86::Gp sat = c.new_gp32();
+	c.mov(sat, dst);
+	c.shr(sat, 31);
+	c.xor_(sat, 1);
+	c.add(sat, 0x7FFFFFFF);
+	c.test(ovf, ovf);
+	c.cmovnz(dst, sat);
+}
+
+// Must follow the flag-setting add/sub directly: `seto` reads OF, and anything
+// else (including the xor that used to be here) clears it. The `and` widens the
+// byte seto wrote to a clean 0/1 without disturbing the flags we already read.
+static void qcapture_ovf(x86::Gp ovf)
+{
+	c.seto(ovf.r8_lo());
+	c.and_(ovf, 0xFF);
+}
+
+static int op_qop(const u32 i, bool sub, bool dbl)
+{
+	x86::Gp rn = c.new_gp32();      // second operand; the one that doubles
+	x86::Gp rm = c.new_gp32();
+	x86::Gp res = c.new_gp32();
+	x86::Gp ovf = c.new_gp32();
+	x86::Gp anyq = c.new_gp32();
+
+	c.mov(rn, reg_pos_ptr(16));
+	c.mov(rm, reg_pos_ptr(0));
+	c.xor_(anyq, anyq);
+
+	if (dbl)
+	{
+		c.add(rn, rn);
+		qcapture_ovf(ovf);
+		c.or_(anyq, ovf);
+		qsaturate(rn, ovf);
+	}
+
+	c.mov(res, rm);
+	if (sub)
+		c.sub(res, rn);
+	else
+		c.add(res, rn);
+
+	qcapture_ovf(ovf);
+	c.or_(anyq, ovf);
+	qsaturate(res, ovf);
+
+	c.shl(anyq, 3);
+	c.or_(flags_ptr, anyq.r8_lo());
+
+	if (REG_POS(i, 12) == 15)
+	{
+		// Matches the interpreter: mask to the word address, then report it as
+		// the resume point (the block ends here -- BRANCH_POS12).
+		x86::Gp tmp = c.new_gp32();
+		c.mov(reg_ptr(15), res);
+		c.and_(reg_ptr(15), 0xFFFFFFFC);
+		c.mov(tmp, reg_ptr(15));
+		c.mov(cpu_ptr(next_instruction), tmp);
+	}
+	else
+		c.mov(reg_pos_ptr(12), res);
+
+	return 1;
+}
+
+static int OP_QADD(const u32 i)  { return op_qop(i, false, false); }
+static int OP_QSUB(const u32 i)  { return op_qop(i, true,  false); }
+static int OP_QDADD(const u32 i) { return op_qop(i, false, true); }
+static int OP_QDSUB(const u32 i) { return op_qop(i, true,  true); }
 
 //-----------------------------------------------------------------------------
 //   MUL

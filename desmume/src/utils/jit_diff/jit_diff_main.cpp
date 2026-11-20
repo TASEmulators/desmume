@@ -504,6 +504,17 @@ static const Probe kProbes[] = {
 	{ "ARM   MOV  r0,r1,LSL#4",  0xE1A00201u, false },
 	{ "ARM   ADD  r0,r1,r2,ASR2",0xE0810142u, false },
 	{ "ARM   MUL  r0,r1,r2",     0xE0000291u, false },
+	// Saturating arithmetic. `op{Rd}, Rm, Rn` puts Rm in bits 3-0 and Rn in
+	// bits 19-16, so these read `qadd r0, r2, r1`: the source operands are
+	// separated (R1 != R2) because the whole family's trap is which of the two
+	// gets doubled. The last two alias Rd to a source, where the operand has to
+	// be read before the destination is written.
+	{ "ARM   QADD  r0,r2,r1",    0xE1010052u, false },
+	{ "ARM   QSUB  r0,r2,r1",    0xE1210052u, false },
+	{ "ARM   QDADD r0,r2,r1",    0xE1410052u, false },
+	{ "ARM   QDSUB r0,r2,r1",    0xE1610052u, false },
+	{ "ARM   QADD  r1,r1,r2",    0xE1021051u, false },
+	{ "ARM   QDADD r1,r2,r1",    0xE1411052u, false },
 	// Memory-access probes. The slot sweep only emits opcodes with the low 20
 	// bits zero (opcode = slot << 20), so every memory slot is exercised only in
 	// its degenerate form: base == dest, zero offset, no writeback. These cover
