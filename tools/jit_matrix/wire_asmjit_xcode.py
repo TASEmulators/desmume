@@ -18,9 +18,9 @@ afternoon of debugging. This script edits the project instead:
     defines HAVE_JIT and the platform macros, so it must still be included, but
     a PCH built with gnu++0x cannot be used by a TU compiled with -std=c++20.
 
-Scope: only targets that already compile a JIT source. The Universal target
-compiles neither (its two arch slices would collide on the arm_jit_* symbols),
-so wiring it is a separate change.
+Scope: targets that compile a JIT source, plus the Universal target. Universal
+needs both backend TUs in its Sources phase; each C++ source uses an
+architecture guard so only the matching slice emits any code.
 
 The script is idempotent: running it twice changes nothing.
 
@@ -226,7 +226,8 @@ def main() -> int:
 
     phases = sources_phase_files(editor)
 
-    # targets that compile a JIT source -> their Sources phase + configs
+    # targets that compile a JIT source, plus Universal (both backends are in
+    # its Sources phase but excluded from each other's architecture slice)
     jit_targets = []
     for oid, (name, body, _s, _e) in editor.objects.items():
         if "isa = PBXNativeTarget;" not in body:
@@ -235,14 +236,21 @@ def main() -> int:
         tname = tname.group(1) if tname else oid
         phase_ids = re.findall(r"([0-9A-F]{24}) /\* Sources \*/", body)
         files = [f for p in phase_ids for f in phases.get(p, [])]
-        if any(f in JIT_FILES for f in files):
+        # Universal and OpenEmu used to pull the JIT in through the
+        # UniversalBuildInterface.cpp #include shim; that shim is retired, so
+        # they need the same direct source registration as everyone else.
+        uses_shim = "Universal" in tname or "OpenEmu Plug-in" in tname
+        if any(f in JIT_FILES for f in files) or uses_shim:
             cfg_list = re.search(r"buildConfigurationList = ([0-9A-F]{24})", body)
-            jit_targets.append((tname, phase_ids, cfg_list.group(1) if cfg_list else None, files))
+            jit_targets.append((tname, phase_ids,
+                                cfg_list.group(1) if cfg_list else None,
+                                files, uses_shim))
 
     print("asmjit sources to wire : %d" % len(rel_names))
-    print("targets compiling JIT  : %d" % len(jit_targets))
-    for tname, phase_ids, _cl, files in jit_targets:
-        print("   %-62s has %s" % (tname, ", ".join(f for f in files if f in JIT_FILES)))
+    print("targets wiring JIT     : %d" % len(jit_targets))
+    for tname, phase_ids, _cl, files, shim in jit_targets:
+        present = ", ".join(f for f in files if f in JIT_FILES) or "(none yet)"
+        print("   %-62s %s%s" % (tname, present, "  [ex-shim]" if shim else ""))
 
     if args.check or not args.apply:
         # report what is missing without touching anything
@@ -286,9 +294,20 @@ def main() -> int:
         editor.insert_before_section_end("PBXFileReference", "".join(ref_lines))
 
     # --------------------------------------------------------------- build files
+    # The two backend TUs already have file references from the 10 other JIT
+    # targets; Universal only needs new PBXBuildFile entries pointing at them.
+    backend_refs: dict[str, str] = {}
+    for oid, (name, body, _s, _e) in editor.objects.items():
+        if "isa = PBXFileReference;" in body:
+            m = re.search(r"path = \"?([^\";]+)\"?;", body)
+            if m:
+                base = m.group(1).rsplit("/", 1)[-1]
+                if base in JIT_FILES:
+                    backend_refs[base] = oid
+
     build_lines = []
     build_ids: dict[tuple[str, str], str] = {}
-    for tname, phase_ids, _cl, _files in jit_targets:
+    for tname, phase_ids, _cl, _files, uses_shim in jit_targets:
         for phase in phase_ids:
             body = editor.objects[phase][1]
             have = set()
@@ -310,6 +329,23 @@ def main() -> int:
                     % (bid, base, ref_ids[rel], base, CXX_FLAGS)
                 )
                 new_entries.append('\t\t\t\t%s /* %s in Sources */,\n' % (bid, base))
+
+            # Universal compiles both backends; the per-arch exclusion added
+            # below decides which one each slice actually builds. No explicit
+            # COMPILER_FLAGS here -- the generic C++20 pass below adds it.
+            if uses_shim:
+                for base in JIT_FILES:
+                    ref = backend_refs.get(base)
+                    if not ref or ref in have:
+                        continue
+                    bid = editor.new_id()
+                    build_lines.append(
+                        '\t\t%s /* %s in Sources */ = {isa = PBXBuildFile; '
+                        'fileRef = %s /* %s */; };\n'
+                        % (bid, base, ref, base)
+                    )
+                    new_entries.append('\t\t\t\t%s /* %s in Sources */,\n' % (bid, base))
+
             if new_entries:
                 at = body.rfind(");")
                 editor.replace_body(phase, body[:at] + "".join(new_entries) + body[at:])
@@ -340,7 +376,7 @@ def main() -> int:
     # entries are recognisable as "same basename as a vendored source, but the
     # path is not under 3rdparty".
     dropped = []
-    for tname, phase_ids, _cl, _files in jit_targets:
+    for tname, phase_ids, _cl, _files, _uni in jit_targets:
         for phase in phase_ids:
             body = editor.objects[phase][1]
             remove = []
@@ -361,7 +397,7 @@ def main() -> int:
             editor.replace_body(phase, body)
 
     # ------------------------------------------------------- build settings
-    for tname, _phase_ids, cfg_list, _files in jit_targets:
+    for tname, _phase_ids, cfg_list, _files, _uses_shim in jit_targets:
         if not cfg_list:
             continue
         body = editor.objects[cfg_list][1]

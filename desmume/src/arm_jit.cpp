@@ -20,6 +20,11 @@
 #include "types.h"
 
 #ifdef HAVE_JIT
+// A Universal build registers both backends in one Sources phase. Each
+// architecture slice compiles only its own TU: on an arm64 slice this file
+// would emit x86 code that can never run, so skip the whole translation unit.
+// Single-backend targets always match their host and never take that path.
+#if !defined(__aarch64__) || defined(__x86_64__)
 #if !defined(HOST_32) && !defined(HOST_64)
 #error "ERROR: JIT compiler - unsupported target platform"
 #endif
@@ -4525,4 +4530,5 @@ void arm_jit_close()
 	printf(" done.\n");
 #endif
 }
+#endif // !__aarch64__ host
 #endif // HAVE_JIT

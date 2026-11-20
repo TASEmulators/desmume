@@ -19,6 +19,10 @@
 #include "types.h"
 
 #ifdef HAVE_JIT
+// A Universal build registers both backends in one Sources phase. On an x86
+// slice this TU must compile as empty; the old #error made the Universal
+// target unbuildable even though the slice never executes this code.
+#if defined(__aarch64__)
 
 #define PTR_STORE_REG 11
 
@@ -45,9 +49,6 @@ static const char *disassemble(u32 opcode);
 // AArch64 is the only remaining host backend for this file. The 32-bit ARM
 // encoder (arm_emit.cpp) was removed: it had no test coverage, and 18 of its
 // primitives had zero references from this file, so it was already dead weight.
-#ifndef __aarch64__
-#error "arm_jit_arm.cpp is the AArch64 host backend only; build arm_jit.cpp on x86 hosts"
-#endif
 
 #include "arm64_emit.cpp"
 
@@ -4894,4 +4895,5 @@ void arm_jit_close()
 	printf(" done.\n");
 #endif
 }
+#endif // __aarch64__ host
 #endif // HAVE_JIT
