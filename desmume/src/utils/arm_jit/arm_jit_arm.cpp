@@ -454,6 +454,19 @@ struct ArmRegCache
 		touched &= ~(1u << i);
 	}
 
+	// Gives up slot `n` without writing it back: the caller knows a helper is
+	// about to overwrite armcpu_t.R[n] directly (LDM/LDRD destinations), so the
+	// pending value is dead and storing it would just be overwritten.
+	void discard(int n)
+	{
+		const int i = find(n);
+		if (i < 0)
+			return;
+		reg[i] = -1;
+		dirty &= ~(1u << i);
+		touched &= ~(1u << i);
+	}
+
 	void write_back(int i)
 	{
 		if (reg[i] >= 0 && (dirty & (1u << i)))
@@ -2050,8 +2063,21 @@ static const OpLDR LDRSB_tab[2][5]  = { T(OP_LDRSB) };
 static u32 add(u32 lhst, u32 rhst) { return lhst + rhst; }
 static u32 sub(u32 lhst, u32 rhst) { return lhst - rhst; }
 
+// Write-back of the address an LDR/STR just computed. For a load the helper
+// also writes R[Rd] through &armcpu_t.R[Rd], so when Rn == Rd the store has to
+// happen *before* the call: a deferred one would land on top of the loaded
+// value at the tail flush. Everywhere else the store is deferred like any other
+// destination write.
+#define LDR_WB(vreg) \
+	do { \
+		if (REG_POS(i,16) == REG_POS(i,12)) \
+			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), vreg); \
+		else \
+			rc_store(REG_POS(i,16), vreg); \
+	} while(0)
+
 #define OP_LDR_(mem_op, arg, sign_op, writeback) \
-	reg_pos_ptr(16, adr, VALUE); \
+	rc_read(REG_POS(i,16), adr); \
 	reg_pos_ptr(12, dst, ADDRESS); \
 	arg; \
 	if(!rhs_is_imm || *(u32*)&rhs_var) \
@@ -2061,13 +2087,13 @@ static u32 sub(u32 lhst, u32 rhst) { return lhst - rhst; }
 		else if(writeback < 0) \
 		{ \
 			emit_##sign_op(g_out, adr, rhs_reg, adr); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), adr); \
+			LDR_WB(adr); \
 		} \
 		else if(writeback > 0) \
 		{ \
 			emit_mov(g_out, adr, tmp_reg); \
 			emit_##sign_op(g_out, tmp_reg, rhs_reg, tmp_reg); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), tmp_reg); \
+			LDR_WB(tmp_reg); \
 		} \
 	} \
 	u32 adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
@@ -2244,8 +2270,8 @@ static const OpSTR STRB_tab[2][3]  = { T(OP_STRB) };
 #undef T
 
 #define OP_STR_(mem_op, arg, sign_op, writeback) \
-	reg_pos_ptr(12, data, VALUE); \
-	reg_pos_ptr(16, R8, VALUE); \
+	rc_read(REG_POS(i,12), data); \
+	rc_read(REG_POS(i,16), R8); \
 	arg; \
 	emit_mov(g_out, R8, adr); \
 	if(!rhs_is_imm || *(u32*)&rhs_var) \
@@ -2255,13 +2281,13 @@ static const OpSTR STRB_tab[2][3]  = { T(OP_STRB) };
 		else if(writeback < 0) \
 		{ \
 			emit_##sign_op(g_out, adr, rhs_reg, adr); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), adr); \
+			rc_store(REG_POS(i,16), adr); \
 		} \
 		else if(writeback > 0) \
 		{ \
 			emit_mov(g_out, adr, tmp_reg); \
 			emit_##sign_op(g_out, tmp_reg, rhs_reg, tmp_reg); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), tmp_reg); \
+			rc_store(REG_POS(i,16), tmp_reg); \
 		} \
 	} \
 	u32 adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
@@ -2410,8 +2436,23 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 		return 0; // TODO: exception
 	}
 	
-	reg_pos_ptr(16, Rd, VALUE);
+	rc_read(REG_POS(i,16), Rd);
 	emit_mov(g_out, Rd, addr);
+
+	// op_ldrd_tab / op_strd_tab walk cpu->R[Rd_num] (and Rd_num+1 for the even
+	// forms) by index, so the pair has to be settled before the call: a store
+	// needs the current value in memory, a load is about to overwrite whatever
+	// the slot is still holding.
+	if (BIT5(i))
+	{
+		g_regs.evict(Rd_num);
+		g_regs.evict(Rd_num + 1);
+	}
+	else
+	{
+		g_regs.discard(Rd_num);
+		g_regs.discard(Rd_num + 1);
+	}
 
 	// I bit - immediate or register
 	if (BIT22(i))
@@ -2463,8 +2504,23 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		return 0; // TODO: exception
 	}
 	
-	reg_pos_ptr(16, Rd, VALUE);
+	rc_read(REG_POS(i,16), Rd);
 	emit_mov(g_out, Rd, addr);
+
+	// op_ldrd_tab / op_strd_tab walk cpu->R[Rd_num] (and Rd_num+1 for the even
+	// forms) by index, so the pair has to be settled before the call: a store
+	// needs the current value in memory, a load is about to overwrite whatever
+	// the slot is still holding.
+	if (BIT5(i))
+	{
+		g_regs.evict(Rd_num);
+		g_regs.evict(Rd_num + 1);
+	}
+	else
+	{
+		g_regs.discard(Rd_num);
+		g_regs.discard(Rd_num + 1);
+	}
 
 	// I bit - immediate or register
 	if (BIT22(i))
@@ -2548,10 +2604,9 @@ static int op_swp_(const u32 i, int b)
 	reg_pos_ptr(16, addr, VALUE);
 	reg_pos_ptr(12, Rd, ADDRESS);
 	
-	if(b)
-		reg_pos_ptrB(0, Rs, VALUE);
-	else
-		reg_pos_ptr(0, Rs, VALUE);
+	// Rs is a plain source; SWPB's helper truncates to a byte itself, so the
+	// dword in the slot is just as good as the byte the memory path loaded.
+	rc_read(REG_POS(i,0), Rs);
 	
 	emit_mov(g_out, addr, R0);
 	emit_mov64(g_out, Rd, R1);
@@ -2776,9 +2831,36 @@ static int op_ldm_stm(u32 i, bool store, int dir, bool before, bool writeback)
 	u32 bitmask = i & 0xFFFF;
 	u32 pop = popregcount(bitmask);	
 	
-	reg_pos_ptr(16, adr, VALUE);
+	rc_read(REG_POS(i,16), adr);
 	if(before)
 		emit_addimm(g_out, adr, 4*dir, adr);
+
+	// OP_LDM_STM walks cpu->R[] through a register-number list, i.e. it reads
+	// armcpu_t directly. Every register in the mask therefore has to be settled
+	// before the call: a store needs the current value in memory (this is what
+	// `add r4,r4,#1 ; stmia r0,{r4,r5}` gets wrong otherwise), and a load is
+	// about to overwrite whatever a slot still holds.
+	for (u32 r = 0; r < 16; r++)
+		if (bitmask & (1u << r))
+			store ? g_regs.evict((int)r) : g_regs.discard((int)r);
+
+	// Base in the list, with registers above it: ARM leaves the write-back value
+	// unspecified, and the interpreter takes the running address. It has to be
+	// computed *before* the call -- the address lives in x4, and call_mem_r7
+	// only preserves x12/x15, so the old post-call form stored whatever the
+	// helper had left in x4. Parking it in the cache slot instead also makes it
+	// win over the value the load just wrote into R[Rn], which is what the
+	// interpreter does (it assigns R[Rn] last).
+	if(writeback && !store && (i & (1 << REG_POS(i,16))))
+	{
+		u32 bitlist = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
+		if(i & bitlist)
+		{
+			JIT_COMMENT("--- writeback (base in list)");
+			emit_addimm(g_out, adr, 4*dir*(pop-before), tmp_reg);
+			rc_store(REG_POS(i,16), tmp_reg);
+		}
+	}
 
 	call_ldm_stm(adr, bitmask, store, dir);
 
@@ -2787,26 +2869,12 @@ static int op_ldm_stm(u32 i, bool store, int dir, bool before, bool writeback)
 		op_bx(reg_ptr(15, R6, VALUE), 0, PROCNUM == ARMCPU_ARM9);
 	}
 
-	if(writeback)
+	if(writeback && (store || !(i & (1 << REG_POS(i,16)))))
 	{
-		
-		if(store || !(i & (1 << REG_POS(i,16))))
-		{
-			JIT_COMMENT("--- writeback");
-			reg_pos_ptr(16, R3, VALUE);
-			emit_addimm(g_out, R3, 4*dir*pop, R3);
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), R3);
-		}
-		else 
-		{
-			u32 bitlist = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
-			if(i & bitlist)
-			{
-				JIT_COMMENT("--- writeback");
-				emit_addimm(g_out, adr, 4*dir*(pop-before), adr);
-				emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), adr);
-			}
-		}
+		JIT_COMMENT("--- writeback");
+		reg_pos_ptr(16, R3, VALUE);
+		emit_addimm(g_out, R3, 4*dir*pop, R3);
+		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), R3);
 	}
 
 	emit_MMU_aluMemCycles(store ? 1 : 2, &bb_cycles, pop);
