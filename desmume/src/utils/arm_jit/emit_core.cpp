@@ -44,6 +44,13 @@
 	#define MAP_JIT 0
 #endif
 
+// sys_icache_invalidate() lives in <libkern/OSCacheControl.h>; it is not pulled
+// in by anything else, so Apple builds fail on the flush at the end of
+// createFunc() without this. The Windows and generic paths use their own API.
+#ifdef __APPLE__
+	#include <libkern/OSCacheControl.h>
+#endif
+
 // An instruction that asmjit refused to encode would silently drop out of the
 // block, which is the worst possible failure mode: the block still runs, it
 // just computes the wrong thing on some inputs. Record it and make createFunc()

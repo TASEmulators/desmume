@@ -697,25 +697,25 @@ inline bool atomic_test_and_clear_barrier32(volatile s32 *V, s32 M)		{ return (_
 #else // Just use C++11 std::atomic
 #include <atomic>
 
-inline s32 atomic_add_32(volatile s32 *V, s32 M)			{ return std::atomic_fetch_add_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_relaxed) + M; }
-inline s32 atomic_add_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_add_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_seq_cst) + M; }
+inline s32 atomic_add_32(volatile s32 *V, s32 M)			{ return std::atomic_fetch_add_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order_relaxed) + M; }
+inline s32 atomic_add_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_add_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order_seq_cst) + M; }
 
 inline s32 atomic_inc_32(volatile s32 *V)					{ return atomic_add_32(V, 1); }
 inline s32 atomic_inc_barrier32(volatile s32 *V)			{ return atomic_add_barrier32(V, 1); }
 inline s32 atomic_dec_32(volatile s32 *V)					{ return atomic_add_32(V, -1); }
 inline s32 atomic_dec_barrier32(volatile s32 *V)			{ return atomic_add_barrier32(V, -1); }
 
-inline s32 atomic_or_32(volatile s32 *V, s32 M)				{ return std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_relaxed) | M; }
-inline s32 atomic_or_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_seq_cst) | M; }
-inline s32 atomic_and_32(volatile s32 *V, s32 M)			{ return std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_relaxed) & M; }
-inline s32 atomic_and_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_seq_cst) & M; }
-inline s32 atomic_xor_32(volatile s32 *V, s32 M)			{ return std::atomic_fetch_xor_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_relaxed) ^ M; }
-inline s32 atomic_xor_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_xor_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order::memory_order_seq_cst) ^ M; }
+inline s32 atomic_or_32(volatile s32 *V, s32 M)				{ return std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order_relaxed) | M; }
+inline s32 atomic_or_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order_seq_cst) | M; }
+inline s32 atomic_and_32(volatile s32 *V, s32 M)			{ return std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order_relaxed) & M; }
+inline s32 atomic_and_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order_seq_cst) & M; }
+inline s32 atomic_xor_32(volatile s32 *V, s32 M)			{ return std::atomic_fetch_xor_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order_relaxed) ^ M; }
+inline s32 atomic_xor_barrier32(volatile s32 *V, s32 M)		{ return std::atomic_fetch_xor_explicit<s32>((volatile std::atomic<s32> *)V, M, std::memory_order_seq_cst) ^ M; }
 
-inline bool atomic_test_and_set_32(volatile s32 *V, s32 M)				{ return (std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V,(0x80>>((M)&0x07)), std::memory_order::memory_order_relaxed) & (0x80>>((M)&0x07))) ? true : false; }
-inline bool atomic_test_and_set_barrier32(volatile s32 *V, s32 M)		{ return (std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V,(0x80>>((M)&0x07)), std::memory_order::memory_order_seq_cst) & (0x80>>((M)&0x07))) ? true : false; }
-inline bool atomic_test_and_clear_32(volatile s32 *V, s32 M)			{ return (std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V,~(s32)(0x80>>((M)&0x07)), std::memory_order::memory_order_relaxed) & (0x80>>((M)&0x07))) ? true : false; }
-inline bool atomic_test_and_clear_barrier32(volatile s32 *V, s32 M)		{ return (std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V,~(s32)(0x80>>((M)&0x07)), std::memory_order::memory_order_seq_cst) & (0x80>>((M)&0x07))) ? true : false; }
+inline bool atomic_test_and_set_32(volatile s32 *V, s32 M)				{ return (std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V,(0x80>>((M)&0x07)), std::memory_order_relaxed) & (0x80>>((M)&0x07))) ? true : false; }
+inline bool atomic_test_and_set_barrier32(volatile s32 *V, s32 M)		{ return (std::atomic_fetch_or_explicit<s32>((volatile std::atomic<s32> *)V,(0x80>>((M)&0x07)), std::memory_order_seq_cst) & (0x80>>((M)&0x07))) ? true : false; }
+inline bool atomic_test_and_clear_32(volatile s32 *V, s32 M)			{ return (std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V,~(s32)(0x80>>((M)&0x07)), std::memory_order_relaxed) & (0x80>>((M)&0x07))) ? true : false; }
+inline bool atomic_test_and_clear_barrier32(volatile s32 *V, s32 M)		{ return (std::atomic_fetch_and_explicit<s32>((volatile std::atomic<s32> *)V,~(s32)(0x80>>((M)&0x07)), std::memory_order_seq_cst) & (0x80>>((M)&0x07))) ? true : false; }
 
 #endif
 
