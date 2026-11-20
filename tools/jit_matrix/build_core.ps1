@@ -167,8 +167,12 @@ foreach ($s in $sources) {
 
     # asmjit master requires C++20 and ASMJIT_STATIC. Keep every other core
     # translation unit at C++14 so this change stays isolated to the JIT.
+    # Both arm_jit.cpp AND the vendored asmjit sources need C++20: asmjit's
+    # axl headers use `requires` / std::is_const_v, which c++14 cannot parse.
     $compileArgs = $baseArgs
-    if ([IO.Path]::GetFileName($s) -eq 'arm_jit.cpp') {
+    $isCpp20 = ([IO.Path]::GetFileName($s) -eq 'arm_jit.cpp') -or
+               ($s -match '[\\/]3rdparty[\\/]asmjit[\\/]')
+    if ($isCpp20) {
         $compileArgs = @('/c', '/nologo', '/EHsc', '/W1', '/std:c++20') +
                        $optArgs + $defArgs + @('/DASMJIT_STATIC') + $incArgs
     }
