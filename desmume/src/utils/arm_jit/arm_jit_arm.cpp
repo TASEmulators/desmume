@@ -522,9 +522,39 @@ struct ArmRegCache
 	int read(int n)       { return need(n, true, false); }
 	int read_write(int n) { return need(n, true, true); }
 	int write(int n)      { return need(n, false, true); }
+
+	// Loads R[n] into a host register the caller picked, without claiming a slot.
+	// When a slot already holds the newest value this is a copy from it: no
+	// memory traffic, and -- unlike read(), whose slot the caller keeps -- no
+	// write-back of a pending store either. Otherwise it is the same `ldr` the
+	// memory path would have emitted.
+	//
+	// This is what the multiply handlers need. Their operands have to end up in
+	// fixed scratch registers (MUL_Mxx_END rewrites its source in place with
+	// asr/xor, so it cannot be handed a cache slot), but reading them through
+	// memory would turn every value the cache already owns back into a
+	// store+load pair.
+	void read_into(int n, int host)
+	{
+		const int i = find(n);
+		if (i >= 0)
+			emit_mov(g_out, kArmRegCacheHost[i], host);
+		else
+			emit_ldr_off(g_out, host, JIT_CPU_BASE_REG, reg_off(n));
+	}
 };
 
 static ArmRegCache g_regs;
+
+// Cache-aware operand access for handlers that keep using fixed scratch
+// registers (the multiply family: its cycle tail rewrites the multiplicand in
+// place). `rc_read` is expression-shaped so it can stand in for
+// reg_pos_ptr(..., VALUE) inside a handler's argument list; `rc_store` writes a
+// host register into an emulated one and leaves the write-back to the eviction
+// rules.
+#define rc_read(n, host)  (g_regs.read_into((n), (host)), (host))
+#define rc_store(n, host) \
+	do { const int rc_dst_ = g_regs.write(n); emit_mov(g_out, (host), rc_dst_); } while (0)
 
 #define cpu_dword_ptr(z, o, r, v) cpu_get_ptr(&z, o, r, v)
 #define cpu_byte_ptr(z, o, r, v) cpu_get_ptrB(&z, o, r, v)
@@ -1653,32 +1683,39 @@ static void MUL_Mxx_END(int reg, bool sign, int cycles)
 	emit_st_counters(BB_CYCLES_FIELD, tmp);
 }
 
+// S4 family 5 (multiply): operands come from the register cache, results go
+// back into it.
+//
+// The shapes differ in how many emulated registers are live at once, and the
+// pool only holds three:
+//
+//   * MUL/SMULxy/SMULWy -- Rm, Rs in, Rd out. Three, so both directions are
+//     cache-aware (this is the same pattern family 1 uses).
+//   * MLA/SMLAxy/SMLAWy -- plus the Rn that emit_mla accumulates into: four,
+//     which does not fit. The accumulator is read with rc_read into the fixed
+//     scratch register emit_mla wants, which costs no slot and still avoids the
+//     memory round-trip when a preceding instruction left the value cached.
+//   * UMULL/SMULL/SMLAL (and the S variants) -- two destination halves, and
+//     SMLAL reads both halves back as the accumulator. Never more than two slots
+//     are needed, because the sources live in fixed scratch registers.
+//
+// `rc_store` rather than a plain store is the actual point of the migration: a
+// following ALU/shift handler then reads Rd from the slot instead of paying
+// store+load, and a following non-migrated handler pays one eviction store --
+// which is what reg_ptr()/reg_pos_ptr() do anyway.
 #define OP_MUL_(op, width, sign, accum, flags) \
-	reg_pos_ptr(0, lhs, VALUE); \
-	reg_pos_ptr(8, rhs, VALUE); \
+	rc_read(REG_POS(i,0), lhs); \
+	rc_read(REG_POS(i,8), rhs); \
 	op; \
-	if(width && accum) \
+	if(width) \
 	{ \
-		if(flags) \
-		{ \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
-		} \
-		else \
-		{ \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
-		} \
-	} \
-	else if(width) \
-	{ \
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
+		rc_store(REG_POS(i,12), R0); \
+		rc_store(REG_POS(i,16), R1); \
 	} \
 	else \
 	{ \
-		if (accum) { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), hi); } \
-		else { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), lhs); } \
+		if (accum) { rc_store(REG_POS(i,16), hi); } \
+		else { rc_store(REG_POS(i,16), lhs); } \
 	} \
 	if (flags) { SET_NZ(0); } \
 	MUL_Mxx_END(rhs, sign, 1+width+accum); \
@@ -1687,47 +1724,37 @@ static void MUL_Mxx_END(int reg, bool sign, int cycles)
 #define hi R2
 
 static int OP_MUL(const u32 i) { OP_MUL_(emit_mul(g_out, lhs,rhs), 0, 1, 0, 0); }
-static int OP_MLA(const u32 i) { OP_MUL_(emit_mla(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), 0, 1, 1, 0); }
+static int OP_MLA(const u32 i) { OP_MUL_(emit_mla(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), 0, 1, 1, 0); }
 static int OP_UMULL(const u32 i) { OP_MUL_(emit_umull(g_out, R0, R1,lhs,rhs), 1, 0, 0, 0); }
-static int OP_UMLAL(const u32 i) { OP_MUL_(emit_umlal(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), 1, 0, 1, 0); }
+static int OP_UMLAL(const u32 i) { OP_MUL_(emit_umlal(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), 1, 0, 1, 0); }
 static int OP_SMULL(const u32 i) { OP_MUL_(emit_smull(g_out, R0, R1,lhs,rhs), 1, 1, 0, 0); }
-static int OP_SMLAL(const u32 i) { OP_MUL_(emit_smlal(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), 1, 1, 1, 0); }
+static int OP_SMLAL(const u32 i) { OP_MUL_(emit_smlal(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), 1, 1, 1, 0); }
 
 static int OP_MUL_S(const u32 i) { OP_MUL_(emit_muls(g_out, lhs,rhs), 0, 1, 0, 1); }
-static int OP_MLA_S(const u32 i) { OP_MUL_(emit_mlas(g_out, hi,reg_pos_ptr(12, R1, VALUE),lhs,rhs), 0, 1, 1, 1); }
+static int OP_MLA_S(const u32 i) { OP_MUL_(emit_mlas(g_out, hi,rc_read(REG_POS(i,12), R1),lhs,rhs), 0, 1, 1, 1); }
 static int OP_UMULL_S(const u32 i) { OP_MUL_(emit_umulls(g_out, R0, R1, lhs,rhs), 1, 0, 0, 1); }
-static int OP_UMLAL_S(const u32 i) { OP_MUL_(emit_umlals(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), 1, 0, 1, 1); }
+static int OP_UMLAL_S(const u32 i) { OP_MUL_(emit_umlals(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), 1, 0, 1, 1); }
 static int OP_SMULL_S(const u32 i) { OP_MUL_(emit_smulls(g_out, R0, R1,lhs,rhs), 1, 1, 0, 1); }
-static int OP_SMLAL_S(const u32 i) { OP_MUL_(emit_smlals(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), 1, 1, 1, 1); }
+static int OP_SMLAL_S(const u32 i) { OP_MUL_(emit_smlals(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), 1, 1, 1, 1); }
 
 #undef hi
 
+// Same as OP_MUL_ but for the signed halfword forms, whose flag side effect is
+// the sticky Q bit instead of NZ. The cycle tail differs too, so this stays a
+// separate macro.
 #define OP_MULxy_(op, x, y, width, accum, flags) \
-	reg_pos_ptr(0, lhs, VALUE); \
-	reg_pos_ptr(8, rhs, VALUE); \
+	rc_read(REG_POS(i,0), lhs); \
+	rc_read(REG_POS(i,8), rhs); \
 	op; \
-	if(width && accum) \
+	if(width) \
 	{ \
-		if(flags) \
-		{ \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
-		} \
-		else \
-		{ \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
-		} \
-	} \
-	else if(width) \
-	{ \
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
+		rc_store(REG_POS(i,12), R0); \
+		rc_store(REG_POS(i,16), R1); \
 	} \
 	else \
 	{ \
-		if (accum) { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), hi); } \
-		else { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), lhs); } \
+		if (accum) { rc_store(REG_POS(i,16), hi); } \
+		else { rc_store(REG_POS(i,16), lhs); } \
 	} \
 	if (flags) { SET_Q; } \
 	return 1;\
@@ -1747,19 +1774,19 @@ static int OP_SMUL_T_T(const u32 i) { OP_MULxy_(emit_smultt(g_out, lhs, rhs), H,
 //   SMLA
 //-----------------------------------------------------------------------------
 static int OP_SMLA_B_B(const u32 i) { 	
-	OP_MULxy_(emit_smlabb(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), L, L, 0, 1, 1); 
+	OP_MULxy_(emit_smlabb(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), L, L, 0, 1, 1); 
 }
-static int OP_SMLA_B_T(const u32 i) { OP_MULxy_(emit_smlabt(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), L, H, 0, 1, 1); }
-static int OP_SMLA_T_B(const u32 i) { OP_MULxy_(emit_smlatb(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), H, L, 0, 1, 1); }
-static int OP_SMLA_T_T(const u32 i) { OP_MULxy_(emit_smlatt(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), H, H, 0, 1, 1); }
+static int OP_SMLA_B_T(const u32 i) { OP_MULxy_(emit_smlabt(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), L, H, 0, 1, 1); }
+static int OP_SMLA_T_B(const u32 i) { OP_MULxy_(emit_smlatb(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), H, L, 0, 1, 1); }
+static int OP_SMLA_T_T(const u32 i) { OP_MULxy_(emit_smlatt(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), H, H, 0, 1, 1); }
 
 //-----------------------------------------------------------------------------
 //   SMLAL
 //-----------------------------------------------------------------------------
-static int OP_SMLAL_B_B(const u32 i) { OP_MULxy_(emit_smlalbb(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), L, L, 1, 1, 1); }
-static int OP_SMLAL_B_T(const u32 i) { OP_MULxy_(emit_smlalbt(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), L, H, 1, 1, 1); }
-static int OP_SMLAL_T_B(const u32 i) { OP_MULxy_(emit_smlaltb(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), H, L, 1, 1, 1); }
-static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(emit_smlaltt(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), H, H, 1, 1, 1); }
+static int OP_SMLAL_B_B(const u32 i) { OP_MULxy_(emit_smlalbb(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), L, L, 1, 1, 1); }
+static int OP_SMLAL_B_T(const u32 i) { OP_MULxy_(emit_smlalbt(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), L, H, 1, 1, 1); }
+static int OP_SMLAL_T_B(const u32 i) { OP_MULxy_(emit_smlaltb(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), H, L, 1, 1, 1); }
+static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(emit_smlaltt(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), H, H, 1, 1, 1); }
 
 #undef hi
 
@@ -1768,11 +1795,11 @@ static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(emit_smlaltt(g_out, reg_pos_ptr
 //-----------------------------------------------------------------------------
 
 #define OP_SMxxW_(op, x, accum, flags) \
-	reg_pos_ptr(8, lhs, VALUE);\
-	reg_pos_ptr(0, rhs, VALUE); \
+	rc_read(REG_POS(i,8), lhs);\
+	rc_read(REG_POS(i,0), rhs); \
 	op; \
-	if (accum) { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), hi); } \
-	else { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), lhs); } \
+	if (accum) { rc_store(REG_POS(i,16), hi); } \
+	else { rc_store(REG_POS(i,16), lhs); } \
 	if (flags) { SET_Q; } \
 	return 1;
 
@@ -1780,8 +1807,8 @@ static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(emit_smlaltt(g_out, reg_pos_ptr
 
 static int OP_SMULW_B(const u32 i) { OP_SMxxW_(emit_smulwb(g_out, lhs, rhs), L, 0, 0); }
 static int OP_SMULW_T(const u32 i) { OP_SMxxW_(emit_smulwt(g_out, lhs, rhs), H, 0, 0); }
-static int OP_SMLAW_B(const u32 i) { OP_SMxxW_(emit_smlawb(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), L, 1, 1); }
-static int OP_SMLAW_T(const u32 i) { OP_SMxxW_(emit_smlawt(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), H, 1, 1); }
+static int OP_SMLAW_B(const u32 i) { OP_SMxxW_(emit_smlawb(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), L, 1, 1); }
+static int OP_SMLAW_T(const u32 i) { OP_SMxxW_(emit_smlawt(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), H, 1, 1); }
 
 
 #undef hi
@@ -2940,11 +2967,11 @@ static int OP_BLX_REG(const u32 i) { return op_bx(reg_pos_ptr(0, R1, VALUE), 1, 
 //-----------------------------------------------------------------------------
 static int OP_CLZ(const u32 i)
 {
-	reg_pos_ptr(0, tmp2_reg, VALUE);
+	g_regs.read_into(REG_POS(i,0), tmp2_reg);
 		
 	emit_clz(g_out, tmp2_reg, tmp_reg);
 	
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), tmp_reg);
+	rc_store(REG_POS(i,12), tmp_reg);
 	
 	return 1;
 }
@@ -4531,8 +4558,18 @@ static void emit_dma_event_check(u32 resume_adr)
 	emit_write_ptr32_regptrTO_immFROM(g_out, flag_ptr, 0);
 
 	// This is a mid-block return, so armcpu_t must be complete before it
-	// (rule 3). The path that stays in the block does not pay for it.
-	g_regs.flush();
+	// (rule 3).
+	//
+	// Write back without invalidating. flush() would be wrong here: it clears
+	// the *compile-time* dirty bits as well, and this code sits inside one arm
+	// of a branch. The fall-through path still has those values in its slots,
+	// but a cleared dirty bit means the block tail's flush() emits nothing for
+	// them -- the pending stores then only land when a DMA happens to be armed.
+	// Measured on hardware: `smlabb` (deferred result) followed by this check
+	// came out with R0 unmodified, because the only `str w12,[x25,#16]` in the
+	// block was inside the armed arm.
+	for (int i = 0; i < ARM_RC_SLOTS; i++)
+		g_regs.write_back(i);
 
 	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(instruct_adr, R1, ADDRESS), resume_adr);
 	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(next_instruction, R2, ADDRESS), resume_adr);
