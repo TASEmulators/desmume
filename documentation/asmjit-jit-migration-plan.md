@@ -19,7 +19,8 @@
 | **rev5** | S2 收官：① macOS arm64 实机构建通过（两处真实阻塞已修，见 §2.6）；② 差分台移植到 POSIX 宿主机，`build_diff_macos.sh` 复用 Xcode 产物——**arm64 后端第一次以"模拟器的调用方式"跑起来**；③ 首次全量扫描发现 2 个真实缺陷，均按 §3.5 以 ARM ARM 仲裁后修复（arm64 Thumb `ASR #32` 的 C、解释器 `NEG INT_MIN` 的 V）；④ §3.5 补充"周期数不可用 ARM ARM 裁决"的边界 |
 | rev6 | 只补现状量化，不改代码：① 新增 §9，记录当前 arm64 JIT 的 Guest:Host 指令膨胀率、访存回调路径、`ArmRegCache` 的实际覆盖边界；② 明确"1 条指令块"的 36.9 条/块不能当比例，避免后续拿错基线；③ 给出下一步优化优先级（P0 访存 ABI） |
 | rev7 | 落地 §9.5 的 P0 第一刀：① 新增 `call_mem` 轻量 helper 调用（arm64），把访存热点 `OP_LDR_`/`OP_STR_` 的调用开销从 15 条降到 3 条；② 逐调用点论证寄存器存活面，不全局删 `save_call`；③ 编码层 golden 增加 3 个 case，x86 全量差分功能桶仍全 0；④ 记录本机验证边界与 macOS 待验项（§10） |
-| **rev8（本文）** | P0 第二刀：① `call_mem` 扩展到 SWP/LDM-STM/Thumb LDR-STR/SPREL/PCREL，新增 `call_mem_r7` / `call_mem_r2` 变体，24 处调用点中 15 处转轻量（§10.7）；② 记录 x64 fastmem 评估结论——三项硬障碍下主动放弃，两后端以安全方法对齐（§10.6）；③ 编码层 golden 增至 241 case |
+| rev8 | P0 第二刀：① `call_mem` 扩展到 SWP/LDM-STM/Thumb LDR-STR/SPREL/PCREL，新增 `call_mem_r7` / `call_mem_r2` 变体，24 处调用点中 15 处转轻量（§10.7）；② 记录 x64 fastmem 评估结论——三项硬障碍下主动放弃，两后端以安全方法对齐（§10.6）；③ 编码层 golden 增至 241 case |
+| **rev9（本文）** | 主线验证网加固：① 差分台 `kProbes` 新增 20 个访存定向探针，覆盖写回 / Rd≠Rn / 字节·半字·符号扩展 / 寄存器偏移 / Thumb SP 相对 / PUSH-POP（此前 `--full` 的 `slot<<20` 只测 `LDR r0,[r0]` 退化形式，零覆盖这些变体）；② 38/38 探针全绿、`--full` 功能桶全 0；③ 新增独立待办追踪文档 `jit-open-tasks.md`（§10.8） |
 
 ---
 
@@ -2071,3 +2072,44 @@ arm64 做 `call_mem`（§10.1），x64 保持现状。本决策不改任何 x64 
 - **语义层仍需 macOS**：本刀改了 15 个调用点，覆盖 SWP/LDM/STM/Thumb/LDRD/STRD，
   §10.5 的待验清单应扩展到这些族的槽位（尤其 LDRD/STRD 的 W 位写回、Thumb PUSH/POP）。
   回退粒度：任一族差分报错，把该族调用点单独换回 `callR3`/`callR7` 即可。
+
+### 10.8 访存差分安全网：定向探针 + 待办追踪（2026-11-20）
+
+**问题**：族 3 的 x86 结构迁移与 arm64 结构级 + `call_mem` ABI 均已完成，
+但差分台对访存的覆盖存在一个结构性空洞——`runSweep()` 用 `opcode = slot << 20`，
+低 20 位恒为 0，所以每个访存槽位只测到 `LDR r0,[r0]` 这一退化形式
+（基址=目的、零偏移、无写回）。原有 18 个 `kProbes` 定向探针里**没有一条访存指令**。
+于是写回（前/后索引）、Rd≠Rn、字节/半字/符号扩展宽度、寄存器偏移、
+Thumb SP 相对与 PUSH/POP 这些访存语义坑最密的变体，本机差分从未覆盖。
+
+**做法**：在 `jit_diff_main.cpp` 的 `kProbes` 增加 20 条访存定向探针，共用已有的
+`compareOne()` 比较路径（与 sweep 同等强度），以 R13（primeState 设定的合法栈基址
+`kStackTop`）作访存基址，保证两引擎访问同一映射 RAM。STR 探针写入幂等值（同一份
+prime 后的 R0），harness 只比寄存器状态，不受内存副作用干扰。覆盖清单：
+
+| 类别 | 探针 |
+|---|---|
+| 字 + 偏移 | `LDR/STR r0,[r13,#±4]`（Rd≠Rn、正/负偏移） |
+| 写回 | `LDR/STR ...#4!` 前索引、`...],#4` 后索引（4 条） |
+| 宽度/符号 | `LDRB`/`LDRH`/`LDRSB`/`LDRSH`、`STRB`/`STRH` |
+| 寄存器偏移 | `LDR r0,[r13,r1]` |
+| Thumb | `LDR/STR r0,[sp,#4]`、`LDR r0,[r1,r2]`、`PUSH/POP {r0,r1}` |
+
+> 一条 `LDR r0,[r1,#4]`（Rn 为普通操作数、可能未映射）曾产生 5 个 **cycle-only**
+> 差异（vec5–7，MMU 路径随时隙值变化），不是语义缺陷；已换成 SP 基址消除该噪声。
+> 这再次印证 §3.5 的边界：周期数不进仲裁。
+
+**验证**：
+- 38/38 探针（18 原有 + 20 访存）× 8 向量 × 2 标志 = **0 mismatch**；
+- `--full` 81920 次比较功能桶全 0（R0–R14 / CPSR / `instruct_adr` / invariant / fault），
+  12067 仍是可忽略的周期记录项，与基线一致；
+- 重建说明：`jit_diff.exe` 依赖 `desmume_core.lib`（旧版），其未导出 arm64 专有的
+  `g_TOTALBYTES`/`g_all_block_bytes`，靠 `build_core/x64_harness_stubs.cpp`（gitignore，
+  本地链接 stub）补齐；改 harness 后需重编 `diff_jit_diff_main.obj` 并带该 stub 重新链接。
+
+**独立待办追踪**：把本文散落的未完成项按验证 / 构建 / 迁移 / 性能 / 收尾分类，
+整理为 `documentation/jit-open-tasks.md`，作为可勾选的索引视图；本文仍是权威来源。
+
+**边界不变**：这些探针加固的是 **x86 侧**差分网；arm64 访存语义（尤其 `call_mem`
+两刀改的 15 个调用点）仍需按 §10.7 在 macOS 上验证，本机无法替代。族 3 的 174 组
+`diff-pass` 仍要等 macOS 三方差分 + §9.5 P3（访存接入 `ArmRegCache`）之后才能置位。
