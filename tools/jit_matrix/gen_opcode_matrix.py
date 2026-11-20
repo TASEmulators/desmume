@@ -97,6 +97,23 @@ DIFF_PASS_HANDLERS = frozenset({
     "OP_TST_IMM_VAL", "OP_TEQ_IMM_VAL", "OP_CMP_IMM_VAL", "OP_CMN_IMM_VAL",
     "OP_ORR_IMM_VAL", "OP_ORR_S_IMM_VAL", "OP_MOV_IMM_VAL", "OP_MOV_S_IMM_VAL",
     "OP_BIC_IMM_VAL", "OP_BIC_S_IMM_VAL", "OP_MVN_IMM_VAL", "OP_MVN_S_IMM_VAL",
+    # Batch 6 (2026-11-20): PSR access, branches and the exception entries.
+    # Verified on AArch64 hardware with tools/jit_matrix/a64_block_probe.cpp,
+    # which runs the real compile_basicblock() over these and compares the full
+    # architectural state against the pre-batch build.
+    "OP_MRS_CPSR", "OP_MRS_SPSR",
+    "OP_MSR_CPSR", "OP_MSR_SPSR", "OP_MSR_CPSR_IMM_VAL", "OP_MSR_SPSR_IMM_VAL",
+    "OP_B", "OP_BL", "OP_BX", "OP_BLX_REG", "OP_SWI", "OP_BKPT",
+    # Batch 5 (commit 5f3ffbc8) was verified the same way but never landed here,
+    # so the ledger said 252 while the notes said 280. Recorded now.
+    "OP_MUL", "OP_MUL_S", "OP_MLA", "OP_MLA_S",
+    "OP_UMULL", "OP_UMULL_S", "OP_UMLAL", "OP_UMLAL_S",
+    "OP_SMULL", "OP_SMULL_S", "OP_SMLAL", "OP_SMLAL_S",
+    "OP_SMUL_B_B", "OP_SMUL_B_T", "OP_SMUL_T_B", "OP_SMUL_T_T",
+    "OP_SMLA_B_B", "OP_SMLA_B_T", "OP_SMLA_T_B", "OP_SMLA_T_T",
+    "OP_SMLAL_B_B", "OP_SMLAL_B_T", "OP_SMLAL_T_B", "OP_SMLAL_T_T",
+    "OP_SMULW_B", "OP_SMULW_T", "OP_SMLAW_B", "OP_SMLAW_T",
+    "OP_CLZ",
 })
 SHIFT_TOKEN = re.compile(r"_(LSL|LSR|ASR|ROR)_(IMM|REG)$|^OP_(LSL|LSR|ASR|ROR|RRX)")
 COPROC = ("OP_MCR", "OP_MRC", "OP_CDP", "OP_LDC", "OP_STC")

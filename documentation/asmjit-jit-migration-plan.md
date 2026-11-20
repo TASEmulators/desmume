@@ -24,6 +24,7 @@
 | rev10 | S7.2 收尾：删除旧 `src/utils/AsmJit`（69 文件）并清理 **9 个**构建文件的遗留引用（原计划写 5 个，实测为 9 个）；`build_check.bat` 同步改为编 vendored asmjit + C++20；矩阵行号随代码同步。验证：`arm_jit.cpp` MSVC C++20 编译 exit=0、接线自检全绿、harness 38/38；POSIX 构建待 Linux/macOS 验证 |
 | **rev11** | 修复核心库验证盲点：`build_core.ps1` 此前把 vendored asmjit 的 52 个源按 c++14 编译全部失败，导致 `desmume_core.lib` 停在 11/19、不含 11/20 的 x86 修复——过去所有 x86 差分其实在验旧代码。给 asmjit 源加 C++20 特判后重建（194/194，0 失败），重链 `jit_diff.exe` 整体重跑：`--full` 功能桶全 0、`--seq 2/3/4` 19776 比较全 0 mismatch（§10.9） |
 | **rev12** | 主线推进 + **handler 级真机验证首次落地**：① 族 5（乘法 28 handler + CLZ）迁到 `ArmRegCache`，为此新增 `read_into()` 入口与 `rc_read`/`rc_store`（§S4 族 5）；② 新增 `tools/jit_matrix/a64_block_probe.cpp`——在 AArch64 真机上直接执行 `compile_basicblock()` 生成的块（68 个桩符号补齐核心），**终结了"arm64 handler 语义只能等 macOS"的不对称**；③ 真机抓到并修复一个既有 bug：`emit_dma_event_check` 在分支内 `flush()` 会清掉编译期 dirty 位，导致延迟回写在落空路径上丢失 |
+| **rev13** | 族 6（分支 + 状态寄存器 + 异常，13 handler）：① 确立并落实一条不变量——**任何 `armcpu_switchMode()` 调用前必须先 `flush()`**，因为它靠读 `armcpu_t` 完成 bank 搬移；MSR/SWI/BKPT/LDM 共 4 处补齐（`S_DST_R15` 本来就有）；② `MRS`/`MSR`/`BX` 的源与目的改走缓存；③ `OP_BKPT` 由"打印 + 回退解释器"改为按解释器逐行内联；④ 真机探针把 `armcpu_switchMode` 桩换成**真正搬移 bank 的实现**，用两指令块抓到 bank 串值（§S4 族 6）；⑤ 矩阵账本补齐族 5 漏记的 29 个 handler：293/571 |
 
 ---
 
@@ -1546,6 +1547,57 @@ for (int i = 0; i < ARM_RC_SLOTS; i++)
 ```
 
 两条路径都成立：armed 路径拿到完整 `armcpu_t` 再返回，落空路径仍由块尾的 `flush()` 负责。这个 bug 不是本次引入的——族 1/2 之后就一直存在，只是此前没有任何"延迟回写 + store 指令"同块出现的用例（store handler 读数据寄存器时正好会 evict 同一个寄存器，把问题遮住了）。
+
+#### 族 6：分支 + 状态寄存器 + 异常（13 handler）
+
+覆盖 `MRS`×2、`MSR`×4（`_c`/`_f` × CPSR/SPSR，含 `IMM_VAL` 形式）、`B`/`BL`/`BX`/`BLX_REG`、`SWI`、`BKPT`。`UND` 一直是 `#define OP_UND NULL`，不在本批。
+
+**这一批的真正收获不是缓存，而是一条不变量**
+
+`armcpu_switchMode()` 不是"改一个字段"：它先把**当前** bank 的 R13/R14/SPSR 读出 `armcpu_t` 写进对应 bank 字段（FIQ 还要 swap R8–R12），再把新 bank 的值读回 `R[]`。也就是说它是**靠内存里的 R13/R14 完成搬移**的。而寄存器缓存把"最近一次写"留在宿主寄存器里——于是：
+
+- switchMode 读到的 R13/R14 是**指令执行前**的旧值 → 存进了旧 bank；
+- 块尾 `flush()` 把新值写回 `R[13]`，此时已经在新 bank → **旧 bank 的值被写进新 bank**。
+
+两个方向同时错，而且都不是"少存一次"这种精度问题。所以本批确立的规则是：
+
+> **任何 `armcpu_switchMode()` 调用之前必须 `g_regs.flush()`。**
+
+审计全部 6 处调用点：`S_DST_R15`（异常返回）本来就有 flush（族 4 时加的），其余 4 处补齐——`OP_MSR_` 的控制字节分支与 `byte_mask` 分支、`op_ldm_stm2` 的临时 SYS 切换（进出各一次）、`op_swi`。`OP_BKPT` 是本批新内联的，一开始就带着。
+
+**缓存化本身**
+
+| handler | 改动 | 收益 |
+|---|---|---|
+| `MRS CPSR/SPSR` | 结果 `rc_store` 而非立即写内存 | `mrs r0,cpsr; tst r0,#0x80` 这类中断守卫不再 store+load |
+| `MSR CPSR/SPSR` | 源用 `REG_OFF_CACHED`（`rc_read`），`REG_OFF` 本身不动（LDR/STR 族还在用它） | 前一条指令写的 Rs 直接从槽里读 |
+| `BX` / `BLX_REG` | 源 `rc_read` | `mov r0,r1; bx r0` 不再落内存 |
+| `B` / `BL` | 不改 | 唯一写的寄存器是 LR，且块在这里结束，最终值本来就必须进 `armcpu_t`；走缓存只会多一条 `mov` |
+
+`BX` 切到 Thumb 时**不需要** flush：`CPSR.T` 不在 bank 里，寄存器文件不动。
+
+**`OP_BKPT`：从"打印 + 回退"改成内联**
+
+原来是 `printf("JIT: unimplemented OP_BKPT"); return 0;` ——也就是每次编译到 BKPT 就往 stdout 打一行，然后退回解释器。现在按 `arm_instructions.cpp:OP_BKPT` 逐行内联：进 ABT 模式、`R14_abt = 指令地址+4`、`SPSR = 旧 CPSR`、清 T、置 I、跳到 `intVector+0x0C`。它在属性表里是 `JIT_BYPASS`，块在这里结束，`next_instruction` 由块尾拷进 `instruct_adr`。
+
+**真机验证：探针补上"真的会搬 bank 的 switchMode"**
+
+上一轮探针里的 `armcpu_switchMode` 桩只写了 `CPSR.bits.mode`，**根本测不出上面那类 bug**——它不读不写 `R[]`，缓存脏不脏都一样。本轮把它换成 `armcpu.cpp` 的逐行副本（只省掉 `armcpu_changeCPSR()`，那个要整核），并给每个 bank 填可区分的哨兵值，于是"值进了哪个 bank"直接可读。
+
+新增 15 个用例（MRS/MSR 六种、B/BL/BX/BLX、SWI、BKPT，以及三个"先 `add sp,#4` 再切换" 的两指令块）：
+
+| 用例 | 迁移前 | 迁移后 |
+|---|---|---|
+| `add sp,#4 ; msr cpsr_c,#0x12` | `R13_svc=023FF000`（旧值）**且** `R13=023FF004`（SVC 的 SP 被写进 IRQ bank） | `R13_svc=023FF004`，`R13=55555000`（IRQ bank 原值）✅ |
+| `add sp,#4 ; swi #0` | `R13_svc=023FF000` | `R13_svc=023FF004` ✅ |
+| `bkpt #0` | 走解释器桩（状态不变），并打印一行 | 进 ABT：`cpsr=00000097`、`R14=指令+4`、`instruct_adr=0x0C` ✅ |
+
+按用例逐条比对 53 个块：**49 个逐字节相同**，只有上表 4 个（2 个 bank 串值 + 2 个 BKPT）变化。族 5 的 35 个乘法块、2 条 store、`mul`+`str` 两指令块都在"相同"里，没有被这批改动碰到。
+
+**两点必须说清楚的边界**
+
+1. `cpu->swi_tab` 在 `NDSSystem.cpp` 里是被赋成 `ARM_swi_tab[...]` 的，所以 `op_swi` 的内联路径**在真机上根本不会走**（`if(cpu->swi_tab) return 0;` → 回退解释器）。那处 flush 是正确性保险，不是修了一个线上 bug。
+2. `op_ldm_stm2` 的两处 flush 属于族 4（LDM/STM，矩阵里仍是 `todo`），本批只是把不变量补上；它的独立验证要等到族 C 的探针用例。
 
 ### S5 · 语义收尾（约 3 天）
 
