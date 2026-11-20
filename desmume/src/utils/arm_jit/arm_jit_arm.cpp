@@ -359,6 +359,167 @@ static inline void emit_add_counters(int dstField, int srcField) {
 	emit_st_counters(dstField, X10_REG);
 }
 
+//-----------------------------------------------------------------------------
+//   Block-scoped emulated-register cache
+//-----------------------------------------------------------------------------
+//
+// An ALU handler used to be: load Rn out of armcpu_t.R[], compute, store Rd
+// back. Inside a block most of those stores are dead -- the next instruction
+// re-reads the same register -- so the pair is pure overhead that only exists
+// because the value has nowhere to live between instructions.
+//
+// Why this does *not* use asmjit virtual registers
+// -----------------------------------------------
+// The migration plan (§2.5) sketched `cc.new_gp32()`. Two things measured on
+// this backend rule it out:
+//
+//   * the block's prologue/epilogue is hand-written (save()/restore() pushes
+//     eight registers onto sp with stp/ldp). asmjit's PEI has no idea that
+//     happened, so as soon as a virtual register forces a save or a spill it
+//     inserts its own `sub sp, sp, #N` and its own restore fragments around
+//     ours. A dump of exactly that shape came out with an `ldp x19, x20, [sp],
+//     #16` that has no matching store -- two frame models, one stack pointer.
+//   * RA does not split a live range around the raw `blr` that callR3()
+//     emits. save_call()/restore_call() is hand-written, so a value RA parks in
+//     a caller-saved register is silently destroyed by the helper call.
+//
+// So the cache owns real host registers and does its own write-back. It costs
+// nothing in the prologue because the pool is caller-saved and rule 2 below
+// guarantees no entry ever has to survive a call.
+
+// Host registers the cache owns. Chosen by elimination: X12_REG, X15_REG and
+// X21_REG are the only registers that appear nowhere but in their own #define,
+// so the cache cannot collide with the hand-written scratch set (R0..R11,
+// x16/x17/x19/x20/x22 for immediates and shifts, x23/x24/x25/x26 pinned).
+// All three are caller-saved, which is why save()/restore() stay untouched --
+// the frozen encoder dump (tools/jit_matrix/a64_golden.txt) depends on that.
+static const int kArmRegCacheHost[3] = { X12_REG, X15_REG, X21_REG };
+#define ARM_RC_SLOTS 3
+
+// Rule 1: R15 never enters the cache. PC belongs to sync_r15(), and a cached PC
+// would be stale the moment a block-final instruction rewrote it -- so every
+// access to it goes straight to memory (evict(15) is a no-op by construction,
+// since nothing ever allocates it).
+static inline int reg_off(int n) {
+	return (int)offsetof(armcpu_t, R) + 4 * n;
+}
+
+struct ArmRegCache
+{
+	int reg[ARM_RC_SLOTS];   // emulated register held by this slot, -1 = free
+	u32 dirty;               // bit i: slot i holds a value memory does not have
+	u32 touched;             // bit i: slot i is in use by the handler being emitted
+
+	void reset()
+	{
+		for (int i = 0; i < ARM_RC_SLOTS; i++)
+			reg[i] = -1;
+		dirty = touched = 0;
+	}
+
+	// One emulated instruction may hold at most ARM_RC_SLOTS-1 registers at
+	// once, otherwise acquiring the destination could evict a source the
+	// handler is still holding -- see need().
+	void begin_insn()
+	{
+		touched = 0;
+	}
+
+	int find(int n) const
+	{
+		for (int i = 0; i < ARM_RC_SLOTS; i++)
+			if (reg[i] == n)
+				return i;
+		return -1;
+	}
+
+	// Gives up slot `n`: the value goes to memory if it is dirty, and the slot
+	// is free afterwards. Used both for eviction and by every access path that
+	// still goes through memory (rule 4).
+	void evict(int n)
+	{
+		const int i = find(n);
+		if (i < 0)
+			return;
+		if (dirty & (1u << i))
+			emit_str_off(g_out, kArmRegCacheHost[i], JIT_CPU_BASE_REG, reg_off(n));
+		reg[i] = -1;
+		dirty &= ~(1u << i);
+		touched &= ~(1u << i);
+	}
+
+	void write_back(int i)
+	{
+		if (reg[i] >= 0 && (dirty & (1u << i)))
+			emit_str_off(g_out, kArmRegCacheHost[i], JIT_CPU_BASE_REG, reg_off(reg[i]));
+	}
+
+	void invalidate()
+	{
+		for (int i = 0; i < ARM_RC_SLOTS; i++)
+			reg[i] = -1;
+		dirty = touched = 0;
+	}
+
+	// Rule 3: memory is the only truth after this.
+	void flush()
+	{
+		for (int i = 0; i < ARM_RC_SLOTS; i++)
+			write_back(i);
+		invalidate();
+	}
+
+	bool any_dirty() const { return dirty != 0; }
+
+	// Returns the host register holding R[n], loading it first if `load`.
+	// `mark` says the caller is going to overwrite it, so the slot becomes dirty
+	// without paying for the load. A destination that is fully overwritten is
+	// the common case (`add r0, r1, r2`), which is why the two are separate
+	// entry points.
+	int need(int n, bool load, bool mark)
+	{
+		int i = find(n);
+		if (i < 0)
+		{
+			for (int k = 0; k < ARM_RC_SLOTS && i < 0; k++)
+				if (reg[k] < 0)
+					i = k;
+			for (int k = 0; k < ARM_RC_SLOTS && i < 0; k++)
+				if (!(touched & (1u << k)))
+					i = k;
+			if (i < 0)
+			{
+				// Every slot belongs to the instruction being emitted. Taking one
+				// would invalidate a register the caller is already holding, so
+				// this is a handler bug, not a runtime condition.
+				ASMJIT_ASSERT(false);
+				return kArmRegCacheHost[0];
+			}
+			if (reg[i] >= 0)
+				evict(reg[i]);
+			reg[i] = n;
+
+			// Only a miss loads. On a hit the slot already holds the newest
+			// value -- which may not be in memory yet -- so reloading here would
+			// throw the pending result away. (It did: `ANDS r0,r0,#0; EOR r0,r0,#0`
+			// came out as `R0 = R0`.)
+			if (load)
+				emit_ldr_off(g_out, kArmRegCacheHost[i], JIT_CPU_BASE_REG, reg_off(n));
+		}
+
+		if (mark)
+			dirty |= 1u << i;
+		touched |= 1u << i;
+		return kArmRegCacheHost[i];
+	}
+
+	int read(int n)       { return need(n, true, false); }
+	int read_write(int n) { return need(n, true, true); }
+	int write(int n)      { return need(n, false, true); }
+};
+
+static ArmRegCache g_regs;
+
 #define cpu_dword_ptr(z, o, r, v) cpu_get_ptr(&z, o, r, v)
 #define cpu_byte_ptr(z, o, r, v) cpu_get_ptrB(&z, o, r, v)
 #define cpu_word_ptr(z, o, r, v) cpu_get_ptrW(&z, o, r, v)
@@ -379,16 +540,22 @@ static inline void emit_add_counters(int dstField, int srcField) {
 #define cpu_ptr(x, reg, v)			cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, x), reg, v)
 #define cpu_ptr_byte(x, y, reg, v)	cpu_byte_ptr(bb_cpu, offsetof(armcpu_t, x) + y, reg, v)
 #define flags_ptr(reg, v)			cpu_ptr_byte(CPSR.val, 3, reg, v)
-#define reg_ptr(x, reg, v)			cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*(x), reg, v)
-#define reg_pos_ptr(x, reg, v)		cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v)
-#define reg_pos_ptrL(x, reg, v)		cpu_word_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v)
-#define reg_pos_ptrH(x, reg, v)		cpu_word_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)) + 2, reg, v)
-#define reg_pos_ptrB(x, reg, v)		cpu_byte_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v)
-#define reg_pos_ptrSL(x, reg, v)		cpu_words_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v)
-#define reg_pos_ptrSH(x, reg, v)		cpu_words_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)) + 2, reg, v)
-#define reg_pos_ptrSB(x, reg, v)		cpu_bytes_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v)
-#define reg_pos_thumb(x, reg, v)	cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7), reg, v)
-#define reg_pos_thumbB(x, reg, v)	cpu_byte_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7), reg, v)
+// Rule 4: every access to R[] through memory evicts the register first. A
+// handler that has not been migrated to the cache still reads and writes
+// armcpu_t.R[] directly, and it would otherwise read the value from before the
+// last cached write -- or overwrite a value the cache still believes it owns.
+// `evict` writes back only when the slot is dirty, so for a migrated handler
+// this costs nothing at all.
+#define reg_ptr(x, reg, v)			(g_regs.evict(x), cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*(x), reg, v))
+#define reg_pos_ptr(x, reg, v)		(g_regs.evict(REG_POS(i,(x))), cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v))
+#define reg_pos_ptrL(x, reg, v)		(g_regs.evict(REG_POS(i,(x))), cpu_word_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v))
+#define reg_pos_ptrH(x, reg, v)		(g_regs.evict(REG_POS(i,(x))), cpu_word_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)) + 2, reg, v))
+#define reg_pos_ptrB(x, reg, v)		(g_regs.evict(REG_POS(i,(x))), cpu_byte_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v))
+#define reg_pos_ptrSL(x, reg, v)	(g_regs.evict(REG_POS(i,(x))), cpu_words_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v))
+#define reg_pos_ptrSH(x, reg, v)	(g_regs.evict(REG_POS(i,(x))), cpu_words_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)) + 2, reg, v))
+#define reg_pos_ptrSB(x, reg, v)	(g_regs.evict(REG_POS(i,(x))), cpu_bytes_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v))
+#define reg_pos_thumb(x, reg, v)	(g_regs.evict((i>>(x))&0x7), cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7), reg, v))
+#define reg_pos_thumbB(x, reg, v)	(g_regs.evict((i>>(x))&0x7), cpu_byte_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7), reg, v))
 #define cp15_ptr(x, reg, v)			dword_ptr(bb_cp15, offsetof(armcp15_t, x), reg, v)
 #define cp15_ptr_off(x, y, reg, v)	dword_ptr(bb_cp15, offsetof(armcp15_t, x) + y, reg, v)
 #define mmu_ptr(x, reg, v)			dword_ptr(bb_mmu, offsetof(MMU_struct, x), reg, v)
@@ -604,6 +771,7 @@ static GpVar bb_profiler_entry;
 
 #define S_DST_R15 { \
 	JIT_COMMENT("S_DST_R15"); \
+	g_regs.flush(); \
 	cpu_ptr(next_instruction, R3, VALUE);\
 	cpu_ptr(SPSR.val, R9, VALUE);\
 	emit_mov(g_out, R9, R10); \
@@ -824,8 +992,36 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 //-----------------------------------------------------------------------------
 //   OPs
 //-----------------------------------------------------------------------------
+// The `rhs_is_imm` branch is the register-cache path, and it exists only for
+// the IMM_VAL families (S4 batch 1). It is a runtime test on a value that is
+// fixed per handler, so the shift families -- whose `arg` still reads Rn
+// through memory -- keep the old body verbatim and are unaffected. Rule 4 in
+// the cache makes the two coexist: the shift path evicts what it touches.
+//
+// R15 is excluded on purpose (rule 1): a handler that writes the PC keeps the
+// old body, which stores through CACHED_PTR and then runs S_DST_R15.
+#define OP_RC_ARITHMETIC(x86inst) \
+	const int rc_rd = REG_POS(i,12); \
+	const int rc_rn = REG_POS(i,16); \
+	int rc_hd, rc_hn; \
+	if(rc_rd == rc_rn) \
+		rc_hn = rc_hd = g_regs.read_write(rc_rd); \
+	else \
+	{ \
+		rc_hn = g_regs.read(rc_rn); \
+		rc_hd = g_regs.write(rc_rd); \
+	} \
+	x86inst(g_out, rc_hn, rhs, rc_hd);
+
 #define OP_ARITHMETIC(arg, x86inst, symmetric, flags) \
 	arg; \
+	if(rhs_is_imm && REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		OP_RC_ARITHMETIC(x86inst) \
+		if(flags) \
+			SET_NZCV(!symmetric); \
+		return 1; \
+	} \
 	if(REG_POS(i,12) == REG_POS(i,16)) \
 	{ \
 		reg_pos_ptr(12, R1, VALUE);\
@@ -866,6 +1062,23 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 
 #define OP_ARITHMETIC_R(arg, x86inst, flags) \
 	arg; \
+	if(rhs_is_imm && REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		const int rc_rd = REG_POS(i,12); \
+		const int rc_rn = REG_POS(i,16); \
+		int rc_hd, rc_hn; \
+		if(rc_rd == rc_rn) \
+			rc_hn = rc_hd = g_regs.read_write(rc_rd); \
+		else \
+		{ \
+			rc_hn = g_regs.read(rc_rn); \
+			rc_hd = g_regs.write(rc_rd); \
+		} \
+		x86inst(g_out, rhs, rc_hn, rc_hd); \
+		if(flags) \
+			SET_NZCV(1); \
+		return 1; \
+	} \
 	emit_mov(g_out, rhs, lhs); \
 	x86inst(g_out, lhs, reg_pos_ptr(16, R1, VALUE), lhs); \
 	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), lhs); \
@@ -891,6 +1104,12 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 
 #define OP_ARITHMETIC_S(arg, x86inst, symmetric) \
 	arg; \
+	if(rhs_is_imm && REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		OP_RC_ARITHMETIC(x86inst) \
+		SET_NZC; \
+		return 1; \
+	} \
 	if(REG_POS(i,12) == REG_POS(i,16)) \
 	{ \
 		reg_pos_ptr(12, R1, VALUE); \
@@ -1121,9 +1340,15 @@ static int OP_BIC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_S(S_IMM_VAL; rhs_var = 
 //-----------------------------------------------------------------------------
 //   TST
 //-----------------------------------------------------------------------------
+// TST/TEQ/CMP/CMN have no destination, so the cache path is one line: read Rn
+// from wherever it lives and compare. The old form also materialised the field
+// address into CACHED_PTR on the way, which nothing here stores through.
 #define OP_TST_(arg) \
 	arg; \
-  emit_test(g_out, reg_pos_ptr(16, R1, VALUE), rhs_reg); \
+	if(rhs_is_imm) \
+		emit_test(g_out, g_regs.read(REG_POS(i,16)), rhs_reg); \
+	else \
+		emit_test(g_out, reg_pos_ptr(16, R1, VALUE), rhs_reg); \
 	SET_NZC; \
 	return 1;
 
@@ -1142,7 +1367,10 @@ static int OP_TST_IMM_VAL(const u32 i) { OP_TST_(S_IMM_VAL); }
 //-----------------------------------------------------------------------------
 #define OP_TEQ_(arg) \
 	arg; \
-	emit_teq(g_out, reg_pos_ptr(16, R1, VALUE), rhs_reg); \
+	if(rhs_is_imm) \
+		emit_teq(g_out, g_regs.read(REG_POS(i,16)), rhs_reg); \
+	else \
+		emit_teq(g_out, reg_pos_ptr(16, R1, VALUE), rhs_reg); \
 	SET_NZC; \
 	return 1;
 
@@ -1161,7 +1389,10 @@ static int OP_TEQ_IMM_VAL(const u32 i) { OP_TEQ_(S_IMM_VAL); }
 //-----------------------------------------------------------------------------
 #define OP_CMP(arg) \
 	arg; \
-	emit_cmp(g_out, reg_pos_ptr(16, R1, VALUE), rhs); \
+	if(rhs_is_imm) \
+		emit_cmp(g_out, g_regs.read(REG_POS(i,16)), rhs); \
+	else \
+		emit_cmp(g_out, reg_pos_ptr(16, R1, VALUE), rhs); \
 	SET_NZCV(1); \
 	return 1;
 
@@ -1184,11 +1415,16 @@ static int OP_CMP_IMM_VAL(const u32 i) { OP_CMP(IMM_VAL); }
 	u32 rhs_imm = *(u32*)&rhs_var; \
 	int sign = rhs_is_imm && (rhs_imm != -rhs_imm); \
 	if(sign) \
-		emit_cmpimm(g_out, reg_pos_ptr(16, R1, VALUE), -rhs_imm); \
+		emit_cmpimm(g_out, rhs_is_imm ? g_regs.read(REG_POS(i,16)) : reg_pos_ptr(16, R1, VALUE), -rhs_imm); \
 	else \
 	{ \
-		reg_pos_ptr(16, lhs, VALUE);\
-		emit_adds(g_out, lhs, rhs, lhs); \
+		if(rhs_is_imm) \
+			emit_adds(g_out, g_regs.read(REG_POS(i,16)), rhs, rhs_reg); \
+		else \
+		{ \
+			reg_pos_ptr(16, lhs, VALUE);\
+			emit_adds(g_out, lhs, rhs, lhs); \
+		} \
 	} \
 	SET_NZCV(sign); \
 	return 1;
@@ -1209,6 +1445,11 @@ static int OP_CMN_IMM_VAL(const u32 i) { OP_CMN(IMM_VAL); }
 //-----------------------------------------------------------------------------
 #define OP_MOV(arg) \
 	arg; \
+	if(rhs_is_imm && REG_POS(i,12) != 15) \
+	{ \
+		emit_mov(g_out, rhs, g_regs.write(REG_POS(i,12))); \
+		return 1; \
+	} \
 	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), rhs);\
 	if(REG_POS(i,12)==15) \
 	{ \
@@ -1229,6 +1470,14 @@ static int OP_MOV_IMM_VAL(const u32 i) { OP_MOV(IMM_VAL); }
 
 #define OP_MOV_S(arg) \
 	arg; \
+	if(rhs_is_imm && REG_POS(i,12) != 15) \
+	{ \
+		int mh = g_regs.write(REG_POS(i,12)); \
+		emit_mov(g_out, rhs, mh); \
+		emit_cmpimm(g_out, mh, 0); \
+		SET_NZC; \
+		return 1; \
+	} \
 	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), rhs);\
 	if(REG_POS(i,12)==15) \
 	{ \
@@ -4099,6 +4348,11 @@ static void emit_armop_call(u32 opcode)
 		return;
 	}
 	
+	// Nothing inline: the interpreter function is about to read and write
+	// armcpu_t directly, so the cache has to be on disk first and is void
+	// afterwards (rules 2 and 3).
+	g_regs.flush();
+
 	OpFunc f = bb_thumb ? thumb_instructions_set[PROCNUM][opcode>>6]
 	                     : arm_instructions_set[PROCNUM][INSTRUCTION_INDEX(opcode)];
 						 	
@@ -4180,6 +4434,10 @@ static void emit_dma_event_check(u32 resume_adr)
 	JIT_COMMENT("DMA armed: leave block at %08Xh", resume_adr);
 	emit_write_ptr32_regptrTO_immFROM(g_out, flag_ptr, 0);
 
+	// This is a mid-block return, so armcpu_t must be complete before it
+	// (rule 3). The path that stays in the block does not pay for it.
+	g_regs.flush();
+
 	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(instruct_adr, R1, ADDRESS), resume_adr);
 	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(next_instruction, R2, ADDRESS), resume_adr);
 
@@ -4239,6 +4497,11 @@ static u32 compile_basicblock()
 
 	emit_st_counters_zero(BB_TOTAL_FIELD);
 
+	// The cache is a block-local idea: nothing survives into the next block, and
+	// an empty cache at entry is what lets every handler assume "not cached"
+	// means "memory is current".
+	g_regs.reset();
+
 #if (PROFILER_JIT_LEVEL > 0)
 	JIT_COMMENT("Profiler ptr");
 	emit_write_ptr(g_out, (uintptr_t)&bb_profiler, (uintptr_t)&profiler_counter[PROCNUM]);
@@ -4272,6 +4535,11 @@ static u32 compile_basicblock()
 #endif
 		bb_constant_cycles += instr_is_conditional(opcode) ? 1 : cycles;
 
+		// A handler may hold at most ARM_RC_SLOTS-1 emulated registers at a
+		// time; resetting the per-instruction marker here is what keeps an
+		// earlier instruction's entries from being reused as the victim.
+		g_regs.begin_insn();
+
 #if (PROFILER_JIT_LEVEL > 0)
 		JIT_COMMENT("*** profiler - counter");
 #endif
@@ -4304,6 +4572,23 @@ static u32 compile_basicblock()
 					JIT_COMMENT("cycles (%d)", cycles);
 					emit_add_counters_imm(BB_TOTAL_FIELD, -1);
 				}
+
+			// Rule 5, and the one that cost a whole debugging round: the body
+			// above executes only when the condition holds, but the cache's
+			// dirty/loaded bits are *compile-time* state. A slot marked dirty
+			// here would be written back on a path that never executed its load,
+			// so the deferred store would drop a stale host register into
+			// armcpu_t -- for `AND r0,r0,#0` under a false NE that is exactly
+			// "R0 becomes whatever the allocator left in x12".
+			//
+			// So the write-back has to sit *inside* the guarded region, and the
+			// merge point has to start from an empty cache: memory is the only
+			// state both paths agree on.
+			if (g_regs.any_dirty())
+				g_regs.flush();
+			else
+				g_regs.invalidate();
+
 			emit_label(g_out, skip);
 		}
 		else
@@ -4332,6 +4617,11 @@ static u32 compile_basicblock()
 	{
 		emit_var_copy32_reg(g_out, cpu_ptr(next_instruction, R1, VALUE), cpu_ptr(instruct_adr, R2, ADDRESS));
 	}
+
+	// Rule 3: the block is about to return, so every dirty entry goes to memory
+	// first. This is also the only place the deferred stores of a fully inline
+	// block are paid for.
+	g_regs.flush();
 
 	JIT_COMMENT("total cycles (block)");
 
