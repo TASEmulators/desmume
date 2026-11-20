@@ -370,11 +370,12 @@ def main() -> int:
         editor.replace_body(oid, new_body)
 
     # ------------------------------------------- drop the old AsmJit 1.0 copy
-    # src/utils/AsmJit is kept in the tree for reference but must not be
-    # compiled: its class names (asmjit::Assembler, ...) collide with the
-    # vendored master, so a target that compiles both fails to link. The old
-    # entries are recognisable as "same basename as a vendored source, but the
-    # path is not under 3rdparty".
+    # src/utils/AsmJit was removed after the migration (plan S7.2); its class
+    # names (asmjit::Assembler, ...) collided with the vendored master, so a
+    # target compiling both failed to link. This step stays as an idempotent
+    # guard in case an old project file still carries the stale entries; they
+    # are recognisable as "same basename as a vendored source, but the path is
+    # not under 3rdparty".
     dropped = []
     for tname, phase_ids, _cl, _files, _uni in jit_targets:
         for phase in phase_ids:

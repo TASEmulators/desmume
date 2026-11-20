@@ -31,6 +31,7 @@ and deliberately excludes `ujit/` (the unified compiler is experimental and
 DeSmuME does not use it). The headers are kept so that a future experiment
 does not have to re-import the tree.
 
-The previous bundled copy lives at `src/utils/AsmJit` (1.0.x). It is kept
-read-only during the migration so that the two generations can be compared,
-but it must not be compiled at the same time.
+The previous bundled copy (AsmJit 1.0.x, formerly at `src/utils/AsmJit`) was
+removed once the migration completed: all build files now compile only this
+vendored copy, and no source includes the 1.0 headers. See the migration plan
+(S7.2) for the removal rationale.

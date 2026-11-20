@@ -1,8 +1,8 @@
 @echo off
 REM ---------------------------------------------------------------
-REM S0 prerequisite check: can the JIT front end + the bundled
-REM asmjit 1.0 compile with the installed MSVC toolchain, without
-REM going through MSBuild?
+REM S0 prerequisite check: can the JIT front end + the vendored asmjit
+REM compile with the installed MSVC toolchain, without going through
+REM MSBuild?
 REM
 REM Why not MSBuild: this only answers "does the toolchain accept the
 REM code", which is the actual migration risk. It does not link and it
@@ -49,10 +49,11 @@ set SRC=%ROOT%\desmume\src
 set OUT=%ROOT%\build_check
 if not exist "%OUT%" mkdir "%OUT%"
 
-REM /std:c++14 is the MSVC default and what the shipping vcxproj uses.
-set CFLAGS=/c /nologo /EHsc /W1 /std:c++14 /D_CRT_SECURE_NO_DEPRECATE /DWIN32 /DNOMINMAX
+REM arm_jit.cpp uses C++20 through the vendored asmjit headers; asmjit 1.0
+REM (formerly src\utils\AsmJit) was removed after the migration (plan S7.2).
+set CFLAGS=/c /nologo /EHsc /W1 /std:c++20 /D_CRT_SECURE_NO_DEPRECATE /DWIN32 /DNOMINMAX /DASMJIT_STATIC
 set DEFS=/DHAVE_JIT /DHAVE_LIBZ /DHAVE_ZLIB_DEFLATE
-set INCS=/I"%SRC%" /I"%SRC%\libretro-common\include" /I"%SRC%\frontend\windows" /I"%SRC%\frontend\windows\zlib128"
+set INCS=/I"%ROOT%\desmume\3rdparty" /I"%SRC%" /I"%SRC%\libretro-common\include" /I"%SRC%\frontend\windows" /I"%SRC%\frontend\windows\zlib128"
 
 if /I "%CONFIG%"=="Debug" (
   set CFLAGS=%CFLAGS% /Od /Zi /D_DEBUG
@@ -61,21 +62,15 @@ if /I "%CONFIG%"=="Debug" (
 )
 
 set FAILED=0
-set COUNT=0
 
 echo.
-echo === [1/2] asmjit 1.0 (bundled, src\utils\AsmJit) ===
-for /r "%SRC%\utils\AsmJit" %%F in (*.cpp) do (
-  set /a COUNT+=1
-  cl %CFLAGS% %DEFS% %INCS% "%%F" /Fo"%OUT%\%%~nF.obj" > "%OUT%\log.tmp" 2>&1
-  findstr /i /c:"error" "%OUT%\log.tmp" >nul
-  if errorlevel 1 (
-    echo   OK   %%~nxF
-  ) else (
-    echo   FAIL %%~nxF
-    findstr /i /c:"error" "%OUT%\log.tmp"
-    set FAILED=1
-  )
+echo === [1/2] vendored asmjit (3rdparty\asmjit, via build_asmjit.ps1) ===
+pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0build_asmjit.ps1" -Config %CONFIG% -LibOnly
+if errorlevel 1 (
+  echo   FAIL asmjit build
+  set FAILED=1
+) else (
+  echo   OK   asmjit build
 )
 
 echo.
@@ -90,11 +85,9 @@ if errorlevel 1 (
   set FAILED=1
 )
 
-del "%OUT%\log.tmp" >nul 2>&1
-
 echo.
 if "%FAILED%"=="0" (
-  echo RESULT: PASS - %COUNT% asmjit TUs + arm_jit.cpp compiled
+  echo RESULT: PASS - vendored asmjit + arm_jit.cpp compiled
   exit /b 0
 ) else (
   echo RESULT: FAIL - see messages above
