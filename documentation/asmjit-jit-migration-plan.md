@@ -16,7 +16,10 @@
 | rev2 | ① x86-64 与 AArch64 两个后端同时迁移；② ARM32 后端删除；③ 迁移单位改为"一条指令"；④ 新增三方言语义对账 |
 | rev3 | ① **arm64 侧改用 `a64::Compiler`**（不再用 Assembler 平移手写编码器）——为统一、为减 bug、为性能；② 新增 §1.4 性能账（带实测证据）；③ 新增 §3.7：`2d4919aa` 块级边界事故复盘，并把它变成可自动化的判据；④ 阶段重排为 S0–S8 |
 | **rev4** | 按 rev3 开工后的落地修正：① vendor 目录改用仓库既有约定的 `3rdparty/asmjit`（原文写 `third_party`，但仓库已有 `3rdparty/` 且被 vcxproj 引用）；② 新增 `tools/jit_matrix/gen_asmjit_sources.py`——asmjit 编译清单**由脚本生成**，不手抄；③ S1 拆成 S1.1（删 ARM32，**已完成**）/ S1.2（vendor，**已完成**）/ S1.3（构建接线，推迟到 S2 首个提交）；④ 记录 MSVC 构建验证的实际结论与阻塞点 |
-| **rev5（本文）** | S2 收官：① macOS arm64 实机构建通过（两处真实阻塞已修，见 §2.6）；② 差分台移植到 POSIX 宿主机，`build_diff_macos.sh` 复用 Xcode 产物——**arm64 后端第一次以"模拟器的调用方式"跑起来**；③ 首次全量扫描发现 2 个真实缺陷，均按 §3.5 以 ARM ARM 仲裁后修复（arm64 Thumb `ASR #32` 的 C、解释器 `NEG INT_MIN` 的 V）；④ §3.5 补充"周期数不可用 ARM ARM 裁决"的边界 |
+| **rev5** | S2 收官：① macOS arm64 实机构建通过（两处真实阻塞已修，见 §2.6）；② 差分台移植到 POSIX 宿主机，`build_diff_macos.sh` 复用 Xcode 产物——**arm64 后端第一次以"模拟器的调用方式"跑起来**；③ 首次全量扫描发现 2 个真实缺陷，均按 §3.5 以 ARM ARM 仲裁后修复（arm64 Thumb `ASR #32` 的 C、解释器 `NEG INT_MIN` 的 V）；④ §3.5 补充"周期数不可用 ARM ARM 裁决"的边界 |
+| rev6 | 只补现状量化，不改代码：① 新增 §9，记录当前 arm64 JIT 的 Guest:Host 指令膨胀率、访存回调路径、`ArmRegCache` 的实际覆盖边界；② 明确"1 条指令块"的 36.9 条/块不能当比例，避免后续拿错基线；③ 给出下一步优化优先级（P0 访存 ABI） |
+| rev7 | 落地 §9.5 的 P0 第一刀：① 新增 `call_mem` 轻量 helper 调用（arm64），把访存热点 `OP_LDR_`/`OP_STR_` 的调用开销从 15 条降到 3 条；② 逐调用点论证寄存器存活面，不全局删 `save_call`；③ 编码层 golden 增加 3 个 case，x86 全量差分功能桶仍全 0；④ 记录本机验证边界与 macOS 待验项（§10） |
+| **rev8（本文）** | P0 第二刀：① `call_mem` 扩展到 SWP/LDM-STM/Thumb LDR-STR/SPREL/PCREL，新增 `call_mem_r7` / `call_mem_r2` 变体，24 处调用点中 15 处转轻量（§10.7）；② 记录 x64 fastmem 评估结论——三项硬障碍下主动放弃，两后端以安全方法对齐（§10.6）；③ 编码层 golden 增至 241 case |
 
 ---
 
@@ -1813,3 +1816,258 @@ static inline asmjit::CondCode arm_cc(u8 c) {
 - [ ] 《恶魔城》HUD：block size 15 / 16 / 100 全部正常，暂存写计数与基线逐字节一致
 - [ ] 3~5 个游戏冒烟无回归；自修改代码路径不崩
 - [ ] 兼容层 `asmjit_compat.h` 已删除
+
+---
+
+## 9. 现状量化：指令膨胀率、访存路径与寄存器缓存（2026-11-20）
+
+本节只记录**当前代码的实测现状**，作为后续优化的基线；不改变任何生产代码，也不把结论混入验收项。
+
+### 9.1 测量对象与口径
+
+- 代码：HEAD `a78abf4b`，macOS Apple Silicon，AArch64 后端。
+- 工具：`.build/diff-mac/jit_diff --block N --slot S`，连续种 `N` 条相同指令，
+  host 指令数 = 生成代码字节数 `/ 4`。
+- **边际成本** = `(N=16 的 host 指令数 − N=1 的 host 指令数) / 15`，用于剔除块序言/尾声。
+- **n=12 块折算** = `N=12` 的 host 指令数 `/ 12`，对应默认 `jit_max_block_size = 12`。
+- 注意：`slot << 20` 会清零槽位低位，**只有 ALU、字 LDR/STR 和 Thumb 槽位**适合用该模式代表；
+  LDRH/STRH/LDM/STM 等槽位不能用本节数字外推。
+- 单条指令块的全量结果是 `12,101,320 bytes / 81920 ≈ 36.9 host 指令/块`。
+  这是**固定开销占主导**的数字，不能当作 Guest:Host 比例使用。
+
+### 9.2 实测比例
+
+| 指令（连续 N 条） | 边际 Host/Guest（N=16） | n=12 块折算 Host/Guest |
+|---|---:|---:|
+| ARM `ADD` imm | 2 | 5.25 |
+| ARM `ORR` imm | 2 | — |
+| ARM `MOV` imm | 2 | — |
+| ARM `AND` reg | 6 | 9.1 |
+| ARM `EOR` reg | 6 | — |
+| ARM `ADDS` imm | 7 | 10.25 |
+| ARM `CMP` imm | 7 | — |
+| ARM `LDR` word | 29 | 31.8 |
+| ARM `STR` word | 49 | 52.1 |
+| ARM `SWP` | 27 | — |
+| Thumb `ADD` reg | 11 | 14.1 |
+| Thumb `MOV` imm | 10 | — |
+| Thumb `LDR` word | 26 | 28.8 |
+| Thumb `STR` word | 47 | 50.1 |
+| Thumb `PUSH` | 48 | — |
+
+`N=1` 的固定成本（host 指令/块）：ARM `ADD` 41、`AND` 43、`ADDS` 46、`LDR` 63、`STR` 86、`SWP` 67；
+Thumb `ADD` 48、`MOV` 47、`LDR` 60、`STR` 84、`PUSH` 88。
+块越小，这部分占比越高，所以上表同时给出边际值与 n=12 折算值。
+
+**结论：**
+
+- 纯 ALU 大约 **1:2 ~ 1:7**（Thumb 约 **1:10 ~ 1:11**）。
+- 字访存大约 **1:26 ~ 1:52**，是目前最贵的一类。
+- 按真实混合负载估计，整体约 **1:10 ~ 1:20**，**不是 1:3 ~ 1:5**。
+  引用 1:3 ~ 1:5 时必须限定为"寄存器已缓存的纯 ALU"，否则会低估访存与调用开销。
+
+### 9.3 访存路径：仍是 C++ 回调，没有 fastmem
+
+当前 `OP_LDR_` / `OP_STR_` 的生成路径是：
+
+1. `emit_ptr(... LDR_tab/STR_tab[PROCNUM][classify_adr(...)], R3)` 选 helper；
+2. `callR3` 调用；
+3. helper 内的 `OP_LDR` / `OP_STR` 调 `READ32` / `WRITE32`；
+4. 最终落到 `cpu->mem_if->read32/write32`，这是**第二次间接调用**。
+
+`classify_adr` 只按 MAIN / DTCM / ERAM / SWIRAM 选择 5 份**内容相同**的 helper 副本，
+目的是让分支预测器区分区域；它不是运行时地址映射，也没有 mmap/页表直映射。
+
+`callR3` 每次调用的固定开销至少 15 条 host 指令：
+
+- `save_call`：6×`stp` + 1×`str`；
+- `blr`；
+- `restore_call`：1×`ldr` + 6×`ldp`。
+
+`STR` 还额外执行 `emit_dma_event_check`，这解释了同宽度下 `STR` 比 `LDR` 更贵（49 vs 29）。
+
+### 9.4 寄存器缓存：存在，但只覆盖 ARM ALU/移位
+
+`ArmRegCache`（`arm_jit_arm.cpp`，约 413 行起）已有基础块内缓存：
+
+- 3 个物理槽：`x12` / `x15` / `x21`；
+- `dirty` / `touched` 状态，惰性回写；
+- `read` / `read_write` / `write` / `flush` / `evict`；
+- 块入口 `g_regs.reset()`。
+
+覆盖范围是 **252 组 `diff-pass`**：族 1 的 28 个 ARM 数据处理指令，
+加族 2 的 224 个 ARM 移位（其中 223 个走缓存，1 个 NOP 特例）。
+
+**未覆盖**（仍走 `reg_ptr` / `reg_pos_ptr`，并在访问前 `evict`）：
+
+- 174 个 ARM 访存；
+- 32 个 LDM/STM；
+- 28 个乘法；
+- 13 个分支/状态/异常；
+- 22 个协处理器/饱和；
+- 70 个 Thumb。
+
+此外，当前没有完整活性分析，也没有死标志位消除；S 指令的标志是**急切计算并写回内存**；
+条件执行用 branch-over，不是 `CSEL`。因此"已有基础块内寄存器缓存"成立，
+但"缓存已覆盖热点路径"不成立。
+
+### 9.5 下一步优先级
+
+| 优先级 | 事项 | 理由 |
+|---|---|---|
+| P0 | 访存 fastmem / 自定义 helper ABI，减少 `save_call`/`restore_call` | 访存占真实负载大头，当前 1:26 ~ 1:52 |
+| P1 | Thumb 批次 8 | Thumb 目前整体比 ARM 贵，且覆盖缺口最大（70 组） |
+| P2 | 死标志位消除 / 惰性标志 | S 指令急切写标志，ALU 密集代码仍有明显冗余 |
+| P3 | 缓存扩到 4–6 槽，并覆盖 load/store 基址与数据 | 当前 3 槽只够 ALU/移位，访存前必须 `evict` |
+
+以上数字来自"连续相同指令"的微基准，不含分支、寄存器压力和真实游戏指令混合；
+它们适合做**相对比较**和回归门槛，不应直接外推为整机帧率。
+
+---
+
+## 10. P0 第一刀：`call_mem` 轻量 helper 调用（2026-11-20，已落地）
+
+### 10.1 改了什么
+
+§9.3 指出访存是当前最贵的一类（字访问 1:26 ~ 1:52），其中每次 helper 调用的
+固定开销是 `save_call`(6×`stp` 存 x1..x12 + 1×`str` 存 x23) + `blr` +
+`restore_call`(1×`ldr` + 6×`ldp`) = **15 条**。这一刀只动调用序列，不动访存语义、
+`classify_adr`、MMU 回调或 DMA 检查。
+
+在 `arm64_emit.cpp` 新增：
+
+```cpp
+static void call_mem(t_bytes *out) {
+    stp x12, x15, [sp, #-16]!;   // 只存两个易失缓存槽
+    blr x3;                       // helper 指针仍在 x3
+    ldp x12, x15, [sp], #16;
+}
+```
+
+即 **3 条**。用它替换 `OP_LDR_` / `OP_STR_` 两个宏体里的 `callR3`（`arm_jit_arm.cpp:2031` /
+`:2223`）——这两个宏覆盖 174 个 ARM 访存 handler 的绝大多数，是 P0 要打的热点。
+其余 22 处 `callR3` / `callR7` / `callR9` 调用点**原样保留**。
+
+### 10.2 为什么不直接全局精简 `save_call`
+
+逐调用点核对 24 处 helper 调用后发现，`save_call` 保存的 x1..x12 不是无用功：
+
+- `S_DST_R15`（`:793`）调用 `armcpu_switchMode` 后紧接着用 R9 / R10；
+- `OP_MSR_`（`:1891`、`:1827`）调用后用 R1 作地址、用 `operand` / `xPSR`；
+- `LDRD/STRD` 写回（`:2441`）、SWP（`:2518`）、LDM/STM（`:2715`）调用后仍持有 `addr` / `Rs`。
+
+这些点若换成 `call_mem` 会读到被 helper 破坏的寄存器。所以优化必须**按调用点存活面定制**，
+不能全局替换。这是本刀只覆盖 LDR/STR 两宏的原因。
+
+### 10.3 存活面论证（call_mem 为什么对 LDR/STR 安全）
+
+AAPCS64 下 x19–x28 是 callee-saved，C helper 自动保留——所以 x21（缓存槽）、
+x23（DMA flag 别名）、x24/x25/x26（三个常驻基址）无需在调用点保存。
+`save_call` 里那条 `str x23` 对这些热点是多余的。
+
+ caller-saved 一侧逐项核对 `OP_LDR_` / `OP_STR_` 调用之后的指令：
+
+| 寄存器 | 调用后是否被用 | 结论 |
+|---|---|---|
+| x0 (R0) | 是，helper 返回的 cycles | 返回值，不保存（会被 helper 覆盖） |
+| x1 (R1) | Rd==15 分支用，但经 `cpu_ptr(...,ADDRESS)` 重算 | 不依赖调用前值 |
+| x2/x3 (tmp/tmp2) | Rd==15 分支用，但先 `reg_ptr`+`emit_mov` 重算 | 不依赖 |
+| x6 (rhs) / x8 / x9 (adr/dst) | 调用后不再用 | 死值 |
+| x11 (CACHED_PTR) | 调用点后无 `CACHED_PTR()` 消费 | 死值，不保存 |
+| **x12 / x15** | **ArmRegCache 易失槽，可能持有前一条指令的脏值** | **必须保存** |
+
+关键铁律：x12/x15 里若有前序指令缓存的脏 emulated 寄存器，helper 一旦破坏它们就会
+丢值——这正是 `call_mem` 唯一保留的保存项。x11 在这两个宏里不参与跨指令状态，故省下。
+
+### 10.4 验证证据（本机）
+
+- **编码层**：`a64_corpus.inc` / `a64_golden.txt` 新增 3 个 case，`a64_dump_new` 实测
+  `call_mem = A9BF3FEC D63F0060 A8C13FEC`（`stp x12,x15` / `blr x3` / `ldp x12,x15`）= 3 条；
+  `callR3` = 15 条。`check_a64.py` 的 4 个已知基线差异（save/restore/startfunc/endfunc，
+  x25/x26 常驻基址改造后 golden 未刷新）与本次改动无关，新增 3 case 全匹配。
+- **x86 回归**：`jit_diff --full` 81920 次比较，R0-R14 / CPSR / instruct_adr / 功能不变量
+  全部 0 mismatch；仅周期数与已知 `jit not repeatable` 记录项非零（§3.5 已定性为记录项，
+  且改动未涉及 x86 后端与 cycle 逻辑）。
+
+### 10.5 预期收益与待验证项
+
+**静态可算的部分**：每次 LDR/STR helper 调用省 12 条 host 指令。用 §9.2 的边际口径，
+`LDR word` 边际 29、边际 49，其中各含 1 次 `callR3`。若这 12 条全部计入边际（单指令块
+的序言摊薄口径下保守取 8–12 条），字访存边际有望从 29→17~21、49→37~41，
+即访存膨胀率下降约 25–40%。这是**按编码推算**，不是实测。
+
+**本机测不了、需 macOS 补测**：
+
+- [ ] `build_diff_macos.sh` 重建后跑 `jit_diff --full`，确认访存槽位 R0-R14 / CPSR /
+      `instruct_adr` / 内存写集全 0（尤其 LDR/STR 的 Rd==15 与写回变体）；
+- [ ] `jit_diff --block --slot` 实测 LDR/STR 边际指令数，与 10.5 的推算对照；
+- [ ] 整机 ROM 回归（花屏 / DMA 提前退出路径，§3.7），确认缓存脏值在 helper 调用后未丢失；
+- [ ] 帧率门槛（§S4：ALU ≥1.3×、访存明显提升）仍只有这一刀之后才能谈，尚未验证。
+
+> 若 macOS 差分在访存槽位报错，第一嫌疑是 x12/x15 之外的存活寄存器漏保存——
+> 按 §10.2 的调用点清单回查，必要时把该调用点单独换回 `callR3`。这是本刀设计成
+> "只动两宏、可快速回退"的原因。
+
+### 10.6 为什么 x64 侧不做 fastmem（2026-11-20 评估，决定放弃）
+
+曾评估在 x64 后端也做 MAIN_MEM 内联快路径，调研后**主动放弃**，理由是可复现的硬约束，
+不是 x64 后端慢：
+
+1. **地址转换不是线性的**。`_MMU_read32` 走两级查表 `MMU_MEM[proc][adr>>20][adr&MASK]`，
+   没有预留的线性窗口；MAIN_MEM 用 `adr & _MMU_MAIN_MEM_MASK32` 索引，而 mask 随
+   debug console / DSi 模式变化（`MMU.cpp:1045-1049`），生成码里硬编码会在模式切换后读错。
+2. **写操作必须触发 JIT 自修改失效**。每次写 MAIN_MEM 都要执行
+   `JIT_COMPILED_FUNC_KNOWNBANK(...) = 0`（`MMU.h:930/988/1043-1044`），否则自修改代码
+   继续执行旧块。内联直写会绕过它，这是会花屏的静默错误。
+3. **cycle 记账无法内联**。`OP_LDR`/`OP_STR` 把数据读取和 cycle 封装在同一次 `c.invoke`
+   里，cycle 经 `MMU_aluMemAccessCycles` → `FetchAccessUnit::Fetch`（`MMU_timing.h:195-224`），
+   依赖 `m_lastAddress` 非顺序检测、`arm9dataCache.Cached` 命中模拟和 debug/Lua 内存 hook；
+   `advanced_timing` 默认 true（`NDSSystem.cpp:3409`）。内联数据但留 helper 算 cycle 不省
+   调用（等于白做），全内联 cycle 则与解释器不一致。
+
+**结论**：x64 侧的 `c.invoke` 由 asmjit 按标准 Windows x64 ABI 生成，没有 arm64
+`save_call` 那种"无条件存 x1–x12+x23"的固定冗余；x64 已有虚拟寄存器 + 内存操作数折叠
+（§1.4），访存热点本身不算慢。两后端"对齐"的正确含义是**各自采用安全范围内更优的方法**：
+arm64 做 `call_mem`（§10.1），x64 保持现状。本决策不改任何 x64 生产代码。
+
+**工具链附注**：评估过程中发现 `jit_diff_main.cpp` 无条件 extern 了 arm64 专有的
+`g_TOTALBYTES` / `g_all_block_bytes`（定义在 arm_jit/emit_core.cpp），而 x64 的
+`build_core.ps1` 不编该文件——这是既有的工具链不同步：`--block`/`--sweep` 的代码体积统计
+在 x64 上恒为 0，但功能差分正常。`build_core/x64_harness_stubs.cpp` 是本地链接 stub
+（不在版本控制内），仅用于让 x64 的 jit_diff.exe 链接通过；它不改动生产代码，也不影响
+功能比较的结论。
+
+### 10.7 第二刀：把轻量调用扩展到其余访存热点（2026-11-20，已落地）
+
+§10.1 的 `call_mem` 只覆盖了 `OP_LDR_`/`OP_STR_`。本刀按同一套存活面论证，把其余
+**调用后仅用 R0(cycles)** 的访存点也切过去，并针对两类特殊点加了变体：
+
+| 变体 | 编码 | 用在哪 | 为什么多存/换寄存器 |
+|---|---|---|---|
+| `call_mem` | stp/ldp x12,x15 + blr x3 = **3 条** | ARM LDR/STR、SWP/SWPB、Thumb STR/LDR/SPREL/PCREL | 函数指针在 x3；调用后只有 R0 活着 |
+| `call_mem_r7` | stp/ldp x12,x15 + blr x7 = **3 条** | LDM/STM（`call_ldm_stm`） | 函数指针在 x7（4 个参数占了 x0–x3） |
+| `call_mem_r2` | stp x2,x12 + str x15 + blr x3 + 恢复 = **5 条** | LDRD/STRD 三处 | x2 是 effective address，W 位写回在调用后（`arm_jit_arm.cpp:2446/2452`）要用 |
+
+**覆盖统计**：24 处 helper 调用点中 **15 处**换成轻量变体（call_mem 11 + r2 3 + r7 1），
+**9 处保留 `callR3`**——它们确实有 caller-saved 值跨调用存活：
+
+- `:744/:793/:1827/:1891` —— `changeCPSR` / `S_DST_R15` / `OP_MSR_` 调用后用 R9/R10/R1/operand；
+- `:2813/:2824` —— LDM/STM 的 `armcpu_switchMode` 前后用 `oldmode`；
+- `:3001` —— `_maskPrecalc`；`:3410/:3421` —— SWI 用 R4；`:4461` —— 解释器回退 `emit_armop_call`。
+
+**逐点复核的调用后依赖**（本刀正确性的核心）：SWP/Thumb 各点的 `reg_pos*`/`g_regs.evict`
+都在 emit_ptr **之前**展开，调用后只剩 `emit_st_counters`(R0) 和
+`emit_MMU_aluMemCycles`（后者只写 x_reg/R2 临时，不读旧值）；LDRD/STRD 的 x2 由
+`call_mem_r2` 显式保存。缓存槽 x12/x15 在所有点都保存——这些访存 handler 与族 1/2
+共用块级缓存，可能有前序指令的脏值。
+
+**验证（本机）**：
+
+- 编码层：`a64_corpus.inc` / golden 新增 `call_mem_r7` / `call_mem_r2` 两个 case，
+  实测 `call_mem_r7 = A9BF3FEC D63F00E0 A8C13FEC`、`call_mem_r2 = A9BF33E2 F81F0FEF
+  D63F0060 F84107EF A8C133E2`，解码与预期一致（栈 push/pop 各 32 字节平衡）；
+  `check_a64.py` 仍是 4/241 已知基线差异，新增 case 全匹配。
+- x86 回归：`jit_diff --full` 81920 次比较，功能桶全 0（与基线一致，12067 是周期记录项）。
+- **语义层仍需 macOS**：本刀改了 15 个调用点，覆盖 SWP/LDM/STM/Thumb/LDRD/STRD，
+  §10.5 的待验清单应扩展到这些族的槽位（尤其 LDRD/STRD 的 W 位写回、Thumb PUSH/POP）。
+  回退粒度：任一族差分报错，把该族调用点单独换回 `callR3`/`callR7` 即可。
