@@ -163,8 +163,21 @@ static void primeState(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr)
 // which is what would catch the harness priming an illegal state. The invariant
 // only applies when the instruction fell through: SWI/BX/BLX/POP{pc} re-enter
 // the pipeline at a vector or branch target and set R15 themselves.
+//
+// `checkFallThrough` says whether that last restriction applies. A sequence run
+// has to pass false -- see compareSequence -- because reaching the end of a
+// planted sequence is not the same event as executing its last instruction.
+static bool interpInvariantHolds(const CpuSnapshot *a, u32 insnSize, char *why, size_t whyLen)
+{
+	if (a->r[15] == a->next_instruction + insnSize)
+		return true;
+	snprintf(why, whyLen, "interpreter invariant broken: R15=%08X next=%08X size=%u",
+		a->r[15], a->next_instruction, insnSize);
+	return false;
+}
+
 static bool sameSnapshot(const CpuSnapshot *a, const CpuSnapshot *b,
-	u32 codeAdr, u32 insnSize, char *why, size_t whyLen)
+	u32 codeAdr, u32 insnSize, bool checkFallThrough, char *why, size_t whyLen)
 {
 	for (int i = 0; i < 15; i++)
 	{
@@ -195,12 +208,8 @@ static bool sameSnapshot(const CpuSnapshot *a, const CpuSnapshot *b,
 	// was primed illegally or the interpreter's pipeline model changed; either way
 	// the comparison above is not meaningful.
 	const bool fellThrough = (a->instruct_adr == codeAdr + insnSize);
-	if (fellThrough && a->r[15] != a->next_instruction + insnSize)
-	{
-		snprintf(why, whyLen, "interpreter invariant broken: R15=%08X next=%08X size=%u",
-			a->r[15], a->next_instruction, insnSize);
+	if (checkFallThrough && fellThrough && !interpInvariantHolds(a, insnSize, why, whyLen))
 		return false;
-	}
 
 	return true;
 }
@@ -469,7 +478,8 @@ static bool compareOne(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr,
 		fflush(stdout);
 	}
 
-	return sameSnapshot(&interp, &jit, codeAdr, (cpsr & 0x20u) ? 2u : 4u, why, whyLen);
+	return sameSnapshot(&interp, &jit, codeAdr, (cpsr & 0x20u) ? 2u : 4u,
+		true, why, whyLen);
 }
 
 struct Probe
@@ -576,8 +586,12 @@ static int runProbes(void)
 // instruction the worklist in documentation/jit-opcode-matrix.md does.
 static const char *mnemonic(bool thumb, u32 opcode)
 {
+	// The ARM dispatch table is indexed by INSTRUCTION_INDEX(), not by
+	// (opcode >> 20): the two agree only for the low four bits being zero, so
+	// naming a slot from `opcode >> 20` mislabels most of the sweep -- including
+	// every S-bit variant, which is exactly where the interesting failures are.
 	return thumb ? thumb_instruction_names[opcode >> 6]
-	             : arm_instruction_names[opcode >> 20];
+	             : arm_instruction_names[INSTRUCTION_INDEX(opcode)];
 }
 
 // Mismatch classification. "2127 mismatches" is not actionable on its own: two
@@ -803,6 +817,314 @@ static int measureBlockSize(int n, int slot, bool thumb, u32 dumpAdr)
 	return 0;
 }
 
+// ---------------------------------------------------------------------------
+// Multi-instruction sequences
+// ---------------------------------------------------------------------------
+//
+// Every comparison above runs a one-instruction block, which is exactly what a
+// per-handler check wants: the result is unambiguous. It is also blind to the
+// whole class of defects that only appear once instructions share a block --
+// register residency, the CACHED_PTR() side effect, sync_r15() bookkeeping, and
+// everything S4 changes. So this mode plants n instructions, runs the
+// interpreter one step at a time and one compiled block of the same n
+// instructions, and compares the end state.
+//
+// Two things make a sequence not comparable, and both are skipped rather than
+// reported:
+//
+//  * the engines end up at a different PC. A compiled block always ends at a
+//    branch, taken or not, so "one block" is not "n instructions"; both engines
+//    are therefore driven until PC reaches the end of the sequence (see
+//    runToEnd) and a sequence where they disagree about the path is dropped.
+//  * an instruction has a side effect on memory. primeState() resets registers
+//    but not memory, and each engine runs after the other has already written:
+//    a load that reads a location a previous store in the same run wrote would
+//    compare data produced by the previous engine, not instruction semantics.
+//    Slots whose mnemonic stores are therefore left out of the sequence, which
+//    is decided from the same name table the failures are printed from.
+static bool slotHasMemorySideEffect(u32 slot)
+{
+	const char *name = mnemonic(false, (u32)slot << 20);
+	if (!name)
+		return true;
+	// ST* covers STR/LDM-variants' counterparts and STC; SWP and the
+	// coprocessor writes change state the next instruction observes.
+	return strstr(name, "OP_ST") != NULL
+	    || strstr(name, "OP_SWP") != NULL
+	    || strstr(name, "OP_MCR") != NULL
+	    || strstr(name, "OP_CDP") != NULL
+	    || strstr(name, "OP_LDC") != NULL
+	    || strstr(name, "OP_UND") != NULL;
+}
+
+// Drives one engine until PC reaches the end of the planted sequence. The step
+// count is not the stopping condition on purpose: a compiled block ends at
+// every branch whether it is taken or not, so "one block" is not "n
+// instructions". Comparing at a common PC keeps the two runs comparable through
+// a branch; a run that never gets there (or overshoots) is reported through
+// *stuck and the sequence is dropped by the caller.
+//
+// `isJit` selects the engine; the interpreter executes one instruction per call,
+// the JIT one block per call.
+static u32 runToEnd(u32 codeAdr, int n, bool isJit, bool *stuck)
+{
+	const u32 endAdr = codeAdr + 4u * (u32)n;
+	u32 total = 0;
+	*stuck = false;
+
+	for (int guard = 0; guard < 4 * n + 8; guard++)
+	{
+		if (NDS_ARM9.instruct_adr == endAdr)
+			return total;
+		const u32 before = NDS_ARM9.instruct_adr;
+		total += isJit ? execJit() : execInterp();
+		if (NDS_ARM9.instruct_adr == before)
+		{
+			// Not advancing: PC went somewhere this sequence does not cover
+			// (an exception vector, a branch out of the planted block).
+			*stuck = true;
+			return total;
+		}
+	}
+
+	*stuck = true;
+	return total;
+}
+
+// Runs one sequence through both engines. Returns false only for a real
+// mismatch; *skipped is set when the sequence turned out not to be comparable.
+static bool compareSequence(u32 codeAdr, const u32 *ops, const u32 *seq, int n, u32 cpsr,
+	char *why, size_t whyLen, u32 *jitCycles, bool *skipped)
+{
+	*skipped = false;
+	*jitCycles = 0;
+	bool stuck = false;
+
+	// Warm-up: the interpreter's first execution of an *address* pays a one-off
+	// cost (measured 52 cycles) that has nothing to do with instruction
+	// semantics. It is per address, not per run, so every instruction of the
+	// sequence has to be executed once before the measured run.
+	primeState(codeAdr, ops, seq[0], cpsr);
+	for (int k = 0; k < n; k++)
+		execInterp();
+	if (faulted(why, whyLen, "interpreter (warm-up)"))
+	{
+		*skipped = true;
+		return true;
+	}
+
+	// Same for the JIT, and for a different reason: the first call into an
+	// uncompiled address compiles the block and advances the state through
+	// op_decode[] instead of running emitted code. Walking the sequence once
+	// leaves every block on the path compiled, so the measured run is emitted
+	// code from the first instruction on.
+	primeState(codeAdr, ops, seq[0], cpsr);
+	for (int k = 0; k < n; k++)
+	{
+		u32 before = NDS_ARM9.instruct_adr;
+		execJit();
+		if (NDS_ARM9.instruct_adr == before)
+			break;
+	}
+	if (faulted(why, whyLen, "jit (warm-up)"))
+	{
+		*skipped = true;
+		return true;
+	}
+
+	primeState(codeAdr, ops, seq[0], cpsr);
+	u32 total = runToEnd(codeAdr, n, false, &stuck);
+	if (faulted(why, whyLen, "interpreter"))
+		return false;
+	if (stuck)
+	{
+		*skipped = true;
+		return true;
+	}
+	CpuSnapshot interp;
+	takeSnapshot(&interp, total);
+
+	// The blocks on the path are compiled by the warm-up above; this run is
+	// emitted code from the first instruction on.
+	primeState(codeAdr, ops, seq[0], cpsr);
+	u32 cj = runToEnd(codeAdr, n, true, &stuck);
+	if (faulted(why, whyLen, "jit"))
+		return false;
+	if (stuck)
+	{
+		*skipped = true;
+		return true;
+	}
+	CpuSnapshot jit;
+	takeSnapshot(&jit, cj);
+	*jitCycles = cj;
+
+	if (gTrace)
+	{
+		printf("      interp pc=%08X cpsr=%08X R0=%08X cyc=%u | jit pc=%08X cpsr=%08X R0=%08X cyc=%u\n",
+			interp.instruct_adr, interp.cpsr, interp.r[0], interp.cycles,
+			jit.instruct_adr, jit.cpsr, jit.r[0], jit.cycles);
+		fflush(stdout);
+	}
+
+	if (!sameSnapshot(&interp, &jit, codeAdr + 4u * (u32)(n - 1), 4, false, why, whyLen))
+		return false;
+
+	// Pipeline consistency, asserted on the interpreter alone.
+	//
+	// The fall-through gate in sameSnapshot() cannot be used here: the run is
+	// driven until PC reaches the end of the planted sequence, and for n == 2 a
+	// cond=0xF `B` at the first slot jumps there in one step (op_b() switches to
+	// Thumb for cond 0xF -- arm_instructions.cpp:3131, arm_jit.cpp:2505 -- so the
+	// pipeline re-primes at the target in Thumb state). Taking size = 4 because
+	// the sequence was planted in ARM state then reports
+	// "R15=..A06C next=..A06A", which is perfectly consistent for size = 2.
+	//
+	// What actually holds, and is worth asserting, is the post-prefetch relation
+	// with the size implied by the state the run ended in.
+	const u32 endSize = (interp.cpsr & 0x20u) ? 2u : 4u;
+	return interpInvariantHolds(&interp, endSize, why, whyLen);
+}
+
+static int runSequenceSweep(int n, bool full, int onlySlot, bool verbose, bool listAll, u32 dumpAdr)
+{
+	const int armSlots = 4096;
+	const int vectors = full ? 8 : 2;
+	const int flagVariants = 2;
+	const int showCap = listAll ? 0x7FFFFFFF : 40;
+	int failures = 0;
+	int checked = 0;
+	int skipped = 0;
+	int cycleDiffs = 0;
+	int shown = 0;
+	FailureBuckets buckets = {0, 0, 0, 0, 0, 0, 0, 0};
+	u32 codeAdr = kCodeBase;
+	u32 *seq = (u32 *)calloc((size_t)n, sizeof(u32));
+
+	if (!seq)
+	{
+		printf("out of memory for a %d-instruction sequence\n", n);
+		return -1;
+	}
+
+	// The block size is a compile-time property of the backend, so it has to be
+	// set before any block is built.
+	CommonSettings.jit_max_block_size = n;
+	arm_jit_reset(true, true);
+
+	for (int slot = 0; slot < armSlots; slot++)
+	{
+		if (onlySlot >= 0 && slot != onlySlot)
+			continue;
+
+		bool usable = true;
+		for (int k = 0; k < n && usable; k++)
+		{
+			const u32 s = (u32)((slot + k) & (armSlots - 1));
+			if (slotHasMemorySideEffect(s))
+				usable = false;
+			seq[k] = s << 20;
+		}
+		if (!usable)
+		{
+			skipped++;
+			continue;
+		}
+
+		for (int v = 0; v < vectors; v++)
+		{
+			const u32 ops[8] = {
+				kOperands[v & 7], kOperands[(v + 1) & 7], kOperands[(v + 2) & 7], kOperands[(v + 3) & 7],
+				kOperands[(v + 4) & 7], kOperands[(v + 5) & 7], kOperands[(v + 6) & 7], kOperands[(v + 7) & 7],
+			};
+
+			for (int k = 0; k < n; k++)
+				_MMU_write32<0>(codeAdr + 4u * (u32)k, seq[k]);
+
+			for (int f = 0; f < flagVariants; f++)
+			{
+				char why[128] = {0};
+				bool wasSkipped = false;
+				u32 jitCycles = 0;
+				checked++;
+
+				if (verbose)
+				{
+					printf("  try seq slot=%03X v=%d f=%d adr=%08X", slot, v, f, codeAdr);
+					for (int k = 0; k < n; k++)
+						printf(" %s", mnemonic(false, seq[k]));
+					printf("\n");
+					fflush(stdout);
+				}
+
+				if (!compareSequence(codeAdr, ops, seq, n, kFlagVariants[f], why, sizeof(why), &jitCycles, &wasSkipped))
+				{
+					// Cycle counts are implementation defined -- the ARM ARM says
+					// nothing about how many cycles an instruction takes -- so a
+					// difference here is a recorded observation, not a defect. The
+					// single-instruction sweep keeps them in its failure count
+					// because that is how the baseline was recorded; here they
+					// would drown the signal (the block and the step loop do not
+					// charge the same for a conditional instruction).
+					if (strncmp(why, "cycles:", 7) == 0)
+					{
+						cycleDiffs++;
+						if (verbose)
+						{
+							printf("  note cycles slot=%03X v=%d flags=%d %s\n", slot, v, f, why);
+							fflush(stdout);
+						}
+					}
+					else
+					{
+						failures++;
+						buckets.add(why, jitCycles);
+						if (shown < showCap)
+						{
+							printf("FAIL  seq slot=%03X v=%d flags=%d adr=%08X %s\n",
+								slot, v, f, codeAdr, why);
+							for (int k = 0; k < n; k++)
+								printf("      [%d] %08X %s\n", k, seq[k], mnemonic(false, seq[k]));
+							printf("      R0-R7 = %08X %08X %08X %08X %08X %08X %08X %08X\n",
+								ops[0], ops[1], ops[2], ops[3], ops[4], ops[5], ops[6], ops[7]);
+							fflush(stdout);
+							shown++;
+						}
+					}
+				}
+				else if (wasSkipped)
+				{
+					skipped++;
+				}
+
+				// Single-sequence debugging aid: dump the machine code of the
+				// block that was just compared, so a mismatch can be read off the
+				// host instructions instead of guessed at.
+				if (dumpAdr != 0 && v == 0 && f == 0)
+					dumpCompiledBlock(codeAdr);
+			}
+
+			codeAdr += 4u * (u32)n;
+			if (codeAdr > kCodeBase + 0x00040000u)
+				codeAdr = kCodeBase;
+		}
+
+		if ((slot & 0xFF) == 0xFF)
+			arm_jit_reset(true, true);
+	}
+
+	free(seq);
+
+	printf("\nsequence sweep (%d instructions): %d comparison(s), %d mismatch(es), %d skipped\n",
+		n, checked, failures, skipped);
+	printf("  cycle count (recorded, not arbitrated) : %d\n", cycleDiffs);
+	if (failures)
+		buckets.print();
+	if (failures > shown)
+		printf("(%d more not shown)\n", failures - shown);
+	return failures;
+}
+
 // Base address the map file's RVAs are relative to. Only used to turn a fault
 // address into something a debugger can name, so a NULL here costs information,
 // not correctness.
@@ -826,6 +1148,7 @@ int main(int argc, char **argv)
 	bool listAll = false;
 	int onlySlot = -1;
 	int measureBlock = 0;
+	int sequenceLen = 0;
 	bool measureThumb = false;
 	u32 dumpBlockAdr = 0;
 	for (int i = 1; i < argc; i++)
@@ -836,6 +1159,7 @@ int main(int argc, char **argv)
 		else if (strcmp(argv[i], "--all") == 0) listAll = true;
 		else if (strcmp(argv[i], "--slot") == 0 && i + 1 < argc) onlySlot = atoi(argv[++i]);
 		else if (strcmp(argv[i], "--block") == 0 && i + 1 < argc) measureBlock = atoi(argv[++i]);
+		else if (strcmp(argv[i], "--seq") == 0 && i + 1 < argc) { sequenceLen = atoi(argv[++i]); sweep = true; }
 		else if (strcmp(argv[i], "--thumb") == 0) measureThumb = true;
 		else if (strcmp(argv[i], "--dump") == 0 && i + 1 < argc)
 			dumpBlockAdr = (u32)strtoul(argv[++i], NULL, 16);
@@ -893,6 +1217,22 @@ int main(int argc, char **argv)
 
 	if (measureBlock > 0)
 		return measureBlockSize(measureBlock, onlySlot, measureThumb, dumpBlockAdr);
+
+	if (sequenceLen > 0)
+	{
+		if (sequenceLen < 2 || sequenceLen > 32)
+		{
+			printf("--seq must be 2..32\n");
+			return 2;
+		}
+		int seqFailures = runSequenceSweep(sequenceLen, full, onlySlot, verbose, listAll, dumpBlockAdr);
+		if (seqFailures < 0)
+			return 2;
+		if (gJitUnstable)
+			printf("jit not repeatable: %d comparison(s)\n", gJitUnstable);
+		arm_jit_close();
+		return seqFailures == 0 ? 0 : 1;
+	}
 
 	int failures = sweep ? runSweep(full, onlySlot, verbose, listAll) : runProbes();
 
