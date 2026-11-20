@@ -1748,7 +1748,11 @@ static inline asmjit::CondCode arm_cc(u8 c) {
       `genimm2`（直接 `mov imm → X10; and`，对任意 32 位立即数成立，无非法分支）；
       保留 `genimm2` 回退的是 `emit_andsimm`。非法立即数（`0x000FF085` 等）已在差分台
       81920 次比较中覆盖，无需独立用例。
-- [ ] arm64 的 571 个 handler 不再使用 `tmp`/`tmp2` 这类固定临时寄存器（或已确认为"必须固定"并注释原因）
+- [x] arm64 的 571 个 handler 不再使用 `tmp`/`tmp2` 这类固定临时寄存器（或已确认为"必须固定"并注释原因）
+      —— **已确认为必须固定**（2026-11-20）。`tmp`/`tmp2` 是宿主 w2/w3（R0..R11 手写暂存量），不是模拟寄存器。
+      本轮两个探针实测否决了 asmjit RA：手写 `save()/restore()` 帧与 PEI 冲突会产生不配对的 `ldp`，
+      且 RA 不在 `callR3()` 的裸 `blr` 处切活跃区间。两项依据详见 `arm_jit_arm.cpp`
+      "Why this does *not* use asmjit virtual registers"，`arm64_emit.cpp` 的 R0..R11 定义处已加指引注释。
 - [ ] `python tools/jit_matrix/gen_opcode_matrix.py` 退出码为 0（含 §3.8 的六项断言）
 
 **语义（本次迁移的主产出）**
