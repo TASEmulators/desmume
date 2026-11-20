@@ -22,7 +22,8 @@
 | rev8 | P0 第二刀：① `call_mem` 扩展到 SWP/LDM-STM/Thumb LDR-STR/SPREL/PCREL，新增 `call_mem_r7` / `call_mem_r2` 变体，24 处调用点中 15 处转轻量（§10.7）；② 记录 x64 fastmem 评估结论——三项硬障碍下主动放弃，两后端以安全方法对齐（§10.6）；③ 编码层 golden 增至 241 case |
 | rev9 | 主线验证网加固：① 差分台 `kProbes` 新增 20 个访存定向探针，覆盖写回 / Rd≠Rn / 字节·半字·符号扩展 / 寄存器偏移 / Thumb SP 相对 / PUSH-POP（此前 `--full` 的 `slot<<20` 只测 `LDR r0,[r0]` 退化形式，零覆盖这些变体）；② 38/38 探针全绿、`--full` 功能桶全 0；③ 新增独立待办追踪文档 `jit-open-tasks.md`（§10.8） |
 | rev10 | S7.2 收尾：删除旧 `src/utils/AsmJit`（69 文件）并清理 **9 个**构建文件的遗留引用（原计划写 5 个，实测为 9 个）；`build_check.bat` 同步改为编 vendored asmjit + C++20；矩阵行号随代码同步。验证：`arm_jit.cpp` MSVC C++20 编译 exit=0、接线自检全绿、harness 38/38；POSIX 构建待 Linux/macOS 验证 |
-| **rev11（本文）** | 修复核心库验证盲点：`build_core.ps1` 此前把 vendored asmjit 的 52 个源按 c++14 编译全部失败，导致 `desmume_core.lib` 停在 11/19、不含 11/20 的 x86 修复——过去所有 x86 差分其实在验旧代码。给 asmjit 源加 C++20 特判后重建（194/194，0 失败），重链 `jit_diff.exe` 整体重跑：`--full` 功能桶全 0、`--seq 2/3/4` 19776 比较全 0 mismatch（§10.9） |
+| **rev11** | 修复核心库验证盲点：`build_core.ps1` 此前把 vendored asmjit 的 52 个源按 c++14 编译全部失败，导致 `desmume_core.lib` 停在 11/19、不含 11/20 的 x86 修复——过去所有 x86 差分其实在验旧代码。给 asmjit 源加 C++20 特判后重建（194/194，0 失败），重链 `jit_diff.exe` 整体重跑：`--full` 功能桶全 0、`--seq 2/3/4` 19776 比较全 0 mismatch（§10.9） |
+| **rev12** | 主线推进 + **handler 级真机验证首次落地**：① 族 5（乘法 28 handler + CLZ）迁到 `ArmRegCache`，为此新增 `read_into()` 入口与 `rc_read`/`rc_store`（§S4 族 5）；② 新增 `tools/jit_matrix/a64_block_probe.cpp`——在 AArch64 真机上直接执行 `compile_basicblock()` 生成的块（68 个桩符号补齐核心），**终结了"arm64 handler 语义只能等 macOS"的不对称**；③ 真机抓到并修复一个既有 bug：`emit_dma_event_check` 在分支内 `flush()` 会清掉编译期 dirty 位，导致延迟回写在落空路径上丢失 |
 
 ---
 
@@ -1489,7 +1490,66 @@ TST/TEQ/CMP/CMN/MOV/MOV_S 这类单源/比较指令则直接把原有的 `if(rhs
 都重建并跑 `--full`，功能桶（R0–R14 / CPSR / `instruct_adr` / invariant / engine fault）全 0；
 最终 `--full --seq 2/3/4` 全绿（0 mismatch）。周期差异仍是记录项，不进仲裁。
 
+#### 族 5：乘法（28 个 ARM handler + CLZ，已完成语义迁移）
+
+**纪律说明**：族 2 收尾时约定了"族 1/2 的整机帧率门槛未验证就不要再闷头推"，本次继续是因为用户明确要求推进主线；**帧率门槛仍未验证**，这一点不因语义迁移完成而改变。
+
+**为什么不能照抄族 1/2 的写法**：乘法族的操作数必须落在**固定 scratch 寄存器**里——`MUL_Mxx_END` 算周期时会原地改写它的入参（`asr`/`xor` 求有效位宽），所以被乘数不能是一段缓存槽的生命周期。而如果退回 `reg_pos_ptr`，族 1/2 攒下来的"值在槽里"就会被换成一次 store+load。
+
+为此给 `ArmRegCache` 加第五个入口：
+
+```cpp
+void read_into(int n, int host)   // 槽里有最新值 → mov；否则 ldr
+```
+
+它**不占槽位**（不标 `touched`、不改 `dirty`），也不像 `read()` 那样把待回写值刷出去。于是三个宏改成源 `rc_read(...)`、目的 `rc_store(...)`：
+
+| 形状 | 同时驻留的 emulated 寄存器 | 槽位占用 |
+|---|---|---|
+| `MUL` / `SMULxy` / `SMULWy` | Rm, Rs, Rd | **3**（正好用满） |
+| `MLA` / `SMLAxy` / `SMLAWy` | Rm, Rs, Rn(累加), Rd | 源不占槽，只有 Rd 1 槽 |
+| `UMULL` / `SMULL` / `SMLAL`（含 S 变体） | 源不占槽，RdLo+RdHi 2 槽 | 2 |
+
+`rc_store` 的意义是目的寄存器不再立刻落内存：下一条 ALU/移位指令直接从槽里读，下一条**未迁移**的 handler 走 `reg_pos_ptr` 时会先 evict（一次 store），与改动前的成本相同。`OP_MUL_` / `OP_MULxy_` 里那两组 `if(flags)/else` 分支体原本完全一样，一并合并成 `if(width)`。
+
+**真机验证：`tools/jit_matrix/a64_block_probe.cpp`（本轮新增）**
+
+此前的死结是"arm64 handler 语义只能等 macOS 整核"。这个探针换了条路：直接 `#include arm_jit_arm.cpp`，再用 `nm -u` 报出来的 **68 个符号**把核心补齐（4MB 主存 + 主存镜像的假 MMU、空解释器表、`armcpu_switchMode` 之类的空实现），于是 `compile_basicblock()` 真的会跑，生成的块也真的在 AArch64 上执行。
+
+- 解释器表指向"什么都不做、返回 1 cycle"的桩：`compile_basicblock()` 会一边发射一边用解释器走一遍（周期就是这么累计的），真表会把指令先执行掉一次。用桩之后只有流水线寄存器在动，探针在调块之前把状态复原，块从用例的初值开始跑。
+- 覆盖 35 个单指令块（MUL/MLA/UMULL/SMULL/SMLAL/UMULLS/SMLALS/SMULxy/SMLAxy/SMLALxy/SMULW/SMLAW/CLZ × 三组边界操作数，含 `C+V` 预置的 `MULS`）、2 条 store（含 `mmu_dma_event_pending` 置位的提前退出路径）、1 个两指令块。
+- **迁移前后 emulated 状态逐字节相同**（R0–R14 / CPSR / cycles / 内存 / resume 地址），23 项自检全绿。
+
+**顺带抓到一个既有 bug：`emit_dma_event_check` 会丢延迟回写**
+
+`emit_dma_event_check()` 的 armed 分支是一次块中途返回，原来在里面调 `g_regs.flush()`。`flush()` 除了发 store，还会清掉**编译期**的 `dirty` 位——而这段代码长在一个分支的一侧：
+
+```
+ldr flag; tst; b.eq skip
+   <armed: 写回 + 提前返回>
+skip:
+```
+
+于是落空路径上那些"待回写"的值就再也没人写了：块尾的 `flush()` 认为没有脏数据，一条 store 都不发。复现是两指令块 `mul r0,r1,r2` + `str r3,[r4]`（store 刻意不碰 R0，否则 store handler 自己的 evict 会掩盖问题）：
+
+| 版本 | R0 | 内存 |
+|---|---|---|
+| 迁移 + 旧 `flush()` | **00000000**（丢） | CAFEF00D |
+| 迁移 + `write_back()` | FFFFFFFE ✅ | CAFEF00D |
+| 迁移前（立即 store） | FFFFFFFE | CAFEF00D |
+
+修法是只发写回、不清 dirty：
+
+```cpp
+for (int i = 0; i < ARM_RC_SLOTS; i++)
+    g_regs.write_back(i);
+```
+
+两条路径都成立：armed 路径拿到完整 `armcpu_t` 再返回，落空路径仍由块尾的 `flush()` 负责。这个 bug 不是本次引入的——族 1/2 之后就一直存在，只是此前没有任何"延迟回写 + store 指令"同块出现的用例（store handler 读数据寄存器时正好会 evict 同一个寄存器，把问题遮住了）。
+
 ### S5 · 语义收尾（约 3 天）
+
+
 
 先过 §3.6 的逐族契约清单与 §3.7 的块级边界，再过下面 7 项 x86 风险（R1–R7）
 与 §6.3 的 arm64 风险。
