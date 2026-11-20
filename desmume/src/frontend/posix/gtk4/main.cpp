@@ -532,7 +532,7 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 
 int main(int argc, char *argv[])
 {
-	g_set_prgname("desmume-gtk4");
+	g_set_prgname("desmume");
 	g_set_application_name("DeSmuME");
 
 	pConfig = new desmume::config::Config();

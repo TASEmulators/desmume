@@ -41,7 +41,7 @@ includes = include_directories(
   '../../../../src/frontend',
 )
 
-executable('desmume-gtk4',
+executable('desmume',
   desmume_src,
   dependencies: gtk_dependencies,
   include_directories: includes,

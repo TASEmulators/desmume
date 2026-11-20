@@ -46,7 +46,7 @@ jobs:
         run: ninja -C desmume/src/frontend/posix/build-gtk4
 
       - name: check that auto picked gtk4
-        run: test -x desmume/src/frontend/posix/build-gtk4/desmume-gtk4
+        run: test -x desmume/src/frontend/posix/build-gtk4/gtk4/desmume
 
   build_gtk2:
     name: Build DeSmuME (Linux/GTK+2)

@@ -153,8 +153,9 @@ src/frontend/posix/
 - `meson_options.txt`：`frontend-gtk` 由布尔改成单选 combo `auto|gtk4|gtk3|gtk2|none`，默认 `auto`。
   `auto` 按 **gtk4（≥4.10）→ gtk3（≥3.24）→ gtk2（≥2.24）** 顺序探测 pkg-config，取第一个命中的；
   显式写 `-Dfrontend-gtk=gtk3` 之类就锁定版本，缺依赖直接报错而不是静默降级。
-  一次配置只构建一个 GTK 前端（`gtk4` 与 `gtk` target 名不同，需要并存就开两个 build 目录）。
-- target 名：`desmume-gtk4`（不能叫 `desmume`，否则与 GTK3 一起安装时冲突）
+  一次配置只构建一个 GTK 前端（两个 target 都叫 `desmume`，需要并存就开两个 build 目录）。
+- target 名：`desmume`，与 GTK3 同名。一次配置只构建一个 GTK 前端（见 D1 的选项说明），
+  所以同一 build 目录里不会出现两个 `desmume`；跨 build 目录当然可以并存，但不能把两套一起 `meson install` 到同一 prefix。
 - app-id：`org.desmume.DeSmuME.GTK4`，桌面文件 `org.desmume.DeSmuME.GTK4.desktop`，`StartupWMClass` 同名
 - 图标仍复用 `org.desmume.DeSmuME`；gresource 前缀不变
 - `meson.build` 里**移除** `-DGTK_DISABLE_DEPRECATED`（GTK4 下 `GtkTreeView`/`GtkFileChooserNative` 都会直接编译失败），改为默认显示弃用警告
@@ -259,7 +260,7 @@ if dep_gtk4_x11.found()
   gtk4_args += ['-DHAVE_GTK4_X11']
 endif
 
-executable('desmume-gtk4',
+executable('desmume',
   desmume_src,
   dependencies: gtk_dependencies,
   include_directories: includes,
@@ -309,11 +310,11 @@ endif
 安装项（仅 GTK4 版）：
 
 ```
-desmume-gtk4
-org.desmume.DeSmuME.GTK4.desktop   (Exec=desmume-gtk4, StartupWMClass=org.desmume.DeSmuME.GTK4)
+desmume
+org.desmume.DeSmuME.GTK4.desktop   (Exec=desmume, StartupWMClass=org.desmume.DeSmuME.GTK4)
 org.desmume.DeSmuME.metainfo.xml   (若 app-id 变化，需要 id 一致的副本)
 org.desmume.DeSmuME.svg
-doc/desmume.1                      (或 desmume-gtk4.1)
+doc/desmume.1                      (与 GTK3 同名，P8 决定是否合并)
 ```
 
 ### 4.2 窗口外壳与 SSD
@@ -628,10 +629,10 @@ CSD（GNOME）：
 ### 6.3 测量方法
 
 - 在 `DesmumeDisplay::snapshot()` 与纹理创建处加 `g_get_monotonic_time()` 计时，`DESMUME_GTK4_TIMING=1` 时每 120 帧打印一次均值/p95
-- `perf record -g ./desmume-gtk4`，看 `cairo_*`、`gsk_*`、`gdk_texture_*` 占比
-- `hyperfine --warmup 3 './desmume-gtk4 rom.nds'`（配合自动退出参数）
+- `perf record -g ./desmume`，看 `cairo_*`、`gsk_*`、`gdk_texture_*` 占比
+- `hyperfine --warmup 3 './desmume rom.nds'`（配合自动退出参数）
 - resize：`xdotool`/`kdotool` 脚本循环改窗口大小，记录帧间隔
-- 内存：`smem -P desmume-gtk4`、`valgrind --tool=massif`（短会话）
+- 内存：`smem -P desmume`、`valgrind --tool=massif`（短会话）
 
 ### 6.4 wgpu 路径（分阶段，风险最高）
 
@@ -663,7 +664,7 @@ GTK4 里 `GtkDrawingArea` 不再有独立 `GdkWindow`，`WGPU_PresentFrame()` �
 
 | 阶段 | 内容 | 交付 | 验收 | 估时 |
 |---|---|---|---|---|
-| **P0** | 目录、meson（gtk4→gtk3→gtk2 自动发现）、CI、空窗口 | `-Dfrontend-gtk=gtk4` 与 `auto` 都能构建；`desmume-gtk4` 启动显示空窗口；GTK3 不受影响 | 两种选法分别构建成功（一次配置只出一个 GTK 前端） | 2–3 天 |
+| **P0** | 目录、meson（gtk4→gtk3→gtk2 自动发现）、CI、空窗口 | `-Dfrontend-gtk=gtk4` 与 `auto` 都能构建；`desmume` 启动显示空窗口；GTK3 不受影响 | 两种选法分别构建成功（一次配置只出一个 GTK 前端） | 2–3 天 |
 | **P1** | 窗口外壳 + 装饰策略 | SSD/CSD 自适应；菜单栏、工具条、状态行；关于/快捷键；CSS | KDE Wayland 是 KWin 装饰；GNOME 是 header bar；X11 正常 | 1 周 |
 | **P2** | 视频区 + 输入 | `DesmumeDisplay`；纹理呈现；旋转/缩放/间隙/混合布局；手势；全屏 | 与 GTK3 Cairo 路径逐布局像素/坐标对齐 | 2 周 |
 | **P3** | 动作、对话框、文件选择 | `main.cpp` 25 处异步化；`GtkFileDialog`；最近文件；录制/截图/存档 | 所有菜单动作可用；无嵌套主循环 | 2–3 周 |
@@ -821,7 +822,7 @@ build_gtk4:
         cd desmume/src/frontend/posix/
         meson setup build-gtk4
     - run: ninja -C desmume/src/frontend/posix/build-gtk4
-    - run: test -x desmume/src/frontend/posix/build-gtk4/desmume-gtk4   # 证明 auto 选了 gtk4
+    - run: test -x desmume/src/frontend/posix/build-gtk4/gtk4/desmume   # 证明 auto 选了 gtk4
 ```
 
 原来的 GTK3 job 显式写 `-Dfrontend-gtk=gtk3`，否则 runner 上装了 libgtk-4-dev 时会不知不觉改成构建 gtk4。
@@ -926,7 +927,7 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 | 1 | UI 路线 | **原生 GTK4**（不引入 libadwaita） |
 | 2 | GTK 底线 | **4.10**（Debian 12 / Ubuntu 22.04 继续用 GTK3 前端） |
 | 3 | 呈现优先级 | **首版只做 `GdkTexture` + `snapshot()`**；GPU 滤镜在 **P7 必做补齐** |
-| 4 | target / app-id | `desmume-gtk4` + `org.desmume.DeSmuME.GTK4`（本文档按此实施） |
+| 4 | target / app-id | `desmume` + `org.desmume.DeSmuME.GTK4`（本文档按此实施） |
 | 5 | 工具条 | 保留独立工具条，可隐藏；SSD 下不重复标题 |
 
 ### 仍待确认
@@ -960,7 +961,7 @@ P0 检查表：
 - [x] 菜单（GMenu）、工具条、状态行、黑色显示区、SSD/CSD 选择逻辑
 - [x] CI 增加 GTK4 job（`build_gtk4`，与 GTK3 job 并行）
 - [x] GTK4 源码在 GTK 4.24.1 下编译通过（`config.cpp`、`main.cpp` 两个对象）
-- [x] `desmume-gtk4` 完整链接通过（POSIX meson 已接上 vendored asmjit，见下）
+- [x] `desmume` 完整链接通过（POSIX meson 已接上 vendored asmjit，见下）
 
 ### P0 构建验证（2026-11-20/21，Arch/WSL，GTK 4.24.1 / meson 1.12.1）
 
@@ -969,8 +970,8 @@ P0 检查表：
 | `meson setup -Dfrontend-gtk=auto`（三套 GTK 都装了） | `Message: GTK frontend: gtk4` ✅ 优先 gtk4 |
 | `-Dfrontend-gtk=gtk4` / `gtk3` / `gtk2` | 分别输出 `gtk4` / `gtk3` / `gtk2` ✅ |
 | `-Dfrontend-gtk=none` | `GTK frontend: none`，不进入任何 GTK 子目录 ✅ |
-| `ninja gtk4/desmume-gtk4.p/{main,config}.cpp.o` | 编译通过，无警告 ✅ |
-| `ninja gtk4/desmume-gtk4`（完整链接，含 `libdesmume`） | ✅ 221/221，链接成功 |
+| `ninja gtk4/desmume.p/{main,config}.cpp.o` | 编译通过，无警告 ✅ |
+| `ninja gtk4/desmume`（完整链接，含 `libdesmume`） | ✅ 221/221，链接成功 |
 | `-Dfrontend-gtk=gtk3`：`ninja gtk/desmume cli/desmume-cli` | ✅ 248/248，GTK3 与 CLI 无回归 |
 
 第一次完整链接的失败（`arm_jit.cpp:35: asmjit/x86.h: 没有那个文件或目录`）不是文件缺失：
@@ -1009,10 +1010,10 @@ GTK3 前端同样起不来。已在 `posix/meson.build` 修好，见 §14“已�
 | `posix/gtk4/main.cpp` | 窗口外壳：AppWindow + PopoverMenuBar + 工具条 + 显示区 + 状态行；装饰策略解析；`GtkAlertDialog` 异步示例 |
 | `posix/gtk4/config.{h,cpp}` | 从 `gtk/` 原样复制，纯逻辑、无 GTK 依赖 |
 | `posix/gtk4/config_opts.h` | 复制 + 新增 `Window/Decorations`（0=auto, 1=SSD, 2=CSD） |
-| `posix/gtk4/meson.build` | `gtk4 >= 4.10`；可选 `gtk4-x11` / `gtk4-wayland` 后端依赖；target `desmume-gtk4` |
+| `posix/gtk4/meson.build` | `gtk4 >= 4.10`；可选 `gtk4-x11` / `gtk4-wayland` 后端依赖；target `desmume` |
 | `posix/meson_options.txt` | `frontend-gtk` 改为 combo：`auto|gtk4|gtk3|gtk2|none`，默认 `auto` |
 | `posix/meson.build` | gtk4 → gtk3 → gtk2 自动发现，按结果 `subdir()`；强制版本缺依赖时 `error()`；另接上 vendored asmjit（见下） |
-| `.github/workflows/build.yml` | 新增 `build_gtk4` job（走 `auto` 并断言产出 `desmume-gtk4`），GTK3 job 显式 `gtk3` |
+| `.github/workflows/build.yml` | 新增 `build_gtk4` job（走 `auto` 并断言产出 `desmume`），GTK3 job 显式 `gtk3` |
 
 POSIX 侧的 JIT 接线（与 MSVC/Xcode 保持一致）：
 
@@ -1034,7 +1035,7 @@ P0 刻意不做的事：不装 desktop/metainfo/man（app-id 与安装布局在 
 | `posix/gtk4/meson.build` | `gnome.compile_resources()` 生成源并入 target |
 | `posix/gtk4/main.cpp` | 菜单改为从资源加载；新增 `view-menu`/`view-toolbar`/`view-statusbar`/`shortcuts` action；工具条按钮加 a11y label；状态行只在文本变化时更新，并挂 `desmume-status` CSS 类 |
 
-验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume-gtk4` 224/224 链接通过；
+验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume` 224/224 链接通过；
 `gtk4-builder-tool validate` 对 `menu.ui`/`shortcuts.ui` 均无报错；二进制内三个资源路径均已嵌入。
 CSD/SSD 的实际观感仍需在 KWin/GNOME/X11 上人工验收（§10）。
 
