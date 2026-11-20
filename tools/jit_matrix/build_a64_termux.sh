@@ -25,13 +25,26 @@ echo "asmjit objects: $(ls obj/*.o | wc -l)"
 $CXX $FLAGS -c tools/jit_matrix/a64_dump_new.cpp -o obj/a64_dump_new.o
 $CXX $FLAGS -c tools/jit_matrix/a64_shape_probe.cpp -o obj/a64_shape_probe.o
 $CXX $FLAGS -c tools/jit_matrix/a64_exec_probe.cpp -o obj/a64_exec_probe.o
-LIBS=$(ls obj/*.o | grep -v -e 'a64_dump_new.o' -e 'a64_shape_probe.o' -e 'a64_exec_probe.o')
+$CXX $FLAGS -c tools/jit_matrix/a64_memcall_probe.cpp -o obj/a64_memcall_probe.o
+PROBES='a64_dump_new.o|a64_shape_probe.o|a64_exec_probe.o|a64_memcall_probe.o|a64_block_probe.o'
+LIBS=$(ls obj/*.o | grep -v -E "$PROBES")
 $CXX $LIBS obj/a64_dump_new.o -o a64_dump_new
 $CXX $LIBS obj/a64_shape_probe.o -o a64_shape_probe
 $CXX $LIBS obj/a64_exec_probe.o -o a64_exec_probe
+$CXX $LIBS obj/a64_memcall_probe.o -o a64_memcall_probe
+
+# a64_block_probe includes arm_jit_arm.cpp itself, so it needs the emulator
+# headers (sync desmume/src/*.h too) and must be compiled and linked in one go:
+# the stub core it defines has to live in the same translation unit.
+$CXX $FLAGS -I desmume/src -I desmume/src/utils -I desmume/src/libretro-common/include \
+	tools/jit_matrix/a64_block_probe.cpp $LIBS -o a64_block_probe
 
 ./a64_dump_new > a64_new_arm64.txt
 echo "dump lines: $(wc -l < a64_new_arm64.txt)"
 ./a64_shape_probe | tail -2
 echo
 ./a64_exec_probe
+echo
+./a64_memcall_probe
+echo
+./a64_block_probe
