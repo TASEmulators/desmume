@@ -816,8 +816,23 @@ Xcode 工程里 asmjit 出现 0 次。两套类的名字还是重叠的（`asmji
   clang 拒绝把它交给 `-std=c++20` 的 TU。
 
 范围是"已经在编 JIT 的 10 个 target"（3 个 arm64 的编 `arm_jit_arm.cpp`，7 个 Intel 的编 `arm_jit.cpp`）。
-**Universal target 故意没接**：它两个 slice 都要编，会重复定义 `arm_jit_init()` 那一组符号，
-要做得先把 `arm_jit_arm.cpp` 的 `#error` 改成 `__aarch64__` 包体——属于独立改动，记在 §6 的风险表里。
+另外两个 target（Universal、OpenEmu Plug-in）原本靠 `UniversalBuildInterface.cpp` 在单个 TU 里
+`#include` 旧 AsmJit 1.0 + 对应架构的后端 TU 来获得 JIT——这正是它们的 Sources 里没有 JIT 文件的原因。
+
+**Universal / OpenEmu 已接入（2026-11-20）**：该 shim 已退场（清空为空 TU，保留 build file 条目），
+两个 target 现在和其余 target 一样直接登记 54 个 asmjit 源 + 两个后端 TU；
+`wire_asmjit_xcode.py` 的 target 筛选增加 `uses_shim`（名称含 `Universal` 或 `OpenEmu Plug-in`）。
+后端 TU 各自用 `__aarch64__` 守卫，让错架构的切片编译成空 TU（x86 侧条件为
+`!defined(__aarch64__) || defined(__x86_64__)`，arm64 侧为 `defined(__aarch64__)`）。
+没有采用 Xcode 的 `EXCLUDED_SOURCE_FILE_NAMES[arch=...]`——实测 `-showBuildSettings -arch arm64`
+会忽略这个条件 key，仍显示无条件值，方案不成立。
+
+验证：Universal target 分别以 `-arch arm64` 和 `-arch x86_64` 构建均 **BUILD SUCCEEDED**，
+两切片二进制都带 JIT 符号（x86 切片 `__GLOBAL__sub_I_arm_jit.cpp`、arm64 切片
+`__GLOBAL__sub_I_arm_jit_arm.cpp`，各自只含自己的后端）；dev+ 全量差分仍全绿。
+OpenEmu target 仍编不过，但失败点是 `filter/xbrz19/xbrz.cpp` 的 C++14 语法（该 target 自身的
+语言标准设置），与 JIT 无关。本机 Xcode 的 `buildArchitectures = Automatic` 只产出活动架构；
+显式传多个 `-arch` 仍只生成 arm64 产物，fat 打包需在 Xcode 里 Archive。
 
 **回退点**：三个提交彼此独立（删 arm32 / vendor / 接线）。
 **风险**：xcodeproj 手改易错，建议先用 Xcode 打开让 IDE 重新生成引用。
