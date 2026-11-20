@@ -19,10 +19,34 @@ jobs:
       - name: meson
         run: |
           cd desmume/src/frontend/posix/
-          meson build
+          meson setup build -Dfrontend-gtk=gtk3
 
       - name: ninja
         run: ninja -C desmume/src/frontend/posix/build
+
+  build_gtk4:
+    name: Build DeSmuME (Linux/GTK4)
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install dependencies
+        run: sudo apt update && sudo apt install meson libgtk-4-dev libsdl3-dev libpcap-dev
+
+      # No -Dfrontend-gtk here on purpose: the default is 'auto', which must
+      # prefer gtk4 over any gtk3 the runner image happens to ship.
+      - name: meson
+        run: |
+          cd desmume/src/frontend/posix/
+          meson setup build-gtk4
+
+      - name: ninja
+        run: ninja -C desmume/src/frontend/posix/build-gtk4
+
+      - name: check that auto picked gtk4
+        run: test -x desmume/src/frontend/posix/build-gtk4/desmume-gtk4
 
   build_gtk2:
     name: Build DeSmuME (Linux/GTK+2)

@@ -19,14 +19,10 @@ option('egl',
   description: 'Use a EGL context',
 )
 option('frontend-gtk',
-  type: 'boolean',
-  value: true,
-  description: 'Enable GTK3 frontend',
-)
-option('frontend-gtk2',
-  type: 'boolean',
-  value: false,
-  description: 'Enable GTK2 frontend',
+  type: 'combo',
+  choices: ['auto', 'gtk4', 'gtk3', 'gtk2', 'none'],
+  value: 'auto',
+  description: 'GTK frontend to build. auto probes pkg-config in the order gtk4 (>=4.10) -> gtk3 (>=3.24) -> gtk2 (>=2.24) and builds the first one found; none disables the GTK frontends.',
 )
 option('frontend-cli',
   type: 'boolean',

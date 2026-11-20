@@ -511,9 +511,48 @@ libdesmume = static_library('desmume',
 if get_option('frontend-cli')
   subdir('cli')
 endif
-if get_option('frontend-gtk')
-  subdir('gtk')
+
+# GTK frontend discovery.
+#
+# A single option drives all three GTK frontends.  'auto' lets the build pick
+# whatever the machine ships, preferring the newest toolkit: gtk4, then gtk3,
+# then gtk2.  Naming a version explicitly pins it and fails loudly instead of
+# silently downgrading.  Only one GTK frontend is built per configuration; the
+# GTK3 and GTK4 targets have distinct names and live in separate build dirs.
+gtk_frontend = get_option('frontend-gtk')
+
+dep_gtk2 = dependency('gtk+-2.0', version: '>=2.24', required: false)
+dep_gtk3 = dependency('gtk+-3.0', version: '>=3.24', required: false)
+dep_gtk4 = dependency('gtk4', version: '>=4.10', required: false)
+
+if gtk_frontend == 'auto'
+  if dep_gtk4.found()
+    gtk_frontend = 'gtk4'
+  elif dep_gtk3.found()
+    gtk_frontend = 'gtk3'
+  elif dep_gtk2.found()
+    gtk_frontend = 'gtk2'
+  else
+    error('No GTK development files found. Install libgtk-4-dev, libgtk-3-dev or libgtk2.0-dev, or pass -Dfrontend-gtk=none to build without a GTK frontend.')
+  endif
 endif
-if get_option('frontend-gtk2')
+
+# A forced choice must be honoured: probe results are cached, so the subdir
+# dependency() call is free, but the failure has to look like a user error.
+if gtk_frontend == 'gtk4' and not dep_gtk4.found()
+  error('frontend-gtk=gtk4 requires GTK 4.10 or newer (pkg-config "gtk4" not found).')
+elif gtk_frontend == 'gtk3' and not dep_gtk3.found()
+  error('frontend-gtk=gtk3 requires GTK 3.24 or newer (pkg-config "gtk+-3.0" not found).')
+elif gtk_frontend == 'gtk2' and not dep_gtk2.found()
+  error('frontend-gtk=gtk2 requires GTK 2.24 or newer (pkg-config "gtk+-2.0" not found).')
+endif
+
+message('GTK frontend: @0@'.format(gtk_frontend))
+
+if gtk_frontend == 'gtk2'
   subdir('gtk2')
+elif gtk_frontend == 'gtk3'
+  subdir('gtk')
+elif gtk_frontend == 'gtk4'
+  subdir('gtk4')
 endif
