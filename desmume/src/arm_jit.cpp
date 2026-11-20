@@ -61,8 +61,8 @@ using namespace asmjit::x86;
 	x86::Gp txt = c.new_gpz(); \
 	x86::Gp data = c.new_gpz(); \
 	x86::Gp io = c.new_gp32(); \
-	c.lea(io, dword_ptr_abs((uint64_t)(uintptr_t)stdout)); \
-	c.lea(txt, dword_ptr_abs((uint64_t)(uintptr_t)&buf)); \
+	c.mov(io, (uintptr_t)stdout); \
+	c.mov(txt, (uintptr_t)&buf); \
 	c.mov(data, *(x86::Gp*)&val); \
 		InvokeNode* prn; \
 	c.invoke(Out(prn), (uintptr_t)fprintf, FuncSignature::build<void, void*, void*, uint32_t>()); \
@@ -424,7 +424,10 @@ static x86::Gp bb_profiler_entry;
 	c.mov(cpu_ptr(CPSR.val), SPSR); \
 	c.and_(SPSR, (1<<5)); \
 	c.shr(SPSR, 5); \
-	c.lea(tmp, ptr_abs((uint64_t)(uintptr_t)0xFFFFFFFC, SPSR.r64(), 1)); \
+	/* R3: x64 truncates absolute addresses to 32 bits. Hold the
+	   constant in a register and use [reg + reg*scale]. */ \
+	c.mov(tmp, (uint32_t)0xFFFFFFFC); \
+	c.lea(tmp, ptr(tmp, SPSR, 1)); \
 	c.and_(tmp, reg_ptr(15)); \
 	c.mov(cpu_ptr(next_instruction), tmp); \
 	JIT_COMMENT("end S_DST_R15"); \
@@ -2438,7 +2441,8 @@ static int op_bx(Mem srcreg, bool blx, bool test_thumb)
 		dst = c.new_gp32();
 		c.mov(dst, thumb);
 		c.and_(thumb, 1);
-		c.lea(mask, ptr_abs((uint64_t)(uintptr_t)0xFFFFFFFC, thumb.r64(), 1));
+		c.mov(mask, (uint32_t)0xFFFFFFFC);
+		c.lea(mask, ptr(mask, thumb, 1));
 		c.shl(thumb, 5);
 		c.or_(cpu_ptr_byte(CPSR, 0), thumb.r8_lo());
 		c.and_(dst, mask);
@@ -3749,7 +3753,8 @@ static int op_bx_thumb(Mem srcreg, bool blx, bool test_thumb)
 	if(test_thumb)
 	{
 		x86::Gp mask = c.new_gp32();
-		c.lea(mask, ptr_abs((uint64_t)(uintptr_t)0xFFFFFFFC, thumb.r64(), 1));
+		c.mov(mask, (uint32_t)0xFFFFFFFC);
+		c.lea(mask, ptr(mask, thumb, 1));
 		c.and_(dst, mask);
 	}
 	else
@@ -4009,7 +4014,9 @@ static void emit_branch(int cond, Label to)
 		c.add(x, offsetof(armcpu_t,cond_table) + cond);
 		c.test(byte_ptr(bb_cpu, x), 1);
 #else
-		c.test(byte_ptr_abs((uint64_t)(arm_cond_table + cond), x, 0), 1);
+		x86::Gp tbl = c.new_gp32();
+		c.mov(tbl, (uintptr_t)(arm_cond_table + cond));
+		c.test(byte_ptr(tbl, x, 0), 1);
 #endif
 		c.jz(to);
 	}
