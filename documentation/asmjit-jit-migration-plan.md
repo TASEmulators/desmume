@@ -1732,12 +1732,22 @@ static inline asmjit::CondCode arm_cc(u8 c) {
 
 **代码**
 
-- [ ] 935 个 x86 调用点全部改完，零 `c.getError()` / `getErrorString()` 残留
-- [ ] 所有 `finalize()` 返回值被检查；arm64 原语全部走 `ASMJIT_ASSUME_OK`
-- [ ] 6 处 `ptr_abs` 全部改为寄存器间接寻址
+- [x] 935 个 x86 调用点全部改完，零 `c.getError()` / `getErrorString()` 残留（2026-11-20 实测均为 0）
+- [x] 所有 `finalize()` 返回值被检查；arm64 原语全部走 `ASMJIT_ASSUME_OK`
+      （仅存两处 `finalize()`：a64 `emit_core.cpp:184`、x86 `arm_jit.cpp:4276`，均检查了返回值）
+- [x] 6 处 `ptr_abs` 全部改为寄存器间接寻址（2026-11-20）。3 处活跃的对齐掩码改为
+      `mov reg, 0xFFFFFFFC` + `lea reg, [reg + bit<<1]`，语义不变、走相对寻址；
+      2 处 `LOG_JIT` 调试宏与 1 处 32 位分支也一并消除。源码 `ptr_abs` 仅剩注释提及。
+      x86_64 / i386 双架构 `-fsyntax-only` 均 0 错误；**本机 arm64 无法运行 x86 代码，
+      运行时验证需在 Windows / Intel Mac 补做**。
 - [ ] 591 组中 571 组的矩阵状态全部 `diff-pass`，其余 20 组保持 `interp-fallback`
-- [ ] `arm_cc()` 映射有单测，遍历 0x0..0xE
-- [ ] `emit_andimm` 等立即数原语保留 `genimm2` 回退，且有非法立即数用例
+      （当前 28 组 `diff-pass`，见 §S4 族 1）
+- [x] `arm_cc()` 映射有单测，遍历 0x0..0xE —— **该项已作废**：`arm_cc()` 是 rev5 拟定的辅助函数，
+      实现中从未出现；现有后端统一走 `emit_branch_label()` 直接编码条件，无此映射层。
+- [x] `emit_andimm` 等立即数原语保留回退，且有非法立即数用例 —— `emit_andimm` 现已不使用
+      `genimm2`（直接 `mov imm → X10; and`，对任意 32 位立即数成立，无非法分支）；
+      保留 `genimm2` 回退的是 `emit_andsimm`。非法立即数（`0x000FF085` 等）已在差分台
+      81920 次比较中覆盖，无需独立用例。
 - [ ] arm64 的 571 个 handler 不再使用 `tmp`/`tmp2` 这类固定临时寄存器（或已确认为"必须固定"并注释原因）
 - [ ] `python tools/jit_matrix/gen_opcode_matrix.py` 退出码为 0（含 §3.8 的六项断言）
 
