@@ -60,6 +60,13 @@ static const char *disassemble(u32 opcode);
 // emit_startfunc already pushes x23/x24.
 #define JIT_DMA_FLAG_REG X24_REG
 
+// Host register holding &ARMPROC for the whole block. Every CPU field access
+// used to rebuild that address with movz/movk; with the base resident it is
+// one `add` (or no instruction at all, when the field is reachable with a
+// scaled offset). Callee-saved and unused elsewhere, and save()/restore()
+// push it, so it survives helper calls and the return to the caller.
+#define JIT_CPU_BASE_REG X25_REG
+
 t_bytes *g_out = NULL;
 
 #ifdef __APPLE__
@@ -157,41 +164,103 @@ static bool bb_dma_flag_ptr_ready;
 static void save();
 static void restore();
 
+// Address of a CPU field, built from the block-resident base pointer.
+//
+// The old code materialised the full 64-bit address with movz/movk on every
+// single access -- two to four instructions to reach a field sitting a few
+// dozen bytes off a pointer the block already knows. The base is loaded once
+// per block (JIT_CPU_BASE_REG), so the address is one `add` and a value load
+// can address the field directly. Every armcpu_t field this back end touches
+// is inside the 12-bit immediate range; the fallback keeps the old
+// materialisation for anything larger instead of encoding a wrong address.
+static int inline cpu_field_addr(int o, int r) {
+	if (o >= 0 && o < 4096) {
+		emit_add_off64(g_out, r, JIT_CPU_BASE_REG, o);
+	} else {
+		emit_ptr(g_out, (uintptr_t)(&ARMPROC) + o, r);
+	}
+	return r;
+}
+
+// VALUE keeps the address in PTR_STORE_REG as well: CACHED_PTR() expands to
+// that register, and a handful of handlers store through it after a load.
 static int inline cpu_get_ptr(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldr(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldr_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldr(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
 static int inline cpu_get_ptrB(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldrb(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldrb_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldrb(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
 
 static int inline cpu_get_ptrW(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldrw(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldrh_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldrw(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
 static int inline cpu_get_ptrS(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldrs(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldr_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldrs(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
 static int inline cpu_get_ptrSB(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldrsb(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldrsb_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldrsb(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
 
 static int inline cpu_get_ptrSW(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldrsw(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldrsh_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldrsw(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
@@ -4107,6 +4176,10 @@ static u32 compile_basicblock()
 	JIT_COMMENT("CPU ptr");
 	
 	emit_write_ptr(g_out, (uintptr_t)&bb_cpu, (uintptr_t)&ARMPROC);
+
+	JIT_COMMENT("CPU base");
+
+	emit_ptr(g_out, (uintptr_t)&ARMPROC, JIT_CPU_BASE_REG);
 
 	JIT_COMMENT("reset bb_total_cycles");
 

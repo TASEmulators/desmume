@@ -1290,6 +1290,50 @@ static void emit_ldr(t_bytes *out, int rs, int rt) {
 	ASMJIT_ASSUME_OK(out->ldr(gw(rt), gmem(rs)));
 }
 
+// Field access through a block-resident base pointer.
+//
+// `off` is always an offsetof() value, i.e. a compile-time constant at every
+// call site, and it fits the scaled 12-bit immediate that LD/ST allow -- the
+// armcpu_t fields this back end touches all live in the first kilobyte. The
+// callers fall back to materialising the address when that ever stops being
+// true, so an out-of-range offset cannot silently encode a wrong address.
+static void emit_ldr_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->ldr(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_str_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->str(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_ldrb_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->ldrb(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_strb_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->strb(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_ldrh_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->ldrh(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_strh_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->strh(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_ldrsh_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->ldrsh(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_ldrsb_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->ldrsb(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+// Address of a field of the object `base` points at, in a 64-bit register.
+static void emit_add_off64(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->add(gx(rt), gx(base), asmjit::Imm(off)));
+}
+
 static void emit_ldr64(t_bytes *out, int rs, int rt) {
 	ASMJIT_ASSUME_OK(out->ldr(gx(rt), gmem(rs)));
 }
@@ -1728,9 +1772,14 @@ static void save(t_bytes *out) {
 	ASMJIT_ASSUME_OK(out->stp(gx(19), gx(20), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
 	ASMJIT_ASSUME_OK(out->stp(gx(21), gx(22), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
 	ASMJIT_ASSUME_OK(out->stp(gx(23), gx(24), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	// x25/x26 hold the block-resident base pointers (see JIT_CPU_BASE_REG in
+	// arm_jit_arm.cpp), so they must survive the return to the caller. Pushed
+	// as a pair because that is one instruction.
+	ASMJIT_ASSUME_OK(out->stp(gx(25), gx(26), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
 }
 
 static void restore(t_bytes *out) {
+	ASMJIT_ASSUME_OK(out->ldp(gx(25), gx(26), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
 	ASMJIT_ASSUME_OK(out->ldp(gx(23), gx(24), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
 	ASMJIT_ASSUME_OK(out->ldp(gx(21), gx(22), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
 	ASMJIT_ASSUME_OK(out->ldp(gx(19), gx(20), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
