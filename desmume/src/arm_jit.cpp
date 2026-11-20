@@ -704,6 +704,10 @@ static void emit_MMU_aluMemCycles(int alu_cycles, x86::Gp mem_cycles, int popula
 //-----------------------------------------------------------------------------
 //   OPs
 //-----------------------------------------------------------------------------
+// A PC write does not charge the +2 pipeline penalty in the DP macros below:
+// instr_cycles() already includes it for BRANCH_POS12 instructions. Charging
+// it twice made a taken conditional "ADD pc, ..." cost 5 cycles where the
+// interpreter costs 3.
 #define OP_ARITHMETIC(arg, x86inst, symmetric, flags) \
     arg; \
 	x86::Gp lhs = c.new_gp32(); \
@@ -725,7 +729,6 @@ static void emit_MMU_aluMemCycles(int alu_cycles, x86::Gp mem_cycles, int popula
 		if(REG_POS(i,12)==15) \
 		{ \
 			S_DST_R15; \
-			c.add(bb_total_cycles, 2); \
 			return 1; \
 		} \
 		SET_NZCV(!symmetric); \
@@ -737,7 +740,6 @@ static void emit_MMU_aluMemCycles(int alu_cycles, x86::Gp mem_cycles, int popula
 			x86::Gp tmp = c.new_gp32(); \
 			c.mov(tmp, reg_ptr(15)); \
 			c.mov(cpu_ptr(next_instruction), tmp); \
-			c.add(bb_total_cycles, 2); \
 		} \
 	} \
 	return 1;
@@ -753,7 +755,6 @@ static void emit_MMU_aluMemCycles(int alu_cycles, x86::Gp mem_cycles, int popula
 		if(REG_POS(i,12)==15) \
 		{ \
 			S_DST_R15; \
-			c.add(bb_total_cycles, 2); \
 			return 1; \
 		} \
 		SET_NZCV(1); \
@@ -763,7 +764,6 @@ static void emit_MMU_aluMemCycles(int alu_cycles, x86::Gp mem_cycles, int popula
 		if(REG_POS(i,12)==15) \
 		{ \
 			c.mov(cpu_ptr(next_instruction), lhs); \
-			c.add(bb_total_cycles, 2); \
 		} \
 	} \
 	return 1;
@@ -787,7 +787,6 @@ static void emit_MMU_aluMemCycles(int alu_cycles, x86::Gp mem_cycles, int popula
 	if(REG_POS(i,12)==15) \
 	{ \
 		S_DST_R15; \
-		c.add(bb_total_cycles, 2); \
 		return 1; \
 	} \
 	SET_NZC; \
@@ -1121,7 +1120,6 @@ static int OP_MOV_IMM_VAL(const u32 i) { OP_MOV(IMM_VAL); }
 	if(REG_POS(i,12)==15) \
 	{ \
 		S_DST_R15; \
-		c.add(bb_total_cycles, 2); \
 		return 1; \
 	} \
 	if(!rhs_is_imm) \
@@ -4166,15 +4164,16 @@ static u32 compile_basicblock()
 			has_variable_cycles = TRUE;
 #endif
 		bb_cycles = c.new_gpz();
-		// Instructions marked INSTR_CYCLES_V are charged from bb_cycles at
-		// runtime. Not every handler that can be reached with that marking
-		// writes it -- op_b and op_swi, for instance, only return 1 -- and an
-		// uninitialised virtual register is not zero: the block then returned
-		// whatever the register allocator happened to leave there, measured as
-		// the opcode itself (e.g. 0xA8000001 for `B`). Seeding it costs one
-		// move and makes the worst case "charges too few cycles" instead of
-		// "returns a value that is not a cycle count at all".
-		c.mov(bb_cycles, 0);
+		// INSTR_CYCLES_V instructions are charged from bb_cycles at runtime,
+		// but not every such handler writes it: op_swi() with a SWI table on
+		// x86_64 takes the TODO path and returns 0 without touching it. An
+		// uninitialised virtual register is not zero, so the block returned
+		// whatever the allocator left there instead of a cycle count.
+		// Seed only where the register can be read (cycles == 0) to avoid a
+		// mov on every instruction; a handler that does write it overwrites
+		// the seed.
+		if (cycles == 0)
+			c.mov(bb_cycles, 0);
 
 		bb_constant_cycles += instr_is_conditional(opcode) ? 1 : cycles;
 
