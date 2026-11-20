@@ -3057,15 +3057,30 @@ static int OP_LSR_REG(const u32 i) { OP_SHIFTS_REG(emit_lsrs_reg, 31); }
 
 static int OP_ASR_0(const u32 i)
 {
+	// ASR #0 encodes ASR #32, not ASR #31.
+	//
+	//   DecodeImmShift(), Arm ARM DDI 0597 (A32/T32), shared pseudocode:
+	//       when '10' shift_t = SRType_ASR; shift_n = if imm5 == '00000' then 32
+	//                                                     else UInt(imm5);
+	//   ASR_C(), same manual's standard library:
+	//       return (ASR{N}(x, shift), x[Min(shift-1, N-1)]);
+	//
+	// so for ASR #32 the carry out is x[31], while ASR #31 would carry x[30].
+	// The two shifts produce the *same result* (ASR{} uses
+	// bshift = Min(shift, N-1), i.e. it clamps to 31), which is why shifting by
+	// 31 looked correct: only C was wrong. Passing 32 takes emit_asrs_reg()'s
+	// "count >= 32" path, which materialises C from bit 31 exactly as the
+	// interpreter's OP_ASR_0 does (CPSR.C = BIT31(operand)). The arm64
+	// differential harness caught this as Thumb slot 040.
 	u8 cf_change = 1;
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3)) {
-		emit_asrs(g_out, reg_pos_thumb(0, R1, VALUE), 31);
+		emit_asrs(g_out, reg_pos_thumb(0, R1, VALUE), 32);
 		emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_thumb(0, R2, ADDRESS)), R1); // TAGCHECK
 	}
 	else
 	{
 		reg_pos_thumb(3, rhs, VALUE);
-		emit_asrs(g_out, rhs, 31);
+		emit_asrs(g_out, rhs, 32);
 		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), rhs);
 	}
 	SET_NZC;
