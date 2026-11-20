@@ -12,6 +12,9 @@
 }
 
 .desmume-toast {
+  /* Standard CSS first: GTK 5 removes the alpha() colour function.  The
+     second declaration is a GTK 4.10 fallback for older parsers. */
+  background-color: color-mix(in srgb, currentColor 12%, transparent);
   background-color: alpha(currentColor, 0.12);
   border-radius: 8px;
   padding: 8px 14px;

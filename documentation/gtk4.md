@@ -226,9 +226,9 @@ auto:
 
 ### D6：列表控件
 
-- 第一阶段允许 `GtkTreeView`（GTK4 仍在，4.10 起弃用），保证行为一致
-- UI 阶段逐步换成 `GtkColumnView` + `GListModel`；`GtkComboBoxText` → `GtkDropDown`
-- `utilsGTK.cpp` 的自定义 cell renderer 属于 `GtkTreeView` 生态；如果该列迁到 `ColumnView`，这个 400 行的编辑器可以整体删掉，换成 `GtkText`/`GtkEntry` 委托
+- GTK4 没有 `GtkTreeView` / `GtkIconView` / `GtkComboBox`（GTK5 更是把 cell renderer 整套移除），**不存在“先保留 TreeView”的过渡期**；
+  P4 直接换成 `GtkColumnView` + `GListModel`，下拉用 `GtkDropDown`（见 §4.10）
+- `utilsGTK.cpp` 的自定义 cell renderer 属于 `GtkTreeView` 生态；迁到 `ColumnView` 时这 400 行编辑器整体删掉，换成 `GtkEntry`/`GtkText` 委托（GTK4 没有 TreeView，没有保留选项）
 
 ### D7：对话框 = 全面异步
 
@@ -493,6 +493,32 @@ static void on_file_selected(GObject *src, GAsyncResult *res, gpointer data)
 - 新增两个键：`decorations`（`auto|ssd|csd`）、`presentation`（`auto|texture|cairo|wgpu`）
 - 保持配置文件路径与键名兼容，GTK3/GTK4 可共用同一份配置（新增键有默认值）
 
+### 4.10 面向 GTK 5：迁移注意事项（2026-11-21）
+
+依据 GTK 官方《Preparing for GTK 5》（https://docs.gtk.org/gtk4/migrating-4to5.html）。
+GTK 5 会同时破坏 API 和 ABI，因此**这次 GTK4 迁移就按 GTK5 的约束写**，不引入任何"能在 4.x 跑、5.x 再改"的代码。
+总原则：不使用任何带弃用标记的符号；`-Wall` 下 GTK4 的弃用警告视为待修项，不累积。
+
+| 官方注意事项 | 本项目的执行规则 | 当前状态 |
+|---|---|---|
+| Cell renderer 类 widget 全部移除 | 禁止 `GtkTreeView` / `GtkIconView` / `GtkComboBox`（GTK4 本身就没有 TreeView）；P4 的 cheats、RAM Watch/Search、IO 寄存器一律 `GtkColumnView` + `GListModel`，下拉用 `GtkDropDown`，无列需求时用 `GtkListView`/`GtkGridView`；`utilsGTK.cpp` 的 cell renderer 编辑器直接删，改 `GtkEntry`/`GtkText` 委托 | 方案已收紧，见 §5.3/§8（原“先保留 TreeView”的过渡写法已删除） |
+| 主题渲染 API 与 `GtkSnapshot` 渲染变体移除（`gtk_render_*`、`gtk_snapshot_render_*`、`gtk_style_context_save()`） | 不在自定义 widget 里模仿 GTK 控件外观；文本/图标/边框用子 widget（如 `GtkLabel`），自绘图表只准用 `gtk_widget_get_color()` 取当前主题前景色 | `DesmumeDisplay` 只画黑底/间隙/纹理，无主题渲染调用 |
+| 局部样式表移除 | 只用全局 `gtk_style_context_add_provider_for_display()` + 语义 CSS class；禁止 `gtk_style_context_add_provider()` | P1 已是全局 provider |
+| `@define-color` 移除 | 用 `:root { --name: … }` + `var(--name)` | 未使用 `@define-color` |
+| `mix()` / `alpha()` / `shade()` / `lighter()` / `darker()` 移除 | 用 `color-mix()`、`rgb(from … / calc(alpha * …))`、`hsl(from …)`；`style.css` 的 toast 背景已改成标准写法，GTK 4.10 用第二条 `alpha()` 作解析器回退（GTK5 会忽略它） | 已改；P6 提高底线后可删回退行 |
+| Chooser 接口及其 dialog/button 实现移除 | 只用 `GtkFileDialog` / `GtkColorDialog` / `GtkFontDialog`（4.10+），按钮变体用 `GtkFileDialogButton` 等；禁止 `GtkFileChooser*` / `GtkColorChooser*` / `GtkFontChooser*` / `GtkAppChooser*` | P0 `GtkAlertDialog` 已按此写；P3 方案已是 async 族 |
+| `GtkMessageDialog` → `GtkAlertDialog` | 44 处 `gtk_dialog_run()` 全部走 `GtkAlertDialog`，不用 `GtkMessageDialog` | 方案已定，P3 执行 |
+| `GtkDialog` 移除（`gtk_dialog_run()` 已不在） | 设置/工具窗口用普通 `GtkWindow` + 自放按钮，不用 action area / internal child | P1 的 About/Shortcuts 已是普通窗口 |
+| `GtkInfoBar` 移除 | 瞬时消息用 `GtkRevealer`（必要时包在 `GtkOverlay` 里），不用 `GtkInfoBar` | §5.4 的 toast 改为 Revealer |
+| `gtk_show_uri()` → `GtkUriLauncher` / `GtkFileLauncher` | 打开网站用 `GtkUriLauncher`，打开 ROM/目录用 `GtkFileLauncher`；About 的 website 链接由 `GtkAboutDialog` 自己处理 | 无 `gtk_show_uri` 调用；P3 文件动作按此 |
+| `GtkStatusbar` 移除 | 状态行用 `GtkBox` + `GtkLabel`（§5.4） | P0 已是 Box + Label |
+| `GtkLockButton` / `GtkVolumeButton` 移除 | 需要时由应用自己用普通 `GtkToggleButton`/`GtkScale` 实现，不引入这两个 widget | 未使用 |
+| 尺寸 API 变更 | 只用 `gtk_widget_get_width()` / `get_height()`（**内容区**，不是 GTK3 的 CSS border 区）；需要 border 区用 `gtk_widget_compute_bounds()`；baseline 用 `gtk_widget_get_baseline()`；禁止 `get_allocated_*` / `get_allocation()` | `display.cpp` 已用 `get_width/height`，并在 `map_touch()` 里按内容区坐标反算 |
+| 停止使用 `GdkPixbuf` | 图像传输一律 `GdkTexture` / `GdkPaintable`；图标用 icon-name + `GtkImage`，不让 GTK 手工缩放 Pixbuf | P2 已是 `GdkMemoryTexture`；不复制 GTK3 的 Pixbuf 缩放代码 |
+
+配套改动：§5.3 的 IO 寄存器行、§8 的四个工具行、§7 的风险 R10 不再允许 TreeView 过渡；
+§5.4 的 toast 用 `GtkRevealer`；`style.css` 按标准 CSS 写并在末尾保留 GTK 4.10 回退。
+
 ---
 
 ## 5. UI 现代化方案
@@ -547,7 +573,7 @@ CSD（GNOME）：
 | Movie Play/Record | 表单 + `GtkFileChooserNative` | 紧凑表单 + `GtkFileDialog`；错误用 `GtkAlertDialog` |
 | RAM Watch | TreeView + DnD + 文件选择 | `GtkColumnView` + `GtkDropTarget` + 右键 `GtkPopoverMenu` |
 | RAM Search | TreeView + 大量 ListStore | `GtkColumnView` + 懒加载 `GListModel`；顶部 `GtkSearchBar` |
-| IO 寄存器 | 只读 TreeView | `GtkColumnView`（只读），或保留 TreeView（低优先级） |
+| IO 寄存器 | 只读 TreeView | `GtkColumnView`（只读），无 TreeView 回退 |
 | Lua 控制台 | TextView + 按钮行 | TextView（等宽 CSS）+ 紧凑按钮行 + `GtkDropTarget` |
 | 关于 | `gtk_show_about_dialog` | `GtkAboutDialog` 实例 + `gtk_window_present()` |
 | 快捷键 | 无 | 新增 `GtkShortcutsWindow` |
@@ -555,7 +581,7 @@ CSD（GNOME）：
 ### 5.4 状态与反馈
 
 - 状态行：`GtkLabel`（`ellipsize=end`）+ 右侧 FPS/速度标签；只在文本变化时 `gtk_label_set_text()`
-- 瞬时消息：`GtkOverlay` + 底部浮层 label（"已保存到 ..."、"录像已开始"），3 秒淡出；不引入 libadwaita 的 toast
+- 瞬时消息：`GtkRevealer`（必要时放在 `GtkOverlay` 底部）包一个 `GtkLabel`（"已保存到 ..."、"录像已开始"），3 秒后 reveal=FALSE 淡出；不用 `GtkInfoBar`，不引入 libadwaita 的 toast
 - 错误：`GtkAlertDialog`（4.10+），带"详情"展开
 - 忙碌：文件对话框/加载 ROM 时用 `GtkSpinner`，不阻塞主循环
 
@@ -566,7 +592,9 @@ CSD（GNOME）：
 ```css
 .desmume-display { background-color: #000; }
 .desmume-status  { font-size: 0.9em; opacity: 0.72; padding: 2px 8px; }
-.desmume-toast   { background-color: alpha(currentColor, 0.12);
+.desmume-toast   { background-color: color-mix(in srgb, currentColor 12%, transparent);
+                   /* GTK 4.10 fallback; GTK 5 ignores this declaration */
+                   background-color: alpha(currentColor, 0.12);
                    border-radius: 8px; padding: 8px 14px; }
 ```
 
@@ -765,8 +793,8 @@ GTK4 里 `GtkDrawingArea` 不再有独立 `GdkWindow`，`WGPU_PresentFrame()` �
 | `gtk_widget_get_realized` | 保留（或看 `GdkSurface`） |
 | `gtk_window_set_default_size` | 保留 |
 | `gtk_widget_set_size_request` | 保留 |
-| `GtkComboBoxText` | 保留（4.10 弃用）→ `GtkDropDown` |
-| `GtkTreeView` / `GtkListStore` / `GtkCellRenderer` | 保留（4.10 弃用）→ `GtkColumnView` + `GListModel` |
+| `GtkComboBoxText` | `GtkDropDown`（无保留选项，GTK4/GTK5 移除 ComboBox） |
+| `GtkTreeView` / `GtkListStore` / `GtkCellRenderer` | `GtkColumnView` + `GListModel`（无保留选项；GTK4 已移除 TreeView） |
 
 ### 8.7 `.ui` 文件
 
@@ -790,10 +818,10 @@ GTK4 里 `GtkDrawingArea` 不再有独立 `GdkWindow`，`WGPU_PresentFrame()` �
 | 文件 | 工作 |
 |---|---|
 | `main.cpp` | 拆出 `display.cpp`（绘制）、`dialogs.cpp`（异步对话框）、`window.cpp`（外壳）；动作层保留；25 处 `gtk_dialog_run` 异步化；Lua 菜单保留；事件控制器替换 |
-| `cheatsGTK.cpp` | TreeView 保留或换 ColumnView；`GtkMenuButton`+`GMenu`；7 处对话框；搜索框 |
-| `utilsGTK.cpp` | `GtkEventBox` → `GtkBox`；`GtkCellEditable` 接口保留；若改 ColumnView 则整体删除 |
-| `tools/ramWatch.cpp` | DnD → `GtkDropTarget`；TreeView；删除窗口位置持久化；3 处对话框 |
-| `tools/ramSearch.cpp` | TreeView；3 处对话框；`sInAutoSearchAlert` 重入逻辑改为显式状态 |
+| `cheatsGTK.cpp` | 直接 `GtkColumnView`（无 TreeView 过渡）；`GtkMenuButton`+`GMenu`；7 处对话框；搜索框 |
+| `utilsGTK.cpp` | `GtkEventBox` → `GtkBox`；cell renderer / `GtkCellEditable` 编辑器整体删除，换 `GtkEntry`/`GtkText` 委托 |
+| `tools/ramWatch.cpp` | DnD → `GtkDropTarget`；`GtkColumnView`；删除窗口位置持久化；3 处对话框 |
+| `tools/ramSearch.cpp` | `GtkColumnView` + `GListModel`；3 处对话框；`sInAutoSearchAlert` 重入逻辑改为显式状态 |
 | `tools/moviePlay/Record.cpp` | 表单对话框；`GtkFileDialog`；错误 `GtkAlertDialog` |
 | `tools/ioregsView.cpp` | `gtk_container_add`/`box_pack` 替换；只读列 |
 | `tools/luaScriptConsole.cpp` | DnD、文件选择、1 处对话框；等宽 CSS |
@@ -884,7 +912,7 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 | R7 | KDE 下 SSD 与全屏/平铺交互异常 | 中 | 中 | 在 KWin 6.x 实测最大化/平铺/全屏/多屏 |
 | R8 | 工具窗口在主窗口关闭后阻止退出 | 中 | 中 | 显式 `close-request` 处理；退出测试 |
 | R9 | Lua 泵事件重入 | 中 | 中 | `in_pump` 保护；只在帧间泵一次 |
-| R10 | TreeView → ColumnView 改动过大 | 中 | 中 | 分阶段：先 TreeView 保功能，再逐窗口替换 |
+| R10 | TreeView → ColumnView 改动过大 | 中 | 中 | 无过渡方案（GTK4/GTK5 都没有 TreeView）；按窗口分批直接改 ColumnView |
 | R11 | 性能目标不达标（大窗口） | 低 | 中 | 先测量再优化；texture 路径已解决主要成本 |
 | R12 | 翻译字符串/`.ui` 重写导致翻译丢失 | 中 | 低 | 保留 msgid；`xgettext` diff 检查 |
 
