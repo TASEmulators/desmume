@@ -1859,6 +1859,59 @@ static void callR8(t_bytes *out) {
 	restore_call(out);
 }
 
+// Lightweight helper call for the LDR/STR macros, which are the hottest path in
+// the backend (they cover the bulk of the 174 memory handlers). `callR3` above
+// saves x1..x12 + x23 on every call (15 instructions with the blr and restore),
+// because generic call sites such as S_DST_R15 and OP_MSR keep live values in
+// those registers across the call. The LDR/STR handlers do not: their arguments
+// live in x0/x1 and the only value consumed after the call is the cycle count
+// returned in x0 -- every other register is either dead or recomputed with a
+// cpu_ptr(..., ADDRESS) before use.
+//
+// What *does* have to survive is the emulated-register cache. Its three slots
+// are x12/x15/x21: x21 is AAPCS64 callee-saved (like x19..x28 and the pinned
+// x23/x24/x25/x26), so the C helper preserves it for free; x12/x15 are caller-
+// saved and must be saved here, otherwise a dirty value cached by a preceding
+// instruction in the block is lost when the helper clobbers them. x11 is not
+// saved because its CACHED_PTR() address is dead at both call sites.
+//
+// Net: 2 (stp/ldp) + 1 (blr) = 3 instructions instead of 15.
+static void save_mem_call(t_bytes *out) {
+	ASMJIT_ASSUME_OK(out->stp(gx(12), gx(15), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+}
+
+static void restore_mem_call(t_bytes *out) {
+	ASMJIT_ASSUME_OK(out->ldp(gx(12), gx(15), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+}
+
+static void call_mem(t_bytes *out) {
+	save_mem_call(out);
+	ASMJIT_ASSUME_OK(out->blr(gx(3)));
+	restore_mem_call(out);
+}
+
+// Same lightweight call, for the few hot sites whose helper pointer lives in a
+// different register: call_ldm_stm() parks it in x7 (its four arguments occupy
+// x0..x3). The live-register argument is identical to call_mem -- only the two
+// volatile cache slots x12/x15 can carry state across the call.
+static void call_mem_r7(t_bytes *out) {
+	save_mem_call(out);
+	ASMJIT_ASSUME_OK(out->blr(gx(7)));
+	restore_mem_call(out);
+}
+
+// LDRD/STRD keep the effective address in x2 across the helper call so they can
+// write it back to Rn when the W bit is set (arm_jit_arm.cpp:2446/2452). x2 is
+// otherwise caller-saved, so add it to the two cache slots. 2 stp + blr + 2 ldp
+// = 5 instructions, still 10 fewer than callR3's 15.
+static void call_mem_r2(t_bytes *out) {
+	ASMJIT_ASSUME_OK(out->stp(gx(2), gx(12), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	ASMJIT_ASSUME_OK(out->str(gx(15), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	ASMJIT_ASSUME_OK(out->blr(gx(3)));
+	ASMJIT_ASSUME_OK(out->ldr(gx(15), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	ASMJIT_ASSUME_OK(out->ldp(gx(2), gx(12), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+}
+
 //-----------------------------------------------------------------------------
 //   Shifting macros
 //

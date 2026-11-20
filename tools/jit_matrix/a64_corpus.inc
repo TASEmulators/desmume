@@ -273,3 +273,8 @@ A64_CASE("callR9",         callR9(g_out));
 A64_CASE("callR7",         callR7(g_out));
 A64_CASE("callR6",         callR6(g_out));
 A64_CASE("callR8",         callR8(g_out));
+A64_CASE("save_mem_call",  save_mem_call(g_out));
+A64_CASE("restore_mem_call", restore_mem_call(g_out));
+A64_CASE("call_mem",       call_mem(g_out));
+A64_CASE("call_mem_r7",    call_mem_r7(g_out));
+A64_CASE("call_mem_r2",    call_mem_r2(g_out));

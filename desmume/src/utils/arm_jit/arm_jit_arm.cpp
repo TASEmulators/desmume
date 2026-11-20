@@ -2028,7 +2028,7 @@ static u32 sub(u32 lhst, u32 rhst) { return lhst - rhst; }
 	emit_mov64(g_out,adr, R0); \
 	emit_mov64(g_out, dst, R1); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,0)], R3); \
-	callR3(g_out); \
+	call_mem(g_out); \
 	emit_st_counters(BB_CYCLES_FIELD, R0); \
 	if(REG_POS(i,12)==15) \
 	{ \
@@ -2220,7 +2220,7 @@ static const OpSTR STRB_tab[2][3]  = { T(OP_STRB) };
 	} \
 	u32 adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,1)], R3); \
-	callR3(g_out); \
+	call_mem(g_out); \
 	emit_st_counters(BB_CYCLES_FIELD, R0); \
 	return 1;
 	
@@ -2385,11 +2385,11 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 	emit_mov(g_out,addr, R0);
 	// Add function
 	emit_ptr(g_out, (uintptr_t)(BIT5(i) ? op_strd_tab[PROCNUM][Rd_num] : op_ldrd_tab[PROCNUM][Rd_num]), R3);
-	// Call function
-	callR3(g_out);
+	// Call function: addr (x2) is live for the optional writeback below.
+	call_mem_r2(g_out);
 	emit_st_counters(BB_CYCLES_FIELD, R0);
 
-	emit_MMU_aluMemCycles(3, &bb_cycles, 0);	
+	emit_MMU_aluMemCycles(3, &bb_cycles, 0);
 
 	#undef addr
 	#undef Rd
@@ -2437,8 +2437,8 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		emit_mov(g_out,addr, R0);
 		// Add function
 		emit_ptr(g_out, (uintptr_t)op_strd_tab[PROCNUM][Rd_num], R3);
-		// Call function
-		callR3(g_out);
+		// Call function: addr (x2) is live for the optional writeback below.
+		call_mem_r2(g_out);
 		// Return
 		emit_st_counters(BB_CYCLES_FIELD, R0);
 		
@@ -2455,8 +2455,8 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		emit_mov(g_out,addr, R0);
 		// Add function
 		emit_ptr(g_out, (uintptr_t)op_ldrd_tab[PROCNUM][Rd_num], R3);
-		// Call function
-		callR3(g_out);
+		// Call function: addr (x2) is live for the optional writeback below.
+		call_mem_r2(g_out);
 		// Return
 		emit_st_counters(BB_CYCLES_FIELD, R0);			
 
@@ -2514,10 +2514,8 @@ static int op_swp_(const u32 i, int b)
 	// Add function
 	//emit_movimm(g_out, (uintptr_t)op_swp_tab[b][PROCNUM], R3);
 	emit_ptr(g_out, (uintptr_t)op_swp_tab[b][PROCNUM], R3);
-	// Call function
-	callR3(g_out);
-	//emit_mov(g_out, PC, LR);
-	//emit_jmpreg(g_out, R3);
+	// Call function: only the cycle count in R0 is live afterwards.
+	call_mem(g_out);
 	// Return
 	emit_st_counters(BB_CYCLES_FIELD, R0);
 
@@ -2708,13 +2706,13 @@ static void call_ldm_stm(int reg, u32 bitmask, bool store, int dir)
 		emit_movimm(g_out, (uintptr_t)get_reg_list(bitmask, dir), R1);
 		emit_movimm(g_out, (uintptr_t)(get_reg_list(bitmask, dir) >> 32), R2);
 		
-		// Add function
-		emit_ptr(g_out, (uintptr_t)op_ldm_stm_tab[PROCNUM][store][dir>0], R7);
-		
-		// Call function
-		callR7(g_out);
-		
-		emit_st_counters(BB_CYCLES_FIELD, R0);
+	// Add function
+	emit_ptr(g_out, (uintptr_t)op_ldm_stm_tab[PROCNUM][store][dir>0], R7);
+	
+	// Call function: args are consumed by the helper, only cycles (R0) is live.
+	call_mem_r7(g_out);
+	
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 
 	}
 	else
@@ -3916,7 +3914,7 @@ static int OP_TST(const u32 i)
 	} \
 	reg_pos_thumb(0, R1, VALUE); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,1)], R3); \
-	callR3(g_out); \
+	call_mem(g_out); \
 	emit_st_counters(BB_CYCLES_FIELD, R0);\
 	return 1;
 
@@ -3939,7 +3937,7 @@ static int OP_TST(const u32 i)
 	} \
 	reg_pos_thumb(0, R1, ADDRESS); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,0)], R3); \
-	callR3(g_out); \
+	call_mem(g_out); \
 	emit_st_counters(BB_CYCLES_FIELD, R0);\
 	return 1;
 
@@ -3975,8 +3973,8 @@ static int OP_STR_SPREL(const u32 i)
 	// Add function
 	emit_ptr(g_out, (uintptr_t)STR_tab[PROCNUM][classify_adr(adr_first,1)], R3);
 	
-	// Call function
-	callR3(g_out);
+	// Call function: only cycles (R0) is live afterwards.
+	call_mem(g_out);
 	emit_st_counters(BB_CYCLES_FIELD, R0);
 	
 	#undef addr
@@ -4000,8 +3998,8 @@ static int OP_LDR_SPREL(const u32 i)
 	// Add function
 	emit_ptr(g_out, (uintptr_t)LDR_tab[PROCNUM][classify_adr(adr_first,0)], R3);
 	
-	// Call function
-	callR3(g_out);
+	// Call function: only cycles (R0) is live afterwards.
+	call_mem(g_out);
 	
 	emit_st_counters(BB_CYCLES_FIELD, R0);
 	
@@ -4025,8 +4023,8 @@ static int OP_LDR_PCREL(const u32 i)
 	// Add function
 	emit_ptr(g_out, (uintptr_t)LDR_tab[PROCNUM][classify_adr(adr_first,0)], R3);
 	
-	// Call function
-	callR3(g_out);
+	// Call function: only cycles (R0) is live afterwards.
+	call_mem(g_out);
 	
 	emit_st_counters(BB_CYCLES_FIELD, R0);
 	
