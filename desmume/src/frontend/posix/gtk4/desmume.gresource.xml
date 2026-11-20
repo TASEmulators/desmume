@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <!-- Same prefix as the GTK3 frontend; the two binaries are never linked
+       together, and P2/P7 can reuse the shader aliases from gtk/ later. -->
+  <gresource prefix="/org/desmume/DeSmuME">
+    <file preprocess="xml-stripblanks" compressed="true">menu.ui</file>
+    <file preprocess="xml-stripblanks" compressed="true">shortcuts.ui</file>
+    <file compressed="true">style.css</file>
+  </gresource>
+</gresources>

@@ -1,4 +1,5 @@
 dep_gtk4 = dependency('gtk4', version: '>=4.10')
+gnome = import('gnome')
 
 gtk4_args = []
 
@@ -21,10 +22,17 @@ if dep_gtk4_x11.found()
   gtk4_args += ['-DHAVE_GTK4_X11']
 endif
 
+# menu.ui (GMenu model), shortcuts.ui and style.css are loaded from the
+# resource at runtime; the same prefix as gtk/ keeps P2/P7 shader paths
+# compatible when those resources are copied over.
+gresource = gnome.compile_resources(
+  'gresource', 'desmume.gresource.xml',
+)
+
 desmume_src = [
   'config.cpp',
   'main.cpp',
-]
+] + gresource
 
 includes = include_directories(
   '../../../../src',

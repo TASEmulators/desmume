@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
+  GTK4 menu model.  This is deliberately a subset of gtk/menu.ui: only
+  actions that the GTK4 frontend actually implements are listed, so no
+  greyed-out entries appear.  Each migration phase adds the items it has
+  wired up (see documentation/gtk4.md, section 7).
+-->
+<interface>
+  <menu id='menubar'>
+    <submenu>
+      <attribute name='label' translatable='yes'>_File</attribute>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Open…</attribute>
+          <attribute name='action'>app.open</attribute>
+          <attribute name='accel'>&lt;Control&gt;o</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Quit</attribute>
+          <attribute name='action'>app.quit</attribute>
+          <attribute name='accel'>&lt;Control&gt;q</attribute>
+        </item>
+      </section>
+    </submenu>
+
+    <submenu>
+      <attribute name='label' translatable='yes'>_Emulation</attribute>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Run / Pause</attribute>
+          <attribute name='action'>app.run</attribute>
+          <attribute name='accel'>Pause</attribute>
+        </item>
+      </section>
+    </submenu>
+
+    <submenu>
+      <attribute name='label' translatable='yes'>_View</attribute>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Fullscreen</attribute>
+          <attribute name='action'>app.fullscreen</attribute>
+          <attribute name='accel'>F11</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>Show _menu bar</attribute>
+          <attribute name='action'>app.view-menu</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Show _toolbar</attribute>
+          <attribute name='action'>app.view-toolbar</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Show _status bar</attribute>
+          <attribute name='action'>app.view-statusbar</attribute>
+        </item>
+      </section>
+    </submenu>
+
+    <submenu>
+      <attribute name='label' translatable='yes'>_Help</attribute>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Shortcuts</attribute>
+          <attribute name='action'>app.shortcuts</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_About DeSmuME</attribute>
+          <attribute name='action'>app.about</attribute>
+        </item>
+      </section>
+    </submenu>
+  </menu>
+</interface>

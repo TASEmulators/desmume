@@ -4,7 +4,7 @@
 > 迁移目标：`desmume/src/frontend/posix/gtk4/`（新增目录，GTK4）
 > 原则：**`gtk/` 一行不改，保持可编译、可发布**；所有新工作只进 `gtk4/`
 > 基线版本：**GTK ≥ 4.10**（理由见 §3 D2），实际验证目标 4.14+
-> 状态：P0 骨架已落地（§14），P1 未开始
+> 状态：P0/P1 已落地（§14），P2 未开始
 > 日期：2026-11-20
 
 ---
@@ -357,8 +357,9 @@ if (use_csd) {
 6. **app-id 与桌面文件必须匹配**（Wayland 用 app_id 关联图标/窗口规则，X11 用 `WM_CLASS`）。两处都写成 `org.desmume.DeSmuME.GTK4`。
 7. **菜单栏不进 `show-menubar`**：P0 用 `gtk_application_window_set_show_menubar(FALSE)` + 内容区里显式的
    `gtk_popover_menu_bar_new_from_model()`。原因是 `GtkApplicationWindow:show-menubar` 在 CSD 下会把菜单塞进
-   header bar，两套外壳的布局就会分叉；显式 PopoverMenuBar 让 SSD/CSD 共用同一棵内容树，菜单永远贴在 WM 标题栏下方
-   （见 §0.2）。P1 再从 `menu.ui` 加载完整模型替换现在手写的 `BuildMenuModel()`。
+   header    bar，两套外壳的布局就会分叉；显式 PopoverMenuBar 让 SSD/CSD 共用同一棵内容树，菜单永远贴在 WM 标题栏下方
+   （见 §0.2）。P1 已从 `gtk4/menu.ui` 加载模型替换手写的 `BuildMenuModel()`：只列已接线的动作，
+   每阶段再把新实现的条目加进去，避免出现一排灰掉的菜单项。
 8. 工具窗口（RAM Watch 等）用普通 `GtkWindow`，也**不要设 titlebar**，让它们同样获得系统装饰；父窗口用 `gtk_window_set_transient_for()`。
 
 **验收**：KDE Wayland 下标题栏由 KWin 绘制、可使用 KDE 窗口规则/平铺/阴影；GNOME Wayland 下是 `GtkHeaderBar`；X11 下由 WM 装饰；三种情况下内容区布局不破。
@@ -941,7 +942,7 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 | 阶段 | 状态 | 备注 |
 |---|---|---|
 | P0 骨架 | **进行中** | 目录、`frontend-gtk` 自动发现（gtk4→gtk3→gtk2）、最小窗口、CI |
-| P1 外壳/装饰 | 未开始 | 依赖 P0 |
+| P1 外壳/装饰 | **已完成** | gresource 菜单/快捷键/CSS、三个可见性开关、SSD/CSD 共用内容树；编译链接通过（§14） |
 | P2 显示/输入 | 未开始 | 依赖 P1 |
 | P3 对话框 | 未开始 | |
 | P4 工具 | 未开始 | |
@@ -1021,6 +1022,23 @@ POSIX 侧的 JIT 接线（与 MSVC/Xcode 保持一致）：
   JIT 与核心互相调用，普通 `link_with` 会留下循环静态库依赖。
 
 P0 刻意不做的事：不装 desktop/metainfo/man（app-id 与安装布局在 P1/P8 定稿），不复制 `main.ui`/`menu.ui`（P1 重写外壳时再加），不引入 wgpu。
+
+### P1 已落地内容
+
+| 路径 | 说明 |
+|---|---|
+| `posix/gtk4/menu.ui` | `GMenuModel`，按阶段列出已实现的动作；动作名与 `gtk/menu.ui` 对齐（`app.view-menu` / `app.view-toolbar` / `app.view-statusbar`），后续阶段可直接加条目 |
+| `posix/gtk4/shortcuts.ui` | `GtkShortcutsWindow`，`app.shortcuts` action；关闭只隐藏，重复打开复用同一窗口 |
+| `posix/gtk4/style.css` | §5.5 的三条语义类；`gtk_css_provider_load_from_resource()` 在激活时一次性挂到默认 display |
+| `posix/gtk4/desmume.gresource.xml` | 打包上面三个文件，前缀仍是 `/org/desmume/DeSmuME` |
+| `posix/gtk4/meson.build` | `gnome.compile_resources()` 生成源并入 target |
+| `posix/gtk4/main.cpp` | 菜单改为从资源加载；新增 `view-menu`/`view-toolbar`/`view-statusbar`/`shortcuts` action；工具条按钮加 a11y label；状态行只在文本变化时更新，并挂 `desmume-status` CSS 类 |
+
+验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume-gtk4` 224/224 链接通过；
+`gtk4-builder-tool validate` 对 `menu.ui`/`shortcuts.ui` 均无报错；二进制内三个资源路径均已嵌入。
+CSD/SSD 的实际观感仍需在 KWin/GNOME/X11 上人工验收（§10）。
+
+P1 刻意不做的事：不装 desktop/metainfo/man（留在 P8），不引入视频/模拟逻辑（P2/P3），不把 GTK3 的 70 多个尚未实现的动作塞进菜单。
 
 ---
 

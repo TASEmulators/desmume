@@ -1,0 +1,18 @@
+/* Semantic styling only: colours and fonts come from the active GTK theme.
+   The display is the one exception — a black screen is part of the UI. */
+
+.desmume-display {
+  background-color: #000;
+}
+
+.desmume-status {
+  font-size: 0.9em;
+  opacity: 0.72;
+  padding: 2px 8px;
+}
+
+.desmume-toast {
+  background-color: alpha(currentColor, 0.12);
+  border-radius: 8px;
+  padding: 8px 14px;
+}

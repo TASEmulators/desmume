@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<interface>
+  <object class='GtkShortcutsWindow' id='shortcuts'>
+    <property name='modal'>true</property>
+    <property name='title' translatable='yes'>Keyboard Shortcuts</property>
+    <child>
+      <object class='GtkShortcutsSection'>
+        <property name='section-name'>shortcuts</property>
+        <property name='max-height'>10</property>
+        <child>
+          <object class='GtkShortcutsGroup'>
+            <property name='title' translatable='yes'>General</property>
+            <child>
+              <object class='GtkShortcutsShortcut'>
+                <property name='title' translatable='yes'>Open ROM</property>
+                <property name='accelerator'>&lt;Control&gt;o</property>
+              </object>
+            </child>
+            <child>
+              <object class='GtkShortcutsShortcut'>
+                <property name='title' translatable='yes'>Run / Pause</property>
+                <property name='accelerator'>Pause</property>
+              </object>
+            </child>
+            <child>
+              <object class='GtkShortcutsShortcut'>
+                <property name='title' translatable='yes'>Fullscreen</property>
+                <property name='accelerator'>F11</property>
+              </object>
+            </child>
+            <child>
+              <object class='GtkShortcutsShortcut'>
+                <property name='title' translatable='yes'>Quit</property>
+                <property name='accelerator'>&lt;Control&gt;q</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

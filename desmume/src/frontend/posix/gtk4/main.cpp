@@ -18,16 +18,12 @@
 */
 
 /*
-	P0 skeleton for the GTK4 frontend.
+	P1 window shell for the GTK4 frontend.
 
-	This file deliberately contains only the window shell:
-
-	- a GtkApplicationWindow with no custom titlebar on the SSD path, so that
-	  KWin (Wayland) or the X11 window manager draws the decorations;
-	- a GtkPopoverMenuBar inside the content area, shared by both decoration
-	  policies;
-	- a compact toolbar, a black display area and a status row;
-	- the decoration policy selection (auto / force SSD / force CSD).
+	The window shell keeps the decoration policy of P0: no custom titlebar on
+	the SSD path, so KWin (Wayland) or the X11 window manager draws the frame.
+	P1 adds the real menu model, the visibility toggles, a shortcuts window
+	and the semantic CSS, all from the gresource bundle.
 
 	ROM loading, the emulation loop, the display widget and the tools arrive in
 	later phases.  See documentation/gtk4.md for the phase plan.
@@ -64,6 +60,7 @@ static desmume::config::Config *pConfig = NULL;
 
 static GtkWidget *pWindow = NULL;
 static GtkWidget *pMenuBar = NULL;
+static GtkWidget *pShortcutsWindow = NULL;
 static GtkWidget *pToolBar = NULL;
 static GtkWidget *pStatusBar = NULL;
 static GtkWidget *pStatusLabel = NULL;
@@ -74,7 +71,15 @@ static gboolean sRunning = FALSE;
 
 static void SetStatus(const char *text)
 {
-	if (pStatusLabel != NULL)
+	if (pStatusLabel == NULL)
+	{
+		return;
+	}
+
+	/* Updating an unchanged label still triggers a redraw; the status line is
+	 * fed from the emulation loop, so skip the no-op case. */
+	const char *current = gtk_label_get_text(GTK_LABEL(pStatusLabel));
+	if ((current == NULL) || (strcmp(current, text) != 0))
 	{
 		gtk_label_set_text(GTK_LABEL(pStatusLabel), text);
 	}
@@ -254,6 +259,71 @@ static void ActionAbout(GSimpleAction *action, GVariant *parameter, gpointer use
 	gtk_window_present(GTK_WINDOW(dialog));
 }
 
+static gboolean OnShortcutsClose(GtkWindow *window, gpointer user_data)
+{
+	(void)user_data;
+
+	/* Keep the builder-owned window around so the action can present it again. */
+	gtk_widget_hide(GTK_WIDGET(window));
+	return TRUE;
+}
+
+static void ActionShortcuts(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+
+	if (pShortcutsWindow == NULL)
+	{
+		GtkBuilder *builder = gtk_builder_new_from_resource(
+			"/org/desmume/DeSmuME/shortcuts.ui");
+		pShortcutsWindow = GTK_WIDGET(g_object_ref(
+			gtk_builder_get_object(builder, "shortcuts")));
+		g_object_unref(builder);
+
+		gtk_window_set_transient_for(GTK_WINDOW(pShortcutsWindow), GTK_WINDOW(pWindow));
+		g_signal_connect(pShortcutsWindow, "close-request",
+		                 G_CALLBACK(OnShortcutsClose), NULL);
+	}
+
+	gtk_window_present(GTK_WINDOW(pShortcutsWindow));
+}
+
+static GMenuModel *LoadMenuModel(void)
+{
+	GtkBuilder *builder = gtk_builder_new_from_resource(
+		"/org/desmume/DeSmuME/menu.ui");
+	GMenuModel *menu = G_MENU_MODEL(g_object_ref(
+		gtk_builder_get_object(builder, "menubar")));
+	g_object_unref(builder);
+	return menu;
+}
+
+static void LoadCss(void)
+{
+	GtkCssProvider *provider = gtk_css_provider_new();
+	gtk_css_provider_load_from_resource(provider,
+	                                    "/org/desmume/DeSmuME/style.css");
+
+	GdkDisplay *display = gdk_display_get_default();
+	if (display != NULL)
+	{
+		gtk_style_context_add_provider_for_display(
+			display, GTK_STYLE_PROVIDER(provider),
+			GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+	}
+	g_object_unref(provider);
+}
+
+static void MenuBarChanged(GSimpleAction *action, GVariant *value, gpointer user_data)
+{
+	(void)user_data;
+
+	g_simple_action_set_state(action, value);
+	gtk_widget_set_visible(pMenuBar, g_variant_get_boolean(value));
+}
+
 static void ToolbarChanged(GSimpleAction *action, GVariant *value, gpointer user_data)
 {
 	(void)user_data;
@@ -272,39 +342,17 @@ static void StatusbarChanged(GSimpleAction *action, GVariant *value, gpointer us
 
 static const GActionEntry app_entries[] =
 {
-	{ "open",       ActionOpen,       NULL, NULL,   NULL },
-	{ "quit",       ActionQuit,       NULL, NULL,   NULL },
-	{ "run",        ActionRun,        NULL, NULL,   NULL },
-	{ "fullscreen", ActionFullscreen, NULL, NULL,   NULL },
-	{ "about",      ActionAbout,      NULL, NULL,   NULL },
-	{ "toolbar",    NULL,             NULL, "true", ToolbarChanged },
-	{ "statusbar",  NULL,             NULL, "true", StatusbarChanged }
+	/* Names match gtk/menu.ui so menu items can be enabled phase by phase. */
+	{ "open",           ActionOpen,       NULL, NULL,   NULL },
+	{ "quit",           ActionQuit,       NULL, NULL,   NULL },
+	{ "run",            ActionRun,        NULL, NULL,   NULL },
+	{ "fullscreen",     ActionFullscreen, NULL, NULL,   NULL },
+	{ "about",          ActionAbout,      NULL, NULL,   NULL },
+	{ "shortcuts",      ActionShortcuts,  NULL, NULL,   NULL },
+	{ "view-menu",      NULL,             NULL, "true", MenuBarChanged },
+	{ "view-toolbar",   NULL,             NULL, "true", ToolbarChanged },
+	{ "view-statusbar", NULL,             NULL, "true", StatusbarChanged }
 };
-
-static GMenuModel *BuildMenuModel(void)
-{
-	GMenu *menubar = g_menu_new();
-
-	GMenu *file = g_menu_new();
-	g_menu_append(file, "_Open...", "app.open");
-	g_menu_append(file, "_Quit", "app.quit");
-	g_menu_append_submenu(menubar, "_File", G_MENU_MODEL(file));
-	g_object_unref(file);
-
-	GMenu *view = g_menu_new();
-	g_menu_append(view, "_Fullscreen", "app.fullscreen");
-	g_menu_append(view, "Show _toolbar", "app.toolbar");
-	g_menu_append(view, "Show _status bar", "app.statusbar");
-	g_menu_append_submenu(menubar, "_View", G_MENU_MODEL(view));
-	g_object_unref(view);
-
-	GMenu *help = g_menu_new();
-	g_menu_append(help, "_About DeSmuME", "app.about");
-	g_menu_append_submenu(menubar, "_Help", G_MENU_MODEL(help));
-	g_object_unref(help);
-
-	return G_MENU_MODEL(menubar);
-}
 
 static GtkWidget *MakeToolButton(const char *icon_name, const char *tooltip, const char *action_name)
 {
@@ -312,6 +360,8 @@ static GtkWidget *MakeToolButton(const char *icon_name, const char *tooltip, con
 	gtk_widget_set_tooltip_text(button, tooltip);
 	gtk_widget_add_css_class(button, "flat");
 	gtk_actionable_set_action_name(GTK_ACTIONABLE(button), action_name);
+	gtk_accessible_update_property(GTK_ACCESSIBLE(button),
+	                               GTK_ACCESSIBLE_PROPERTY_LABEL, tooltip, -1);
 	return button;
 }
 
@@ -327,7 +377,7 @@ static void BuildWindow(GtkApplication *app)
 
 	/* The menu bar lives in the content area so the same tree works with SSD
 	 * and CSD; the window title is owned by the decoration. */
-	GMenuModel *menu_model = BuildMenuModel();
+	GMenuModel *menu_model = LoadMenuModel();
 	pMenuBar = gtk_popover_menu_bar_new_from_model(menu_model);
 	g_object_unref(menu_model);
 	gtk_widget_set_visible(pMenuBar, pConfig->view_menu.get());
@@ -351,6 +401,8 @@ static void BuildWindow(GtkApplication *app)
 	GtkWidget *reset_button = gtk_button_new_from_icon_name("view-refresh-symbolic");
 	gtk_widget_add_css_class(reset_button, "flat");
 	gtk_widget_set_tooltip_text(reset_button, "Reset (not wired yet)");
+	gtk_accessible_update_property(GTK_ACCESSIBLE(reset_button),
+	                               GTK_ACCESSIBLE_PROPERTY_LABEL, "Reset", -1);
 	gtk_widget_set_sensitive(reset_button, FALSE);
 	gtk_box_append(GTK_BOX(pToolBar), reset_button);
 
@@ -373,6 +425,7 @@ static void BuildWindow(GtkApplication *app)
 	gtk_box_append(GTK_BOX(root), pDisplayArea);
 
 	pStatusBar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+	gtk_widget_add_css_class(pStatusBar, "desmume-status");
 	gtk_widget_set_margin_start(pStatusBar, 8);
 	gtk_widget_set_margin_end(pStatusBar, 8);
 	gtk_widget_set_margin_top(pStatusBar, 3);
@@ -402,6 +455,8 @@ static void BuildWindow(GtkApplication *app)
 
 		GtkWidget *header_open = gtk_button_new_from_icon_name("document-open-symbolic");
 		gtk_widget_set_tooltip_text(header_open, "Open ROM (Ctrl+O)");
+		gtk_accessible_update_property(GTK_ACCESSIBLE(header_open),
+		                               GTK_ACCESSIBLE_PROPERTY_LABEL, "Open ROM", -1);
 		gtk_actionable_set_action_name(GTK_ACTIONABLE(header_open), "app.open");
 		gtk_header_bar_pack_start(GTK_HEADER_BAR(header), header_open);
 
@@ -420,12 +475,16 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 	}
 
 	BuildWindow(app);
+	LoadCss();
 
+	GSimpleAction *menu_action = G_SIMPLE_ACTION(
+		g_action_map_lookup_action(G_ACTION_MAP(app), "view-menu"));
 	GSimpleAction *toolbar_action = G_SIMPLE_ACTION(
-		g_action_map_lookup_action(G_ACTION_MAP(app), "toolbar"));
+		g_action_map_lookup_action(G_ACTION_MAP(app), "view-toolbar"));
 	GSimpleAction *statusbar_action = G_SIMPLE_ACTION(
-		g_action_map_lookup_action(G_ACTION_MAP(app), "statusbar"));
+		g_action_map_lookup_action(G_ACTION_MAP(app), "view-statusbar"));
 
+	g_simple_action_set_state(menu_action, g_variant_new_boolean(pConfig->view_menu.get()));
 	g_simple_action_set_state(toolbar_action, g_variant_new_boolean(pConfig->view_toolbar.get()));
 	g_simple_action_set_state(statusbar_action, g_variant_new_boolean(pConfig->view_statusbar.get()));
 
@@ -455,9 +514,11 @@ int main(int argc, char *argv[])
 
 	static const char *open_accels[] = { "<Control>o", NULL };
 	static const char *quit_accels[] = { "<Control>q", NULL };
+	static const char *run_accels[] = { "Pause", NULL };
 	static const char *fullscreen_accels[] = { "F11", NULL };
 	gtk_application_set_accels_for_action(app, "app.open", open_accels);
 	gtk_application_set_accels_for_action(app, "app.quit", quit_accels);
+	gtk_application_set_accels_for_action(app, "app.run", run_accels);
 	gtk_application_set_accels_for_action(app, "app.fullscreen", fullscreen_accels);
 
 	const int status = g_application_run(G_APPLICATION(app), argc, argv);
