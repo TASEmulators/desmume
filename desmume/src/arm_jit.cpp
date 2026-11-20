@@ -33,6 +33,8 @@
 // its W^X requirements), so no direct Win32/POSIX JIT allocation is needed.
 #include "utils/bits.h"
 #include <asmjit/x86.h>
+#include <stdlib.h>
+#include <string.h>
 #include "armcpu.h"
 #include "instructions.h"
 #include "instruction_attributes.h"
@@ -225,6 +227,99 @@ static asmjit::Error jit_commit(asmjit::CodeHolder& code, void** out)
 {
 	return jit_runtime.add(out, &code);
 }
+
+// ---------------------------------------------------------------------------
+// JIT compile diagnostics (opt-in: DESMUME_JIT_DIAG=1)
+// ---------------------------------------------------------------------------
+// A failed block used to report nothing but the asmjit error name, which does
+// not identify the instruction at all: operand combinations are only checked
+// while the register allocator encodes the finished block inside finalize(),
+// and that path returns a bare error code - it neither says which instruction
+// it choked on nor calls the ErrorHandler. What it *does* do is log every
+// instruction it encodes, in order, together with any comment nodes.
+//
+// So: attach a logger that keeps a rolling tail of that log, and mark the start
+// of every emulated instruction with a comment. When a block then fails, the
+// last marker in the tail is the ARM/THUMB instruction whose x86 body asmjit
+// refused, and the lines after it are the part it had already encoded. That is
+// exactly the "which instruction is illegal" answer we could not get otherwise.
+//
+// Too slow for real play (the whole block is formatted into the log), hence the
+// environment variable.
+static int jit_diag = 0;
+static int jit_diag_dumps = 0;
+
+class JitDiagLogger : public asmjit::Logger
+{
+public:
+	enum { kTailSize = 4096 };
+	char tail[kTailSize];
+	size_t tail_len;
+
+	JitDiagLogger() : tail_len(0) { tail[0] = 0; }
+	void clear() { tail_len = 0; tail[0] = 0; }
+
+protected:
+	asmjit::Error _log(const char* data, size_t size) noexcept override
+	{
+		if(size > kTailSize - 1)
+		{
+			data += size - (kTailSize - 1);
+			size = kTailSize - 1;
+		}
+		if(tail_len + size > kTailSize - 1)
+		{
+			size_t keep = kTailSize / 2;
+			memmove(tail, tail + (tail_len - keep), keep);
+			tail_len = keep;
+		}
+		memcpy(tail + tail_len, data, size);
+		tail_len += size;
+		tail[tail_len] = 0;
+		return asmjit::Error::kOk;
+	}
+};
+
+static JitDiagLogger* jit_diag_logger = NULL;
+
+// Names the memory the emulated PC is executing from. A wild PC shows up here
+// immediately (e.g. "NOT MAPPED" for the 0x01xxxxxx scratch window) instead of
+// being mistaken for a code generation bug.
+static const char* jit_bank_name(int proc, u32 adr)
+{
+	u8* bank = MMU.MMU_MEM[proc][(adr >> 20) & 0xFF];
+	if(bank == NULL)                     return "unmapped";
+	if(bank == MMU.MAIN_MEM)             return "main RAM";
+	if(bank == MMU.ARM9_ITCM)            return "ARM9 ITCM";
+	if(bank == MMU.ARM9_BIOS)            return "ARM9 BIOS (desmume's fake stub unless a BIOS file is loaded)";
+	if(bank == MMU.ARM7_BIOS)            return "ARM7 BIOS";
+	if(bank == MMU.SWIRAM)               return "shared WRAM";
+	if(bank == MMU.ARM9_LCD)             return "VRAM (LCDC mode)";
+	if(bank == MMU.ARM9_REG || bank == MMU.ARM7_REG) return "IO registers";
+	if(bank == MMU.ARM7_ERAM)            return "ARM7 ERAM";
+	if(bank == MMU.ARM7_WIRAM)           return "ARM7 WIRAM";
+	if(bank == MMU.UNUSED_RAM)           return "NOT MAPPED (4-byte scratch window, never real code)";
+	return "?";
+}
+
+static void jit_diag_init()
+{
+	static bool done = false;
+	if(done) return;
+	done = true;
+
+	const char* env = getenv("DESMUME_JIT_DIAG");
+	if(env == NULL || env[0] == 0 || env[0] == '0')
+		return;
+
+	jit_diag = 1;
+	// CodeHolder/emitter treat the pointer as borrowed, but the objects live for
+	// the whole process anyway, so never free them.
+	jit_diag_logger = new JitDiagLogger();
+	jit_code.set_logger(jit_diag_logger);
+	fprintf(stderr, "JIT: diagnostics ON - a failed block will name the emulated instruction and dump asmjit's x86 log tail\n");
+}
+
 static void emit_branch(int cond, Label to);
 static void _armlog(u8 proc, u32 addr, u32 opcode);
 
@@ -242,6 +337,8 @@ static u32 bb_constant_cycles;
 // pointer to mmu_dma_event_pending, materialised on demand (see emit_dma_event_check)
 static x86::Gp bb_dma_pending;
 static bool bb_dma_pending_ready;
+// number of emulated instructions the block being compiled turned out to have
+static u32 bb_instr_count;
 
 #define cpu (&ARMPROC)
 #define bb_next_instruction (bb_adr + bb_opcodesize)
@@ -1616,11 +1713,15 @@ static u32 sub(u32 lhs, u32 rhs) { return lhs - rhs; }
 		c.mov(tmp, reg_ptr(15)); \
 		if (PROCNUM == 0) \
 		{ \
-			x86::Gp thumb = c.new_gpz(); \
+			/* Keep the whole sequence 32-bit: asmjit 1.0 tolerated \
+			   "mov r64, r32" (no such x86 encoding), asmjit master rejects it \
+			   with kInvalidInstruction, which made every ARM LDR with Rd=PC \
+			   fail to compile and fall back to the interpreter. */ \
+			x86::Gp thumb = c.new_gp32(); \
 			c.mov(thumb, tmp); \
 			c.and_(thumb, 1); \
 			c.shl(thumb, 5); \
-			c.or_(cpu_ptr(CPSR), thumb.r64()); \
+			c.or_(cpu_ptr(CPSR), thumb); \
 			c.and_(tmp, 0xFFFFFFFE); \
 		} \
 		else \
@@ -4133,6 +4234,7 @@ static u32 compile_basicblock()
 
 	jit_code.reinit();
 	c.add_func(FuncSignature::build<int32_t>());
+	if(jit_diag) jit_diag_logger->clear();
 	
 	JIT_COMMENT("CPU ptr");
 	bb_cpu = c.new_gpz();
@@ -4157,6 +4259,23 @@ static u32 compile_basicblock()
 			opcode = _MMU_read16<PROCNUM, MMU_AT_CODE>(bb_adr);
 		else
 			opcode = _MMU_read32<PROCNUM, MMU_AT_CODE>(bb_adr);
+		bb_instr_count = i + 1;
+
+		if(jit_diag)
+		{
+			// Marker for the log. asmjit writes it in emission order, right
+			// before the x86 this instruction generates, so whichever marker
+			// ends the tail of a failed finalize() names the culprit.
+			// asmjit master's comment() takes no format arguments, hence the
+			// local buffer (comment() copies the string into its arena).
+			char marker[96];
+			if(bb_thumb)
+				snprintf(marker, sizeof(marker), ">> THUMB%c %08X: opcode %04X", PROCNUM?'7':'9', bb_adr, opcode);
+			else
+				snprintf(marker, sizeof(marker), ">> ARM%c %08X: opcode %08X  (opcode matrix slot 0x%03X)",
+					PROCNUM?'7':'9', bb_adr, opcode, INSTRUCTION_INDEX(opcode));
+			c.comment(marker);
+		}
 
 #if LOG_JIT
 		char dasmbuf[1024] = {0};
@@ -4289,7 +4408,56 @@ static u32 compile_basicblock()
 	}
 	if(jit_status != asmjit::Error::kOk)
 	{
-		fprintf(stderr, "JIT error at %s%c-%08X: %s\n", bb_thumb?"THUMB":"ARM", PROCNUM?'7':'9', start_adr, asmjit::stringify_error(jit_status));
+		fprintf(stderr, "JIT error at %s%c-%08X: %s [block = %u instruction(s) from %s]\n",
+			bb_thumb?"THUMB":"ARM", PROCNUM?'7':'9', start_adr,
+			asmjit::stringify_error(jit_status), bb_instr_count,
+			jit_bank_name(PROCNUM, start_adr));
+
+		if(jit_diag)
+		{
+			if(jit_diag_dumps++ < 8)
+			{
+				// The tail ends with the marker of the instruction asmjit was
+				// encoding when it gave up; anything after the marker is the
+				// part of its x86 body that did encode.
+				fprintf(stderr, "  --- asmjit log tail (last emulated instruction is the culprit) ---\n");
+				const char* p = jit_diag_logger->tail;
+				size_t n = jit_diag_logger->tail_len;
+				if(n > 1500) { p += n - 1500; }
+				for(; *p; p++)
+				{
+					fputc(*p, stderr);
+					if(*p == '\n') fputc(' ', stderr);
+				}
+				if(n && jit_diag_logger->tail[n-1] != '\n') fputc('\n', stderr);
+
+				fprintf(stderr, "  --- block words ---\n");
+				for(u32 k = 0; k < bb_instr_count; k++)
+				{
+					u32 adr = start_adr + k * bb_opcodesize;
+					if(bb_thumb)
+					{
+						u32 word = _MMU_read16<PROCNUM, MMU_AT_CODE>(adr);
+						fprintf(stderr, "   %08X  %04X\n", adr, word);
+					}
+					else
+					{
+						u32 word = _MMU_read32<PROCNUM, MMU_AT_CODE>(adr);
+						fprintf(stderr, "   %08X  %08X  slot 0x%03X\n", adr, word, INSTRUCTION_INDEX(word));
+					}
+				}
+			}
+			else if(jit_diag_dumps == 9)
+			{
+				jit_diag_dumps++;
+				fprintf(stderr, "  (further failing blocks will not be dumped; DESMUME_JIT_DIAG)\n");
+			}
+		}
+		else
+		{
+			fprintf(stderr, "  set DESMUME_JIT_DIAG=1 to dump the offending emulated instruction\n");
+		}
+
 		f = op_decode[PROCNUM][bb_thumb];
 	}
 #if LOG_JIT
@@ -4326,6 +4494,7 @@ template u32 arm_jit_compile<1>();
 
 void arm_jit_reset(bool enable, bool suppress_msg)
 {
+	jit_diag_init();
 #if LOG_JIT
 	jit_code.set_logger(&logger);
 	freopen("desmume_jit.log", "w", stderr);
