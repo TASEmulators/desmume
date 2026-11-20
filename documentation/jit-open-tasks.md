@@ -127,3 +127,26 @@ DESMUME_JIT_DIAG=1 DeSmuME.exe rom.nds
 - `JIT_COMMENT(...)` 宏用的是 `c.comment(fmt, ...)`，而 asmjit master 的
   `comment()` 只接受 `(const char*, size_t)`。目前 `LOG_JIT_LEVEL == 0` 所以没人发现，
   真要打开 `LOG_JIT` 需要先把宏改成 `snprintf` + `c.comment(buf)`。
+
+### 自定义 Logger 必踩：`size == SIZE_MAX`
+
+`Logger::log()` 是内联转发，**不会**替你把 `SIZE_MAX` 解析成 `strlen`：
+
+```cpp
+Error log(const char* data, size_t size = SIZE_MAX) noexcept { return _log(data, size); }
+```
+
+而 `BaseBuilder::serialize_to()` 回放注释节点时正是以 `SIZE_MAX` 调用：
+
+```cpp
+err = dst->comment(node->inline_comment());   // comment(const char*, size_t = SIZE_MAX)
+```
+
+于是 `_log` 里任何形如 `if(size > N) { data += size - N; size = N; }` 的截断都会把
+`data` 变成一个**指针减法溢出后的野地址**（`SIZE_MAX - N` 回绕），随后 `memcpy` 直接
+AV。第一版 `JitDiagLogger` 就是这么崩的：只在 `DESMUME_JIT_DIAG=1`（有注释节点）时
+触发，且崩溃点在 `serialize_to → comment → log → _log`，看起来像 asmjit 的问题。
+现在的实现先判 `data == NULL`、再判 `size == SIZE_MAX`，最后按 `drop` 量 `memmove`。
+
+> 验证提醒：`probe_block_at.exe` 之类的探针是**静态链接** `desmume_core.lib` 的。
+> 改了核心源却只重编库、不重链 exe，跑的仍是旧代码——会得到假回归。改库后必须重链。
