@@ -262,16 +262,26 @@ public:
 protected:
 	asmjit::Error _log(const char* data, size_t size) noexcept override
 	{
-		if(size > kTailSize - 1)
+		if(data == NULL)
+			return asmjit::Error::kOk;
+		// Logger::log() uses SIZE_MAX for "null terminated"; comment nodes go
+		// through that path, so this case has to be resolved before any
+		// arithmetic on `size` happens.
+		if(size == SIZE_MAX)
+			size = strlen(data);
+		// Keep only the last kTailSize-1 bytes of the stream.
+		if(size >= kTailSize)
 		{
 			data += size - (kTailSize - 1);
 			size = kTailSize - 1;
 		}
 		if(tail_len + size > kTailSize - 1)
 		{
-			size_t keep = kTailSize / 2;
-			memmove(tail, tail + (tail_len - keep), keep);
-			tail_len = keep;
+			size_t drop = tail_len + size - (kTailSize - 1);
+			if(drop > tail_len)
+				drop = tail_len;
+			memmove(tail, tail + drop, tail_len - drop);
+			tail_len -= drop;
 		}
 		memcpy(tail + tail_len, data, size);
 		tail_len += size;
