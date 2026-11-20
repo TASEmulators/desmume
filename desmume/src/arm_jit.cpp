@@ -24,30 +24,8 @@
 #error "ERROR: JIT compiler - unsupported target platform"
 #endif
 
-#ifdef HOST_WINDOWS
-// **** Windows port
-// The JIT scratchpad is allocated with VirtualAlloc(); nothing else here needs Win32.
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <windows.h>
-#else
-#include <sys/mman.h>
-#include <errno.h>
-#include <unistd.h>
-#include <stddef.h>
-// The static code buffer relies on write+execute privileges provided by mprotect(),
-// which isn't supported by the macOS v10.15 SDK and later, as well as Apple's other
-// modern operating systems. Therefore, we are disabling this on all Apple systems
-// for now.
-#ifndef __APPLE__
-#define HAVE_STATIC_CODE_BUFFER
-#endif
-#endif
-
+// asmjit's JitRuntime handles the platform-specific executable memory (and
+// its W^X requirements), so no direct Win32/POSIX JIT allocation is needed.
 #include "utils/bits.h"
 #include <asmjit/x86.h>
 #include "armcpu.h"
@@ -211,25 +189,11 @@ DS_ALIGN(4096) uintptr_t compiled_funcs[1<<26] = {0};
 static u8 recompile_counts[(1<<26)/16];
 
 // ---------------------------------------------------------------------------
-// JIT code landing area.
-//
-// Both platforms share one bump allocator: arm_jit_reset() recycles the whole
-// buffer, so individual blocks are never freed.
-//
-// On POSIX the buffer is a static one mapped RWX, which keeps the code within
-// 2GB of .text so call instructions can use pcrel offsets. Windows never had
-// that (see the FIXME that used to sit here), it relied on asmjit 1.0's own
-// allocator; it now gets a VirtualAlloc'd buffer instead, which at least makes
-// the two paths behave the same.
-// ---------------------------------------------------------------------------
-
-static u8 *scratchpad = NULL;
-static size_t scratchpad_size = 0;
-static u8 *scratchptr = NULL;
-
-#ifdef HAVE_STATIC_CODE_BUFFER
-DS_ALIGN(4096) static u8 scratchpad_storage[1<<25];
-#endif
+// asmjit owns executable memory through JitRuntime/JitAllocator: platform
+// allocation (VirtualAlloc / mmap+MAP_JIT), W^X handling, block pooling and
+// the instruction-cache flush all live there. The old hand-rolled scratchpad
+// needed Win32 APIs on POSIX builds and was a migration leftover.
+static asmjit::JitRuntime jit_runtime;
 
 static asmjit::CodeHolder jit_code;
 
@@ -237,27 +201,6 @@ struct JitCodeHolderInit
 {
 	JitCodeHolderInit()
 	{
-#ifdef HAVE_STATIC_CODE_BUFFER
-		scratchpad = scratchpad_storage;
-		scratchpad_size = sizeof(scratchpad_storage);
-		int align = (uintptr_t)scratchpad & (sysconf(_SC_PAGESIZE) - 1);
-		int err = mprotect(scratchpad-align, scratchpad_size+align, PROT_READ|PROT_WRITE|PROT_EXEC);
-		if(err)
-		{
-			fprintf(stderr, "mprotect failed: %s\n", strerror(errno));
-			abort();
-		}
-#else
-		scratchpad_size = 32u << 20;
-		scratchpad = (u8*)VirtualAlloc(NULL, scratchpad_size, MEM_COMMIT|MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-		if(!scratchpad)
-		{
-			fprintf(stderr, "VirtualAlloc failed for the JIT scratchpad\n");
-			abort();
-		}
-#endif
-		scratchptr = scratchpad;
-
 		asmjit::Error err = jit_code.init(asmjit::Environment::host());
 		if(err != asmjit::Error::kOk)
 		{
@@ -270,47 +213,13 @@ struct JitCodeHolderInit
 static JitCodeHolderInit jit_code_holder_init;
 static asmjit::x86::Compiler c(&jit_code);
 
-// Lands finalized code in the scratchpad. Mirrors JitRuntime::_add() from
-// 3rdparty/asmjit/core/jit_runtime.cpp step for step, with JitAllocator replaced
-// by the bump pointer. Anything dropped here is a behavioural difference from
-// asmjit's own runtime, so keep the order intact.
+// Lands finalized code into memory allocated by JitRuntime. The allocator
+// handles relocation, the instruction-cache flush and W^X transitions, so the
+// only error worth reporting here is the one asmjit itself returns.
 static asmjit::Error jit_commit(asmjit::CodeHolder& code, void** out)
 {
-	*out = NULL;
-
-	ASMJIT_PROPAGATE(code.flatten());
-	ASMJIT_PROPAGATE(code.resolve_cross_section_fixups());
-
-	// A label that was referenced but never bound is not an error until here.
-	if(code.has_unresolved_fixups())
-		return asmjit::Error::kUnresolvedFixups;
-
-	size_t estimated = code.code_size();
-	if(estimated == 0)
-		return asmjit::Error::kNoCodeGenerated;
-
-	if(estimated > (size_t)(scratchpad + scratchpad_size - scratchptr))
-	{
-		fprintf(stderr, "Out of memory for asmjit. Clearing code cache.\n");
-		arm_jit_reset(1);
-		// If arm_jit_reset didn't involve recompiling op_cmp, we could keep the current function.
-		return asmjit::Error::kOutOfMemory;
-	}
-
-	asmjit::CodeHolder::RelocationSummary summary;
-	ASMJIT_PROPAGATE(code.relocate_to_base((uint64_t)scratchptr, &summary));
-
-	// Relocation can shrink the block when a reference no longer needs an entry
-	// in an address table; asmjit computes the final size the same way.
-	size_t final_size = estimated - summary.code_size_reduction;
-
-	ASMJIT_PROPAGATE(code.copy_flattened_data(scratchptr, final_size));
-
-	*out = scratchptr;
-	scratchptr += final_size;
-	return asmjit::Error::kOk;
+	return jit_runtime.add(out, &code);
 }
-
 static void emit_branch(int cond, Label to);
 static void _armlog(u8 proc, u32 addr, u32 opcode);
 
@@ -4410,8 +4319,10 @@ void arm_jit_reset(bool enable, bool suppress_msg)
 	jit_code.set_logger(&logger);
 	freopen("desmume_jit.log", "w", stderr);
 #endif
-	// Every block lives in the scratchpad, so recycling is one pointer reset.
-	scratchptr = scratchpad;
+	// Release every code block. Hard reset invalidates all function pointers,
+	// matching the old scratchpad semantics; a soft reset would reuse addresses
+	// and stale compiled_funcs[] entries would execute the wrong block.
+	jit_runtime.reset(asmjit::ResetPolicy::kHard);
 	if (!suppress_msg)
 		printf("CPU mode: %s\n", enable?"JIT":"Interpreter");
 	saveBlockSizeJIT = CommonSettings.jit_max_block_size;
@@ -4422,9 +4333,8 @@ void arm_jit_reset(bool enable, bool suppress_msg)
 
 #ifdef MAPPED_JIT_FUNCS
 
-		// The blocks themselves are gone with the scratchpad reset above; only the
-		// dispatch tables have to be cleared. asmjit 1.0 freed each block through
-		// its MemoryManager, asmjit master has no such allocator here.
+		// jit_runtime.reset() above invalidated every block; only the dispatch
+		// tables have to be cleared here.
 		#define JITCLEAR(x)  memset(x, 0, sizeof(x));
 			JITCLEAR(JIT.MAIN_MEM)
 			JITCLEAR(JIT.SWIRAM)
