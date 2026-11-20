@@ -43,12 +43,17 @@ fi
 mkdir -p "$OUT"
 
 # --- find the object directory ---------------------------------------------
-# Matched by content rather than by path: the directory name carries the target
-# name, which changes whenever someone edits the scheme.
-OBJDIR="$(find "$DERIVED/Build/Intermediates.noindex" -type d -name arm64 -path '*Objects-normal*' 2>/dev/null | head -1)"
-if [ -z "$OBJDIR" ]; then
-    echo "no object files under $DERIVED" >&2
-    echo "build the AppleSilicon target first (see the header of this script)" >&2
+# The derived data usually holds objects for several AppleSilicon targets (the
+# plain one and the dev+ one). They are not interchangeable: the plain target
+# can contain translation units whose stack-probe attributes the harness linker
+# rejects, and picking whichever directory `find` reaches first made the harness
+# silently switch engines after an unrelated xcodebuild. Use the target named in
+# the prerequisite above unless the caller overrides it.
+TARGET_NAME="${TARGET_NAME:-DeSmuME (macOS App; AppleSilicon dev+ -- Latest Xcode)}"
+OBJDIR="$DERIVED/Build/Intermediates.noindex/DeSmuME (Latest).build/Release/$TARGET_NAME.build/Objects-normal/arm64"
+if [ ! -d "$OBJDIR" ]; then
+    echo "no object directory for target '$TARGET_NAME' under $DERIVED" >&2
+    echo "build that AppleSilicon target first (see the header of this script)" >&2
     exit 1
 fi
 echo "objects : $OBJDIR"
