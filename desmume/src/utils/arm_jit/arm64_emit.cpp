@@ -1863,24 +1863,27 @@ static void callR8(t_bytes *out) {
 #define SET_NZCV(sign) { \
 	JIT_COMMENT("SET_NZCV"); \
 	ASMJIT_ASSUME_OK(g_out->mrs(gx(X1_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV))); \
-	flags_ptr(y_reg, VALUE); \
+	flags_ptr(y_reg, VALUE_NO_CACHE); \
 	ASMJIT_ASSUME_OK(g_out->lsr(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x18))); \
-	ASMJIT_ASSUME_OK(g_out->and_(gx(X1_REG), gx(X1_REG), asmjit::Imm(0xf0))); \
-	ASMJIT_ASSUME_OK(g_out->and_(gx(X9_REG), gx(X9_REG), asmjit::Imm(0xf))); \
-	emit_or64(g_out, X1_REG, y_reg, X1_REG); \
-	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(flags_ptr(X0_REG, ADDRESS)), X1_REG); \
+	/* After the shift, x1[7:4] is host N/Z/C/V and x1[3:0] is zero. Replace the
+	 * old `and x1,#0xf0 / and x9,#0xf / orr` with one bitfield insert: CPSR's
+	 * low nibble is the mode, which must survive a flag update verbatim. */ \
+	ASMJIT_ASSUME_OK(g_out->bfxil(gw(X1_REG), gw(y_reg), asmjit::Imm(0), asmjit::Imm(4))); \
+	emit_strb_off(g_out, X1_REG, JIT_CPU_BASE_REG, RC_FLAGS_OFF); \
 }
 
 #define SET_NZC { \
 	JIT_COMMENT("SET_NZC"); \
 	ASMJIT_ASSUME_OK(g_out->mrs(gx(X1_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV))); \
-	flags_ptr(y_reg, VALUE); \
+	flags_ptr(y_reg, VALUE_NO_CACHE); \
 	ASMJIT_ASSUME_OK(g_out->lsr(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x18))); \
 	ASMJIT_ASSUME_OK(g_out->and_(gx(X1_REG), gx(X1_REG), asmjit::Imm(0xc0))); \
 	if (cf_change) { ASMJIT_ASSUME_OK(g_out->orr(gx(X1_REG), gx(X1_REG), gx(X5_REG), asmjit::Imm(5))); /* x5 == rcf, already <<5 */ } \
-	ASMJIT_ASSUME_OK(g_out->and_(gx(X9_REG), gx(X9_REG), asmjit::Imm(cf_change ? 0x1f : 0x3f))); \
-	emit_or64(g_out, X1_REG, y_reg, X1_REG); \
-	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(flags_ptr(X0_REG, ADDRESS)), X1_REG); \
+	/* `and x9,#0x1f/0x3f` + `orr` collapse into one bitfield insert. cf_change
+	 * keeps only the 5-bit mode (C comes from rcf); otherwise the 6 low bits
+	 * (mode + old C) survive. */ \
+	ASMJIT_ASSUME_OK(g_out->bfxil(gw(X1_REG), gw(y_reg), asmjit::Imm(0), asmjit::Imm(cf_change ? 5 : 6))); \
+	emit_strb_off(g_out, X1_REG, JIT_CPU_BASE_REG, RC_FLAGS_OFF); \
 }
 
 #define SET_NZC_SHIFTS_ZERO(cf) { \
@@ -1899,32 +1902,30 @@ static void callR8(t_bytes *out) {
 
 #define SET_NZ(clear_cv) { \
 	ASMJIT_ASSUME_OK(g_out->mrs(gx(X1_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV))); \
-	flags_ptr(y_reg, VALUE); \
+	flags_ptr(y_reg, VALUE_NO_CACHE); \
 	ASMJIT_ASSUME_OK(g_out->lsr(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x18))); \
 	ASMJIT_ASSUME_OK(g_out->and_(gx(X1_REG), gx(X1_REG), asmjit::Imm(0xc0))); \
-	ASMJIT_ASSUME_OK(g_out->and_(gx(X9_REG), gx(X9_REG), asmjit::Imm(clear_cv ? 0x0f : 0x3f))); \
-	emit_or64(g_out, X1_REG, y_reg, X1_REG); \
-	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(flags_ptr(X0_REG, ADDRESS)), X1_REG); \
+	ASMJIT_ASSUME_OK(g_out->bfxil(gw(X1_REG), gw(y_reg), asmjit::Imm(0), asmjit::Imm(clear_cv ? 4 : 6))); \
+	emit_strb_off(g_out, X1_REG, JIT_CPU_BASE_REG, RC_FLAGS_OFF); \
 }
 
 #define SET_N { \
 	ASMJIT_ASSUME_OK(g_out->mrs(gx(X1_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV))); \
-	flags_ptr(y_reg, VALUE); \
+	flags_ptr(y_reg, VALUE_NO_CACHE); \
 	ASMJIT_ASSUME_OK(g_out->lsr(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x18))); \
 	ASMJIT_ASSUME_OK(g_out->and_(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x80))); \
-	ASMJIT_ASSUME_OK(g_out->and_(gx(X9_REG), gx(X9_REG), asmjit::Imm(0x7f))); \
-	emit_or64(g_out, R1, y_reg, R1); \
-	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(flags_ptr(X0_REG, ADDRESS)), X1_REG); \
+	ASMJIT_ASSUME_OK(g_out->bfxil(gw(X1_REG), gw(y_reg), asmjit::Imm(0), asmjit::Imm(7))); \
+	emit_strb_off(g_out, X1_REG, JIT_CPU_BASE_REG, RC_FLAGS_OFF); \
 }
 
 #define SET_Z { \
 	ASMJIT_ASSUME_OK(g_out->mrs(gx(X1_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV))); \
-	flags_ptr(y_reg, VALUE); \
+	flags_ptr(y_reg, VALUE_NO_CACHE); \
 	ASMJIT_ASSUME_OK(g_out->lsr(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x18))); \
 	ASMJIT_ASSUME_OK(g_out->and_(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x40))); \
 	emit_andimm(g_out, X9_REG, 0xbf, X9_REG); /* and sb, sb, #0xbf */ \
 	emit_or64(g_out, X1_REG, y_reg, X1_REG); \
-	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(flags_ptr(X0_REG, ADDRESS)), X1_REG); \
+	emit_strb_off(g_out, X1_REG, JIT_CPU_BASE_REG, RC_FLAGS_OFF); \
 }
 
 #define SET_Q { \
@@ -1934,15 +1935,20 @@ static void callR8(t_bytes *out) {
 	emit_or_ptr32_regptr_reg(g_out, CACHED_PTR(flags_ptr(X1_REG, ADDRESS)), y_reg); \
 }
 
+// x86 uses `bt flags_ptr, 5` (+ `cmc` for SBC) to load the emulated carry into
+// the host CF in one instruction. AArch64 has no memory-bit-to-NZCV instruction,
+// but there is a branchless equivalent: isolate CPSR.C and `cmp` it against the
+// same mask. `cmp x, #0x20` sets host C exactly when bit 5 was set, which is the
+// polarity both `adcs` and `sbcs` want -- unlike x86's `sbb`, AArch64 `sbc`
+// consumes C as "no borrow", the same convention ARM uses. That is also why the
+// `invert` parameter was already a no-op in the old arm64 macro.
+//
+// The old body spent `ands` + a taken/not-taken branch + `mrs`/`bic|orr`/`msr`
+// (3 + 3 instructions) on this, with a branch per ADC/SBC/RSC. Keep the
+// `flags_ptr(..., VALUE)` access so the implicit "last field address in x11"
+// contract stays intact for the handlers that store through it.
 #define GET_CARRY(invert) { \
-	flags_ptr(X2_REG, VALUE); \
-	uint64_t setb=genlabel(); \
-	uint64_t done=genlabel(); \
-	ASMJIT_ASSUME_OK(g_out->ands(gx(X2_REG), gx(X2_REG), asmjit::Imm(0x20))); /* ands w2, w2, #0x20 */ \
-	emit_branch_label(g_out, setb, 0x1); \
-	clear_carry_flag(g_out); \
-	emit_branch_label(g_out, done, 0xE); \
-	emit_label(g_out, setb); \
-	set_carry_flag(g_out); \
-	emit_label(g_out, done); \
+	flags_ptr(X2_REG, VALUE_NO_CACHE); \
+	ASMJIT_ASSUME_OK(g_out->and_(gw(X2_REG), gw(X2_REG), asmjit::Imm(0x20))); \
+	ASMJIT_ASSUME_OK(g_out->cmp(gw(X2_REG), asmjit::Imm(0x20))); \
 }

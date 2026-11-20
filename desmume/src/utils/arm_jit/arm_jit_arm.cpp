@@ -218,6 +218,11 @@ static int inline cpu_get_ptrB(void *start, int o, int r, int v) {
 	if (v == VALUE) {
 		emit_ldrb_off(g_out, r, JIT_CPU_BASE_REG, o);
 		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v == VALUE_NO_CACHE) {
+		// Only the value is wanted. The flag macros use this to avoid the
+		// `add x11, x25, #off` they would otherwise pay just to feed
+		// CACHED_PTR() a second time.
+		emit_ldrb_off(g_out, r, JIT_CPU_BASE_REG, o);
 	} else if (v) {
 		cpu_field_addr(o, r);
 		emit_ldrb(g_out, r, r);
@@ -540,6 +545,11 @@ static ArmRegCache g_regs;
 #define cpu_ptr(x, reg, v)			cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, x), reg, v)
 #define cpu_ptr_byte(x, y, reg, v)	cpu_byte_ptr(bb_cpu, offsetof(armcpu_t, x) + y, reg, v)
 #define flags_ptr(reg, v)			cpu_ptr_byte(CPSR.val, 3, reg, v)
+// Direct base+displacement address of the byte the flag macros merge into.
+// Using it instead of CACHED_PTR() removes the `add x11, x25, #off` that the
+// old `flags_ptr(..., ADDRESS)` needed, without depending on x11's implicit
+// "last VALUE address" state. offsets: CPSR at 80, .val byte 3 => N/Z/C/V.
+#define RC_FLAGS_OFF				(offsetof(armcpu_t, CPSR) + 3)
 // Rule 4: every access to R[] through memory evicts the register first. A
 // handler that has not been migrated to the cache still reads and writes
 // armcpu_t.R[] directly, and it would otherwise read the value from before the
