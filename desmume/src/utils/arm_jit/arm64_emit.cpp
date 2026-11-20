@@ -38,6 +38,12 @@ typedef uint32_t u_int;
 #include <sys/mman.h>
 #endif
 
+// R0..R11 name the fixed host scratch registers this backend allocates by
+// hand (tmp=R2, tmp2=R3, imm=R4, ...; see arm_jit_arm.cpp). They must stay
+// physical: asmjit's register allocator is not usable here because the block
+// frame is managed by hand and helper calls use raw blr. The two measured
+// reasons, plus the ArmRegCache pool that works around them, are documented in
+// arm_jit_arm.cpp ("Why this does *not* use asmjit virtual registers").
 #define R11 11
 #define R10 10
 #define FP 11
