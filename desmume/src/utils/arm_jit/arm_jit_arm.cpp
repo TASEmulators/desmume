@@ -1816,10 +1816,13 @@ static int OP_SMLAW_T(const u32 i) { OP_SMxxW_(emit_smlawt(g_out, hi,rc_read(REG
 //-----------------------------------------------------------------------------
 //   MRS / MSR
 //-----------------------------------------------------------------------------
+// MRS is not block-final: whatever follows in the block reads PSW through Rd
+// (`mrs r0,cpsr; tst r0,#0x80` is the usual interrupt-guard shape), so the
+// result goes into the cache slot instead of to memory.
 static int OP_MRS_CPSR(const u32 i)
 {
 	cpu_ptr(CPSR, x_reg, VALUE);
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), x_reg);
+	rc_store(REG_POS(i,12), x_reg);
 	
 	return 1;
 }
@@ -1827,10 +1830,18 @@ static int OP_MRS_CPSR(const u32 i)
 static int OP_MRS_SPSR(const u32 i)
 {
 	cpu_ptr(SPSR, x_reg, VALUE);
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), x_reg);
+	rc_store(REG_POS(i,12), x_reg);
 	
 	return 1;
 }
+
+// MSR's source register through the cache: a preceding instruction may have
+// left Rs in a slot, and reg_pos_ptr() would pay a store + load for it.
+#define REG_OFF_CACHED \
+	bool rhs_is_imm = false; \
+	static unsigned int rhs_var; \
+	rc_read(REG_POS(i,0), rhs_reg); \
+	u32 rhs_first = cpu->R[REG_POS(i,0)];
 
 #define OP_MSR_(reg, args, sw) \
 	args; \
@@ -1850,6 +1861,7 @@ static int OP_MRS_SPSR(const u32 i)
 					emit_andimm(g_out, mode, 0x1F, mode); \
 					emit_ptr(g_out, (uintptr_t)&ARMPROC, R0); \
 					emit_mov(g_out, mode, R1);\
+					g_regs.flush(); \
 					emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3); \
 					callR3(g_out); \
 				} \
@@ -1914,6 +1926,7 @@ static int OP_MRS_SPSR(const u32 i)
 		emit_andimm(g_out, mode, 0x1F, mode); \
 		emit_ptr(g_out, (uintptr_t)&ARMPROC, R0); \
 		emit_mov(g_out, mode, R1);\
+		g_regs.flush(); \
 		emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3); \
 		callR3(g_out); \
 	} \
@@ -1938,8 +1951,14 @@ static int OP_MRS_SPSR(const u32 i)
 #define xPSR R4
 #define xPSR_mem R3	
 
-static int OP_MSR_CPSR(const u32 i) { OP_MSR_(CPSR, REG_OFF, 1); }
-static int OP_MSR_SPSR(const u32 i) { OP_MSR_(SPSR, REG_OFF, 0); }
+// The two `g_regs.flush()` calls inside OP_MSR_ are not about MSR itself: they
+// are the price of armcpu_switchMode(). It banks the *current* R13/R14/SPSR
+// (and swaps R8-R12 in FIQ) by reading them out of armcpu_t, so a dirty cache
+// slot would hand it the pre-instruction value and then write the old bank's
+// register into the new one at the tail flush. Memory has to be current before
+// the call, not after.
+static int OP_MSR_CPSR(const u32 i) { OP_MSR_(CPSR, REG_OFF_CACHED, 1); }
+static int OP_MSR_SPSR(const u32 i) { OP_MSR_(SPSR, REG_OFF_CACHED, 0); }
 static int OP_MSR_CPSR_IMM_VAL(const u32 i) { OP_MSR_(CPSR, IMM_VAL, 1); }
 static int OP_MSR_SPSR_IMM_VAL(const u32 i) { OP_MSR_(SPSR, IMM_VAL, 0); }
 
@@ -2836,6 +2855,9 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	{  
 		emit_ptr(g_out, (uintptr_t)&ARMPROC, R0);
 		emit_movimm(g_out, SYS, R1);
+		// The temporary SYS switch banks R13/R14 through memory (see the note
+		// on OP_MSR_), and `adr` is already in a host register.
+		g_regs.flush();
 		emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3);
 		callR3(g_out);
 		emit_mov(g_out, R0, oldmode);
@@ -2847,6 +2869,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	{	
 		emit_ptr(g_out, (uintptr_t)&ARMPROC, R0);
 		emit_mov(g_out, oldmode, R1);
+		g_regs.flush();
 		emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3);
 		callR3(g_out);		
 	}
@@ -2904,6 +2927,9 @@ static int OP_STMDB2_W(const u32 i) { return op_ldm_stm2(i, 1, -1, 1, 1); }
 #define SIGNEXTEND_11(i) (((s32)i<<21)>>21)
 #define SIGNEXTEND_24(i) (((s32)i<<8)>>8)
 
+// B/BL have nothing to cache: the only register they write is LR, and the block
+// ends here, so its final value has to reach armcpu_t either way (reg_ptr()
+// evicts a stale entry first, the tail flush has nothing left to do).
 static int op_b(u32 i, bool bl)
 {
 	u32 dst = bb_r15 + (SIGNEXTEND_24(i) << 2);
@@ -2959,8 +2985,14 @@ static int op_bx(/*Mem */int srcreg, bool blx, bool test_thumb)
 	return 1;
 }
 
-static int OP_BX(const u32 i) { return op_bx(reg_pos_ptr(0, R1, VALUE), 0, 1); }
-static int OP_BLX_REG(const u32 i) { return op_bx(reg_pos_ptr(0, R1, VALUE), 1, 1); }
+// `bx`/`blx` are block-final (BRANCH_ALWAYS), so the target and the LR the BLX
+// form stores go straight to armcpu_t -- the tail flush would buy nothing. The
+// source register is a different story: `mov r0,r1; bx r0` is common enough
+// that reading Rn through the cache is worth it. Switching to Thumb does not
+// bank any register (CPSR.T is not part of the banked set), so unlike a mode
+// change this needs no flush.
+static int OP_BX(const u32 i) { return op_bx(rc_read(REG_POS(i,0), R1), 0, 1); }
+static int OP_BLX_REG(const u32 i) { return op_bx(rc_read(REG_POS(i,0), R1), 1, 1); }
 
 //-----------------------------------------------------------------------------
 //   CLZ
@@ -3440,6 +3472,11 @@ u32 op_swi(u8 swinum)
 		return 1;
 	}
 	
+	// Entering SVC mode banks R13/R14/SPSR by reading them out of armcpu_t, so
+	// any deferred write has to land first -- `add sp, sp, #-4` followed by an
+	// `swi` in the same block is the shape that breaks otherwise.
+	g_regs.flush();
+
 	cpu_ptr(CPSR.val, R4, VALUE);
 	
 	emit_ptr(g_out, (uintptr_t)&ARMPROC, R0);
@@ -3469,7 +3506,40 @@ static int OP_SWI(const u32 i) { return op_swi((i >> 16) & 0x1F); }
 //-----------------------------------------------------------------------------
 //   BKPT
 //-----------------------------------------------------------------------------
-static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return 0; }
+// A prefetch abort, emitted the same way arm_instructions.cpp:OP_BKPT does it:
+// the old CPSR becomes SPSR, LR_abt points past the BKPT, T/EE are cleared, I is
+// set and execution continues at the abort vector. It is JIT_BYPASS in the
+// attribute table, so the block ends here and next_instruction is what the
+// sequencer picks up (the tail copies it into instruct_adr).
+//
+// Same flush rule as MSR/SWI: armcpu_switchMode() banks R13/R14/SPSR by reading
+// them out of armcpu_t, so deferred writes have to land first.
+static int OP_BKPT(const u32 i)
+{
+	g_regs.flush();
+
+	cpu_ptr(CPSR.val, R4, VALUE);           // SPSR_abt = old CPSR
+
+	emit_ptr(g_out, (uintptr_t)&ARMPROC, R0);
+	emit_movimm(g_out, ABT, R1);
+	emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3);
+	callR3(g_out);
+
+	emit_movimm(g_out, bb_adr + 4, R0);     // R14_abt = address of BKPT + 4
+	emit_write_ptr32_regptrTO_regFROM(g_out, reg_ptr(14, R1, ADDRESS), R0);
+	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(SPSR.val, R1, ADDRESS), R4);
+
+	cpu_ptr(CPSR.val, R4, VALUE);
+	emit_andimm(g_out, R4, ~(1 << 5), R4);  // ARM state
+	emit_orimm(g_out, R4, (1 << 7), R4);    // normal interrupts disabled
+	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(CPSR.val, R1, ADDRESS), R4);
+
+	emit_movimm(g_out, cpu->intVector + 0x0C, R0);
+	emit_write_ptr32_regptrTO_regFROM(g_out, reg_ptr(15, R1, ADDRESS), R0);
+	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), R0);
+
+	return 1;
+}
 
 //-----------------------------------------------------------------------------
 //   THUMB
