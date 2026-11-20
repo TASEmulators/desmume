@@ -959,9 +959,9 @@ P0 检查表：
 - [x] 菜单（GMenu）、工具条、状态行、黑色显示区、SSD/CSD 选择逻辑
 - [x] CI 增加 GTK4 job（`build_gtk4`，与 GTK3 job 并行）
 - [x] GTK4 源码在 GTK 4.24.1 下编译通过（`config.cpp`、`main.cpp` 两个对象）
-- [ ] 完整链接与启动验证：被 `libdesmume` 的 asmjit 缺失挡住（与 GTK4 无关，见下）
+- [x] `desmume-gtk4` 完整链接通过（POSIX meson 已接上 vendored asmjit，见下）
 
-### P0 构建验证（2026-11-20，Arch/WSL，GTK 4.24.1 / meson 1.12.1）
+### P0 构建验证（2026-11-20/21，Arch/WSL，GTK 4.24.1 / meson 1.12.1）
 
 | 检查 | 结果 |
 |---|---|
@@ -969,11 +969,14 @@ P0 检查表：
 | `-Dfrontend-gtk=gtk4` / `gtk3` / `gtk2` | 分别输出 `gtk4` / `gtk3` / `gtk2` ✅ |
 | `-Dfrontend-gtk=none` | `GTK frontend: none`，不进入任何 GTK 子目录 ✅ |
 | `ninja gtk4/desmume-gtk4.p/{main,config}.cpp.o` | 编译通过，无警告 ✅ |
-| `ninja gtk4/desmume-gtk4`（完整链接） | ❌ 卡在 `libdesmume.a.p/../../arm_jit.cpp.o`：`asmjit/x86.h: 没有那个文件或目录` |
+| `ninja gtk4/desmume-gtk4`（完整链接，含 `libdesmume`） | ✅ 221/221，链接成功 |
+| `-Dfrontend-gtk=gtk3`：`ninja gtk/desmume cli/desmume-cli` | ✅ 248/248，GTK3 与 CLI 无回归 |
 
-链接失败是既有问题，不在本次改动范围内：`desmume/3rdparty/asmjit/` 里 `asmjit.h` 是 0 字节、子目录名带 `X` 后缀
-（`coreX`/`x86X`/…），且 `posix/meson.build` 的 `includes` 从来没加过 asmjit 路径。GTK3 前端同样起不来，
-需要在 JIT 那条线上单独修。修好后 `desmume-gtk4` 才可能真正链接出来。
+第一次完整链接的失败（`arm_jit.cpp:35: asmjit/x86.h: 没有那个文件或目录`）不是文件缺失：
+`desmume/3rdparty/asmjit/` 的 54 个源、127 个头都在。真正原因是 POSIX meson 从来没接过 asmjit——
+`includes` 没有指向 `3rdparty`（上游 include 写的是 `<asmjit/core.h>`，根必须是 `3rdparty` 这一层），
+没有 `-DASMJIT_STATIC`，没有给 JIT 那几个 TU 开 C++20，也没有把 54 个 `.cpp` 放进任何 target。
+GTK3 前端同样起不来。已在 `posix/meson.build` 修好，见 §14“已落地文件”。
 
 ### P0 静态核对（2026-11-20）
 
@@ -1007,8 +1010,15 @@ P0 检查表：
 | `posix/gtk4/config_opts.h` | 复制 + 新增 `Window/Decorations`（0=auto, 1=SSD, 2=CSD） |
 | `posix/gtk4/meson.build` | `gtk4 >= 4.10`；可选 `gtk4-x11` / `gtk4-wayland` 后端依赖；target `desmume-gtk4` |
 | `posix/meson_options.txt` | `frontend-gtk` 改为 combo：`auto|gtk4|gtk3|gtk2|none`，默认 `auto` |
-| `posix/meson.build` | gtk4 → gtk3 → gtk2 自动发现，按结果 `subdir()`；强制版本缺依赖时 `error()` |
+| `posix/meson.build` | gtk4 → gtk3 → gtk2 自动发现，按结果 `subdir()`；强制版本缺依赖时 `error()`；另接上 vendored asmjit（见下） |
 | `.github/workflows/build.yml` | 新增 `build_gtk4` job（走 `auto` 并断言产出 `desmume-gtk4`），GTK3 job 显式 `gtk3` |
+
+POSIX 侧的 JIT 接线（与 MSVC/Xcode 保持一致）：
+
+- include 根 `desmume/3rdparty`（上游写的是 `<asmjit/core.h>`），`ASMJIT_STATIC`，JIT/asmjit 的 TU 用 `cpp_std=c++20`，其余代码保持 C++14；
+- 源文件表直接调用 `tools/jit_matrix/gen_asmjit_sources.py --format txt`，不手抄 54 个 `.cpp`（`ujit/` 实验目录不编）；
+- `arm_jit.cpp`（x86）或 `arm_jit_arm.cpp`（arm）与 `libasmjit` 各自先编成静态库，再用 `link_whole` 合进 `libdesmume`：
+  JIT 与核心互相调用，普通 `link_with` 会留下循环静态库依赖。
 
 P0 刻意不做的事：不装 desktop/metainfo/man（app-id 与安装布局在 P1/P8 定稿），不复制 `main.ui`/`menu.ui`（P1 重写外壳时再加），不引入 wgpu。
 
