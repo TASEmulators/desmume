@@ -93,3 +93,37 @@
 2. **继续迁移主线**：从族 3 访存语义迁移起步（C 组 206 组），但需先解决「x86 可差分、arm64 语义只能等 macOS」的验证不对称。
 3. **帧率门槛实测**：在族 1/2 上取解释器 / 旧 JIT / 迁移后 JIT 三组数字，确认 ALU 族真的 ≥1.3×，再决定是否继续推 571 条。
 4. **P1/P2/P3 优化** 与 **S7 收尾** 收口。
+
+---
+
+## 附：编译失败诊断（2026-11-20 新增）
+
+`JIT error at ARM9-XXXXXXXX: InvalidInstruction` 以前只给错误名，无法定位指令。
+现在默认行尾多两项信息：**块内指令数** 和 **该地址所在存储体**（`jit_bank_name`，
+把 0x01xxxxxx 这类 `UNUSED_RAM` 直接标成 `NOT MAPPED`，一眼看出是野 PC 而不是代码
+生成 bug）。
+
+要定位到具体指令，设环境变量 `DESMUME_JIT_DIAG=1` 再跑：
+
+```
+DESMUME_JIT_DIAG=1 DeSmuME.exe rom.nds
+```
+
+此时每个被模拟指令在 asmjit 日志里都有一个 `>> ARM9 <地址>: opcode <原码>` 标记，块
+编译失败会把日志尾部打出来——**最后一条标记就是 asmjit 拒绝的那条指令**，其后的行是
+它已经编好的那部分 x86；随后还会打印整块的原始指令字（含 opcode matrix 槽位，可直接
+对 `jit-opcode-matrix.csv` 的 `first_slot` 列）。注意该模式会格式化整块日志，只能用来
+诊断，不能正常玩。
+
+已知案例（本次修复）：ARM `LDR Rd=PC` 的发射代码用 `new_gpz()` 承接 32 位临时值，
+`mov r64, r32` 在 asmjit master 下无此编码 → 整块 finalize 失败 → 静默回退解释器。
+假 BIOS 的 IRQ 入口 `0xFFFF0274..0xFFFF028C` 末尾正是 `LDR PC,[R0,#-4]`，所以每次
+中断都会报一次。现已改为全 32 位序列。
+
+注意两个既有坑（本次未改）：
+
+- `kValidateIntermediate` 抓不到「虚拟寄存器尺寸错配」，asmjit 的 RA 阶段失败也不会
+  调用 `ErrorHandler`；只有挂在 `CodeHolder` 上的 logger 能看到失败前的指令流。
+- `JIT_COMMENT(...)` 宏用的是 `c.comment(fmt, ...)`，而 asmjit master 的
+  `comment()` 只接受 `(const char*, size_t)`。目前 `LOG_JIT_LEVEL == 0` 所以没人发现，
+  真要打开 `LOG_JIT` 需要先把宏改成 `snprintf` + `c.comment(buf)`。
