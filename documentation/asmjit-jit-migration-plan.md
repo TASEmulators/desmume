@@ -26,7 +26,8 @@
 | **rev12** | 主线推进 + **handler 级真机验证首次落地**：① 族 5（乘法 28 handler + CLZ）迁到 `ArmRegCache`，为此新增 `read_into()` 入口与 `rc_read`/`rc_store`（§S4 族 5）；② 新增 `tools/jit_matrix/a64_block_probe.cpp`——在 AArch64 真机上直接执行 `compile_basicblock()` 生成的块（68 个桩符号补齐核心），**终结了"arm64 handler 语义只能等 macOS"的不对称**；③ 真机抓到并修复一个既有 bug：`emit_dma_event_check` 在分支内 `flush()` 会清掉编译期 dirty 位，导致延迟回写在落空路径上丢失 |
 | **rev13** | 族 6（分支 + 状态寄存器 + 异常，13 handler）：① 确立并落实一条不变量——**任何 `armcpu_switchMode()` 调用前必须先 `flush()`**，因为它靠读 `armcpu_t` 完成 bank 搬移；MSR/SWI/BKPT/LDM 共 4 处补齐（`S_DST_R15` 本来就有）；② `MRS`/`MSR`/`BX` 的源与目的改走缓存；③ `OP_BKPT` 由"打印 + 回退解释器"改为按解释器逐行内联；④ 真机探针把 `armcpu_switchMode` 桩换成**真正搬移 bank 的实现**，用两指令块抓到 bank 串值（§S4 族 6）；⑤ 矩阵账本补齐族 5 漏记的 29 个 handler：293/571 |
 | **rev14** | 族 3+4（访存 + LDM/STM，204 handler）：① `OP_LDR_`/`OP_STR_`/`LDRD`/`STRD`/`SWP`/`op_ldm_stm` 的基址与存储值改走 `ArmRegCache`；② 抓到既有 bug：`OP_LDM_STM` 直接读 `cpu->R[]`，而只有基址被 evict，于是 `add r4,#1 ; stmia r0,{r4}` 存的是旧值（族 1 之后一直存在）；③ 抓到第二个既有 bug：LDM 基址在列表里的写回用的是 `call_mem_r7` 之后已失效的 x4；④ 探针新增 36 个访存块（含 6 个两指令块），82/89 逐字节相同、7 个刻意变化；⑤ 矩阵：497/571 |
-| **rev15** | 族 7+8，**主线收尾**：① Thumb 全表 68 handler 迁到 `ArmRegCache`（3 位字段的 `rc_t_*` 入口 + 高寄存器组的 `rc_read_at`）；② `OP_QADD`/`QSUB`/`QDADD`/`QSUB` 从"`printf` + 回退解释器"改为内联实现，顺序与饱和公式照 `arm_instructions.cpp`（§S4 族 7+8）；③ `OP_MUL_REG` 的周期尾部改喂乘数而非乘积，与 ARM 路径一致（`muls r0,r2` 5→2 cycles，状态不变）；④ 探针新增 78 个 Thumb 块与 4 个 Q 指令 + 2 个 cp15 用例：170 块中 164 逐字节相同、6 个刻意变化，126 项自检全绿；⑤ 矩阵 **571/571 `diff-pass`，todo 归零** |
+| **rev15** | 族 7+8，**主线收尾**：① Thumb 全表 68 handler 迁到 `ArmRegCache`（3 位字段的 `rc_t_*` 入口 + 高寄存器组的 `rc_read_at`）；② `OP_QADD`/`QSUB`/`QDADD`/`QDSUB` 从"`printf` + 回退解释器"改为内联实现，操作数顺序按 DDI 0403E 的 `op{Rd}, Rm, Rn`（解释器本来就对；此前记为"与 ARM ARM 相反"是记错了字段，见 rev16）；③ `OP_MUL_REG` 的周期尾部改喂乘数而非乘积，与 ARM 路径一致（`muls r0,r2` 5→2 cycles，状态不变）；④ 探针新增 78 个 Thumb 块与 4 个 Q 指令 + 2 个 cp15 用例：170 块中 164 逐字节相同、6 个刻意变化，126 项自检全绿；⑤ 矩阵 **571/571 `diff-pass`，todo 归零** |
+| **rev16** | **更正 rev15 里的一处错误结论**：族 7+8 曾写"Q 系列操作数顺序按解释器、不按 ARM ARM"。查 ARM 官方文档（DDI 0403E 的 `QADD`/`QSUB`/`QDADD`/`QDSUB` Operation 伪代码、DUI 0489 的 Usage 段）后确认：这一族用 `op{Rd}, Rm, Rn` 语法，`Rm` 是 bits 3-0、`Rn` 是 bits 19-16，`QDADD` 双倍的是 `Rn`——`arm_instructions.cpp` 四个 handler 与之逐条相符，**解释器没有 bug**，错的是 rev15 的表述（把字段名记反）。代码只改注释；另把探针的 Q 判据从"迁移前后相同"升级为"对照伪代码参考模型"，768 组操作数全过（§S4 族 7+8） |
 
 ---
 
@@ -1674,7 +1675,7 @@ Thumb 的操作数在 3 位字段里（bit 0/3/6/8），所以 `reg_pos_thumb(x,
 
 `OP_QADD`/`QSUB`/`QDADD`/`QDSUB` 原来只有 `printf` + `return 0`，意味着**任何含饱和指令的块整体退回解释器**。现在内联实现，两条语义必须写清楚：
 
-1. **操作数顺序按解释器，不按 ARM ARM**。`arm_instructions.cpp:OP_QSUB` 算的是 `R[bits 0..3] - R[bits 16..19]`，与 ARM ARM 写的 `Rm - Rn` 相反；`QDADD`/`QDSUB` 也是同一套配对。JIT 是拿解释器当 oracle 的，所以照抄解释器——"改正"反而会让两边不一致。`arm_jit_arm.cpp` 里这段有注释说明。
+1. **操作数顺序按 ARM ARM；解释器本来就对，是这份文档此前记错了**。这一族的语法是 `op{Rd}, Rm, Rn`：`Rm` 在 bits 3-0（第一个源），`Rn` 在 bits 19-16（第二个），和数据处理的 `Rd, Rn, Rm` 印出来的顺序相反——所以 `QDADD r0, r1, r2` 双倍的是 **R2**，不是 R1。按 DDI 0403E 的 Operation 伪代码：`QADD` = `SAT(Rm + Rn)`、`QSUB` = `SAT(Rm - Rn)`、`QDADD` = `SAT(Rm + SAT(2*Rn))`、`QDSUB` = `SAT(Rm - SAT(2*Rn))`——逐条对上 `arm_instructions.cpp` 的 `R[bits0] ± sat(R[bits16]<<1)`，四个都对。此前写成"解释器与 ARM ARM 相反、JIT 照抄解释器"，是把字段名记反了（把 bits 3-0 当成了 `Rn`）；解释器的代码一行没改，`arm_jit_arm.cpp` 与本段已改正。
 2. **饱和是 `Rd = 0x80000000 - BIT31(res)`，Q 是粘性的**。落地成三对 XOR/AND 而不是分支：`dst = res ^ ((res ^ sat) & -ovf)`，`ovf` 由 `adds`/`subs` 的 V 经 `cset` 取出，Q 用 `OR` 写回 CPSR 第 3 字节（bit 27）。
 
 写这段时踩了一个自造的坑：先把公式写成 `0x7FFFFFFF + BIT31(res)`，正好是正确值的反相，四个饱和用例全部失败（`0x80000000` vs `0x7FFFFFFF`）。探针的自检当场抓住了它——这也说明**饱和这类"值错了但状态看着正常"的指令必须带断言**，不能只靠 pre/post 相同。
@@ -1697,7 +1698,7 @@ Thumb 的操作数在 3 位字段里（bit 0/3/6/8），所以 `reg_pos_thumb(x,
 
 新增 `--dump-t N`。覆盖 Thumb 全部 68 个 handler（移位 10、数据处理 26、访存 17、块传输 6、乘法 1、分支 7、`svc` 1），外加 5 个两指令块（`movs`+`str`、`adds`+`str`、`adds`+`push`、`sub sp`+`push`、`adds r1`+`ldr`）。ARM 侧补了 4 个 Q 指令 + `mrc p15` / `mcr p15`。
 
-结果：**170 个块里 164 个逐字节相同，6 个变化**——5 个是 Q 系列（迁移前块里是解释器桩调用，`R0` 保持初值、Q 不清零），1 个是上面 `muls` 的周期。126 项自检全绿。
+结果：**170 个块里 164 个逐字节相同，6 个变化**——5 个是 Q 系列（迁移前块里是解释器桩调用，`R0` 保持初值、Q 不清零），1 个是上面 `muls` 的周期。126 项自检全绿。另外，Q 系列不再只靠"迁移前后相同"判定：探针内置了上面那段伪代码的参考模型，4 条指令 × 64 组操作数 × 3 种目的寄存器（Rd 与两个源分别别名）共 **768 个单指令块**，逐个比对 `R[Rd]` 与 `CPSR.Q`，**768/768 通过**（总计 894 项自检全绿）。
 
 **探针自己踩的坑（记下来免得下次再花时间）**
 

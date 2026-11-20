@@ -383,13 +383,16 @@ static void reset_banks()
 	(0xE0000000u | ((u32)(op27_20) << 20) | ((u32)(rd) << 16) | ((u32)(rn) << 12) | \
 	 ((u32)(rs) << 8) | ((u32)(x) << 5) | ((u32)(y) << 6) | 0x80u | (u32)(rm))
 #define CLZ_OP(rd, rm) (0xE16F0F10u | ((u32)(rd) << 16) | (u32)(rm))
-// Saturating arithmetic: bits 19-16 = Rm, 15-12 = Rd, 3-0 = Rn, and bits 7-4
-// pick the operation (5 = add, 2 = sub, with bit 22 clear/set for the doubling
-// forms). Checked against capstone.
-#define QADD_OP(rm, rd, rn)  (0xE1000050u | ((u32)(rm) << 16) | ((u32)(rd) << 12) | (u32)(rn))
-#define QSUB_OP(rm, rd, rn)  (0xE1200050u | ((u32)(rm) << 16) | ((u32)(rd) << 12) | (u32)(rn))
-#define QDADD_OP(rm, rd, rn) (0xE1400050u | ((u32)(rm) << 16) | ((u32)(rd) << 12) | (u32)(rn))
-#define QDSUB_OP(rm, rd, rn) (0xE1600050u | ((u32)(rm) << 16) | ((u32)(rd) << 12) | (u32)(rn))
+// Saturating arithmetic. The field layout matches the data-processing group --
+// bits 19-16 = Rn, 15-12 = Rd, 3-0 = Rm -- but the *syntax* is
+// `op{cond} {Rd}, Rm, Rn`, so bits 3-0 hold the first source operand. That is
+// the whole trap with this family: `QDADD r0, r1, r2` doubles R2, not R1.
+// Bits 23-20 pick the operation (0 = QADD, 2 = QSUB, 4 = QDADD, 6 = QDSUB);
+// bit 4 is always set. Checked against capstone.
+#define QADD_OP(rn, rd, rm)  (0xE1000050u | ((u32)(rn) << 16) | ((u32)(rd) << 12) | (u32)(rm))
+#define QSUB_OP(rn, rd, rm)  (0xE1200050u | ((u32)(rn) << 16) | ((u32)(rd) << 12) | (u32)(rm))
+#define QDADD_OP(rn, rd, rm) (0xE1400050u | ((u32)(rn) << 16) | ((u32)(rd) << 12) | (u32)(rm))
+#define QDSUB_OP(rn, rd, rm) (0xE1600050u | ((u32)(rn) << 16) | ((u32)(rd) << 12) | (u32)(rm))
 // SMULW/SMLAW do not use the x/y halfword selectors: bit 5 is always set for
 // SMULW and clear for SMLAW, and bit 6 picks Rs's top half.
 #define SMULW_OP(rd, rm, rs, y) \
@@ -484,18 +487,110 @@ static const Case kCases[] = {
 	// --- saturation and coprocessor (group E) ----------------------------
 	// QADD/QSUB/QDADD/QDSUB used to return 0, i.e. the whole block fell back to
 	// the interpreter; these are the first executions of the new inline code.
-	// The operand order is desmume's, not the ARM ARM's: OP_QSUB in the
-	// interpreter subtracts R[bits 16..19] from R[bits 0..3].
-	CR("qadd r0,r1,r2 (sat)",  QADD_OP(1, 0, 2),  kQSat, 0, 0x7FFFFFFFu),
-	CR("qadd r0,r1,r2",        QADD_OP(1, 0, 2),  kSetC, 0, 0x00030003u),
-	CR("qsub r0,r1,r2 (sat)",  QSUB_OP(1, 0, 2),  kQNeg, 0, 0x7FFFFFFFu),
-	CR("qdadd r0,r1,r2 (sat)", QDADD_OP(1, 0, 2), kQDbl, 0, 0x80000002u),
-	CR("qdsub r0,r1,r2 (sat)", QDSUB_OP(1, 0, 2), kQDbl, 0, 0x7FFFFFFFu),
+	// Names match the encoding: Rn = R1 (second operand), Rm = R2 (first), so
+	// the disassembly reads `op r0, r2, r1`. run_qsat_model() below sweeps the
+	// whole operand matrix against the ARM ARM pseudocode.
+	CR("qadd r0,r2,r1 (sat)",  QADD_OP(1, 0, 2),  kQSat, 0, 0x7FFFFFFFu),
+	CR("qadd r0,r2,r1",        QADD_OP(1, 0, 2),  kSetC, 0, 0x00030003u),
+	CR("qsub r0,r2,r1 (sat)",  QSUB_OP(1, 0, 2),  kQNeg, 0, 0x7FFFFFFFu),
+	CR("qdadd r0,r2,r1 (sat)", QDADD_OP(1, 0, 2), kQDbl, 0, 0x80000002u),
+	CR("qdsub r0,r2,r1 (sat)", QDSUB_OP(1, 0, 2), kQDbl, 0, 0x7FFFFFFFu),
 	C ("mrc p15,0,r0,c0,c0,0", 0xEE100F10u, kSetA),
 	C ("mcr p15,0,r0,c1,c0,0", 0xEE010F10u, kSetA),
 };
 
 static const size_t kCaseCount = sizeof(kCases) / sizeof(kCases[0]);
+
+// --- reference model for the saturating arithmetic --------------------------
+// ARM DDI 0403E, "QADD/QSUB/QDADD/QDSUB, Operation" (the A32 and T32 encodings
+// share this pseudocode; Rm is the first operand of `op{cond} {Rd}, Rm, Rn`,
+// i.e. bits 3-0, and Rn is the second, bits 19-16):
+//
+//   QADD : (R[d], sat)  = SignedSatQ(SInt(R[m]) + SInt(R[n]), 32)
+//   QSUB : (R[d], sat)  = SignedSatQ(SInt(R[m]) - SInt(R[n]), 32)
+//   QDADD: (doubled,s1) = SignedSatQ(2 * SInt(R[n]), 32)
+//          (R[d], s2)   = SignedSatQ(SInt(R[m]) + SInt(doubled), 32)
+//   QDSUB: (doubled,s1) = SignedSatQ(2 * SInt(R[n]), 32)
+//          (R[d], s2)   = SignedSatQ(SInt(R[m]) - SInt(doubled), 32)
+//
+// Note which register doubles: Rn, the *second* source operand. Reading the
+// syntax as if it were SUB's `Rd, Rn, Rm` gets QDADD/QDSUB backwards.
+// arm_instructions.cpp has this shape too (doubles bits 19-16, combines with
+// bits 3-0), so this model and the interpreter should agree bit for bit --
+// which is what run_qsat_model() checks, instead of only checking that the
+// migration did not move the values.
+static u32 satsq32(s64 v, bool &sat)
+{
+	if (v > 0x7FFFFFFFLL)  { sat = true; return 0x7FFFFFFFu; }
+	if (v < -2147483648LL) { sat = true; return 0x80000000u; }
+	sat = false;
+	return (u32)(s32)v;
+}
+
+static u32 qop_ref(bool sub, bool dbl, u32 rm, u32 rn, bool &q)
+{
+	bool sat1 = false, sat2 = false;
+	s64 n = (s32)rn;
+	if (dbl)
+		n = (s32)satsq32(2 * n, sat1);
+	const s64 m = (s32)rm;
+	const u32 r = satsq32(sub ? (m - n) : (m + n), sat2);
+	if (sat1 || sat2)
+		q = true;                       // CPSR.Q is sticky
+	return r;
+}
+
+// 4 instructions x 64 operand pairs x 3 destination choices (Rd distinct, or
+// aliased to either source -- the cache has to read both operands before it
+// renames the slot).
+static void run_qsat_model()
+{
+	static const u32 vals[8] = {
+		0x00000000u, 0x00000001u, 0xFFFFFFFFu, 0x7FFFFFFFu,
+		0x80000000u, 0x40000000u, 0xC0000000u, 0x12345678u,
+	};
+	static const struct { const char *nm; u32 base; bool sub, dbl; } ins[4] = {
+		{ "qadd",  0xE1000050u, false, false },
+		{ "qsub",  0xE1200050u, true,  false },
+		{ "qdadd", 0xE1400050u, false, true  },
+		{ "qdsub", 0xE1600050u, true,  true  },
+	};
+
+	int pass = 0, fail = 0, n = 0;
+	CommonSettings.jit_max_block_size = 1;
+
+	for (int t = 0; t < 4; t++)
+		for (int rd = 0; rd < 3; rd++)          // 0 = fresh, 1 = Rd==Rn, 2 = Rd==Rm
+			for (int i = 0; i < 8; i++)
+				for (int j = 0; j < 8; j++) {
+					u32 ops[16] = {0};
+					ops[1] = vals[j];               // Rn, the doubled one
+					ops[2] = vals[i];               // Rm
+					const u32 op = ins[t].base | (1u << 16) | ((u32)rd << 12) | 2u;
+					const u32 adr = kCodeBase + 0x50000u + (u32)n * 4u;
+					n++;
+
+					bool q = false;
+					const u32 want = qop_ref(ins[t].sub, ins[t].dbl, vals[i], vals[j], q);
+
+					Result res;
+					if (!run_one(adr, op, ops, kCpsrInit, &res)) { fail++; continue; }
+					const bool gotq = (res.cpsr & (1u << 27)) != 0;
+					if (res.r[rd] != want || gotq != q) {
+						printf("  FAIL %-5s r%d,r2,r1 (Rm=%08X Rn=%08X) R%d=%08X want=%08X Q=%d want=%d\n",
+						       ins[t].nm, rd, vals[i], vals[j], rd, res.r[rd], want,
+						       (int)gotq, (int)q);
+						fail++;
+					} else {
+						pass++;
+					}
+				}
+
+	printf("\nsaturating arithmetic: %d model checks passed, %d failed (%d blocks, vs ARM ARM pseudocode)\n",
+	       pass, fail, n);
+	g_pass += pass;
+	g_fail += fail;
+}
 
 int main(int argc, char **argv)
 {
@@ -567,6 +662,9 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+
+	// Runs before the summary so its checks are counted with the rest.
+	run_qsat_model();
 
 	printf("\n%d self-checks passed, %d failed, %d trace stubs called\n",
 	       g_pass, g_fail, g_interp_calls);

@@ -1688,19 +1688,24 @@ static int OP_MVN_S_IMM_VAL(const u32 i) { OP_MOV_S(S_IMM_VAL; rhs_var = ~rhs_va
 //-----------------------------------------------------------------------------
 //   QADD / QDADD / QSUB / QDSUB
 //-----------------------------------------------------------------------------
-// Saturating add/subtract (ARMv5TE). Two things about them are worth spelling
-// out, because both are easy to get subtly wrong:
+// Saturating add/subtract (ARMv5TE) -- ARM DDI 0403E, "QADD/QSUB/QDADD/QDSUB,
+// Operation". The trap here is the operand naming, not the arithmetic: these
+// use the syntax `op{cond} {Rd}, Rm, Rn`, so Rm (bits 3-0) is the *first*
+// source and Rn (bits 19-16) the *second* -- the opposite print order from the
+// data-processing group's `Rd, Rn, Rm`. Concretely, `QDADD r0, r1, r2` doubles
+// R2, not R1:
 //
-//  * The operand order below follows the *interpreter*
-//    (arm_instructions.cpp:OP_QSUB subtracts R[bits 0..3] from R[bits 16..19],
-//    i.e. the opposite of what the ARM ARM spells for QSUB, and QDADD/QDSUB
-//    pair the operands the same way). The JIT is measured against the
-//    interpreter, so reproducing it is the requirement.
+//     QADD  Rd = SAT(Rm + Rn)         QSUB  Rd = SAT(Rm - Rn)
+//     QDADD Rd = SAT(Rm + SAT(2*Rn))  QDSUB Rd = SAT(Rm - SAT(2*Rn))
 //
-//  * Saturation is `Rd = 0x80000000 - BIT31(res)` on signed overflow, which is
-//    0x7FFFFFFF for a positive result and 0x80000000 for a negative one, plus
-//    CPSR.Q -- sticky, so it is ORed in. The select is three XOR/AND pairs
-//    instead of a branch, keeping the block branch-free.
+// arm_instructions.cpp implements exactly this shape; it is correct, and
+// tools/jit_matrix/a64_block_probe.cpp checks both sides against the
+// pseudocode rather than against each other.
+//
+// Saturation is `Rd = 0x80000000 - BIT31(res)` on signed overflow, which is
+// 0x7FFFFFFF for a positive result and 0x80000000 for a negative one, plus
+// CPSR.Q -- sticky, so it is ORed in. The select is three XOR/AND pairs
+// instead of a branch, keeping the block branch-free.
 static void emit_qsat(int dst, int ovf)
 {
 	// `dst` holds the raw result; `ovf` already holds the overflow as 0/1 and is
@@ -1717,8 +1722,8 @@ static void emit_qsat(int dst, int ovf)
 	emit_xor(g_out, dst, R3, dst);
 }
 
-// dbl: the bits-16 operand is doubled first and saturates on its own, exactly
-// like OP_QDADD/OP_QDSUB in the interpreter.
+// dbl: Rn (bits 19-16, the second operand) is doubled and saturates on its own
+// before the add/sub, as in OP_QDADD/OP_QDSUB in the interpreter.
 static int op_qop(const u32 i, bool sub, bool dbl)
 {
 	const u32 rn = REG_POS(i, 16);      // the operand that doubles

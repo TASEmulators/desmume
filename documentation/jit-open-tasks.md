@@ -13,7 +13,7 @@
 | P0 访存 ABI（arm64 `call_mem`） | **已落地提交**：`call_mem` / `_r7` / `_r2` 三变体，24 处调用点中 15 处转轻量（commits `b7225baa`、`b1f5b455`）；原语级 + 块级真机均已验证 |
 | 族3 代码迁移 | **arm64 缓存接入完成**（本批）；x86 侧结构早已完成 |
 | 访存差分安全网 | **本机已加固**（主文档 §10.8）：`kProbes` 新增 20 条访存定向探针，38/38 全绿 |
-| **arm64 handler 级真机验证** | `a64_block_probe` 170 个块（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + 37 访存 + **78 Thumb + 4 Q 指令 + 2 cp15**），126 项自检全绿 |
+| **arm64 handler 级真机验证** | `a64_block_probe` 170 个块（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + 37 访存 + **78 Thumb + 4 Q 指令 + 2 cp15**），**894 项自检全绿**（其中 768 组是 Q 系列对 ARM 伪代码的模型比对） |
 | **helper 读 `armcpu_t` 的不变量** | `armcpu_switchMode()`（族 6）与 `OP_LDM_STM`/`OP_LDRD`/`op_swp`/Thumb 的 `PUSH`/`POP`/`STM`/`LDM`（族 7）都直接读写 `cpu->R[]`：**调用前必须把涉及的寄存器落盘**。族 7 把同一条规则套到 Thumb 的寄存器列表上（8 位掩码 + LR/PC 位） |
 | x64 fastmem | **已评估放弃**（主文档 §10.6），x64 保持现状 |
 | 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0；arm64 编码层 `check_a64` 4/241 已知基线差异（全部是 save/restore/startfunc/endfunc 的既有基线）；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` 126/126 |
