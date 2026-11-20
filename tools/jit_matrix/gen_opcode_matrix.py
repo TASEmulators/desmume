@@ -83,6 +83,21 @@ EXPECTED_NULL_PER_BACKEND = 20
 # ARM mnemonics whose 18 (or 9) variants make up the data-processing family.
 DP_MNEMONICS = ("ADC", "ADD", "AND", "BIC", "EOR", "MOV", "MVN",
                 "ORR", "RSB", "RSC", "SBC", "SUB", "CMN", "CMP", "TEQ", "TST")
+
+# Handlers whose differential gate has actually been run green. Kept here rather
+# than in the generated CSV/MD: both are rebuilt from the dispatch tables on
+# every run, so a status edited in the output would vanish on the next regen.
+# `diff-pass` is not `perf-ok` -- family 1 passed the semantic sweep but missed
+# the 50% code-size gate (see the plan's S4 family-1 section).
+DIFF_PASS_HANDLERS = frozenset({
+    "OP_AND_IMM_VAL", "OP_AND_S_IMM_VAL", "OP_EOR_IMM_VAL", "OP_EOR_S_IMM_VAL",
+    "OP_SUB_IMM_VAL", "OP_SUB_S_IMM_VAL", "OP_RSB_IMM_VAL", "OP_RSB_S_IMM_VAL",
+    "OP_ADD_IMM_VAL", "OP_ADD_S_IMM_VAL", "OP_ADC_IMM_VAL", "OP_ADC_S_IMM_VAL",
+    "OP_SBC_IMM_VAL", "OP_SBC_S_IMM_VAL", "OP_RSC_IMM_VAL", "OP_RSC_S_IMM_VAL",
+    "OP_TST_IMM_VAL", "OP_TEQ_IMM_VAL", "OP_CMP_IMM_VAL", "OP_CMN_IMM_VAL",
+    "OP_ORR_IMM_VAL", "OP_ORR_S_IMM_VAL", "OP_MOV_IMM_VAL", "OP_MOV_S_IMM_VAL",
+    "OP_BIC_IMM_VAL", "OP_BIC_S_IMM_VAL", "OP_MVN_IMM_VAL", "OP_MVN_S_IMM_VAL",
+})
 SHIFT_TOKEN = re.compile(r"_(LSL|LSR|ASR|ROR)_(IMM|REG)$|^OP_(LSL|LSR|ASR|ROR|RRX)")
 COPROC = ("OP_MCR", "OP_MRC", "OP_CDP", "OP_LDC", "OP_STC")
 
@@ -112,7 +127,9 @@ class Handler:
 
     @property
     def status(self) -> str:
-        return "interp-fallback" if self.fallback else "todo"
+        if self.fallback:
+            return "interp-fallback"
+        return "diff-pass" if self.name in DIFF_PASS_HANDLERS else "todo"
 
     @property
     def slot_spec(self) -> str:
@@ -381,8 +398,8 @@ def write_md(path: Path, arm: list[Handler], thumb: list[Handler]) -> None:
         if not ga and not gt:
             continue
         g = ga + gt
-        a(f"| {label} | {len(ga)} | {len(gt)} | {len(g)} | {sum(1 for h in g if h.fallback)} | 0 |")
-    a(f"| **合计** | **{len(arm)}** | **{len(thumb)}** | **{total}** | **{fb}** | **0** |")
+        a(f"| {label} | {len(ga)} | {len(gt)} | {len(g)} | {sum(1 for h in g if h.fallback)} | {sum(1 for h in g if h.status == 'diff-pass')} |")
+    a(f"| **合计** | **{len(arm)}** | **{len(thumb)}** | **{total}** | **{fb}** | **{sum(1 for h in allh if h.status == 'diff-pass')}** |")
     a("")
 
     a("## 回退解释器的指令（两后端一致）")
@@ -424,7 +441,9 @@ def write_md(path: Path, arm: list[Handler], thumb: list[Handler]) -> None:
                 a(f"| {hid} | `{h.slot_spec_brief}` | `{h.name}` | {interp} | {x86} | {macro} | {a64} | {h.status} | |")
             a("")
 
-    path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    # Match the CSV (csv.writer's default) and the checked-in file: CRLF. Writing
+    # LF here made every regeneration look like a whole-file diff on Windows.
+    path.write_bytes(("\r\n".join(rows) + "\r\n").encode("utf-8"))
 
 
 def main() -> int:
