@@ -358,14 +358,7 @@ void MovieData::truncateAt(int frame)
 
 void MovieData::installRomChecksum(std::string& key, std::string& val)
 {
-	// TODO: The current implementation of reading the checksum doesn't work correctly, and can
-	// cause crashes when the MovieData object is deallocated. (This is caused by StringToBytes()
-	// overrunning romChecksum into romSerial, making romSerial undefined.) Set romChecksum to
-	// some dummy value for now to prevent crashing. This is okay, since romChecksum isn't actually
-	// used in practice at this time. - rogerman, 2012/08/24
-	//StringToBytes(val,&romChecksum,MD5DATA::size);
-
-	romChecksum = 0;
+	romChecksum = strtoul(val.c_str(), NULL, 16);
 }
 void MovieData::installRtcStart(std::string& key, std::string& val)
 {
