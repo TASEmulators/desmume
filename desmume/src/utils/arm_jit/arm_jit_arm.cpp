@@ -1024,6 +1024,36 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 	} \
 	x86inst(g_out, rc_hn, rhs, rc_hd);
 
+// S4 family 2 pilot: the shift `arg` macros leave the shifted operand in the
+// physical `rhs` register (R6). Rn/Rd still go through the register cache,
+// which is the whole point -- only Rm/Rs keep using memory. R15 stays on the
+// memory path (rule 1). Kept separate from OP_ARITHMETIC so the other shift
+// handlers are unaffected until this pilot passes the differential sweep.
+#define OP_ARITHMETIC_SHIFT_RC(arg, x86inst, symmetric, flags) \
+	arg; \
+	if(REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		OP_RC_ARITHMETIC(x86inst) \
+		if(flags) \
+			SET_NZCV(!symmetric); \
+		return 1; \
+	} \
+	/* Rn or Rd is PC (rule 1): keep the shifted operand in `rhs` and load \
+	   Rn from memory into a scratch register. This preserves `Rd = Rn op rhs` \
+	   instead of the original macro's symmetric shortcut (which assumed `rhs` \
+	   still held the un-shifted Rm). */ \
+	reg_pos_ptr(16, lhs, VALUE); \
+	x86inst(g_out, lhs, rhs, lhs); \
+	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), lhs); \
+	if(REG_POS(i,12)==15) \
+	{ \
+		reg_ptr(15, tmp_reg, VALUE); \
+		emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), tmp_reg); \
+		emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
+	} \
+	return 1; \
+	/* trailing continuation keeps the macro body well-formed */ \
+
 #define OP_ARITHMETIC(arg, x86inst, symmetric, flags) \
 	arg; \
 	if(rhs_is_imm && REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
@@ -1071,6 +1101,40 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 	} \
 	return 1;
 
+// Family 2, reverse-arithmetic shift (RSB/RSC): `rhs` holds the shifted Rm,
+// so the reverse form is `Rd = rhs - Rn`. Same cache rules as the forward
+// macro; R15 stays on the memory path.
+#define OP_ARITHMETIC_R_SHIFT_RC(arg, x86inst, flags) \
+	arg; \
+	if(REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		const int rc_rd = REG_POS(i,12); \
+		const int rc_rn = REG_POS(i,16); \
+		int rc_hd, rc_hn; \
+		if(rc_rd == rc_rn) \
+			rc_hn = rc_hd = g_regs.read_write(rc_rd); \
+		else \
+		{ \
+			rc_hn = g_regs.read(rc_rn); \
+			rc_hd = g_regs.write(rc_rd); \
+		} \
+		x86inst(g_out, rhs, rc_hn, rc_hd); \
+		if(flags) \
+			SET_NZCV(1); \
+		return 1; \
+	} \
+	reg_pos_ptr(16, lhs, VALUE); \
+	x86inst(g_out, rhs, lhs, lhs); \
+	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), lhs); \
+	if(REG_POS(i,12)==15) \
+	{ \
+		reg_ptr(15, tmp_reg, VALUE); \
+		emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), tmp_reg); \
+		emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
+	} \
+	return 1; \
+	/* trailing continuation keeps the macro body well-formed */ \
+
 #define OP_ARITHMETIC_R(arg, x86inst, flags) \
 	arg; \
 	if(rhs_is_imm && REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
@@ -1113,6 +1177,29 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 	} \
 	return 1;
 
+// Family 2, logical-S shift pilot: same cache path as OP_ARITHMETIC_SHIFT_RC
+// but keeps SET_NZC (V preserved, carry from the shifter/rcf) and the
+// S_DST_R15 path used when the destination is the PC.
+#define OP_ARITHMETIC_S_SHIFT_RC(arg, x86inst, symmetric) \
+	arg; \
+	if(REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		OP_RC_ARITHMETIC(x86inst) \
+		SET_NZC; \
+		return 1; \
+	} \
+	reg_pos_ptr(16, lhs, VALUE); \
+	x86inst(g_out, lhs, rhs, lhs); \
+	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), lhs); \
+	if(REG_POS(i,12)==15) \
+	{ \
+		S_DST_R15; \
+		emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
+	} \
+	SET_NZC; \
+	return 1; \
+	/* trailing continuation keeps the macro body well-formed */ \
+
 #define OP_ARITHMETIC_S(arg, x86inst, symmetric) \
 	arg; \
 	if(rhs_is_imm && REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
@@ -1147,205 +1234,205 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 	SET_NZC; \
 	return 1;
 
-static int OP_AND_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_and, 1, 0); }
-static int OP_AND_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_and, 1, 0); }
-static int OP_AND_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_and, 1, 0); }
-static int OP_AND_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_and, 1, 0); }
-static int OP_AND_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_and, 1, 0); }
-static int OP_AND_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_and, 1, 0); }
-static int OP_AND_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_and, 1, 0); }
-static int OP_AND_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_and, 1, 0); }
+static int OP_AND_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_and, 1, 0); }
+static int OP_AND_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_and, 1, 0); }
+static int OP_AND_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_and, 1, 0); }
+static int OP_AND_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_and, 1, 0); }
+static int OP_AND_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_and, 1, 0); }
+static int OP_AND_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_and, 1, 0); }
+static int OP_AND_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_and, 1, 0); }
+static int OP_AND_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_and, 1, 0); }
 static int OP_AND_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_and, 1, 0); }
 
-static int OP_EOR_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_xor, 1, 0); }
-static int OP_EOR_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_xor, 1, 0); }
-static int OP_EOR_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_xor, 1, 0); }
-static int OP_EOR_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_xor, 1, 0); }
-static int OP_EOR_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_xor, 1, 0); }
-static int OP_EOR_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_xor, 1, 0); }
-static int OP_EOR_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_xor, 1, 0); }
-static int OP_EOR_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_xor, 1, 0); }
+static int OP_EOR_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_xor, 1, 0); }
+static int OP_EOR_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_xor, 1, 0); }
+static int OP_EOR_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_xor, 1, 0); }
+static int OP_EOR_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_xor, 1, 0); }
+static int OP_EOR_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_xor, 1, 0); }
+static int OP_EOR_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_xor, 1, 0); }
+static int OP_EOR_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_xor, 1, 0); }
+static int OP_EOR_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_xor, 1, 0); }
 static int OP_EOR_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_xor, 1, 0); }
 
-static int OP_ORR_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_or, 1, 0); }
-static int OP_ORR_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_or, 1, 0); }
-static int OP_ORR_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_or, 1, 0); }
-static int OP_ORR_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_or, 1, 0); }
-static int OP_ORR_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_or, 1, 0); }
-static int OP_ORR_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_or, 1, 0); }
-static int OP_ORR_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_or, 1, 0); }
-static int OP_ORR_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_or, 1, 0); }
+static int OP_ORR_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_or, 1, 0); }
+static int OP_ORR_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_or, 1, 0); }
+static int OP_ORR_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_or, 1, 0); }
+static int OP_ORR_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_or, 1, 0); }
+static int OP_ORR_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_or, 1, 0); }
+static int OP_ORR_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_or, 1, 0); }
+static int OP_ORR_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_or, 1, 0); }
+static int OP_ORR_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_or, 1, 0); }
 static int OP_ORR_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_or, 1, 0); }
 
-static int OP_ADD_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_add, 1, 0); }
-static int OP_ADD_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_add, 1, 0); }
-static int OP_ADD_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_add, 1, 0); }
-static int OP_ADD_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_add, 1, 0); }
-static int OP_ADD_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_add, 1, 0); }
-static int OP_ADD_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_add, 1, 0); }
-static int OP_ADD_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_add, 1, 0); }
-static int OP_ADD_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_add, 1, 0); }
+static int OP_ADD_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_add, 1, 0); }
+static int OP_ADD_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_add, 1, 0); }
+static int OP_ADD_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_add, 1, 0); }
+static int OP_ADD_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_add, 1, 0); }
+static int OP_ADD_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_add, 1, 0); }
+static int OP_ADD_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_add, 1, 0); }
+static int OP_ADD_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_add, 1, 0); }
+static int OP_ADD_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_add, 1, 0); }
 static int OP_ADD_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_add, 1, 0); }
 
-static int OP_SUB_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_sub, 0, 0); }
-static int OP_SUB_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_sub, 0, 0); }
-static int OP_SUB_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_sub, 0, 0); }
-static int OP_SUB_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_sub, 0, 0); }
-static int OP_SUB_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_sub, 0, 0); }
-static int OP_SUB_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_sub, 0, 0); }
-static int OP_SUB_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_sub, 0, 0); }
-static int OP_SUB_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_sub, 0, 0); }
+static int OP_SUB_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_sub, 0, 0); }
+static int OP_SUB_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_sub, 0, 0); }
+static int OP_SUB_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_sub, 0, 0); }
+static int OP_SUB_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_sub, 0, 0); }
+static int OP_SUB_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_sub, 0, 0); }
+static int OP_SUB_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_sub, 0, 0); }
+static int OP_SUB_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_sub, 0, 0); }
+static int OP_SUB_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_sub, 0, 0); }
 static int OP_SUB_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_sub, 0, 0); }
 
-static int OP_RSB_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM, emit_sub, 0); }
-static int OP_RSB_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG, emit_sub, 0); }
-static int OP_RSB_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM, emit_sub, 0); }
-static int OP_RSB_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG, emit_sub, 0); }
-static int OP_RSB_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM, emit_sub, 0); }
-static int OP_RSB_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG, emit_sub, 0); }
-static int OP_RSB_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM, emit_sub, 0); }
-static int OP_RSB_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG, emit_sub, 0); }
+static int OP_RSB_LSL_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_IMM, emit_sub, 0); }
+static int OP_RSB_LSL_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_REG, emit_sub, 0); }
+static int OP_RSB_LSR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_IMM, emit_sub, 0); }
+static int OP_RSB_LSR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_REG, emit_sub, 0); }
+static int OP_RSB_ASR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_IMM, emit_sub, 0); }
+static int OP_RSB_ASR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_REG, emit_sub, 0); }
+static int OP_RSB_ROR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_IMM, emit_sub, 0); }
+static int OP_RSB_ROR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_REG, emit_sub, 0); }
 static int OP_RSB_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL, emit_sub, 0); }
 
 // ================================ S instructions
-static int OP_AND_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSL_IMM, emit_ands, 1); }
-static int OP_AND_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S(S_LSL_REG, emit_ands, 1); }
-static int OP_AND_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSR_IMM, emit_ands, 1); }
-static int OP_AND_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S(S_LSR_REG, emit_ands, 1); }
-static int OP_AND_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ASR_IMM, emit_ands, 1); }
-static int OP_AND_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S(S_ASR_REG, emit_ands, 1); }
-static int OP_AND_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ROR_IMM, emit_ands, 1); }
-static int OP_AND_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S(S_ROR_REG, emit_ands, 1); }
+static int OP_AND_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_IMM, emit_ands, 1); }
+static int OP_AND_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_REG, emit_ands, 1); }
+static int OP_AND_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_IMM, emit_ands, 1); }
+static int OP_AND_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_REG, emit_ands, 1); }
+static int OP_AND_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_IMM, emit_ands, 1); }
+static int OP_AND_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_REG, emit_ands, 1); }
+static int OP_AND_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_IMM, emit_ands, 1); }
+static int OP_AND_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_REG, emit_ands, 1); }
 static int OP_AND_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_S(S_IMM_VAL, emit_ands, 1); }
 
-static int OP_EOR_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSL_IMM, emit_xors, 1); }
-static int OP_EOR_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S(S_LSL_REG, emit_xors, 1); }
-static int OP_EOR_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSR_IMM, emit_xors, 1); }
-static int OP_EOR_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S(S_LSR_REG, emit_xors, 1); }
-static int OP_EOR_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ASR_IMM, emit_xors, 1); }
-static int OP_EOR_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S(S_ASR_REG, emit_xors, 1); }
-static int OP_EOR_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ROR_IMM, emit_xors, 1); }
-static int OP_EOR_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S(S_ROR_REG, emit_xors, 1); }
+static int OP_EOR_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_IMM, emit_xors, 1); }
+static int OP_EOR_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_REG, emit_xors, 1); }
+static int OP_EOR_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_IMM, emit_xors, 1); }
+static int OP_EOR_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_REG, emit_xors, 1); }
+static int OP_EOR_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_IMM, emit_xors, 1); }
+static int OP_EOR_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_REG, emit_xors, 1); }
+static int OP_EOR_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_IMM, emit_xors, 1); }
+static int OP_EOR_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_REG, emit_xors, 1); }
 static int OP_EOR_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_S(S_IMM_VAL, emit_xors, 1); }
 
-static int OP_ORR_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSL_IMM, emit_ors, 1); }
-static int OP_ORR_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S(S_LSL_REG, emit_ors, 1); }
-static int OP_ORR_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSR_IMM, emit_ors, 1); }
-static int OP_ORR_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S(S_LSR_REG, emit_ors, 1); }
-static int OP_ORR_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ASR_IMM, emit_ors, 1); }
-static int OP_ORR_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S(S_ASR_REG, emit_ors, 1); }
-static int OP_ORR_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ROR_IMM, emit_ors, 1); }
-static int OP_ORR_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S(S_ROR_REG, emit_ors, 1); }
+static int OP_ORR_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_IMM, emit_ors, 1); }
+static int OP_ORR_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_REG, emit_ors, 1); }
+static int OP_ORR_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_IMM, emit_ors, 1); }
+static int OP_ORR_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_REG, emit_ors, 1); }
+static int OP_ORR_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_IMM, emit_ors, 1); }
+static int OP_ORR_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_REG, emit_ors, 1); }
+static int OP_ORR_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_IMM, emit_ors, 1); }
+static int OP_ORR_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_REG, emit_ors, 1); }
 static int OP_ORR_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_S(S_IMM_VAL, emit_ors, 1); }
 
-static int OP_ADD_S_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_adds, 1, 1); }
-static int OP_ADD_S_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_adds, 1, 1); }
-static int OP_ADD_S_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_adds, 1, 1); }
-static int OP_ADD_S_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_adds, 1, 1); }
-static int OP_ADD_S_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_adds, 1, 1); }
-static int OP_ADD_S_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_adds, 1, 1); }
-static int OP_ADD_S_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_adds, 1, 1); }
-static int OP_ADD_S_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_adds, 1, 1); }
+static int OP_ADD_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_adds, 1, 1); }
+static int OP_ADD_S_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_adds, 1, 1); }
+static int OP_ADD_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_adds, 1, 1); }
+static int OP_ADD_S_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_adds, 1, 1); }
+static int OP_ADD_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_adds, 1, 1); }
+static int OP_ADD_S_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_adds, 1, 1); }
+static int OP_ADD_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_adds, 1, 1); }
+static int OP_ADD_S_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_adds, 1, 1); }
 static int OP_ADD_S_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_adds, 1, 1); }
 
-static int OP_SUB_S_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_subs, 0, 1); }
-static int OP_SUB_S_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_subs, 0, 1); }
-static int OP_SUB_S_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_subs, 0, 1); }
-static int OP_SUB_S_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_subs, 0, 1); }
-static int OP_SUB_S_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_subs, 0, 1); }
-static int OP_SUB_S_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_subs, 0, 1); }
-static int OP_SUB_S_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_subs, 0, 1); }
-static int OP_SUB_S_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_subs, 0, 1); }
+static int OP_SUB_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_subs, 0, 1); }
+static int OP_SUB_S_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_subs, 0, 1); }
+static int OP_SUB_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_subs, 0, 1); }
+static int OP_SUB_S_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_subs, 0, 1); }
+static int OP_SUB_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_subs, 0, 1); }
+static int OP_SUB_S_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_subs, 0, 1); }
+static int OP_SUB_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_subs, 0, 1); }
+static int OP_SUB_S_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_subs, 0, 1); }
 static int OP_SUB_S_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_subs, 0, 1); }
 
-static int OP_RSB_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM, emit_subs, 1); }
-static int OP_RSB_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG, emit_subs, 1); }
-static int OP_RSB_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM, emit_subs, 1); }
-static int OP_RSB_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG, emit_subs, 1); }
-static int OP_RSB_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM, emit_subs, 1); }
-static int OP_RSB_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG, emit_subs, 1); }
-static int OP_RSB_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM, emit_subs, 1); }
-static int OP_RSB_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG, emit_subs, 1); }
+static int OP_RSB_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_IMM, emit_subs, 1); }
+static int OP_RSB_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_REG, emit_subs, 1); }
+static int OP_RSB_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_IMM, emit_subs, 1); }
+static int OP_RSB_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_REG, emit_subs, 1); }
+static int OP_RSB_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_IMM, emit_subs, 1); }
+static int OP_RSB_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_REG, emit_subs, 1); }
+static int OP_RSB_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_IMM, emit_subs, 1); }
+static int OP_RSB_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_REG, emit_subs, 1); }
 static int OP_RSB_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL, emit_subs, 1); }
 
-static int OP_ADC_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
 static int OP_ADC_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL; GET_CARRY(0), emit_adcs, 1, 0); }
 
-static int OP_ADC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
 static int OP_ADC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL; GET_CARRY(0), emit_adcs, 1, 1); }
 
-static int OP_SBC_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
 static int OP_SBC_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL; GET_CARRY(1), emit_sbc, 0, 0); }
 
-static int OP_SBC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
 static int OP_SBC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL; GET_CARRY(1), emit_sbcs, 0, 1); }
 
-static int OP_RSC_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_LSL_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_IMM; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_LSL_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_REG; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_LSR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_IMM; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_LSR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_REG; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_ASR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_IMM; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_ASR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_REG; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_ROR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_IMM; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_ROR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_REG; GET_CARRY(1), emit_sbc, 0); }
 static int OP_RSC_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL; GET_CARRY(1), emit_sbc, 0); }
 
-static int OP_RSC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_IMM; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_REG; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_IMM; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_REG; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_IMM; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_REG; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_IMM; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_REG; GET_CARRY(1), emit_sbcs, 1); }
 static int OP_RSC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL; GET_CARRY(1), emit_sbcs, 1); }
 
-static int OP_BIC_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
 static int OP_BIC_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL; rhs_var = ~rhs_var; emit_movimm(g_out, rhs_var, rhs_reg);,  emit_and, 1, 0); }
 
-static int OP_BIC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSL_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S(S_LSL_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S(S_LSR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ASR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S(S_ASR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ROR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S(S_ROR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
 static int OP_BIC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_S(S_IMM_VAL; rhs_var = ~rhs_var; emit_movimm(g_out, rhs_var, rhs_reg);,  emit_ands, 1); }
 
 //-----------------------------------------------------------------------------
@@ -1356,7 +1443,7 @@ static int OP_BIC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_S(S_IMM_VAL; rhs_var = 
 // address into CACHED_PTR on the way, which nothing here stores through.
 #define OP_TST_(arg) \
 	arg; \
-	if(rhs_is_imm) \
+	if(REG_POS(i,16) != 15) \
 		emit_test(g_out, g_regs.read(REG_POS(i,16)), rhs_reg); \
 	else \
 		emit_test(g_out, reg_pos_ptr(16, R1, VALUE), rhs_reg); \
@@ -1378,7 +1465,7 @@ static int OP_TST_IMM_VAL(const u32 i) { OP_TST_(S_IMM_VAL); }
 //-----------------------------------------------------------------------------
 #define OP_TEQ_(arg) \
 	arg; \
-	if(rhs_is_imm) \
+	if(REG_POS(i,16) != 15) \
 		emit_teq(g_out, g_regs.read(REG_POS(i,16)), rhs_reg); \
 	else \
 		emit_teq(g_out, reg_pos_ptr(16, R1, VALUE), rhs_reg); \
@@ -1400,7 +1487,7 @@ static int OP_TEQ_IMM_VAL(const u32 i) { OP_TEQ_(S_IMM_VAL); }
 //-----------------------------------------------------------------------------
 #define OP_CMP(arg) \
 	arg; \
-	if(rhs_is_imm) \
+	if(REG_POS(i,16) != 15) \
 		emit_cmp(g_out, g_regs.read(REG_POS(i,16)), rhs); \
 	else \
 		emit_cmp(g_out, reg_pos_ptr(16, R1, VALUE), rhs); \
@@ -1429,7 +1516,7 @@ static int OP_CMP_IMM_VAL(const u32 i) { OP_CMP(IMM_VAL); }
 		emit_cmpimm(g_out, rhs_is_imm ? g_regs.read(REG_POS(i,16)) : reg_pos_ptr(16, R1, VALUE), -rhs_imm); \
 	else \
 	{ \
-		if(rhs_is_imm) \
+		if(REG_POS(i,16) != 15) \
 			emit_adds(g_out, g_regs.read(REG_POS(i,16)), rhs, rhs_reg); \
 		else \
 		{ \
@@ -1456,7 +1543,7 @@ static int OP_CMN_IMM_VAL(const u32 i) { OP_CMN(IMM_VAL); }
 //-----------------------------------------------------------------------------
 #define OP_MOV(arg) \
 	arg; \
-	if(rhs_is_imm && REG_POS(i,12) != 15) \
+	if(REG_POS(i,12) != 15) \
 	{ \
 		emit_mov(g_out, rhs, g_regs.write(REG_POS(i,12))); \
 		return 1; \
@@ -1481,7 +1568,7 @@ static int OP_MOV_IMM_VAL(const u32 i) { OP_MOV(IMM_VAL); }
 
 #define OP_MOV_S(arg) \
 	arg; \
-	if(rhs_is_imm && REG_POS(i,12) != 15) \
+	if(REG_POS(i,12) != 15) \
 	{ \
 		int mh = g_regs.write(REG_POS(i,12)); \
 		emit_mov(g_out, rhs, mh); \
