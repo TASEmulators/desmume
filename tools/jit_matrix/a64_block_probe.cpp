@@ -223,8 +223,16 @@ static const u32 kCodeBase = 0x02000000;
 // them. 0x100 apart keeps every case inside main RAM and 4-byte aligned.
 static const u32 kCaseStride = 0x100;
 static const u32 kCpsrInit = 0x00000013u;   // supervisor, ARM, F/I masked, AL
+static const u32 kCpsrThumb = 0x00000033u;  // same, Thumb
+static const u32 kCpsrThumbZ = 0x40000033u; // Thumb with Z set, for `beq`
 
 static int g_pass = 0, g_fail = 0;
+
+// Set by the Thumb runner: PC is four bytes ahead there instead of eight, and
+// next_instruction two instead of four. compile_basicblock() reads CPSR.T, so
+// the caller's cpsr is what actually picks the decoder -- this only fixes the
+// pipeline values the handlers see.
+static bool g_thumb_pipe = false;
 
 static void prime_cpu(u32 adr, u32 opcode, const u32 *ops, u32 cpsr)
 {
@@ -234,9 +242,10 @@ static void prime_cpu(u32 adr, u32 opcode, const u32 *ops, u32 cpsr)
 	NDS_ARM9.CPSR.val = cpsr;
 	// The pipeline value, not the address: handlers that read PC rely on
 	// R15 = instruct_adr + 2*insnsize.
-	NDS_ARM9.R[15] = adr + 8;
+	const u32 insn = g_thumb_pipe ? 2 : 4;
+	NDS_ARM9.R[15] = adr + 2 * insn;
 	NDS_ARM9.instruct_adr = adr;
-	NDS_ARM9.next_instruction = adr + 4;
+	NDS_ARM9.next_instruction = adr + insn;
 	NDS_ARM9.instruction = opcode;
 	NDS_ARM9.R[13] = 0x023FF000;            // inside main RAM, unused here
 }
@@ -296,6 +305,41 @@ static bool run_block(u32 adr, const u32 *words, int n, const u32 *ops, u32 cpsr
 	return true;
 }
 
+// Thumb: 16-bit opcodes, and the block size is in instructions either way.
+static bool run_thumb(u32 adr, const u16 *words, int n, const u32 *ops, u32 cpsr, Result *out)
+{
+	// _MMU_MAIN_MEM_MASK32 strips the low two bits (it is meant for aligned word
+	// access), so the offset has to be computed once and stepped by two bytes --
+	// masking adr and adr+2 separately sends both to the same byte.
+	const u32 base = adr & _MMU_MAIN_MEM_MASK32;
+	for (int k = 0; k < n; k++)
+		*(u16 *)(MMU.MAIN_MEM + base + 2 * k) = words[k];
+
+	CommonSettings.jit_max_block_size = n;
+	g_thumb_pipe = true;
+	prime_cpu(adr, words[0], ops, cpsr);
+	if (getenv("PROBE_TRACE"))
+		printf("TRACE adr=%08X ia=%08X w0=%04X w1=%04X max=%d n=%d words=%04X,%04X\n", adr,
+		       NDS_ARM9.instruct_adr,
+		       *(u16 *)(MMU.MAIN_MEM + base),
+		       *(u16 *)(MMU.MAIN_MEM + base + 2),
+		       (int)CommonSettings.jit_max_block_size, n, words[0], words[1]);
+	arm_jit_compile<0>();
+	prime_cpu(adr, words[0], ops, cpsr);
+	ArmOpCompiled f = (ArmOpCompiled)JIT_COMPILED_FUNC(adr, 0);
+	CommonSettings.jit_max_block_size = 1;
+	g_thumb_pipe = false;
+
+	if (f == (ArmOpCompiled)interp_stub) {
+		printf("FAIL %04X: block did not compile (fell back to the interpreter)\n", words[0]);
+		return false;
+	}
+	out->cycles = f();
+	memcpy(out->r, NDS_ARM9.R, sizeof(out->r));
+	out->cpsr = NDS_ARM9.CPSR.val;
+	return true;
+}
+
 // Distinct sentinel in every banked register, so a case that banks the wrong
 // value shows *which* bank got it. SPSR is pre-loaded because `mrs r0,spsr` and
 // the exception entries both read it.
@@ -339,6 +383,13 @@ static void reset_banks()
 	(0xE0000000u | ((u32)(op27_20) << 20) | ((u32)(rd) << 16) | ((u32)(rn) << 12) | \
 	 ((u32)(rs) << 8) | ((u32)(x) << 5) | ((u32)(y) << 6) | 0x80u | (u32)(rm))
 #define CLZ_OP(rd, rm) (0xE16F0F10u | ((u32)(rd) << 16) | (u32)(rm))
+// Saturating arithmetic: bits 19-16 = Rm, 15-12 = Rd, 3-0 = Rn, and bits 7-4
+// pick the operation (5 = add, 2 = sub, with bit 22 clear/set for the doubling
+// forms). Checked against capstone.
+#define QADD_OP(rm, rd, rn)  (0xE1000050u | ((u32)(rm) << 16) | ((u32)(rd) << 12) | (u32)(rn))
+#define QSUB_OP(rm, rd, rn)  (0xE1200050u | ((u32)(rm) << 16) | ((u32)(rd) << 12) | (u32)(rn))
+#define QDADD_OP(rm, rd, rn) (0xE1400050u | ((u32)(rm) << 16) | ((u32)(rd) << 12) | (u32)(rn))
+#define QDSUB_OP(rm, rd, rn) (0xE1600050u | ((u32)(rm) << 16) | ((u32)(rd) << 12) | (u32)(rn))
 // SMULW/SMLAW do not use the x/y halfword selectors: bit 5 is always set for
 // SMULW and clear for SMLAW, and bit 6 picks Rs's top half.
 #define SMULW_OP(rd, rm, rs, y) \
@@ -359,6 +410,12 @@ static const u32 kSetC[16] = {
 	0x00000000u, 0x00010001u, 0x00020002u, 0xFFFFFFFEu,
 	0x7FFFFFFFu, 0x7FFFFFFFu, 0x0000FFFFu, 0x00000000u,
 };
+// Operand pairs for the saturating forms: Rn/Rm sit in R1/R2, and these three
+// sets make the *signed* overflow actually happen (or not) where the case name
+// says so.
+static const u32 kQSat[16] = {0, 0x7FFFFFFFu, 0x00000002u};   // +ve + +ve overflows
+static const u32 kQNeg[16] = {0, 0x80000000u, 0x00000001u};   // 1 - INT_MIN overflows
+static const u32 kQDbl[16] = {0, 0x80000000u, 0x00000002u};   // doubling overflows
 
 struct Case
 {
@@ -423,6 +480,19 @@ static const Case kCases[] = {
 	CR("clz r0, r1",           CLZ_OP(0, 1), kSetA, 0, 1),
 	CR("clz r0, r1 (b)",       CLZ_OP(0, 1), kSetB, 0, 0),
 	CR("clz r0, r1 (c)",       CLZ_OP(0, 1), kSetC, 0, 15),
+
+	// --- saturation and coprocessor (group E) ----------------------------
+	// QADD/QSUB/QDADD/QDSUB used to return 0, i.e. the whole block fell back to
+	// the interpreter; these are the first executions of the new inline code.
+	// The operand order is desmume's, not the ARM ARM's: OP_QSUB in the
+	// interpreter subtracts R[bits 16..19] from R[bits 0..3].
+	CR("qadd r0,r1,r2 (sat)",  QADD_OP(1, 0, 2),  kQSat, 0, 0x7FFFFFFFu),
+	CR("qadd r0,r1,r2",        QADD_OP(1, 0, 2),  kSetC, 0, 0x00030003u),
+	CR("qsub r0,r1,r2 (sat)",  QSUB_OP(1, 0, 2),  kQNeg, 0, 0x7FFFFFFFu),
+	CR("qdadd r0,r1,r2 (sat)", QDADD_OP(1, 0, 2), kQDbl, 0, 0x80000002u),
+	CR("qdsub r0,r1,r2 (sat)", QDSUB_OP(1, 0, 2), kQDbl, 0, 0x7FFFFFFFu),
+	C ("mrc p15,0,r0,c0,c0,0", 0xEE100F10u, kSetA),
+	C ("mcr p15,0,r0,c1,c0,0", 0xEE010F10u, kSetA),
 };
 
 static const size_t kCaseCount = sizeof(kCases) / sizeof(kCases[0]);
@@ -437,6 +507,7 @@ int main(int argc, char **argv)
 	// checked without reading the emitter.
 	const int dump_psr = (argc > 2 && strcmp(argv[1], "--dump-psr") == 0) ? atoi(argv[2]) : -1;
 	const int dump_mem = (argc > 2 && strcmp(argv[1], "--dump-mem") == 0) ? atoi(argv[2]) : -1;
+	const int dump_t = (argc > 2 && strcmp(argv[1], "--dump-t") == 0) ? atoi(argv[2]) : -1;
 	memset(&MMU, 0, sizeof(MMU));
 	// A main-RAM mirror is compared against DTCMRegion with the low 14 bits
 	// masked off; park it far away so no case address can alias into it.
@@ -855,6 +926,236 @@ int main(int argc, char **argv)
 				              got[c.mem_chk], c.mem_want); g_fail++; }
 			}
 		}
+	}
+
+	// --- Thumb --------------------------------------------------------------
+	// Group E. The Thumb handlers are the same cache migration as the ARM ones,
+	// but every operand sits in a 3-bit field and the "special" forms carry the
+	// fourth bit outside it, so the field extraction is where a mistake would
+	// hide. Single-instruction blocks have no deferred write to lose, so they
+	// must come out byte-identical to the pre-migration build; the handful of
+	// two-instruction blocks at the end are the ones that can actually differ.
+	printf("\n# thumb\n");
+	{
+		// Thumb encodings as fields, verified against capstone.
+		#define T_LSL(imm,rm,rd)    (0x0000u | ((u32)(imm)<<6) | ((u32)(rm)<<3) | (u32)(rd))
+		#define T_LSR(imm,rm,rd)    (0x0800u | ((u32)(imm)<<6) | ((u32)(rm)<<3) | (u32)(rd))
+		#define T_ASR(imm,rm,rd)    (0x1000u | ((u32)(imm)<<6) | ((u32)(rm)<<3) | (u32)(rd))
+		#define T_ROP(base,rm,rd)   ((base) | ((u32)(rm)<<3) | (u32)(rd))
+		// Format 3 arithmetic is `bits 8-6 = Rm, bits 5-3 = Rn, bits 2-0 = Rd`
+		// (sub is the one where the order shows: it is Rn - Rm).
+		#define T_ADD_R(rm,rn,rd)   (0x1800u | ((u32)(rm)<<6) | ((u32)(rn)<<3) | (u32)(rd))
+		#define T_SUB_R(rm,rn,rd)   (0x1A00u | ((u32)(rm)<<6) | ((u32)(rn)<<3) | (u32)(rd))
+		#define T_ADD_I3(imm,rn,rd) (0x1C00u | ((u32)(imm)<<6) | ((u32)(rn)<<3) | (u32)(rd))
+		#define T_SUB_I3(imm,rn,rd) (0x1E00u | ((u32)(imm)<<6) | ((u32)(rn)<<3) | (u32)(rd))
+		#define T_IMM8(base,rd,imm) ((base) | ((u32)(rd)<<8) | (u32)(imm))
+		#define T_SPE(base,h1,h2,rm,rd) ((base) | ((u32)(h1)<<7) | ((u32)(h2)<<6) | ((u32)(rm)<<3) | (u32)(rd))
+		#define T_MEM_R(base,rm,rn,rd) ((base) | ((u32)(rm)<<6) | ((u32)(rn)<<3) | (u32)(rd))
+		#define T_MEM_I(base,imm,rn,rd) ((base) | ((u32)(imm)<<6) | ((u32)(rn)<<3) | (u32)(rd))
+		#define T_SPREL(base,rd,imm) ((base) | ((u32)(rd)<<8) | (u32)(imm))
+		#define T_LDM(base,rn,lst)  ((base) | ((u32)(rn)<<8) | (u32)(lst))
+
+		static const u32 tA[16]   = {0x11111111u, 0x7FFFFFFFu, 0x00000002u, 0x12345678u, 0,0,0xCAFEBABEu, 0};
+		static const u32 tB[16]   = {0x99999999u, 0x80000000u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0,0,0x0BADF00Du, 0};
+		static const u32 tC[16]   = {0x00000000u, 0x00010001u, 0x00020002u, 0xFFFFFFFEu, 0,0,0x0000FFFFu, 0};
+		static const u32 tMem[16] = {0xDEADBEEFu, 0x02003000u, 0x00000004u, 0};
+		// Same window, but Rm = 5 so LDRSB reaches the 0x80 byte at +5.
+		static const u32 tMemB[16] = {0xDEADBEEFu, 0x02003000u, 0x00000005u, 0};
+		static const u32 tLdm[16] = {0x02003000u, 0x00000011u, 0x00000022u, 0x00000033u, 0};
+		static const u32 tBx[16]  = {0, 0x02000301u};
+
+		const u32 kStackTop = 0x023FF000u;
+
+		struct ThumbCase
+		{
+			const char *name;
+			u16 w[2];
+			int n;
+			const u32 *ops;
+			u32 cpsr;
+			int chk;        // -1 none, 0..15 register, 16 instruct_adr
+			u32 want;
+		};
+
+		#define TA(nm, op, set)              { nm, {(u16)(op)}, 1, set, kCpsrThumb, -1, 0 }
+		#define TX(nm, op, set, d, w)        { nm, {(u16)(op)}, 1, set, kCpsrThumb, d, w }
+		#define TF(nm, op, set, cs)          { nm, {(u16)(op)}, 1, set, cs, -1, 0 }
+		#define T2(nm, a, b, set)            { nm, {(u16)(a), (u16)(b)}, 2, set, kCpsrThumb, -1, 0 }
+
+		static const ThumbCase tc[] = {
+			// --- shifts -----------------------------------------------------
+			TX("lsl r0,r1,#4",     T_LSL(4,1,0), tA, 0, 0xFFFFFFF0u),
+			TX("lsl r0,r0,#4",     T_LSL(4,0,0), tA, 0, 0x11111110u),
+			TX("lsr r0,r1,#4",     T_LSR(4,1,0), tA, 0, 0x07FFFFFFu),
+			TA("lsr r0,r1,#0",     T_LSR(0,1,0), tA),
+			TX("asr r0,r2,#4",     T_ASR(4,2,0), tA, 0, 0x00000000u),
+			TA("asr r0,r1,#0",     T_ASR(0,1,0), tA),
+			TX("lsls r0,r2",       T_ROP(0x4080,2,0), tA, 0, 0x44444444u),
+			TX("lsrs r0,r2",       T_ROP(0x40C0,2,0), tA, 0, 0x04444444u),
+			TX("asrs r0,r2",       T_ROP(0x4100,2,0), tA, 0, 0x04444444u),
+			TX("rors r0,r2",       T_ROP(0x41C0,2,0), tA, 0, 0x44444444u),
+
+			// --- logical ----------------------------------------------------
+			TX("ands r0,r2",       T_ROP(0x4000,2,0), tA, 0, 0x00000000u),
+			TX("eors r0,r2",       T_ROP(0x4040,2,0), tA, 0, 0x11111113u),
+			TX("orrs r0,r2",       T_ROP(0x4300,2,0), tA, 0, 0x11111113u),
+			TX("bics r0,r2",       T_ROP(0x4380,2,0), tA, 0, 0x11111111u),
+			TX("mvns r0,r2",       T_ROP(0x43C0,2,0), tA, 0, 0xFFFFFFFDu),
+			TA("tst r0,r2",        T_ROP(0x4200,2,0), tA),
+			TA("adcs r0,r2",       T_ROP(0x4140,2,0), tA),
+			TA("sbcs r0,r2",       T_ROP(0x4180,2,0), tA),
+			TX("muls r0,r2",       T_ROP(0x4340,2,0), tA, 0, 0x22222222u),
+			TX("rsbs r0,r2,#0",    T_ROP(0x4240,2,0), tA, 0, 0xFFFFFFFEu),
+			TA("cmp r0,r2",        T_ROP(0x4280,2,0), tA),
+			TA("cmn r0,r2",        T_ROP(0x42C0,2,0), tA),
+
+			// --- add/sub ----------------------------------------------------
+			TX("adds r0,r1,r2",    T_ADD_R(2,1,0), tA, 0, 0x80000001u),
+			TX("adds r0,r0,r2",    T_ADD_R(2,0,0), tA, 0, 0x11111113u),
+			TX("adds r0,r1,r0",    T_ADD_R(0,1,0), tA, 0, 0x91111110u),
+			TX("subs r0,r1,r2",    T_SUB_R(2,1,0), tA, 0, 0x7FFFFFFDu),
+			TX("subs r0,r0,r2",    T_SUB_R(2,0,0), tA, 0, 0x1111110Fu),
+			TX("adds r0,r1,#3",    T_ADD_I3(3,1,0), tA, 0, 0x80000002u),
+			TX("adds r0,r1,#0",    T_ADD_I3(0,1,0), tA, 0, 0x7FFFFFFFu),
+			TX("subs r0,r1,#3",    T_SUB_I3(3,1,0), tA, 0, 0x7FFFFFFCu),
+			TX("movs r0,#0x5a",    T_IMM8(0x2000,0,0x5A), tA, 0, 0x0000005Au),
+			TA("cmp r1,#0x5a",     T_IMM8(0x2800,1,0x5A), tA),
+			TX("adds r1,#0x5a",    T_IMM8(0x3000,1,0x5A), tA, 1, 0x80000059u),
+			TX("subs r1,#0x5a",    T_IMM8(0x3800,1,0x5A), tA, 1, 0x7FFFFFA5u),
+
+			// --- high registers / PC / SP -----------------------------------
+			TX("add r8,r0",        T_SPE(0x4400,1,0,0,0), tA, 8, 0x11111111u),
+			TX("add r8,r1",        T_SPE(0x4400,1,0,1,0), tA, 8, 0x7FFFFFFFu),
+			TA("cmp r0,r1",        T_SPE(0x4500,0,0,1,0), tA),
+			TX("mov r8,r1",        T_SPE(0x4600,1,0,1,0), tA, 8, 0x7FFFFFFFu),
+			TX("mov r0,r8",        T_SPE(0x4600,0,1,0,0), tA, 0, 0x00000000u),
+			TA("adr r0,#0x10",     T_SPREL(0xA000,0,0x10), tA),
+			TX("add r0,sp,#0x10",  T_SPREL(0xA800,0,0x10), tA, 0, kStackTop + 0x40u),
+			TX("add sp,#0x20",     0xB000u | 8, tA, 13, kStackTop + 0x20u),
+			TX("sub sp,#0x20",     0xB080u | 8, tA, 13, kStackTop - 0x20u),
+
+			// --- loads / stores ---------------------------------------------
+			// Data window: +0 = 11223344, +4 = 80008000, +8 = 0000AB00,
+			// +12 = 00008000. Halfword and byte loads use offsets 1/2/4 so the
+			// sign-extension cases are worth asserting.
+			TX("str r0,[r1,#4]",   T_MEM_I(0x6000,1,1,0), tMem, -1, 0),
+			TX("ldr r0,[r1,#4]",   T_MEM_I(0x6800,1,1,0), tMem, 0, 0x80008000u),
+			TX("strb r0,[r1,#1]",  T_MEM_I(0x7000,1,1,0), tMem, -1, 0),
+			TX("ldrb r0,[r1,#1]",  T_MEM_I(0x7800,1,1,0), tMem, 0, 0x00000033u),
+			TX("strh r0,[r1,#2]",  T_MEM_I(0x8000,1,1,0), tMem, -1, 0),
+			TX("ldrh r0,[r1,#2]",  T_MEM_I(0x8800,1,1,0), tMem, 0, 0x00001122u),
+			TX("str r0,[r1,r2]",   T_MEM_R(0x5000,2,1,0), tMem, -1, 0),
+			TX("strh r0,[r1,r2]",  T_MEM_R(0x5200,2,1,0), tMem, -1, 0),
+			TX("strb r0,[r1,r2]",  T_MEM_R(0x5400,2,1,0), tMem, -1, 0),
+			TX("ldr r0,[r1,r2]",   T_MEM_R(0x5800,2,1,0), tMem, 0, 0x80008000u),
+			TX("ldrh r0,[r1,r2]",  T_MEM_R(0x5A00,2,1,0), tMem, 0, 0x00008000u),
+			TX("ldrb r0,[r1,r2]",  T_MEM_R(0x5C00,2,1,0), tMem, 0, 0x00000000u),
+			TX("ldrsb r0,[r1,r2]", T_MEM_R(0x5600,2,1,0), tMemB, 0, 0xFFFFFF80u),
+			TX("ldrsh r0,[r1,r2]", T_MEM_R(0x5E00,2,1,0), tMem, 0, 0xFFFF8000u),
+			TX("str r0,[sp,#8]",   T_SPREL(0x9000,0,2), tMem, -1, 0),
+			TX("ldr r0,[sp,#8]",   T_SPREL(0x9800,0,2), tMem, 0, 0xB2B2B2B2u),
+			TA("ldr r0,[pc,#0x20]", T_SPREL(0x4800,0,8), tA),
+
+			// --- block transfers --------------------------------------------
+			TA("push {r0,r1}",     0xB403u, tA),
+			TA("push {r0,lr}",     0xB501u, tA),
+			TX("pop {r0,r1}",      0xBC03u, tA, 0, 0xB0B0B0B0u),
+			TA("pop {pc}",         0xBD01u, tA),
+			TA("stm r0!,{r1,r2,r3}", T_LDM(0xC000,0,0x0E), tLdm),
+			TX("ldm r0!,{r1,r2,r3}", T_LDM(0xC800,0,0x0E), tLdm, 1, 0x11223344u),
+
+			// --- branch ------------------------------------------------------
+			TA("bx r1",            0x4708u, tBx),
+			TA("blx r1",           0x4788u, tBx),
+			TA("b #8",             0xE002u, tA),
+			TF("beq #8 (Z set)",   0xD002u, tA, kCpsrThumbZ),
+			TA("svc #0x12",        0xDF12u, tA),
+			T2("bl #8",            0xF001u, 0xF810u, tA),
+			T2("blx #8",           0xF001u, 0xE810u, tA),
+
+			// --- two instructions: a deferred write has to survive ----------
+			T2("mov r0,#5 ; str [r1]",  0x2005u, 0x6008u, tMem),
+			T2("adds r0,#1 ; str [r1]", 0x3001u, 0x6008u, tMem),
+			T2("adds r0,#1 ; push {r0}", 0x3001u, 0xB401u, tA),
+			T2("sub sp,#8 ; push {r0}", 0xB082u, 0xB401u, tA),
+			T2("adds r1,#4 ; ldr r0,[r1]", 0x3104u, 0x6808u, tMem),
+		};
+
+		// Stack window: PUSH writes below SP, POP and the SP-relative forms read
+		// from SP up. Six words cover both, and the sentinels make "which slot
+		// got the value" readable.
+		const u32 kStackWin = 0x023FEFF8u;
+		for (size_t i = 0; i < sizeof(tc) / sizeof(tc[0]); i++) {
+			const ThumbCase &c = tc[i];
+			const u32 adr = kCodeBase + 0x40000u + (u32)i * kCaseStride;
+
+			// Data window at kDataAdr, stack window around SP.
+			for (u32 k = 0; k < 0x40; k += 4)
+				*(u32 *)(MMU.MAIN_MEM + ((0x02003000u + k) & _MMU_MAIN_MEM_MASK32)) = 0;
+			*(u32 *)(MMU.MAIN_MEM + ((0x02003000u + 0) & _MMU_MAIN_MEM_MASK32)) = 0x11223344u;
+			*(u32 *)(MMU.MAIN_MEM + ((0x02003000u + 4) & _MMU_MAIN_MEM_MASK32)) = 0x80008000u;
+			*(u32 *)(MMU.MAIN_MEM + ((0x02003000u + 8) & _MMU_MAIN_MEM_MASK32)) = 0x0000AB00u;
+			*(u32 *)(MMU.MAIN_MEM + ((0x02003000u + 12) & _MMU_MAIN_MEM_MASK32)) = 0x00008000u;
+
+			const u32 stk[6] = {0xA1A1A1A1u, 0xA2A2A2A2u, 0xB0B0B0B0u,
+			                    0xB1B1B1B1u, 0xB2B2B2B2u, 0xB3B3B3B3u};
+			for (int k = 0; k < 6; k++)
+				*(u32 *)(MMU.MAIN_MEM + ((kStackWin + 4 * k) & _MMU_MAIN_MEM_MASK32)) = stk[k];
+
+			Result res;
+			if (!run_thumb(adr, c.w, c.n, c.ops, c.cpsr, &res)) {
+				g_fail++;
+				continue;
+			}
+
+			const u32 ia = NDS_ARM9.instruct_adr;
+			const u32 ni = NDS_ARM9.next_instruction;
+
+			if ((int)i == dump_t) {
+				ArmOpCompiled pf = (ArmOpCompiled)JIT_COMPILED_FUNC(adr, 0);
+				printf("DUMP %s %d bytes:\n", c.name, g_TOTALBYTES);
+				for (int k = 0; k < g_TOTALBYTES; k += 4) {
+					u32 word;
+					memcpy(&word, (const u8 *)pf + k, 4);
+					printf(" %08X", word);
+					if ((k / 4) % 8 == 7) printf("\n");
+				}
+				printf("\n");
+			}
+
+			printf("%-24s %04X,%04X cyc=%2u cpsr=%08X", c.name, c.w[0], c.w[1],
+			       res.cycles, res.cpsr);
+			for (int r = 0; r < 15; r++)
+				printf(" %08X", res.r[r]);
+			printf(" ia=%08X ni=%08X d=", ia, ni);
+			for (int k = 0; k < 4; k++) {
+				u32 v;
+				memcpy(&v, MMU.MAIN_MEM + ((0x02003000u + 4 * k) & _MMU_MAIN_MEM_MASK32), 4);
+				printf("%08X,", v);
+			}
+			printf(" s=");
+			for (int k = 0; k < 6; k++) {
+				u32 v;
+				memcpy(&v, MMU.MAIN_MEM + ((kStackWin + 4 * k) & _MMU_MAIN_MEM_MASK32), 4);
+				printf("%08X,", v);
+			}
+			printf("\n");
+
+			if (c.chk >= 0) {
+				const u32 got = (c.chk == 16) ? ia : res.r[c.chk];
+				if (got == c.want) {
+					g_pass++;
+				} else {
+					printf("  FAIL %-22s got=%08X want=%08X\n", c.name, got, c.want);
+					g_fail++;
+				}
+			}
+		}
+
+		#undef TA
+		#undef TX
+		#undef TF
+		#undef T2
 	}
 
 	printf("\n%d checks passed, %d failed\n", g_pass, g_fail);
