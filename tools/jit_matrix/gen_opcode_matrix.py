@@ -114,6 +114,34 @@ DIFF_PASS_HANDLERS = frozenset({
     "OP_SMLAL_B_B", "OP_SMLAL_B_T", "OP_SMLAL_T_B", "OP_SMLAL_T_T",
     "OP_SMULW_B", "OP_SMULW_T", "OP_SMLAW_B", "OP_SMLAW_T",
     "OP_CLZ",
+    # Batch 7+8 (group E, 2026-11-20): the whole Thumb table plus the ARM
+    # saturating arithmetic and the cp15 transfers. Same gate as the earlier
+    # batches -- a64_block_probe runs compile_basicblock() over every one of
+    # them on AArch64 and diffs the full architectural state against the
+    # pre-batch build; the Q* family is additionally self-checked against the
+    # interpreter's saturation formula.
+    "OP_QADD", "OP_QSUB", "OP_QDADD", "OP_QDSUB",
+    "OP_MCR", "OP_MRC",
+    # Thumb: data processing
+    "OP_ADD_REG", "OP_SUB_REG", "OP_ADD_IMM3", "OP_SUB_IMM3", "OP_MOV_IMM8",
+    "OP_CMP_IMM8", "OP_ADD_IMM8", "OP_SUB_IMM8", "OP_AND", "OP_EOR",
+    "OP_ADC_REG", "OP_SBC_REG", "OP_TST", "OP_NEG", "OP_CMP", "OP_CMN",
+    "OP_ORR", "OP_BIC", "OP_MVN", "OP_ADD_SPE", "OP_CMP_SPE", "OP_MOV_SPE",
+    "OP_ADD_2PC", "OP_ADD_2SP", "OP_ADJUST_P_SP", "OP_ADJUST_M_SP",
+    # Thumb: shifts
+    "OP_LSL_0", "OP_LSL", "OP_LSR_0", "OP_LSR", "OP_ASR_0", "OP_ASR",
+    "OP_LSL_REG", "OP_LSR_REG", "OP_ASR_REG", "OP_ROR_REG",
+    # Thumb: loads / stores
+    "OP_LDR_PCREL", "OP_STR_REG_OFF", "OP_STRH_REG_OFF", "OP_STRB_REG_OFF",
+    "OP_LDRSB_REG_OFF", "OP_LDR_REG_OFF", "OP_LDRH_REG_OFF", "OP_LDRB_REG_OFF",
+    "OP_LDRSH_REG_OFF", "OP_STR_IMM_OFF", "OP_LDR_IMM_OFF", "OP_STRB_IMM_OFF",
+    "OP_LDRB_IMM_OFF", "OP_STRH_IMM_OFF", "OP_LDRH_IMM_OFF", "OP_STR_SPREL",
+    "OP_LDR_SPREL",
+    # Thumb: block transfers, multiply, branch, exception
+    "OP_PUSH", "OP_PUSH_LR", "OP_POP", "OP_POP_PC", "OP_STMIA_THUMB",
+    "OP_LDMIA_THUMB", "OP_MUL_REG", "OP_BX_THUMB", "OP_BLX_THUMB",
+    "OP_B_COND", "OP_B_UNCOND", "OP_BLX", "OP_BL_10", "OP_BL_11",
+    "OP_SWI_THUMB",
 })
 SHIFT_TOKEN = re.compile(r"_(LSL|LSR|ASR|ROR)_(IMM|REG)$|^OP_(LSL|LSR|ASR|ROR|RRX)")
 COPROC = ("OP_MCR", "OP_MRC", "OP_CDP", "OP_LDC", "OP_STC")

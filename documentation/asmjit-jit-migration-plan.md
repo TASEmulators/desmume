@@ -26,6 +26,7 @@
 | **rev12** | 主线推进 + **handler 级真机验证首次落地**：① 族 5（乘法 28 handler + CLZ）迁到 `ArmRegCache`，为此新增 `read_into()` 入口与 `rc_read`/`rc_store`（§S4 族 5）；② 新增 `tools/jit_matrix/a64_block_probe.cpp`——在 AArch64 真机上直接执行 `compile_basicblock()` 生成的块（68 个桩符号补齐核心），**终结了"arm64 handler 语义只能等 macOS"的不对称**；③ 真机抓到并修复一个既有 bug：`emit_dma_event_check` 在分支内 `flush()` 会清掉编译期 dirty 位，导致延迟回写在落空路径上丢失 |
 | **rev13** | 族 6（分支 + 状态寄存器 + 异常，13 handler）：① 确立并落实一条不变量——**任何 `armcpu_switchMode()` 调用前必须先 `flush()`**，因为它靠读 `armcpu_t` 完成 bank 搬移；MSR/SWI/BKPT/LDM 共 4 处补齐（`S_DST_R15` 本来就有）；② `MRS`/`MSR`/`BX` 的源与目的改走缓存；③ `OP_BKPT` 由"打印 + 回退解释器"改为按解释器逐行内联；④ 真机探针把 `armcpu_switchMode` 桩换成**真正搬移 bank 的实现**，用两指令块抓到 bank 串值（§S4 族 6）；⑤ 矩阵账本补齐族 5 漏记的 29 个 handler：293/571 |
 | **rev14** | 族 3+4（访存 + LDM/STM，204 handler）：① `OP_LDR_`/`OP_STR_`/`LDRD`/`STRD`/`SWP`/`op_ldm_stm` 的基址与存储值改走 `ArmRegCache`；② 抓到既有 bug：`OP_LDM_STM` 直接读 `cpu->R[]`，而只有基址被 evict，于是 `add r4,#1 ; stmia r0,{r4}` 存的是旧值（族 1 之后一直存在）；③ 抓到第二个既有 bug：LDM 基址在列表里的写回用的是 `call_mem_r7` 之后已失效的 x4；④ 探针新增 36 个访存块（含 6 个两指令块），82/89 逐字节相同、7 个刻意变化；⑤ 矩阵：497/571 |
+| **rev15** | 族 7+8，**主线收尾**：① Thumb 全表 68 handler 迁到 `ArmRegCache`（3 位字段的 `rc_t_*` 入口 + 高寄存器组的 `rc_read_at`）；② `OP_QADD`/`QSUB`/`QDADD`/`QSUB` 从"`printf` + 回退解释器"改为内联实现，顺序与饱和公式照 `arm_instructions.cpp`（§S4 族 7+8）；③ `OP_MUL_REG` 的周期尾部改喂乘数而非乘积，与 ARM 路径一致（`muls r0,r2` 5→2 cycles，状态不变）；④ 探针新增 78 个 Thumb 块与 4 个 Q 指令 + 2 个 cp15 用例：170 块中 164 逐字节相同、6 个刻意变化，126 项自检全绿；⑤ 矩阵 **571/571 `diff-pass`，todo 归零** |
 
 ---
 
@@ -1651,6 +1652,62 @@ ldmia r0!,{r0,r1}   x4 被毁 → R0 = BEB3DF20（每次运行都不一样）
 1. **LDR 的目的寄存器不可能留在缓存里**：helper 的 ABI 是 `u32* dstreg`。要改这一点得先改 ABI（让 helper 把值返回在寄存器里），不在本批范围。
 2. 带**移位寄存器偏移**的 LDR/STR（`ldr r0,[r1,r2,lsl #2]`）仍然用 `reg_pos_ptr` 读 Rm——那些 `arg` 宏与族 1/2 共用，本批没动。所以这一族是"基址缓存化"，不是"全寄存器缓存化"。
 3. **DA 方向的两条（`ldmda`/`stmda`）只做了 pin（pre == post），没有断言**：它们的有效地址跟 ARM ARM 的写法对不上，要判定得拿解释器当 oracle，而这个探针链不到解释器。已在 `jit-open-tasks.md` 里列为待 macOS 核对项。
+
+#### 族 7 + 8：Thumb 全表 + 饱和 + 协处理器（68 + 4 + 2 handler）
+
+这是迁移主线的收尾批，做完后矩阵 **571/571 全部 `diff-pass`**，剩下 20 个 `interp-fallback`（`OP_UND`/`OP_CDP`/LDC-STC 全系/`OP_LDREX`/`OP_STREX`），它们本来就是有意不编译的。
+
+**缓存入口怎么扩到 Thumb**
+
+Thumb 的操作数在 3 位字段里（bit 0/3/6/8），所以 `reg_pos_thumb(x, …)` 的替换需要自己的拼写：
+
+| 宏 | 等价于 |
+|---|---|
+| `rc_t_read(bit, host)` | `reg_pos_thumb(bit, host, VALUE)`，`read_into` 不占槽 |
+| `rc_t_rw(bit)` | 单寄存器读改写（移位、`adds #imm8`、`neg` 等）用 |
+| `rc_t_write(bit)` | 只写不读的目的寄存器 |
+| `reg_pos_thumb_dst(x, reg)` | LDR 的 `u32* dstreg`：`discard` 而不是 `evict` |
+
+"特殊"形式（`add/cmp/mov/bx/blx` 的高寄存器组）把第四位放在字段外（H1=bit 7，H2=bit 6），这几个 handler 用 `rc_read_at(REG_POS(i,3), …)` 按 4 位字段取寄存器号。**这是本批最容易写错的地方**：`_T3(3)` 只取 3 位，会把 `bx r12` 读成 `bx r4`。
+
+**Q 系列：从"不可编译"到内联**
+
+`OP_QADD`/`QSUB`/`QDADD`/`QDSUB` 原来只有 `printf` + `return 0`，意味着**任何含饱和指令的块整体退回解释器**。现在内联实现，两条语义必须写清楚：
+
+1. **操作数顺序按解释器，不按 ARM ARM**。`arm_instructions.cpp:OP_QSUB` 算的是 `R[bits 0..3] - R[bits 16..19]`，与 ARM ARM 写的 `Rm - Rn` 相反；`QDADD`/`QDSUB` 也是同一套配对。JIT 是拿解释器当 oracle 的，所以照抄解释器——"改正"反而会让两边不一致。`arm_jit_arm.cpp` 里这段有注释说明。
+2. **饱和是 `Rd = 0x80000000 - BIT31(res)`，Q 是粘性的**。落地成三对 XOR/AND 而不是分支：`dst = res ^ ((res ^ sat) & -ovf)`，`ovf` 由 `adds`/`subs` 的 V 经 `cset` 取出，Q 用 `OR` 写回 CPSR 第 3 字节（bit 27）。
+
+写这段时踩了一个自造的坑：先把公式写成 `0x7FFFFFFF + BIT31(res)`，正好是正确值的反相，四个饱和用例全部失败（`0x80000000` vs `0x7FFFFFFF`）。探针的自检当场抓住了它——这也说明**饱和这类"值错了但状态看着正常"的指令必须带断言**，不能只靠 pre/post 相同。
+
+**MCR / MRC**
+
+这两个 handler 早就实现了，只是没进账本。本批只把数据寄存器接进缓存（`rc_read` / `rc_store`）。未识别的 `CRn` 仍是 `return 1` 空操作，与解释器一致。
+
+**顺便修掉一处 Thumb 乘法周期**
+
+`OP_MUL_REG` 原来把**乘积**喂给 `MUL_Mxx_END()`（它用 CLZ 估算操作数宽度来算周期），而 ARM 侧一律喂乘数 `Rs`。改成喂 `Rs` 后与 ARM 路径一致：
+
+| 用例 | 迁移前 | 迁移后 |
+|---|---|---|
+| `muls r0,r2`（Rd=0x11111111, Rs=2） | cyc=5 | cyc=2 |
+
+寄存器状态逐字节相同，只有周期变了。解释器的 Thumb 公式是 `MUL_Mxx_END_THUMB`（按 `v = R[bits 3..5]` 分档），也不看乘积——所以这是**修正**，不是回归。
+
+**探针：78 个 Thumb 块 + 7 个新 ARM 用例**
+
+新增 `--dump-t N`。覆盖 Thumb 全部 68 个 handler（移位 10、数据处理 26、访存 17、块传输 6、乘法 1、分支 7、`svc` 1），外加 5 个两指令块（`movs`+`str`、`adds`+`str`、`adds`+`push`、`sub sp`+`push`、`adds r1`+`ldr`）。ARM 侧补了 4 个 Q 指令 + `mrc p15` / `mcr p15`。
+
+结果：**170 个块里 164 个逐字节相同，6 个变化**——5 个是 Q 系列（迁移前块里是解释器桩调用，`R0` 保持初值、Q 不清零），1 个是上面 `muls` 的周期。126 项自检全绿。
+
+**探针自己踩的坑（记下来免得下次再花时间）**
+
+`_MMU_MAIN_MEM_MASK32` 的定义是 `0x3FFFFF & ~3`——它会把低两位清掉。于是 `(adr) & MASK32` 和 `(adr+2) & MASK32` 落到了同一个字节，两指令 Thumb 块的第一条指令被第二条覆盖，表现为"块里只有第二条指令"。修法是先算 `base = adr & MASK32` 再 `+2*k`。
+
+**三条边界**
+
+1. Thumb 的 `bl` / `blx` 是**两半**编码（`0xF000` 前后缀 + `0xF800`/`0xE800`），所以探针用两指令块覆盖；单独一条 `OP_BL_11` 在真机上不会出现。
+2. `OP_BLX_THUMB` 的 `test_thumb` 参数仍然按 3 位字段判断 `REG_POS(i,3)==15`——这与解释器一致，但没有独立的真机用例（`blx r15` 属于未定义行为）。
+3. 族 3+4 留下的 `ldmda`/`stmda` 待核对项仍然挂着，本批没有改变它的状态。
 
 ### S5 · 语义收尾（约 3 天）
 
