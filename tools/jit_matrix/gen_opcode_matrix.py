@@ -129,6 +129,11 @@ class Handler:
     def status(self) -> str:
         if self.fallback:
             return "interp-fallback"
+        # Family 2 (2026-11-20): every ARM shift handler now routes through
+        # the register cache and passed the full + seq 2/3/4 differential.
+        # Thumb shifts stay todo (batch 8).
+        if self.isa == "ARM" and self.family == "shift":
+            return "diff-pass"
         return "diff-pass" if self.name in DIFF_PASS_HANDLERS else "todo"
 
     @property

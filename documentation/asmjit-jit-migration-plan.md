@@ -1450,6 +1450,39 @@ x86 的 `GET_CARRY` 是 `bt flags_ptr, 5`（+ `cmc`），`SET_NZC` 用 `setcc` +
 > 如果 ALU 族只能拿到 1.0~1.1×，说明瓶颈不在寄存器分配（可能在 MMU 或调度），
 > 这时应该停下来重新定目标，而不是继续把 571 条都改完。
 
+#### 族 2：移位（224 个 ARM handler，已完成语义迁移）
+
+**纪律说明**：按 §S4 原计划，族 2 应等族 1 的整机帧率数字出来再推。本次是用户明确要求推进主体迁移，
+故照做；**帧率门槛仍未验证**，这一点不因语义迁移完成而改变。
+
+**做法**：移位 `arg` 宏（`LSL_IMM`/`LSL_REG`/`S_LSL_IMM`/…）把移位后的操作数留在物理 `rhs`(w6)，
+所以缓存池只需再提供 Rn/Rd 两个槽——3 槽够用，不必扩容。新增三个宏：
+
+- `OP_ARITHMETIC_SHIFT_RC` —— 正向 ALU（AND/EOR/ORR/ADD/SUB + 算术 S 的 ADDS/SUBS + 带进位的 ADC/SBC）
+- `OP_ARITHMETIC_S_SHIFT_RC` —— 逻辑 S（ANDS/EORS/ORRS/BICS），保留 `SET_NZC`
+- `OP_ARITHMETIC_R_SHIFT_RC` —— 反向（RSB/RSC），`Rd = rhs - Rn`
+
+TST/TEQ/CMP/CMN/MOV/MOV_S 这类单源/比较指令则直接把原有的 `if(rhs_is_imm)` 缓存门控
+改成 `if(REG_POS != 15)`——族 1 时缓存分支只服务 IMM_VAL，移位路径走内存；现在两条路径共用缓存。
+**R15 始终走内存路径**（铁律 1）。
+
+**覆盖范围**：224 个 ARM shift handler 中 223 个走缓存；唯一例外是 `OP_MOV_LSL_IMM` 的 NOP 特例
+（`i == 0xE1A00000` 直接返回，无需缓存）。10 个 Thumb shift 留待批次 8。
+
+**实测**：
+
+| 口径 | 改前 | 改后 | 降幅 |
+|---|---|---|---|
+| 16 指令块（8 个槽位样本） | 852–1044 字节 | 788–980 字节 | 约 −64 字节/块（−7.5%） |
+| 全量代码总字节 | 12,117,704 | 12,101,320 | −16,384（−0.14%） |
+
+收益小于族 1 是设计使然：Rm/Rs 仍走内存（arg 宏未改），只有 Rn/Rd 享受跨指令复用；
+3 槽缓存容不下 Rd/Rn/Rm/Rs 四个同时驻留。
+
+**验证**：每一批（无 S IMM → 无 S REG → 算术 S → 逻辑 S → ADC/SBC/RSC → 比较/移动类）
+都重建并跑 `--full`，功能桶（R0–R14 / CPSR / `instruct_adr` / invariant / engine fault）全 0；
+最终 `--full --seq 2/3/4` 全绿（0 mismatch）。周期差异仍是记录项，不进仲裁。
+
 ### S5 · 语义收尾（约 3 天）
 
 先过 §3.6 的逐族契约清单与 §3.7 的块级边界，再过下面 7 项 x86 风险（R1–R7）
@@ -1741,7 +1774,7 @@ static inline asmjit::CondCode arm_cc(u8 c) {
       x86_64 / i386 双架构 `-fsyntax-only` 均 0 错误；**本机 arm64 无法运行 x86 代码，
       运行时验证需在 Windows / Intel Mac 补做**。
 - [ ] 591 组中 571 组的矩阵状态全部 `diff-pass`，其余 20 组保持 `interp-fallback`
-      （当前 28 组 `diff-pass`，见 §S4 族 1）
+      （当前 252 组 `diff-pass`：族 1 的 28 + 族 2 的 224 ARM 移位；见 §S4）
 - [x] `arm_cc()` 映射有单测，遍历 0x0..0xE —— **该项已作废**：`arm_cc()` 是 rev5 拟定的辅助函数，
       实现中从未出现；现有后端统一走 `emit_branch_label()` 直接编码条件，无此映射层。
 - [x] `emit_andimm` 等立即数原语保留回退，且有非法立即数用例 —— `emit_andimm` 现已不使用
