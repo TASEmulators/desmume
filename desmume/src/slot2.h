@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2025 DeSmuME team
+	Copyright (C) 2009-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -161,8 +161,16 @@ inline bool CFlash_IsUsingPath() { return CFlash_Mode==ADDON_CFLASH_MODE_Path ||
 u16 Paddle_GetValue();
 void Paddle_SetValue(u16 theValue);
 
+u8 guitarGrip_boolToKeys(bool green, bool red, bool yellow, bool blue);
+u8 guitarGrip_getKeys();
+void guitarGrip_setKeys(u8 theKeys);
 extern void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue); // Guitar grip keys
+
+u16 piano_boolToKeys(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic);
+u16 piano_getKeys();
+void piano_setKeys(u16 theKeys);
 extern void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic); //piano keys
+
 extern void HCV1000_setReady();
 extern void HCV1000_setBarcode(std::string barcode);
 #endif //__SLOT_H__

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2025 DeSmuME team
+	Copyright (C) 2008-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2930,7 +2930,6 @@ const UserInput& NDS_getFinalUserInput()
 	return finalUserInput;
 }
 
-
 static void saveUserInput(EMUFILE &os, UserInput &input)
 {
 	os.fwrite(input.buttons.array, 14);
@@ -3034,6 +3033,11 @@ void NDS_setMic(bool pressed)
 {
 	gotInputRequest();
 	rawUserInput.mic.micButtonPressed = (pressed ? TRUE : FALSE);
+}
+
+bool NDS_IsLidClosed()
+{
+	return (LidClosed) ? false : true;
 }
 
 
