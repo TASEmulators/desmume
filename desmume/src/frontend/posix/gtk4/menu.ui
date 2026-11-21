@@ -187,6 +187,77 @@
     <submenu>
       <attribute name='label' translatable='yes'>_View</attribute>
       <section>
+        <submenu>
+          <attribute name='label' translatable='yes'>LCDs _Layout</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_Vertical</attribute>
+              <attribute name='action'>app.orient</attribute>
+              <attribute name='target' type='s'>'vertical'</attribute>
+              <attribute name='accel'>&lt;Control&gt;1</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Horizontal</attribute>
+              <attribute name='action'>app.orient</attribute>
+              <attribute name='target' type='s'>'horizontal'</attribute>
+              <attribute name='accel'>&lt;Control&gt;2</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Single screen</attribute>
+              <attribute name='action'>app.orient</attribute>
+              <attribute name='target' type='s'>'single'</attribute>
+              <attribute name='accel'>&lt;Control&gt;0</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>Hybrid (_equal height)</attribute>
+              <attribute name='action'>app.orient</attribute>
+              <attribute name='target' type='s'>'hybrid_equal'</attribute>
+              <attribute name='accel'>&lt;Control&gt;3</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>Hybrid (e_mphasize vertical)</attribute>
+              <attribute name='action'>app.orient</attribute>
+              <attribute name='target' type='s'>'hybrid_vertical'</attribute>
+              <attribute name='accel'>&lt;Control&gt;4</attribute>
+            </item>
+          </section>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>S_wap screens</attribute>
+              <attribute name='action'>app.swapscreens</attribute>
+              <attribute name='accel'>space</attribute>
+            </item>
+          </section>
+        </submenu>
+        <submenu>
+          <attribute name='label' translatable='yes'>_Rotation</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_0°</attribute>
+              <attribute name='action'>app.rotate</attribute>
+              <attribute name='target' type='s'>'0'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_90°</attribute>
+              <attribute name='action'>app.rotate</attribute>
+              <attribute name='target' type='s'>'90'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_180°</attribute>
+              <attribute name='action'>app.rotate</attribute>
+              <attribute name='target' type='s'>'180'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_270°</attribute>
+              <attribute name='action'>app.rotate</attribute>
+              <attribute name='target' type='s'>'270'</attribute>
+            </item>
+          </section>
+        </submenu>
+        <item>
+          <attribute name='label' translatable='yes'>Screen _Gap</attribute>
+          <attribute name='action'>app.gap</attribute>
+        </item>
         <item>
           <attribute name='label' translatable='yes'>_Fullscreen</attribute>
           <attribute name='action'>app.fullscreen</attribute>

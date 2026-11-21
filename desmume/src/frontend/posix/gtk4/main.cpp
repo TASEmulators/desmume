@@ -33,6 +33,7 @@
 */
 
 #include <gtk/gtk.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "config.h"
@@ -875,6 +876,171 @@ static void ActionRun(GSimpleAction *action, GVariant *parameter, gpointer user_
 	SetStatus(now_running ? "Running" : "Paused");
 }
 
+/* ------------------------------------------------------------ view settings */
+
+/* GTK3's nds_screen.gap_size value; the display stores it in framebuffer
+ * pixels and computes the on-screen gap from its own scale.  Matches
+ * gtk/main.cpp's GAP_SIZE so the two frontends look identical. */
+#define DESMUME_GAP_SIZE 64
+
+/* Push the persisted view configuration into the display widget.  Called once
+ * after the window is built and from the individual view actions.  Config
+ * values use the same numbering as DesmumeLayout / GTK3 orientation_enum. */
+static void
+ApplyViewSettings(void)
+{
+	if ((pDisplayArea == NULL) || (pConfig == NULL))
+	{
+		return;
+	}
+
+	DesmumeDisplay *display = DESMUME_DISPLAY(pDisplayArea);
+
+	int orient = pConfig->view_orient.get();
+	if ((orient < DESMUME_LAYOUT_VERTICAL) || (orient > DESMUME_LAYOUT_HYBRID_VERTICAL))
+	{
+		orient = DESMUME_LAYOUT_VERTICAL;
+		pConfig->view_orient.set(orient);
+	}
+	desmume_display_set_layout(display, (DesmumeLayout)orient);
+
+	int rotation = pConfig->view_rot.get();
+	switch (rotation)
+	{
+	case 0: case 90: case 180: case 270:
+		break;
+	default:
+		rotation = 0;
+		pConfig->view_rot.set(rotation);
+		break;
+	}
+	desmume_display_set_rotation(display, rotation);
+
+	desmume_display_set_swap(display, pConfig->view_swap.get() ? TRUE : FALSE);
+	desmume_display_set_gap(display, pConfig->view_gap.get() ? DESMUME_GAP_SIZE : 0);
+}
+
+/* Each view action updates the widget through ApplyViewSettings() and the
+ * matching GAction state so the radio/toggle menu items stay in sync. */
+static void
+SetActionStringState(const char *name, const char *value)
+{
+	GSimpleAction *action = G_SIMPLE_ACTION(
+		g_action_map_lookup_action(G_ACTION_MAP(pApp), name));
+	if (action != NULL)
+	{
+		g_simple_action_set_state(action, g_variant_new_string(value));
+	}
+}
+
+static void
+SetActionBooleanState(const char *name, gboolean value)
+{
+	GSimpleAction *action = G_SIMPLE_ACTION(
+		g_action_map_lookup_action(G_ACTION_MAP(pApp), name));
+	if (action != NULL)
+	{
+		g_simple_action_set_state(action, g_variant_new_boolean(value));
+	}
+}
+
+static void
+ActionOrient(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)user_data;
+
+	const char *target = g_variant_get_string(parameter, NULL);
+	int orient = DESMUME_LAYOUT_VERTICAL;
+	const char *state = "vertical";
+
+	if (g_strcmp0(target, "horizontal") == 0)
+	{
+		orient = DESMUME_LAYOUT_HORIZONTAL;
+		state = "horizontal";
+	}
+	else if (g_strcmp0(target, "single") == 0)
+	{
+		orient = DESMUME_LAYOUT_SINGLE;
+		state = "single";
+	}
+	else if (g_strcmp0(target, "hybrid_equal") == 0)
+	{
+		orient = DESMUME_LAYOUT_HYBRID_EQUAL;
+		state = "hybrid_equal";
+	}
+	else if (g_strcmp0(target, "hybrid_vertical") == 0)
+	{
+		orient = DESMUME_LAYOUT_HYBRID_VERTICAL;
+		state = "hybrid_vertical";
+	}
+
+	if (pConfig != NULL)
+	{
+		pConfig->view_orient.set(orient);
+		pConfig->save();
+	}
+	SetActionStringState("orient", state);
+	ApplyViewSettings();
+}
+
+static void
+ActionRotate(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)user_data;
+
+	int rotation = atoi(g_variant_get_string(parameter, NULL));
+	switch (rotation)
+	{
+	case 0: case 90: case 180: case 270:
+		break;
+	default:
+		rotation = 0;
+		break;
+	}
+
+	if (pConfig != NULL)
+	{
+		pConfig->view_rot.set(rotation);
+		pConfig->save();
+	}
+	char state[8];
+	g_snprintf(state, sizeof(state), "%d", rotation);
+	SetActionStringState("rotate", state);
+	ApplyViewSettings();
+}
+
+static void
+SwapScreensChanged(GSimpleAction *action, GVariant *value, gpointer user_data)
+{
+	(void)user_data;
+
+	const gboolean swap = g_variant_get_boolean(value);
+	g_simple_action_set_state(action, value);
+	if (pConfig != NULL)
+	{
+		pConfig->view_swap.set(swap ? true : false);
+		pConfig->save();
+	}
+	ApplyViewSettings();
+}
+
+static void
+GapChanged(GSimpleAction *action, GVariant *value, gpointer user_data)
+{
+	(void)user_data;
+
+	const gboolean gap = g_variant_get_boolean(value);
+	g_simple_action_set_state(action, value);
+	if (pConfig != NULL)
+	{
+		pConfig->view_gap.set(gap ? true : false);
+		pConfig->save();
+	}
+	ApplyViewSettings();
+}
+
 static void ActionFullscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
 	(void)action;
@@ -1012,6 +1178,10 @@ static const GActionEntry app_entries[] =
 	{ "fullscreen",     ActionFullscreen, NULL, NULL,   NULL },
 	{ "about",          ActionAbout,      NULL, NULL,   NULL },
 	{ "shortcuts",      ActionShortcuts,  NULL, NULL,   NULL },
+	{ "orient",         ActionOrient,     "s",  "'vertical'", NULL },
+	{ "rotate",         ActionRotate,     "s",  "'0'",       NULL },
+	{ "swapscreens",    NULL,             NULL, "false", SwapScreensChanged },
+	{ "gap",            NULL,             NULL, "false", GapChanged },
 	{ "view-menu",      NULL,             NULL, "true", MenuBarChanged },
 	{ "view-toolbar",   NULL,             NULL, "true", ToolbarChanged },
 	{ "view-statusbar", NULL,             NULL, "true", StatusbarChanged }
@@ -1153,6 +1323,29 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 	g_simple_action_set_state(toolbar_action, g_variant_new_boolean(pConfig->view_toolbar.get()));
 	g_simple_action_set_state(statusbar_action, g_variant_new_boolean(pConfig->view_statusbar.get()));
 
+	/* Synchronise the view menu state with the persisted configuration before
+	 * pushing it into the display widget. */
+	{
+		const char *orient_state = "vertical";
+		switch (pConfig->view_orient.get())
+		{
+		case DESMUME_LAYOUT_HORIZONTAL:    orient_state = "horizontal"; break;
+		case DESMUME_LAYOUT_SINGLE:        orient_state = "single"; break;
+		case DESMUME_LAYOUT_HYBRID_EQUAL:  orient_state = "hybrid_equal"; break;
+		case DESMUME_LAYOUT_HYBRID_VERTICAL: orient_state = "hybrid_vertical"; break;
+		default: break;
+		}
+		SetActionStringState("orient", orient_state);
+
+		char rot_state[8];
+		g_snprintf(rot_state, sizeof(rot_state), "%d", pConfig->view_rot.get());
+		SetActionStringState("rotate", rot_state);
+		SetActionBooleanState("swapscreens", pConfig->view_swap.get() ? TRUE : FALSE);
+		SetActionBooleanState("gap", pConfig->view_gap.get() ? TRUE : FALSE);
+
+		ApplyViewSettings();
+	}
+
 	RecentRebuildMenu();
 	UpdateRomActions();
 
@@ -1246,6 +1439,26 @@ int main(int argc, char *argv[])
 		g_free(save_accel_str);
 		g_free(load_accel_str);
 	}
+
+	/* View actions with string parameters also need their accels registered
+	 * explicitly for the PopoverMenuBar. */
+	struct { const char *target; const char *accel; } orient_accels[] =
+	{
+		{ "vertical", "<Control>1" },
+		{ "horizontal", "<Control>2" },
+		{ "single", "<Control>0" },
+		{ "hybrid_equal", "<Control>3" },
+		{ "hybrid_vertical", "<Control>4" },
+	};
+	for (guint i = 0; i < G_N_ELEMENTS(orient_accels); ++i)
+	{
+		char *action = g_strdup_printf("app.orient('%s')", orient_accels[i].target);
+		const char *accels[] = { orient_accels[i].accel, NULL };
+		gtk_application_set_accels_for_action(app, action, accels);
+		g_free(action);
+	}
+	static const char *swap_accels[] = { "space", NULL };
+	gtk_application_set_accels_for_action(app, "app.swapscreens", swap_accels);
 
 	const int status = g_application_run(G_APPLICATION(app), argc, argv);
 

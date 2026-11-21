@@ -4,7 +4,7 @@
 > 迁移目标：`desmume/src/frontend/posix/gtk4/`（新增目录，GTK4）
 > 原则：**`gtk/` 一行不改，保持可编译、可发布**；所有新工作只进 `gtk4/`
 > 基线版本：**GTK ≥ 4.10**（理由见 §3 D2），实际验证目标 4.14+
-> 状态：P0/P1/P2 已完成；P3a（核心与主循环）、P3b 核心动作已完成；P3b 录制/工具与 P4–P8 待做（§14）
+> 状态：P0/P1/P2 已完成；P3a（核心与主循环）、P3b 核心动作、P3c 视图控制已完成；录制/工具与 P4–P8 待做（§14）
 > 日期：2026-11-20
 
 ---
@@ -975,6 +975,7 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 | P2 显示/输入 | **已完成** | `DesmumeDisplay` + GdkTexture 呈现；混合布局/旋转/间隙逐项对齐 GTK3；帧池双缓冲；触控笔 + 键鼠输入。真实帧与主循环已在 P3a 接入 |
 | P3a 核心/主循环 | **已完成** | `emulation.cpp` 桥接核心：异步 ROM 选择、60 Hz 主线程帧回调、真实帧推送、键盘/触摸输入 |
 | P3b 动作/最近文件 | **核心动作已完成** | Reset / Close ROM / 10 槽即时存读档（F1–F10、Shift+F1–F10）/ 截图（Ctrl+S）；GTask 后台加载 ROM；自维护最近 ROM（GKeyFile）。录制/电影回放仍在后续阶段 |
+| P3c 视图控制 | **已完成** | 5 种 LCD 布局（Ctrl+0/1/2/3/4）、交换屏幕（Space）、4 档旋转、屏幕间隙；从 config 恢复并持久化；P2b 的 `DesmumeDisplay` setter 经菜单动作首次暴露给用户 |
 | P4 工具 | 未开始 | |
 | P5 金手指 | 未开始 | |
 | P6 性能 | 未开始 | |
@@ -1170,6 +1171,30 @@ GTK4 前端是从零写的，并没有 GTK3 `main.cpp` 里那批 `gtk_dialog_run
 验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume` 编译链接全绿无警告；`gtk4/desmume --help` 正常退出；
 `-Dfrontend-gtk=gtk3` 下 GTK3+CLI 26/26 无回归，再切回 gtk4 重新链接通过。
 动作的实际触发（存读档、截图落盘、最近菜单、后台加载进度）仍需带显示环境 + ROM 实机验收。
+
+### P3c 已落地内容（2026-11-21）
+
+P2b 在 `DesmumeDisplay` 上按 GTK3 语义实现了布局/旋转/交换/间隙的几何运算，并用 `DEFINE_SETTER`
+宏暴露了 `desmume_display_set_layout/rotation/gap/swap/hybrid_scale`，但前端从未调用它们——视图
+配置字段（`view_orient`/`view_swap`/`view_rot`/`view_gap`）躺在 config 里不生效，用户无法切换视图。
+P3c 把这条链路接通：
+
+| 项 | 做法 |
+|---|---|
+| LCD 布局 | `app.orient(s)` 取 vertical/horizontal/single/hybrid_equal/hybrid_vertical，映射到 `DesmumeLayout` 0..4（与 GTK3 `orientation_enum` 同号）；Ctrl+1/2/0/3/4 |
+| 交换屏幕 | `app.swapscreens` 布尔 state action → `desmume_display_set_swap()`；Space |
+| 旋转 | `app.rotate(s)` 取 "0"/"90"/"180"/"270"，校验后 → `set_rotation()` |
+| 屏幕间隙 | `app.gap` 布尔 state action → `set_gap(view_gap ? GAP_SIZE : 0)`；`GAP_SIZE=64` 与 GTK3 同值，按 framebuffer 像素传入 |
+| 配置同步 | `ApplyViewSettings()` 在窗口构建后把 config 推给 display；每个动作回调更新 config 并 `save()`；菜单 state 在 OnActivate 里从 config 回填，radio/toggle 勾选状态与实际视图一致 |
+
+`orient`/`rotate` 是带字符串 target 的动作，GTK 只为 application menubar 自动装 accel，
+PopoverMenuBar 需要在 `main()` 里用 `gtk_application_set_accels_for_action()` 显式注册
+（`app.orient('vertical')` 形式）；`swapscreens`/`gap` 是无参数 state action，走默认注册。
+`menu.ui` 的菜单项沿用 GTK3 的 target 命名，便于逐项对照。
+
+验证：`gtk4-builder-tool validate menu.ui` 通过；`ninja gtk4/desmume` 编译链接全绿无警告；
+`--help` 正常退出且无 GVariant/action 解析 critical；切 GTK3 +CLI 26/26 无回归，切回 gtk4 重链通过。
+布局/旋转/交换/间隙的实际画面变化仍需带显示环境 + ROM 实机验收。
 
 ---
 
