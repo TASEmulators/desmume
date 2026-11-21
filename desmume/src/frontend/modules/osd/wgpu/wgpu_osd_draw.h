@@ -70,6 +70,12 @@ public:
 
 	// --- GPU side (not part of AggDrawTarget) ---
 	bool beginGPU(void *instance, void *device, void *queue);
+	// Drops the renderer and the references it holds to the instance, device
+	// and queue. Must be called before that presentation device is torn down:
+	// on NVIDIA's Vulkan driver, destroying a WSI-initialized instance while
+	// another instance is presenting invalidates the surviving instance's WSI
+	// and makes the next swap-chain acquire crash inside libnvidia-glcore.
+	void killGPU();
 	bool setFonts(const WGPUOSDFont *fonts, int count);
 	bool render();
 	bool readPixels(uint8_t *dst, int dstStrideBytes);

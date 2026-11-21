@@ -192,6 +192,11 @@ bool WGPUOSDDrawTarget::beginGPU(void *instance, void *device, void *queue)
 	return m_renderer.begin(instance, device, queue, m_width, m_height);
 }
 
+void WGPUOSDDrawTarget::killGPU()
+{
+	m_renderer.kill();
+}
+
 bool WGPUOSDDrawTarget::setFonts(const WGPUOSDFont *fonts, int count)
 {
 	m_fonts.clear();

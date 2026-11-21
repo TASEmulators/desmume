@@ -168,6 +168,21 @@ static void WGPU_HudInvalidateView()
 
 static void WGPU_KillDisplay()
 {
+#if defined(DESMUME_WGPU_OSD)
+	// The HUD renderer keeps its own references to the presentation instance,
+	// device and queue so it can outlive a teardown. Release them *before* the
+	// display drops its own references, or the old instance survives until the
+	// HUD is rebuilt on the next display and is destroyed while the new one is
+	// presenting. NVIDIA's Vulkan driver clears process-global WSI callbacks
+	// when any WSI-initialized instance is destroyed, which then makes the next
+	// swap-chain acquire on the surviving instance jump to NULL in
+	// libnvidia-glcore.
+	if (sGpuHudTarget != NULL)
+	{
+		sGpuHudTarget->killGPU();
+	}
+#endif
+
 	wgpu_display.kill();
 	WGPU_HudInvalidateView();
 }
