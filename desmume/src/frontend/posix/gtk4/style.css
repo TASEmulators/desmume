@@ -11,6 +11,17 @@
   padding: 2px 8px;
 }
 
+/* Tool window ColumnView rows: monospaced so register values and bit strings
+ * line up, without hardcoding any theme colours. */
+.desmume-tool-view {
+  font-family: monospace;
+}
+
+.desmume-tool-cell {
+  font-family: monospace;
+  padding: 1px 6px;
+}
+
 .desmume-toast {
   /* Standard CSS first: GTK 5 removes the alpha() colour function.  The
      second declaration is a GTK 4.10 fallback for older parsers. */

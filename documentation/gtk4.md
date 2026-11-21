@@ -4,7 +4,7 @@
 > 迁移目标：`desmume/src/frontend/posix/gtk4/`（新增目录，GTK4）
 > 原则：**`gtk/` 一行不改，保持可编译、可发布**；所有新工作只进 `gtk4/`
 > 基线版本：**GTK ≥ 4.10**（理由见 §3 D2），实际验证目标 4.14+
-> 状态：P0/P1/P2 已完成；P3a（核心与主循环）、P3b 核心动作、P3c 视图控制已完成；录制/工具与 P4–P8 待做（§14）
+> 状态：P0/P1/P2/P3a–P3c 已完成；P4 工具部分完成（IO registers / RAM Watch / RAM Search 已落地）；录制/金手指与 P5–P8 待做（§14）
 > 日期：2026-11-20
 
 ---
@@ -976,7 +976,7 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 | P3a 核心/主循环 | **已完成** | `emulation.cpp` 桥接核心：异步 ROM 选择、60 Hz 主线程帧回调、真实帧推送、键盘/触摸输入 |
 | P3b 动作/最近文件 | **核心动作已完成** | Reset / Close ROM / 10 槽即时存读档（F1–F10、Shift+F1–F10）/ 截图（Ctrl+S）；GTask 后台加载 ROM；自维护最近 ROM（GKeyFile）。录制/电影回放仍在后续阶段 |
 | P3c 视图控制 | **已完成** | 5 种 LCD 布局（Ctrl+0/1/2/3/4）、交换屏幕（Space）、4 档旋转、屏幕间隙；从 config 恢复并持久化；P2b 的 `DesmumeDisplay` setter 经菜单动作首次暴露给用户 |
-| P4 工具 | 未开始 | |
+| P4 工具 | **进行中** | IO registers / RAM Watch / RAM Search 已迁移（ColumnView + DropDown + GtkFileDialog/AlertDialog）；moviePlay/Record、Lua 控制台未开始 |
 | P5 金手指 | 未开始 | |
 | P6 性能 | 未开始 | |
 | P7 wgpu | 未开始（必做） | |
@@ -1195,6 +1195,35 @@ PopoverMenuBar 需要在 `main()` 里用 `gtk_application_set_accels_for_action(
 验证：`gtk4-builder-tool validate menu.ui` 通过；`ninja gtk4/desmume` 编译链接全绿无警告；
 `--help` 正常退出且无 GVariant/action 解析 critical；切 GTK3 +CLI 26/26 无回归，切回 gtk4 重链通过。
 布局/旋转/交换/间隙的实际画面变化仍需带显示环境 + ROM 实机验收。
+
+### P4a 已落地内容（2026-11-21）
+
+工具窗口框架 + 前三个只读/调试工具。所有工具共用 `tools.cpp` 注册表（`dTools_list` 同序）、
+`desmume_tool_window_new()`（不设 titlebar → SSD 路径，父窗口用 `desmume_tools_set_parent()`），
+以及 `rowmodel.cpp` 的 `DesmumeRow` + `desmume_column_view_new()`（ColumnView + MultiSelection + monospace CSS）。
+
+| 路径 | 说明 |
+|---|---|
+| `posix/gtk4/tools.{h,cpp}` | `DesmumeTool` 接口（open/update/close/is-open）、按索引开工具、每帧 `update()`（未映射窗口直接跳过）、全局父窗口 |
+| `posix/gtk4/tools/rowmodel.{h,cpp}` | 5 列 GObject 行 + GListStore + ColumnView 工厂；`desmume_column_view_selected()` 取选中位置 |
+| `posix/gtk4/tools/ioregs.cpp` | ARM9/ARM7 `GtkDropDown` 切换；6 个寄存器只读表（值 + 二进制位）；`emulation.cpp` 的 `desmume_emu_read_ioreg()` 桥接核心 MMU |
+| `posix/gtk4/tools/ramwatch.cpp` | `RAMWatchCore` 文档模型；新/编辑/删除/复制/分隔/上下移按钮；GtkFileDialog 打开/另存 + DnD（`GtkDropTarget`/`GDK_TYPE_FILE_LIST`）；`GtkPopoverMenu` 文件菜单 + 最近文件 GActions；窗口尺寸状态栏；自动加载偏好 |
+| `posix/gtk4/tools/ramsearch.cpp` | `RAMSearchCore` 引擎；4 类搜索 × 8 种比较 + Value/Parameter 输入；Size/Display `GtkDropDown`；misaligned/little-endian/auto-search 开关；Search/Reset/Clear/Undo/Redo/Eliminate/Poke/Add Watch/Add Cheat；结果表 50000 行上限 + 节流刷新（150/900 ms）；auto-search 耗尽走 `GtkAlertDialog` 三按钮异步回调（无嵌套循环）；Add Cheat 走 `desmume_emu_add_cheat()` 桥接（仅主 RAM，含 ROM 时） |
+| `posix/gtk4/emulation.{h,cpp}` | 新增 `desmume_emu_read_ioreg()`（IO 工具）与 `desmume_emu_add_cheat()`（RAM Search → `CHEATS::add` + `save`） |
+
+**GTK 4.24 API 变更**：本机 GTK 4.24.1 已移除 `gtk_entry_get_text/set_text/set_width_chars`
+（编译报 not declared），统一改用 `gtk_editable_get_text/set_text/set_width_chars(GTK_EDITABLE(...))`。
+这符合 §4.10 的"按 GTK5 约束写"——4.10 起 `GtkEditable` 就是正式接口，4.24 把旧的 entry 便捷函数删掉。
+ramwatch 的 editor 两处 entry 已全部切过去。
+
+**已知边界**：
+- RAM Watch 的 dirty-close 目前静默保存到已关联文件，没有 GTK3 的"Save changes?"三态确认；
+- RAM Search 的 row 缓存仍按 `kMaxDisplayedResults` 截断（50000），但 ColumnView 只实例化可见行，滚动流畅度优于 GTK3；
+- 内部金手指（Add Cheat）与主 Cheats 窗口（P5）尚未打通 UI，仅提供写入 + 持久化桥接；
+- 三个工具的运行时行为（搜索结果、DnD、对话框交互）仍需带显示环境 + ROM 实机验收。
+
+验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume` 全绿（234/234，编译链接无新增警告）；
+切 `-Dfrontend-gtk=gtk3` 后 GTK3 + CLI 248/248 无回归，再切回 gtk4 重链通过。
 
 ---
 

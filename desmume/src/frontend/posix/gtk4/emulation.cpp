@@ -22,10 +22,14 @@
 
 #include "NDSSystem.h"
 #include "GPU.h"
+#include "MMU.h"
+#include "registers.h"
 #include "SPU.h"
 #include "render3D.h"
 #include "rasterize.h"
 #include "saves.h"
+#include "cheatSystem.h"
+#include "../../shared/ram_debug_core.h"
 #include "filter/videofilter.h"
 #include "utils/colorspacehandler/colorspacehandler.h"
 
@@ -75,6 +79,77 @@ static guint sKeyBindings[16] =
 };
 
 static guint16 sKeys = 0;
+
+/* ------------------------------------------------------- frame pacing (P3d) */
+
+/* GTK3 keeps these as globals in main.cpp and drives them from the config and
+ * the KEY_BOOST latch.  The GTK4 front end keeps them in the core bridge so
+ * the GTK layer only has to forward actions/keys. */
+static gboolean sFpsLimiter = TRUE;       /* config.fpslimiter */
+static gboolean sAutoFrameskip = TRUE;    /* config.autoframeskip */
+static int sFrameskipMax = 0;             /* config.frameskip, 0..9 */
+static gboolean sFastForward = FALSE;     /* the toggled "fast forward" action */
+static int sFrameMod3 = 0;                /* 17+17+16 ms => 60 fps over 3 frames */
+
+/* Rolling FPS counter.  Counts every emulated core frame, including the ones
+ * skipped for frameskip, matching GTK3's fps_FrameCount. */
+static gint64 sFpsSecStart = 0;
+static guint sFpsFrameCount = 0;
+static guint sFpsValue = 0;
+
+/* The tick source normally fires every ~16.7 ms already, so we only need the
+ * monotonic clock to (a) measure a real one-second FPS window and (b) decide
+ * how many skipped frames to run when a tick arrives late.  We deliberately
+ * do not sleep inside the GTK callback: that would stall drawing and input. */
+static gint64 sNextFrameTime = 0;
+
+/* --------------------------------------------------------- internal cheats */
+
+gboolean
+desmume_emu_add_cheat(guint32 address, int sizeInBytes, guint32 value,
+                      const char *description, char **error_message)
+{
+	if (error_message != NULL)
+	{
+		*error_message = NULL;
+	}
+	if (!sHasROM || (cheats == NULL))
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("Load a ROM before adding cheats.");
+		}
+		return FALSE;
+	}
+	if ((address < RAMDebugCore::kMainMemAddress) ||
+	    (address >= (RAMDebugCore::kMainMemAddress + RAMDebugCore::kMainMemSize)))
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup(
+				"Internal cheats can only target main RAM (0x02000000 - 0x023FFFFF).");
+		}
+		return FALSE;
+	}
+
+	const int sizeInBytesClamped = (sizeInBytes <= 1) ? 1 : (sizeInBytes >= 4) ? 4 : 2;
+	const u8 cheatSize = (u8)(sizeInBytesClamped - 1); /* CHEATS::add uses 0=1 byte */
+	char *descriptionCopy = g_strdup((description != NULL) ? description : "");
+	const bool added = cheats->add(cheatSize, address, value, descriptionCopy, true);
+	g_free(descriptionCopy);
+	if (!added)
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("The cheat could not be added.");
+		}
+		return FALSE;
+	}
+
+	/* Persist the list the same way the Cheat List window does on close. */
+	cheats->save();
+	return TRUE;
+}
 
 /* ----------------------------------------------------------- key / touch */
 
@@ -253,6 +328,13 @@ desmume_emu_load_rom(const char *path, char **error_message)
 
 	g_free(sRomName);
 	sRomName = g_path_get_basename(path);
+
+	/* Restart frame pacing/FPS accounting for the new ROM. */
+	sFpsSecStart = 0;
+	sFpsFrameCount = 0;
+	sFpsValue = 0;
+	sNextFrameTime = 0;
+	sFrameMod3 = 0;
 
 	sHasROM = TRUE;
 	sRunning = TRUE;
@@ -436,22 +518,33 @@ desmume_emu_set_frame_sink(DesmumeFrameSink sink, gpointer user_data)
 
 /* ------------------------------------------------------------------- frame */
 
-void
-desmume_emu_step(void)
+/* One core frame.  NDS_SkipNextFrame() is set before input/exec, matching
+ * GTK3's EmuLoop: skipped frames still advance the core but ask the GPU not
+ * to produce a display buffer for them. */
+static void
+run_core_frame(gboolean skip)
 {
-	if (!sHasROM || (sVideo == NULL) || !sRunning)
+	if (skip)
 	{
-		return;
+		NDS_SkipNextFrame();
 	}
 
-	/* Same input boundary GTK3 uses in EmuProcessFrameInput().  Movie and Lua
-	 * hooks are intentionally absent in P3a; they arrive with the tool layer. */
 	apply_keys();
 	NDS_beginProcessingInput();
 	NDS_endProcessingInput();
 
 	NDS_exec<false>();
 	SPU_Emulate_user();
+}
+
+/* Convert the GPU's composite frame to BGRA8888 and hand it to the display. */
+static void
+present_current_frame(void)
+{
+	if (sFrameSink == NULL)
+	{
+		return;
+	}
 
 	const NDSDisplayInfo &info = GPU->GetDisplayInfo();
 	if ((info.masterCustomBuffer == NULL) || (info.customWidth == 0) ||
@@ -487,11 +580,193 @@ desmume_emu_step(void)
 	}
 
 	u32 *filtered = sVideo->RunFilter();
-	if ((filtered != NULL) && (sFrameSink != NULL))
+	if (filtered != NULL)
 	{
 		sFrameSink((const guchar *)filtered,
 		           (int)sVideo->GetDstWidth(),
 		           (int)sVideo->GetDstHeight(),
 		           sFrameSinkData);
+	}
+}
+
+/* Number of emulated frames run per tick when the frame-rate limiter is off
+ * or the boost/fast-forward key is held.  The GTK tick source fires at 60 Hz,
+ * so four frames per tick gives roughly 4x speed; each tick presents the last
+ * frame only, so the display rate stays manageable. */
+#define DESMUME_FAST_FWD_FRAMES 4
+
+void
+desmume_emu_step(void)
+{
+	if (!sHasROM || (sVideo == NULL) || !sRunning)
+	{
+		return;
+	}
+
+	const gint64 now = g_get_monotonic_time();
+	const gboolean boost = sFastForward || (((sKeys >> 13) & 1) != 0);
+	const gboolean throttle = sFpsLimiter && !boost;
+	guint emulated = 0;
+
+	if (!throttle)
+	{
+		/* No pacing: GTK3 runs the idle loop flat out here.  Our tick source
+		 * is fixed at 60 Hz, so run several core frames per tick instead and
+		 * present only the last one. */
+		for (int i = 0; i < DESMUME_FAST_FWD_FRAMES; ++i)
+		{
+			run_core_frame(FALSE);
+			++emulated;
+		}
+		present_current_frame();
+
+		/* Resync so re-enabling the limiter does not try to catch up. */
+		sNextFrameTime = 0;
+		sFrameMod3 = 0;
+	}
+	else
+	{
+		if (sNextFrameTime == 0)
+		{
+			sNextFrameTime = now;
+			sFrameMod3 = 0;
+		}
+
+		/* Fixed frameskip runs a set number of unrendered frames up front. */
+		if (!sAutoFrameskip)
+		{
+			for (int i = 0; i < sFrameskipMax; ++i)
+			{
+				run_core_frame(TRUE);
+				++emulated;
+			}
+		}
+
+		/* The presented frame, then advance the 16/16/17 ms clock. */
+		run_core_frame(FALSE);
+		++emulated;
+		present_current_frame();
+
+		sFrameMod3 = (sFrameMod3 + 1) % 3;
+		sNextFrameTime += (sFrameMod3 == 0) ? 16000 : 17000;
+
+		/* Auto frameskip: catch up on ticks that arrived late.  Cap at the
+		 * configured maximum; if that is still not enough, reset the clock
+		 * rather than accumulating an ever-growing debt (GTK3 does the same). */
+		if (sAutoFrameskip)
+		{
+			gint64 this_tick = g_get_monotonic_time();
+			int skipped = 0;
+			while (this_tick > sNextFrameTime && skipped < sFrameskipMax)
+			{
+				run_core_frame(TRUE);
+				++emulated;
+				++skipped;
+				this_tick = g_get_monotonic_time();
+				sFrameMod3 = (sFrameMod3 + 1) % 3;
+				sNextFrameTime += (sFrameMod3 == 0) ? 16000 : 17000;
+			}
+			if (this_tick > sNextFrameTime)
+			{
+				sNextFrameTime = this_tick;
+				sFrameMod3 = 0;
+			}
+		}
+	}
+
+	/* Rolling one-second FPS window, counting skipped frames like GTK3. */
+	sFpsFrameCount += emulated;
+	if (sFpsSecStart == 0)
+	{
+		sFpsSecStart = now;
+		sFpsFrameCount = 0;
+	}
+	else if ((now - sFpsSecStart) >= 1000000)
+	{
+		sFpsValue = sFpsFrameCount;
+		sFpsFrameCount = 0;
+		sFpsSecStart = now;
+	}
+}
+
+gboolean
+desmume_emu_step_frame_advance(void)
+{
+	if (!sHasROM || (sVideo == NULL))
+	{
+		return FALSE;
+	}
+
+	/* A single frame must run even while paused: temporarily allow execution,
+	 * then restore the caller's running state. */
+	const gboolean was_running = sRunning;
+	sRunning = TRUE;
+	execute = true;
+
+	run_core_frame(FALSE);
+	present_current_frame();
+
+	sRunning = was_running;
+	execute = (sRunning ? true : false);
+
+	/* Resync timing so resuming normal playback does not skip a burst. */
+	sNextFrameTime = 0;
+	sFrameMod3 = 0;
+	return TRUE;
+}
+
+/* --------------------------------------------------------- P3d speed state */
+
+void desmume_emu_set_fps_limiter(gboolean enabled) { sFpsLimiter = enabled; }
+gboolean desmume_emu_get_fps_limiter(void) { return sFpsLimiter; }
+void desmume_emu_set_auto_frameskip(gboolean enabled) { sAutoFrameskip = enabled; }
+gboolean desmume_emu_get_auto_frameskip(void) { return sAutoFrameskip; }
+
+void
+desmume_emu_set_frameskip(int value)
+{
+	if (value < 0) value = 0;
+	if (value > 9) value = 9;
+	sFrameskipMax = value;
+}
+
+int desmume_emu_get_frameskip(void) { return sFrameskipMax; }
+
+void
+desmume_emu_set_fast_forward(gboolean enabled)
+{
+	sFastForward = enabled;
+}
+
+gboolean desmume_emu_get_fast_forward(void) { return sFastForward; }
+
+guint desmume_emu_get_fps(void) { return sFpsValue; }
+
+/* ------------------------------------------------------------- IO registers */
+
+guint32
+desmume_emu_read_ioreg(int cpu, DesmumeIOReg reg)
+{
+	if (!sHasROM || (cpu < 0) || (cpu > 1))
+	{
+		return 0;
+	}
+
+	switch (reg)
+	{
+	case DESMUME_IOREG_IME:
+		return MMU.reg_IME[cpu];
+	case DESMUME_IOREG_IE:
+		return MMU.reg_IE[cpu];
+	case DESMUME_IOREG_IF:
+		return (cpu == 0) ? MMU.gen_IF<0>() : MMU.gen_IF<1>();
+	case DESMUME_IOREG_IPCFIFOCNT:
+		return ((u16 *)(MMU.MMU_MEM[cpu][0x40]))[0x184 >> 1];
+	case DESMUME_IOREG_POWCNT:
+		return ((u16 *)(MMU.MMU_MEM[cpu][0x40]))[0x304 >> 1];
+	case DESMUME_IOREG_SPICNT:
+		return ((u16 *)(MMU.MMU_MEM[cpu][0x40]))[0x1C0 >> 1];
+	default:
+		return 0;
 	}
 }

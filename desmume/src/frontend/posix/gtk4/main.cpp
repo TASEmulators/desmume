@@ -39,6 +39,7 @@
 #include "config.h"
 #include "display.h"
 #include "emulation.h"
+#include "tools.h"
 
 #if defined(HAVE_GTK4_WAYLAND)
 #include <gdk/wayland/gdkwayland.h>
@@ -70,6 +71,7 @@ static GtkWidget *pShortcutsWindow = NULL;
 static GtkWidget *pToolBar = NULL;
 static GtkWidget *pStatusBar = NULL;
 static GtkWidget *pStatusLabel = NULL;
+static GtkWidget *pSpeedLabel = NULL;
 static GtkWidget *pRunButton = NULL;
 static GtkWidget *pDisplayArea = NULL;
 static GtkApplication *pApp = NULL;
@@ -102,6 +104,19 @@ static guint sLoadsInFlight = 0;
 
 /* Dynamically rebuilt "Open recent" submenu (GtkRecentManager is gone in 4). */
 static GMenu *sRecentMenu = NULL;
+
+/* Host accessors used by the tool windows (declared in tools.h). */
+desmume::config::Config *
+desmume_host_config(void)
+{
+	return pConfig;
+}
+
+const char *
+desmume_host_rom_base_name(void)
+{
+	return desmume_emu_rom_name();
+}
 
 #define RECENT_MAX 10
 
@@ -270,6 +285,26 @@ static void SetStatus(const char *text)
 	}
 }
 
+/* The right-hand status label shows the measured emulation FPS.  It is only
+ * rewritten when the value changes, so the once-per-second counter does not
+ * trigger a redraw on every one of the 60 ticks in between. */
+static void UpdateSpeedLabel(void)
+{
+	if (pSpeedLabel == NULL)
+	{
+		return;
+	}
+
+	char text[32];
+	const guint fps = desmume_emu_get_fps();
+	g_snprintf(text, sizeof(text), "%u FPS", fps);
+	const char *current = gtk_label_get_text(GTK_LABEL(pSpeedLabel));
+	if ((current == NULL) || (strcmp(current, text) != 0))
+	{
+		gtk_label_set_text(GTK_LABEL(pSpeedLabel), text);
+	}
+}
+
 static gboolean IsWaylandDisplay(void)
 {
 #if defined(HAVE_GTK4_WAYLAND)
@@ -333,6 +368,7 @@ StopEmulation(void)
 	sShuttingDown = TRUE;
 	desmume_emu_set_running(FALSE);
 	desmume_emu_set_frame_sink(NULL, NULL);
+	desmume_tools_close_all();
 
 	if (sFrameTickSource != 0)
 	{
@@ -367,6 +403,8 @@ OnFrameTick(gpointer user_data)
 	{
 		desmume_emu_step();
 	}
+	desmume_tools_update();
+	UpdateSpeedLabel();
 	return G_SOURCE_CONTINUE;
 }
 
@@ -876,6 +914,110 @@ static void ActionRun(GSimpleAction *action, GVariant *parameter, gpointer user_
 	SetStatus(now_running ? "Running" : "Paused");
 }
 
+/* ------------------------------------------------------ speed / frame (P3d) */
+
+static void
+ActionFrameAdvance(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+
+	if (!desmume_emu_has_rom())
+	{
+		SetStatus("Open a ROM first (Ctrl+O).");
+		return;
+	}
+
+	/* Frame advance implies pausing: run exactly one frame while halted. */
+	if (desmume_emu_get_running())
+	{
+		desmume_emu_set_running(FALSE);
+		if (pRunButton != NULL)
+		{
+			gtk_button_set_icon_name(GTK_BUTTON(pRunButton), "media-playback-start-symbolic");
+			gtk_widget_set_tooltip_text(pRunButton, "Run");
+		}
+	}
+
+	desmume_emu_step_frame_advance();
+	SetStatus("Frame advanced");
+}
+
+static void
+FpsLimiterChanged(GSimpleAction *action, GVariant *value, gpointer user_data){
+	(void)user_data;
+
+	const gboolean enabled = g_variant_get_boolean(value);
+	g_simple_action_set_state(action, value);
+	desmume_emu_set_fps_limiter(enabled);
+	if (pConfig != NULL)
+	{
+		pConfig->fpslimiter.set(enabled ? true : false);
+		pConfig->save();
+	}
+	SetStatus(enabled ? "FPS limiter on" : "FPS limiter off (fast forward)");
+}
+
+static void
+AutoFrameskipChanged(GSimpleAction *action, GVariant *value, gpointer user_data)
+{
+	(void)user_data;
+
+	const gboolean enabled = g_variant_get_boolean(value);
+	g_simple_action_set_state(action, value);
+	desmume_emu_set_auto_frameskip(enabled);
+	if (pConfig != NULL)
+	{
+		pConfig->autoframeskip.set(enabled ? true : false);
+		pConfig->save();
+	}
+	SetStatus(enabled ? "Auto frameskip on" : "Auto frameskip off");
+}
+
+static void
+ActionFrameskip(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)user_data;
+
+	const char *target = g_variant_get_string(parameter, NULL);
+	int value = atoi(target);
+	if (value < 0) value = 0;
+	if (value > 9) value = 9;
+
+	desmume_emu_set_frameskip(value);
+	if (pConfig != NULL)
+	{
+		pConfig->frameskip.set(value);
+		pConfig->save();
+	}
+
+	char state[8];
+	g_snprintf(state, sizeof(state), "%d", value);
+	GSimpleAction *skip_action = G_SIMPLE_ACTION(
+		g_action_map_lookup_action(G_ACTION_MAP(pApp), "frameskip"));
+	if (skip_action != NULL)
+	{
+		g_simple_action_set_state(skip_action, g_variant_new_string(state));
+	}
+
+	char *status = g_strdup_printf("Frameskip: %d", value);
+	SetStatus(status);
+	g_free(status);
+}
+
+static void
+FastForwardChanged(GSimpleAction *action, GVariant *value, gpointer user_data)
+{
+	(void)user_data;
+
+	const gboolean enabled = g_variant_get_boolean(value);
+	g_simple_action_set_state(action, value);
+	desmume_emu_set_fast_forward(enabled);
+	SetStatus(enabled ? "Fast forward on" : "Fast forward off");
+}
+
 /* ------------------------------------------------------------ view settings */
 
 /* GTK3's nds_screen.gap_size value; the display stores it in framebuffer
@@ -1163,6 +1305,17 @@ static void StatusbarChanged(GSimpleAction *action, GVariant *value, gpointer us
 	gtk_widget_set_visible(pStatusBar, g_variant_get_boolean(value));
 }
 
+/* Open a diagnostic tool by index.  The index maps to desmume_tools' table,
+ * matching the numeric targets in the Tools menu. */
+static void ActionTool(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)user_data;
+
+	const guint32 index = g_variant_get_uint32(parameter);
+	desmume_tools_open(index);
+}
+
 static const GActionEntry app_entries[] =
 {
 	/* Names match gtk/menu.ui so menu items can be enabled phase by phase. */
@@ -1170,11 +1323,16 @@ static const GActionEntry app_entries[] =
 	{ "recent",         ActionRecent,     "s",  NULL,   NULL },
 	{ "quit",           ActionQuit,       NULL, NULL,   NULL },
 	{ "run",            ActionRun,        NULL, NULL,   NULL },
+	{ "frame-advance",  ActionFrameAdvance, NULL, NULL, NULL },
 	{ "reset",          ActionReset,      NULL, NULL,   NULL },
 	{ "close",          ActionClose,      NULL, NULL,   NULL },
 	{ "save-state",     ActionSaveState,  "u",  NULL,   NULL },
 	{ "load-state",     ActionLoadState,  "u",  NULL,   NULL },
 	{ "screenshot",     ActionScreenshot, NULL, NULL,   NULL },
+	{ "fps-limiter",    NULL,             NULL, "true", FpsLimiterChanged },
+	{ "auto-frameskip", NULL,             NULL, "true", AutoFrameskipChanged },
+	{ "frameskip",      ActionFrameskip,  "s",  "'0'",  NULL },
+	{ "fast-forward",   NULL,             NULL, "false", FastForwardChanged },
 	{ "fullscreen",     ActionFullscreen, NULL, NULL,   NULL },
 	{ "about",          ActionAbout,      NULL, NULL,   NULL },
 	{ "shortcuts",      ActionShortcuts,  NULL, NULL,   NULL },
@@ -1184,7 +1342,8 @@ static const GActionEntry app_entries[] =
 	{ "gap",            NULL,             NULL, "false", GapChanged },
 	{ "view-menu",      NULL,             NULL, "true", MenuBarChanged },
 	{ "view-toolbar",   NULL,             NULL, "true", ToolbarChanged },
-	{ "view-statusbar", NULL,             NULL, "true", StatusbarChanged }
+	{ "view-statusbar", NULL,             NULL, "true", StatusbarChanged },
+	{ "tool",           ActionTool,       "u",  NULL,   NULL }
 };
 
 static GtkWidget *MakeToolButton(const char *icon_name, const char *tooltip, const char *action_name)
@@ -1273,9 +1432,9 @@ static void BuildWindow(GtkApplication *app)
 	gtk_widget_set_hexpand(pStatusLabel, TRUE);
 	gtk_box_append(GTK_BOX(pStatusBar), pStatusLabel);
 
-	GtkWidget *speed_label = gtk_label_new("P0");
-	gtk_widget_add_css_class(speed_label, "dim-label");
-	gtk_box_append(GTK_BOX(pStatusBar), speed_label);
+	pSpeedLabel = gtk_label_new("0 FPS");
+	gtk_widget_add_css_class(pSpeedLabel, "dim-label");
+	gtk_box_append(GTK_BOX(pStatusBar), pSpeedLabel);
 
 	gtk_box_append(GTK_BOX(root), pStatusBar);
 
@@ -1311,6 +1470,7 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 
 	BuildWindow(app);
 	LoadCss();
+	desmume_tools_set_parent(pWindow);
 
 	GSimpleAction *menu_action = G_SIMPLE_ACTION(
 		g_action_map_lookup_action(G_ACTION_MAP(app), "view-menu"));
@@ -1344,6 +1504,26 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 		SetActionBooleanState("gap", pConfig->view_gap.get() ? TRUE : FALSE);
 
 		ApplyViewSettings();
+	}
+
+	/* Push persisted emulation-speed settings into the core and mirror them
+	 * in the toggle/radio actions so the menu checkmarks match reality. */
+	{
+		const gboolean fps_limiter = pConfig->fpslimiter.get() ? TRUE : FALSE;
+		const gboolean auto_skip = pConfig->autoframeskip.get() ? TRUE : FALSE;
+		int frameskip = pConfig->frameskip.get();
+		if (frameskip < 0) frameskip = 0;
+		if (frameskip > 9) frameskip = 9;
+
+		desmume_emu_set_fps_limiter(fps_limiter);
+		desmume_emu_set_auto_frameskip(auto_skip);
+		desmume_emu_set_frameskip(frameskip);
+
+		SetActionBooleanState("fps-limiter", fps_limiter);
+		SetActionBooleanState("auto-frameskip", auto_skip);
+		char state[8];
+		g_snprintf(state, sizeof(state), "%d", frameskip);
+		SetActionStringState("frameskip", state);
 	}
 
 	RecentRebuildMenu();
@@ -1413,11 +1593,15 @@ int main(int argc, char *argv[])
 	static const char *open_accels[] = { "<Control>o", NULL };
 	static const char *quit_accels[] = { "<Control>q", NULL };
 	static const char *run_accels[] = { "Pause", NULL };
+	static const char *frame_advance_accels[] = { "<Control>n", NULL };
+	static const char *fast_forward_accels[] = { "Tab", NULL };
 	static const char *fullscreen_accels[] = { "F11", NULL };
 	static const char *screenshot_accels[] = { "<Control>s", NULL };
 	gtk_application_set_accels_for_action(app, "app.open", open_accels);
 	gtk_application_set_accels_for_action(app, "app.quit", quit_accels);
 	gtk_application_set_accels_for_action(app, "app.run", run_accels);
+	gtk_application_set_accels_for_action(app, "app.frame-advance", frame_advance_accels);
+	gtk_application_set_accels_for_action(app, "app.fast-forward", fast_forward_accels);
 	gtk_application_set_accels_for_action(app, "app.fullscreen", fullscreen_accels);
 	gtk_application_set_accels_for_action(app, "app.screenshot", screenshot_accels);
 

@@ -30,10 +30,20 @@ gresource = gnome.compile_resources(
 )
 
 desmume_src = [
+  # Frontend-independent RAM Watch / RAM Search document cores, shared with
+  # the GTK3/Windows/Cocoa frontends and compiled straight into the target.
+  '../../shared/ram_debug_core.cpp',
+  '../../shared/ramwatch_core.cpp',
+  '../../shared/ram_search_core.cpp',
   'config.cpp',
   'display.cpp',
   'emulation.cpp',
   'main.cpp',
+  'tools.cpp',
+  'tools/ioregs.cpp',
+  'tools/ramwatch.cpp',
+  'tools/ramsearch.cpp',
+  'tools/rowmodel.cpp',
 ] + gresource
 
 includes = include_directories(

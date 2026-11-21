@@ -178,9 +178,84 @@
           <attribute name='accel'>Pause</attribute>
         </item>
         <item>
+          <attribute name='label' translatable='yes'>Frame _advance</attribute>
+          <attribute name='action'>app.frame-advance</attribute>
+          <attribute name='accel'>&lt;Control&gt;n</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Fast _forward</attribute>
+          <attribute name='action'>app.fast-forward</attribute>
+          <attribute name='accel'>Tab</attribute>
+        </item>
+        <item>
           <attribute name='label' translatable='yes'>Re_set</attribute>
           <attribute name='action'>app.reset</attribute>
         </item>
+      </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Limit framerate</attribute>
+          <attribute name='action'>app.fps-limiter</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Auto frameskip</attribute>
+          <attribute name='action'>app.auto-frameskip</attribute>
+        </item>
+        <submenu>
+          <attribute name='label' translatable='yes'>Frames_kip</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_0 (never skip)</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target' type='s'>'0'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_1</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target' type='s'>'1'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_2</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target' type='s'>'2'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_3</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target' type='s'>'3'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_4</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target' type='s'>'4'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_5</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target' type='s'>'5'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_6</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target' type='s'>'6'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_7</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target' type='s'>'7'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_8</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target' type='s'>'8'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_9</attribute>
+              <attribute name='action'>app.frameskip</attribute>
+              <attribute name='target' type='s'>'9'</attribute>
+            </item>
+          </section>
+        </submenu>
       </section>
     </submenu>
 
@@ -276,6 +351,27 @@
         <item>
           <attribute name='label' translatable='yes'>Show _status bar</attribute>
           <attribute name='action'>app.view-statusbar</attribute>
+        </item>
+      </section>
+    </submenu>
+
+    <submenu>
+      <attribute name='label' translatable='yes'>_Tools</attribute>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_IO registers</attribute>
+          <attribute name='action'>app.tool</attribute>
+          <attribute name='target' type='u'>0</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>RAM _Watch</attribute>
+          <attribute name='action'>app.tool</attribute>
+          <attribute name='target' type='u'>1</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>RAM _Search</attribute>
+          <attribute name='action'>app.tool</attribute>
+          <attribute name='target' type='u'>2</attribute>
         </item>
       </section>
     </submenu>

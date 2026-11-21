@@ -24,6 +24,24 @@
             </child>
             <child>
               <object class='GtkShortcutsShortcut'>
+                <property name='title' translatable='yes'>Frame advance</property>
+                <property name='accelerator'>&lt;Control&gt;n</property>
+              </object>
+            </child>
+            <child>
+              <object class='GtkShortcutsShortcut'>
+                <property name='title' translatable='yes'>Fast forward</property>
+                <property name='accelerator'>Tab</property>
+              </object>
+            </child>
+            <child>
+              <object class='GtkShortcutsShortcut'>
+                <property name='title' translatable='yes'>Save screenshot</property>
+                <property name='accelerator'>&lt;Control&gt;s</property>
+              </object>
+            </child>
+            <child>
+              <object class='GtkShortcutsShortcut'>
                 <property name='title' translatable='yes'>Fullscreen</property>
                 <property name='accelerator'>F11</property>
               </object>
