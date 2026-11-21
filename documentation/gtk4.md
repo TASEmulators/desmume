@@ -679,6 +679,11 @@ GTK4 里 `GtkDrawingArea` 不再有独立 `GdkWindow`，`WGPU_PresentFrame()` �
   - Wayland：`gdk_wayland_surface_get_wl_surface()` + `wl_subcompositor` 子 surface（现有 `WGPULinuxDisplay::beginWayland` 已是这个思路）
   - 定位用 `gtk_widget_compute_point(widget, toplevel, ...)` × scale
   - 明确标注"实验性"：GSK 不知道这个窗口，堆叠/裁剪/全屏切换都可能出问题
+- **P7c（已落地，2026-11-21）**：3D 渲染后端 + Screen presentation 下拉框，对齐 GTK3 图形设置
+  - `core3DList` 由写死的 Null/SoftRasterizer 改为动态构建：加入 `WGPURender_GetBackendInterface(i)` 枚举的各 WebGPU 后端，以及 `ENABLE_OPENGL_*` 下的 OpenGL 后端；无 adapter 时回退 `gpu3DWGPU`，无 `ENABLE_WGPU` 时不列 stub。RendererID 仍是数组下标，Null=0 / SoftRasterizer=1 保持稳定
+  - Config 图形页新增 "Presentation:" 下拉框（GTK3 `Screen presentation` 的对应物）：每行一个 WebGPU 后端（掩码 `WGPUInstanceBackend`）+ 末行 "Software (Cairo)"；选软件行时 GPU filter 置灰并强制 Off
+  - 后端掩码经 `desmume_emu_set_presentation_backend()` 传入 `WGPUPresent::beginOffscreen(w, h, mask)`，切换时重建设备，真正落地而非摆设
+  - GPU OSD（`presentationWGPUHud`）未做：GTK4 前端没有整套 AGG HUD 绘制管线，列为后续独立任务
 
 ### 6.5 不会变快的部分（写清楚，避免预期落空）
 
@@ -1603,6 +1608,25 @@ P8 完成发布收尾。原则仍是 `gtk/` 一行不改——所有新资产都
 - 单例窗口的清理回调（置空全局指针）优先用 `g_object_add_weak_pointer` 自动置空（见 `ioregs.cpp` 等工具窗口），比手动连 `destroy` 更稳健。
 
 **验证**：最小复现变体 A（保留 ref_sink）稳定复现警告且 `destroy_fired=0`；变体 B/C（去掉 ref_sink）两轮"打开→销毁→重开"零警告、`sDialog` 正确置空、ASAN 零错误；真实 desmume 由用户实机确认开关正常。`ninja gtk4/desmume` 干净编译无警告。
+
+### P7c：WGPU/OpenGL 3D 后端 + Screen presentation 下拉框（2026-11-21）
+
+**目标**：把 GTK3 图形设置里有、GTK4 缺的两块补齐——(1) 3D Core 下拉框能选 WGPU/OpenGL 后端；(2) 独立的 "Screen presentation" 渲染器下拉框。
+
+**改动**：
+- `emulation.cpp`：`core3DList` 从写死两项改为 `build_3d_renderer_list()` 动态构建（幂等、lazy），把 GTK3 的 `Build3DRendererList()` 逻辑搬过来——固定核心 → OpenGL 核心（条件编译）→ wgpu-native 枚举的各后端 → 无 adapter 回退 `gpu3DWGPU`。关键点：
+  - 必须保持**全局符号**（`render3D.h` 里 `extern`，核心 `Change3DRendererByID()` 直接按下标索引），加 `static` 会链接失败
+  - `OGLRender.h` 在无 OpenGL 构建下直接 `#error`，`/include/` 必须放进 `ENABLE_OPENGL_*` 条件里（GTK3 用的是 `OGLRender_3_2.h` / `OGLRender_ES3.h`）
+  - lazy 构建挂在 `renderer_count()` 和 `desmume_emu_init()` 上，覆盖"配置对话框在核心初始化前打开"的场景
+- `emulation.{h,cpp}`：新增 presentation backend 桥接——`presentation_backend_count/label/mask()` 暴露 wgpu 后端枚举（GTK 层不碰 `WGPURender.h`），`set/get_presentation_backend(mask)` 把后端掩码存进 `sGpuFilterBackend`，切换时重建离屏设备。
+- `configdialog.cpp`：图形页 "WebGPU presentation" 段加 "Presentation:" 行（WebGPU 各后端 + Software (Cairo)），与 GPU filter 做 sensitivity 联动；Apply/Populate 双向同步 `presentationWGPU` / `presentationWGPUBackend` / `gpuFilter`。
+- `main.cpp`：启动恢复时把 `presentationWGPUBackend` 灌进桥接层，再设 GPU filter。
+
+**GTK3 → GTK4 的适配差异**：GTK3 的 presentation 是原生 subsurface（直接 present 到子窗口），GTK4 视频区不是原生 surface（P7a），所以下拉框的 WebGPU 项落地到**离屏滤镜设备的 backend 掩码**（`beginOffscreen` 第三参数）而非子 surface；软件项等价于"filter Off + 走 GdkTexture"。语义一致，底层路径不同。
+
+**验证**：三种构建全部 `ninja gtk4/desmume` 通过且无警告——默认 `wgpu=true`、`-Dwgpu=false`、`-Dopengl=true`。无 GPU 的 headless 环境里 wgpu-native 的 Vulkan 枚举会在进程启动阶段挂起（环境问题，与本次改动无关），故未做 GUI 实机截图；bridge 的列表构建逻辑此前已用 gdb 在无 wgpu 构建上 dump 验证（Null + SoftRasterizer，下标稳定）。
+
+**未做**：GPU OSD（`presentationWGPUHud`）——依赖整套 AGG HUD 绘制管线（`agg_osd.cpp` / `DrawHUD` / 字体 / `Agg_setHudTarget` 钩子 / Lua `agg.*`），GTK4 前端完全没有这套子系统，属独立大工程，单列为后续任务。
 
 ---
 

@@ -26,6 +26,16 @@
 #include "SPU.h"
 #include "render3D.h"
 #include "rasterize.h"
+#include "WGPURender.h"
+/* OGLRender.h #errors unless an OpenGL variant is selected, so only include
+ * it when the build actually has one -- exactly as GTK3's main.cpp does. */
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
+#if defined(ENABLE_OPENGL_ES)
+#include "OGLRender_ES3.h"
+#else
+#include "OGLRender_3_2.h"
+#endif
+#endif
 #include "saves.h"
 #include "cheatSystem.h"
 #include "movie.h"
@@ -60,12 +70,66 @@ SoundInterface_struct *SNDCoreList[] =
 	NULL
 };
 
-GPU3DInterface *core3DList[] =
+/* -------------------------------------------------- 3D renderer list (P7c)
+ *
+ * Mirrors GTK3's Build3DRendererList(): the two fixed cores first, then one
+ * entry per hardware backend wgpu-native reports, then the optional OpenGL
+ * cores.  A RendererID is the index into this array, exactly as on GTK3, so
+ * appending backends keeps Null=0 / SoftRasterizer=1 stable and old configs
+ * keep working.  The list is built lazily because the config dialog can ask
+ * for it before desmume_emu_init() has run. */
+#define GPU3D_MAX_COUNT 16
+
+/* This must stay a global symbol: render3D.h declares it extern and the core
+ * (GPUSubsystem::Change3DRendererByID) indexes it directly by RendererID. */
+GPU3DInterface *core3DList[GPU3D_MAX_COUNT] = { NULL };
+
+static void
+build_3d_renderer_list(void)
 {
-	&gpu3DNull,
-	&gpu3DRasterize,
-	NULL
-};
+	if (core3DList[0] != NULL)
+	{
+		return; /* idempotent */
+	}
+
+	int count = 0;
+	core3DList[count++] = &gpu3DNull;
+	core3DList[count++] = &gpu3DRasterize;
+
+#if defined(ENABLE_OPENGL_ES)
+	core3DList[count++] = &gpu3Dgl_ES_3_0;
+#elif defined(ENABLE_OPENGL_STANDARD)
+	core3DList[count++] = &gpu3Dgl;
+	core3DList[count++] = &gpu3DglOld;
+	core3DList[count++] = &gpu3Dgl_3_2;
+#endif
+
+#if defined(ENABLE_WGPU)
+	WGPURender_InitBackendList();
+	const size_t backendCount = WGPURender_GetBackendCount();
+
+	for (size_t i = 0; (i < backendCount) && (count < GPU3D_MAX_COUNT - 2); i++)
+	{
+		GPU3DInterface *backend = WGPURender_GetBackendInterface(i);
+		if (backend != NULL)
+		{
+			core3DList[count++] = backend;
+		}
+	}
+
+	/* No usable adapter: still offer the generic entry so a config that
+	 * already selected WebGPU keeps working and the user can try it. */
+	if (backendCount == 0)
+	{
+		core3DList[count++] = &gpu3DWGPU;
+	}
+#endif
+	/* Without ENABLE_WGPU, gpu3DWGPU is a stub with a NULL init callback, so
+	 * GTK3 does not list it either.  Only Null/SoftRasterizer (and OpenGL, if
+	 * built) are offered. */
+
+	core3DList[count] = NULL;
+}
 
 /* ------------------------------------------------------------------- state */
 
@@ -220,6 +284,7 @@ static WGPUPresent *sGpuFilterPresent = NULL;
 static WGPUPresentShaderSource *sGpuShaderSource = NULL;
 static int sGpuFilterUpscaler = 0;      /* WGPUPresentUpscaler_Off */
 static float sGpuFilterScale = 1.0f;
+static guint32 sGpuFilterBackend = 0;   /* WGPUInstanceBackend mask; 0 = auto */
 static gboolean sGpuFilterWanted = FALSE;
 static gboolean sGpuFilterReady = FALSE;
 
@@ -376,8 +441,9 @@ desmume_emu_set_gpu_filter(int upscaler, float scale)
 			sGpuFilterPresent->setUpscalerShaderSource(sGpuShaderSource);
 		}
 		// The off-screen target is (re)allocated by presentOffscreen() to match
-		// the frame size, so the begin dimensions here are just a seed.
-		if (!sGpuFilterPresent->beginOffscreen(256, 384, 0))
+		// the frame size, so the begin dimensions here are just a seed.  Pin the
+		// device to the backend chosen in the Screen presentation combo.
+		if (!sGpuFilterPresent->beginOffscreen(256, 384, sGpuFilterBackend))
 		{
 			g_printerr("GTK4: WebGPU off-screen filter unavailable; "
 			           "falling back to the plain frame path\n");
@@ -477,6 +543,80 @@ desmume_emu_self_test_gpu_filter(void)
 	g_free(src);
 	g_free(dst);
 	return (ok && has_pixels) ? TRUE : FALSE;
+}
+
+/* ------------------------------------------- Screen presentation backend */
+
+/* The backend list is the same enumeration WGPURender already built for the
+ * 3D renderer list; these wrappers keep WGPURender.h out of the GTK layer. */
+int
+desmume_emu_presentation_backend_count(void)
+{
+#if defined(ENABLE_WGPU)
+	WGPURender_InitBackendList();
+	return (int)WGPURender_GetBackendCount();
+#else
+	return 0;
+#endif
+}
+
+const char *
+desmume_emu_presentation_backend_label(int index)
+{
+#if defined(ENABLE_WGPU)
+	if ((index < 0) || (index >= (int)WGPURender_GetBackendCount()))
+	{
+		return NULL;
+	}
+	const char *label = WGPURender_GetBackendLabel((size_t)index);
+	return (label != NULL) ? label : "WebGPU";
+#else
+	(void)index;
+	return NULL;
+#endif
+}
+
+guint32
+desmume_emu_presentation_backend_mask(int index)
+{
+#if defined(ENABLE_WGPU)
+	if ((index < 0) || (index >= (int)WGPURender_GetBackendCount()))
+	{
+		return 0;
+	}
+	return WGPURender_GetBackendMask((size_t)index);
+#else
+	(void)index;
+	return 0;
+#endif
+}
+
+void
+desmume_emu_set_presentation_backend(guint32 backend_mask)
+{
+	if (backend_mask == sGpuFilterBackend)
+	{
+		return;
+	}
+	sGpuFilterBackend = backend_mask;
+
+	/* A live filter device was created on the old backend; rebuild it so the
+	 * choice takes effect immediately.  release_gpu_filter() keeps the shader
+	 * source (process-lifetime) and set_gpu_filter() recreates the pipeline. */
+	if (sGpuFilterReady)
+	{
+		const int upscaler = sGpuFilterUpscaler;
+		const float scale = sGpuFilterScale;
+		release_gpu_filter();
+		sGpuFilterWanted = FALSE;
+		desmume_emu_set_gpu_filter(upscaler, scale);
+	}
+}
+
+guint32
+desmume_emu_get_presentation_backend(void)
+{
+	return sGpuFilterBackend;
 }
 
 /* --------------------------------------------------------- movie (P4b) */
@@ -732,6 +872,7 @@ desmume_emu_set_audio_interpolation(int interpolation)
 static int
 renderer_count(void)
 {
+	build_3d_renderer_list();
 	int count = 0;
 	while ((count < (int)G_N_ELEMENTS(core3DList)) && (core3DList[count] != NULL))
 	{
@@ -932,6 +1073,11 @@ desmume_emu_init(void)
 	}
 
 	execute = false;
+
+	/* Make sure the dynamic 3D renderer list exists before any renderer id is
+	 * resolved.  The config dialog may already have queried it, but this is
+	 * idempotent and also covers a headless start with no UI. */
+	build_3d_renderer_list();
 
 	/* NDS_Init() -> MMU_Init() -> Mic_Init() opens an SDL audio stream.  SDL
 	 * installs SIGINT/SIGTERM handlers by default and turns them into an

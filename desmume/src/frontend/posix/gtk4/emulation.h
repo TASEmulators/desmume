@@ -131,6 +131,24 @@ gboolean desmume_emu_gpu_filter_active(void);
  * (render, map, copy) succeeded; used by automated smoke tests. */
 gboolean desmume_emu_self_test_gpu_filter(void);
 
+/* Screen presentation backend (the GTK4 counterpart of GTK3's
+ * "Screen presentation" combo).  GTK4 presents through a GdkTexture, so the
+ * WebGPU path is the off-screen filter above: choosing a backend pins the
+ * WGPUInstanceBackend the filter device is created on.  A build without
+ * WebGPU reports zero entries, in which case only the software path exists.
+ * Index 0..count-1; mask() is the WGPUInstanceBackend bit to store in the
+ * config, label() a short backend name ("Vulkan", "OpenGL", ...). */
+int desmume_emu_presentation_backend_count(void);
+const char *desmume_emu_presentation_backend_label(int index);
+guint32 desmume_emu_presentation_backend_mask(int index);
+
+/* Select the instance backend for the off-screen filter, or 0 to let
+ * wgpu-native choose.  Changing it while a filter is active rebuilds the
+ * device on the new backend.  Call before desmume_emu_set_gpu_filter() at
+ * startup, or any time afterwards to switch live. */
+void desmume_emu_set_presentation_backend(guint32 backend_mask);
+guint32 desmume_emu_get_presentation_backend(void);
+
 /* ---- movie playback / recording (P4b) -------------------------------- */
 
 /* Start-from modes mirror START_FROM in movie.h; kept as an enum here so the

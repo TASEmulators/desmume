@@ -25,6 +25,10 @@
 namespace
 {
 
+/* Sentinel in presentationMasks[] for the "Software (Cairo)" row. Real
+ * WGPUInstanceBackend masks are non-zero bit flags, so 0 is safe here. */
+static const guint32 PRESENTATION_SOFTWARE = 0;
+
 struct ConfigDialog
 {
 	GtkWidget *window;
@@ -41,6 +45,7 @@ struct ConfigDialog
 	GtkWidget *smoothing;
 	GtkWidget *highColorInterpolation;
 	GtkWidget *filterDrop;
+	GtkWidget *presentationDrop;
 
 	/* Sound tab. */
 	GtkWidget *audioEnabled;
@@ -56,6 +61,12 @@ struct ConfigDialog
 	 * selected row has to be mapped back to a WGPUPresentUpscaler value. */
 	int *filterValues;
 	int filterCount;
+
+	/* Presentation rows: one per WebGPU backend (mask stored in
+	 * presentationMasks[i]) plus a final "Software (Cairo)" row whose mask is
+	 * PRESENTATION_SOFTWARE. */
+	guint32 *presentationMasks;
+	int presentationCount;
 
 	desmume::config::Config *config;
 	DesmumeConfigAppliedFunc applied;
@@ -155,6 +166,19 @@ BuildEmulationTab(ConfigDialog *d)
 
 /* ------------------------------------------------------------- Graphic tab */
 
+/* A GPU filter only runs on the WebGPU path; the software row has no GPU
+ * device to hang a filter on, so mirror GTK3 and grey the filter out there. */
+void
+OnPresentationChanged(GtkDropDown *drop, GParamSpec *pspec, gpointer user_data)
+{
+	(void)pspec;
+	ConfigDialog *d = (ConfigDialog *)user_data;
+	const guint row = gtk_drop_down_get_selected(drop);
+	const gboolean software = (row >= (guint)d->presentationCount) ||
+		(d->presentationMasks[row] == PRESENTATION_SOFTWARE);
+	gtk_widget_set_sensitive(d->filterDrop, !software);
+}
+
 GtkWidget *
 BuildGraphicTab(ConfigDialog *d)
 {
@@ -213,13 +237,42 @@ BuildGraphicTab(ConfigDialog *d)
 	d->smoothing = gtk_check_button_new_with_label("Smooth textures");
 	gtk_grid_attach(GTK_GRID(grid), d->smoothing, 0, 3, 2, 1);
 
-	/* WebGPU presentation options.  Multisampling is not offered because the
-	 * GTK4 frontend only builds the software rasteriser; the stored value is
-	 * left untouched. */
+	/* WebGPU presentation options.  Like GTK3's "Screen presentation" combo,
+	 * this selects the rendering path: one row per WebGPU backend plus a
+	 * software (plain GdkTexture) row.  GPU filters only apply on a WebGPU
+	 * backend, so the filter row is disabled for the software path. */
 	section = NewSection("WebGPU presentation", &grid);
 	gtk_box_append(GTK_BOX(box), section);
 
-	GridLabel(GTK_GRID(grid), "GPU filter:", 0);
+	GridLabel(GTK_GRID(grid), "Presentation:", 0);
+	{
+		GtkStringList *presentations = gtk_string_list_new(NULL);
+		const int backendCount = desmume_emu_presentation_backend_count();
+		d->presentationMasks = g_new(guint32, backendCount + 1);
+		d->presentationCount = 0;
+
+		for (int i = 0; i < backendCount; ++i)
+		{
+			const char *label = desmume_emu_presentation_backend_label(i);
+			char *text = g_strdup_printf("WebGPU - %s", (label != NULL) ? label : "WebGPU");
+			gtk_string_list_append(presentations, text);
+			g_free(text);
+			d->presentationMasks[d->presentationCount++] =
+				desmume_emu_presentation_backend_mask(i);
+		}
+
+		/* Always offer the plain path, even on a build without WebGPU. */
+		gtk_string_list_append(presentations, "Software (Cairo)");
+		d->presentationMasks[d->presentationCount++] = PRESENTATION_SOFTWARE;
+
+		d->presentationDrop = gtk_drop_down_new(G_LIST_MODEL(presentations), NULL);
+		gtk_widget_set_hexpand(d->presentationDrop, TRUE);
+	}
+	gtk_grid_attach(GTK_GRID(grid), d->presentationDrop, 1, 0, 1, 1);
+	g_signal_connect(d->presentationDrop, "notify::selected",
+	                 G_CALLBACK(OnPresentationChanged), d);
+
+	GridLabel(GTK_GRID(grid), "GPU filter:", 1);
 	{
 		GtkStringList *filters = gtk_string_list_new(NULL);
 		d->filterValues = g_new(int, WGPUPresentUpscalerCount);
@@ -243,7 +296,7 @@ BuildGraphicTab(ConfigDialog *d)
 		d->filterDrop = gtk_drop_down_new(G_LIST_MODEL(filters), NULL);
 		gtk_widget_set_hexpand(d->filterDrop, TRUE);
 	}
-	gtk_grid_attach(GTK_GRID(grid), d->filterDrop, 1, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), d->filterDrop, 1, 1, 1, 1);
 
 	return box;
 }
@@ -396,8 +449,8 @@ ApplyAndSave(ConfigDialog *d)
 	const gboolean highColor =
 		gtk_check_button_get_active(GTK_CHECK_BUTTON(d->highColorInterpolation));
 
-	/* Multisampling is not exposed here (the GTK4 frontend has no hardware
-	 * 3D renderer), so keep the stored value and pass it through unchanged. */
+	/* Multisampling is not exposed in this dialog; keep the stored value and
+	 * pass it through unchanged. */
 	const int multisample = config->multisampling.get()
 		? config->multisamplingSize.get() : 0;
 
@@ -414,14 +467,33 @@ ApplyAndSave(ConfigDialog *d)
 	config->textureSmoothing = (smoothing != FALSE);
 	config->highColorInterpolation = (highColor != FALSE);
 
-	int filter = SelectedFilter(d);
-	if (!desmume_emu_set_gpu_filter(filter, gpuScale))
+	/* Screen presentation.  The chosen row maps to a WGPUInstanceBackend mask;
+	 * the software row disables the WebGPU path entirely (filter forced Off),
+	 * exactly like GTK3's "Software (Cairo)" entry. */
+	const guint presentationRow = GetDropDown(d->presentationDrop);
+	const guint32 backendMask =
+		(presentationRow < (guint)d->presentationCount)
+			? d->presentationMasks[presentationRow]
+			: PRESENTATION_SOFTWARE;
+	const gboolean presentationWGPU = (backendMask != PRESENTATION_SOFTWARE);
+
+	desmume_emu_set_presentation_backend(backendMask);
+
+	int filter = presentationWGPU ? SelectedFilter(d) : WGPUPresentUpscaler_Off;
+	if (filter != WGPUPresentUpscaler_Off &&
+	    !desmume_emu_set_gpu_filter(filter, gpuScale))
 	{
 		filter = WGPUPresentUpscaler_Off;
 		desmume_emu_set_gpu_filter(filter, 1.0f);
 	}
+	else if (filter == WGPUPresentUpscaler_Off)
+	{
+		desmume_emu_set_gpu_filter(WGPUPresentUpscaler_Off, 1.0f);
+	}
 	config->gpuFilter = filter;
-	config->presentationWGPU = (filter != WGPUPresentUpscaler_Off);
+	config->presentationWGPU = (presentationWGPU &&
+	                            filter != WGPUPresentUpscaler_Off);
+	config->presentationWGPUBackend = (int)backendMask;
 
 	/* Sound. */
 	const gboolean audioEnabled =
@@ -498,6 +570,7 @@ OnDialogDestroy(GtkWidget *widget, gpointer user_data)
 		sDialog = NULL;
 	}
 	g_free(d->filterValues);
+	g_free(d->presentationMasks);
 	g_free(d);
 	/* The window's sole reference is owned by GTK.  Do not ref_sink it on
 	 * creation or unref it here: an extra ref keeps the object alive past
@@ -565,6 +638,36 @@ Populate(ConfigDialog *d)
 	                            config->textureSmoothing.get() ? TRUE : FALSE);
 	gtk_check_button_set_active(GTK_CHECK_BUTTON(d->highColorInterpolation),
 	                            config->highColorInterpolation.get() ? TRUE : FALSE);
+
+	/* Screen presentation: restore the saved backend, falling back to the
+	 * first WebGPU row when the configured backend disappeared (a different
+	 * machine or driver) and to Software when WGPU presentation was off. */
+	guint presentationRow = (guint)(d->presentationCount - 1); /* Software */
+	if (config->presentationWGPU.get())
+	{
+		const guint32 savedMask = (guint32)config->presentationWGPUBackend.get();
+		for (int i = 0; i < d->presentationCount - 1; ++i)
+		{
+			if (d->presentationMasks[i] == savedMask)
+			{
+				presentationRow = (guint)i;
+				break;
+			}
+		}
+		if (presentationRow == (guint)(d->presentationCount - 1) &&
+		    d->presentationCount > 1)
+		{
+			presentationRow = 0; /* first usable WebGPU backend */
+		}
+	}
+	SetDropDown(d->presentationDrop, presentationRow);
+	/* Sync sensitivity explicitly: set_selected() is a no-op when the value is
+	 * unchanged, so notify::selected may not have fired. */
+	{
+		const gboolean software = d->presentationMasks[presentationRow] ==
+			PRESENTATION_SOFTWARE;
+		gtk_widget_set_sensitive(d->filterDrop, !software);
+	}
 
 	const int filter = config->presentationWGPU.get() ? config->gpuFilter.get() : 0;
 	SetDropDown(d->filterDrop, (guint)FilterIndexForValue(d, filter));

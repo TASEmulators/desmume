@@ -1699,6 +1699,11 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 		const gboolean wgpu_on = pConfig->presentationWGPU.get() ? TRUE : FALSE;
 		const int filter = wgpu_on ? pConfig->gpuFilter.get() : 0;
 		const float scale = pConfig->gpuScaleFactor.get();
+		/* Pin the off-screen filter device to the backend saved by the
+		 * Screen presentation combo (0 = let wgpu-native choose). Must be
+		 * set before the filter creates its device below. */
+		desmume_emu_set_presentation_backend(
+			(guint32)pConfig->presentationWGPUBackend.get());
 		desmume_emu_set_gpu_filter(filter, scale);
 		char filter_state[16];
 		g_snprintf(filter_state, sizeof(filter_state), "%d", filter);
