@@ -807,7 +807,13 @@ static int runProbes(void)
 					{
 						cycleRecords++;
 						if (gTrace)
+						{
 							printf("note  %-24s vec%d f=%d  %s\n", kProbes[p].name, v, f, why);
+							// Without the flush, notes and the interpreter's own
+							// stderr chatter interleave arbitrarily once stdout is
+							// a pipe, so two runs of the same binary look different.
+							fflush(stdout);
+						}
 					}
 					else
 					{
@@ -1030,11 +1036,15 @@ static void dumpCompiledBlock(u32 adr, uintptr_t fn, int size)
 // the CPU base pointer in particular -- is amortised over all of them, so a
 // one-instruction block understates the win. This plants the same opcode `n`
 // times, compiles the block once, and reports its size.
-static int measureBlockSize(int n, int slot, bool thumb, u32 dumpAdr)
+static int measureBlockSize(int n, int slot, bool thumb, u32 dumpAdr, u32 rawOpcode)
 {
-	if (slot < 0)
+	// --opcode bypasses the slot<<20 / slot<<6 synthesis for encodings it cannot
+	// express: ARM `bkpt` carries bits in 7..4, so slot 0x127 would assemble to
+	// 0x12700000 -- a different instruction -- and the bl/zbl offset fields move
+	// the slot too.
+	if (!rawOpcode && slot < 0)
 	{
-		printf("--block needs --slot (and --thumb for the Thumb set)\n");
+		printf("--block needs --slot (and --thumb for the Thumb set), or --opcode\n");
 		return 2;
 	}
 	if (n < 1 || n > 100)
@@ -1043,7 +1053,8 @@ static int measureBlockSize(int n, int slot, bool thumb, u32 dumpAdr)
 		return 2;
 	}
 
-	const u32 opcode = thumb ? ((u32)slot << 6) : ((u32)slot << 20);
+	const u32 opcode = rawOpcode ? rawOpcode
+	                             : (thumb ? ((u32)slot << 6) : ((u32)slot << 20));
 	const u32 insnSize = thumb ? 2u : 4u;
 	for (int i = 0; i < n; i++)
 	{
@@ -1067,8 +1078,12 @@ static int measureBlockSize(int n, int slot, bool thumb, u32 dumpAdr)
 
 	execJit();   // runs it, so what is measured is code that has been executed
 
-	printf("block: %s slot %03X x %d instruction(s) -> %d bytes (%d host instructions)\n",
-		thumb ? "thumb" : "arm", slot, n, blockBytes, blockBytes / 4);
+	if (rawOpcode)
+		printf("block: %s opcode %08X x %d instruction(s) -> %d bytes (%d host instructions)\n",
+			thumb ? "thumb" : "arm", opcode, n, blockBytes, blockBytes / 4);
+	else
+		printf("block: %s slot %03X x %d instruction(s) -> %d bytes (%d host instructions)\n",
+			thumb ? "thumb" : "arm", slot, n, blockBytes, blockBytes / 4);
 
 	if (dumpAdr)
 		dumpCompiledBlock(blockFn ? dumpAdr : kCodeBase, blockFn, blockBytes);
@@ -1084,11 +1099,11 @@ static int measureBlockSize(int n, int slot, bool thumb, u32 dumpAdr)
 // cache controller's last-block shortcut is primed. That is the best case for
 // any main-RAM fast-path work, which makes the number a ceiling rather than a
 // prediction -- see the note in the migration plan (10.13).
-static int runBench(int n, int slot, bool thumb, int iters)
+static int runBench(int n, int slot, bool thumb, int iters, u32 rawOpcode)
 {
-	if (slot < 0)
+	if (!rawOpcode && slot < 0)
 	{
-		printf("--bench needs --slot (and --thumb for the Thumb set)\n");
+		printf("--bench needs --slot (and --thumb for the Thumb set), or --opcode\n");
 		return 2;
 	}
 	if (n < 1 || n > 100 || iters < 1)
@@ -1097,7 +1112,8 @@ static int runBench(int n, int slot, bool thumb, int iters)
 		return 2;
 	}
 
-	const u32 opcode = thumb ? ((u32)slot << 6) : ((u32)slot << 20);
+	const u32 opcode = rawOpcode ? rawOpcode
+	                             : (thumb ? ((u32)slot << 6) : ((u32)slot << 20));
 	const u32 insnSize = thumb ? 2u : 4u;
 	for (int i = 0; i < n; i++)
 	{
@@ -1134,8 +1150,12 @@ static int runBench(int n, int slot, bool thumb, int iters)
 	const std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
 	const double nsPerBlock = std::chrono::duration<double, std::nano>(t1 - t0).count() / iters;
-	printf("bench: %s slot %03X x %d -> %.1f ns/block, %.3f ns/instruction (%d iterations)\n",
-		thumb ? "thumb" : "arm", slot, n, nsPerBlock, nsPerBlock / n, iters);
+	if (rawOpcode)
+		printf("bench: %s opcode %08X x %d -> %.1f ns/block, %.3f ns/instruction (%d iterations)\n",
+			thumb ? "thumb" : "arm", opcode, n, nsPerBlock, nsPerBlock / n, iters);
+	else
+		printf("bench: %s slot %03X x %d -> %.1f ns/block, %.3f ns/instruction (%d iterations)\n",
+			thumb ? "thumb" : "arm", slot, n, nsPerBlock, nsPerBlock / n, iters);
 	return 0;
 }
 
@@ -1474,6 +1494,7 @@ int main(int argc, char **argv)
 	int sequenceLen = 0;
 	bool measureThumb = false;
 	u32 dumpBlockAdr = 0;
+	u32 rawOpcode = 0;
 	for (int i = 1; i < argc; i++)
 	{
 		if (strcmp(argv[i], "--sweep") == 0) sweep = true;
@@ -1481,6 +1502,8 @@ int main(int argc, char **argv)
 		else if (strcmp(argv[i], "--verbose") == 0) verbose = true;
 		else if (strcmp(argv[i], "--all") == 0) listAll = true;
 		else if (strcmp(argv[i], "--slot") == 0 && i + 1 < argc) onlySlot = atoi(argv[++i]);
+		else if (strcmp(argv[i], "--opcode") == 0 && i + 1 < argc)
+			rawOpcode = (u32)strtoul(argv[++i], NULL, 16);
 		else if (strcmp(argv[i], "--block") == 0 && i + 1 < argc) measureBlock = atoi(argv[++i]);
 		else if (strcmp(argv[i], "--bench") == 0 && i + 1 < argc) benchIters = atoi(argv[++i]);
 		else if (strcmp(argv[i], "--seq") == 0 && i + 1 < argc) { sequenceLen = atoi(argv[++i]); sweep = true; }
@@ -1540,10 +1563,10 @@ int main(int argc, char **argv)
 	arm_jit_reset(true, true);
 
 	if (benchIters > 0)
-		return runBench(measureBlock > 0 ? measureBlock : 16, onlySlot, measureThumb, benchIters);
+		return runBench(measureBlock > 0 ? measureBlock : 16, onlySlot, measureThumb, benchIters, rawOpcode);
 
 	if (measureBlock > 0)
-		return measureBlockSize(measureBlock, onlySlot, measureThumb, dumpBlockAdr);
+		return measureBlockSize(measureBlock, onlySlot, measureThumb, dumpBlockAdr, rawOpcode);
 
 	if (sequenceLen > 0)
 	{
