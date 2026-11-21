@@ -338,6 +338,76 @@
           <attribute name='action'>app.fullscreen</attribute>
           <attribute name='accel'>F11</attribute>
         </item>
+        <submenu>
+          <attribute name='label' translatable='yes'>_GPU Filter</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_Off</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'0'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_XBRZ</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'1'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Lanczos3</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'2'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Bicubic</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'3'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>XBR _LV2</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'4'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>XBR LV2 (no _blend)</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'5'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>XBR _LV3</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'6'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>XBR LV3 (_multipass)</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'7'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Super XBR</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'8'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_ScaleFX</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'9'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>XBR _2x</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'10'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>XBR _MLV4</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'11'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_PT SkyWalker541</attribute>
+              <attribute name='action'>app.gpufilter</attribute>
+              <attribute name='target' type='s'>'12'</attribute>
+            </item>
+          </section>
+        </submenu>
       </section>
       <section>
         <item>
@@ -372,6 +442,20 @@
           <attribute name='label' translatable='yes'>RAM _Search</attribute>
           <attribute name='action'>app.tool</attribute>
           <attribute name='target' type='u'>2</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Cheat list…</attribute>
+          <attribute name='action'>app.tool</attribute>
+          <attribute name='target' type='u'>3</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Memory Viewer…</attribute>
+          <attribute name='action'>app.tool</attribute>
+          <attribute name='target' type='u'>4</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Disable _cheats</attribute>
+          <attribute name='action'>app.cheatsdisable</attribute>
         </item>
       </section>
       <section>

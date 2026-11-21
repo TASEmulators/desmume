@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=DeSmuME (GTK4)
+Comment=Nintendo DS emulator
+TryExec=desmume
+Exec=desmume
+Icon=org.desmume.DeSmuME
+StartupWMClass=org.desmume.DeSmuME.GTK4
+Categories=GNOME;GTK;Game;Emulator;
+MimeType=application/x-nintendo-ds-rom;application/vnd.nintendo.nitro.rom;

@@ -8,6 +8,8 @@
 #include "tools/ioregs.h"
 #include "tools/ramwatch.h"
 #include "tools/ramsearch.h"
+#include "tools/cheats.h"
+#include "tools/memoryviewer.h"
 
 /* The tool table mirrors GTK3's dTools_list order, so the numeric targets in
  * the Tools menu stay aligned with the old front end. */
@@ -16,6 +18,8 @@ static const DesmumeTool *sTools[] =
 	&desmume_tool_ioregs,
 	&desmume_tool_ramwatch,
 	&desmume_tool_ramsearch,
+	&desmume_tool_cheats,
+	&desmume_tool_memoryviewer,
 };
 
 static GtkWidget *sParentWindow = NULL;

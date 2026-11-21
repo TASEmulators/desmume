@@ -1,0 +1,86 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.TH DESMUME 1 "November 21, 2026" "2.7.10"
+.\" Manual page for the GTK4 frontend of DeSmuME.
+.SH NAME
+desmume \- Nintendo DS emulator (GTK4 frontend)
+.SH SYNOPSIS
+.B desmume
+.RI [ options ] " files" ...
+.SH DESCRIPTION
+\fBdesmume\fP is a Nintendo DS emulator that runs homebrew demos and commercial
+games. This manual page documents the GTK4 frontend, which uses a native GTK 4
+interface (version 4.10 or newer), GPU-accelerated presentation via GSK and
+optional GPU image filters through WebGPU.
+.PP
+The GTK4 frontend shares its core, save files and configuration keys with the
+GTK3 frontend. Only one GTK frontend is built per Meson configuration; select
+it with \fB\-Dfrontend\-gtk\fP.
+.SH OPTIONS
+These programs follow the usual GNU command line syntax, with long
+options starting with two dashes (`-').
+A summary of options is included below.
+.TP
+.B \-\-load-slot=NUM
+Loads savegame from slot NUM.
+.TP
+.B \-\-disable-sound
+Disables the sound emulation.
+.TP
+.B \-\-disable-limiter
+Disables the 60 fps limiter.
+.TP
+.B \-\-save-type=TYPE
+Select savetype (0 = autodetect, 1 = EEPROM 4kbit, 2 = EEPROM 64kbit,
+3 = EEPROM 512kbit, 4 = FRAM 256kbit, 5 = FLASH 2mbit, 6 = FLASH 4kbit).
+.TP
+.B \-\-fwlang=LANG
+Set the firmware language (0 = Japanese, 1 = English, 2 = French,
+3 = German, 4 = Italian, 5 = Spanish).
+.TP
+.B \-\-cflash=PATH_TO_DISK_IMAGE
+Enable disk image GBAMP compact flash emulation.
+.TP
+.B \-h, \-\-help
+Show summary of options.
+.TP
+.B \-v, \-\-version
+Show version of program.
+.SH ENVIRONMENT
+.TP
+.B DESMUME_GTK4_TEST_FRAME
+When set, the display is fed a synthetic test frame instead of a ROM. Useful
+for smoke-testing the rendering path without game data.
+.TP
+.B DESMUME_GTK4_TIMING
+When set to \fB1\fP, presentation timing is printed to stderr every 120 frames
+(mean / p50 / p95 / max for texture upload and GSK snapshot). Off by default.
+.TP
+.B GDK_BACKEND
+Selects the GDK backend, for example \fBx11\fP or \fBwayland\fP.
+.SH INPUT
+The mouse cursor acts as the stylus; a mouse click replaces a stylus touch.
+.PP
+Keyboard mapping (defaults, user-configurable):
+.RS
+F1\-F10 load savegame from slot 1\-10
+.RE
+.RS
+Shift+F1\-F10 save game to slot 1\-10
+.RE
+.RS
+Arrow keys act as the d\-pad
+.RE
+.RS
+z = A, x = B, a = Y, s = X, q = L, w = R
+.RE
+.RS
+Enter = START, Left Shift = SELECT, Backspace = LID
+.RE
+.SH FILES
+Configuration is stored in the user config directory and is shared with the
+other DeSmuME frontends. GPU filter choice (View menu) is persisted there.
+.SH AUTHOR
+desmume was written by the DeSmuME team
+(https://github.com/TASVideos/desmume).
+.PP
+This manual page documents the GTK4 frontend and may be used by others.

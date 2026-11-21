@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: install dependencies
-        run: sudo apt update && sudo apt install meson libgtk-4-dev libsdl3-dev libpcap-dev
+        run: sudo apt update && sudo apt install meson libgtk-4-dev libsdl3-dev libpcap-dev desktop-file-utils appstream
 
       # No -Dfrontend-gtk here on purpose: the default is 'auto', which must
       # prefer gtk4 over any gtk3 the runner image happens to ship.
@@ -47,6 +47,25 @@ jobs:
 
       - name: check that auto picked gtk4
         run: test -x desmume/src/frontend/posix/build-gtk4/gtk4/desmume
+
+      # P8: validate the GTK4 packaging assets and the UI resource so a
+      # malformed desktop/metainfo/menu file fails CI instead of shipping.
+      - name: validate packaging assets
+        run: |
+          cd desmume/src/frontend/posix/gtk4
+          desktop-file-validate org.desmume.DeSmuME.GTK4.desktop
+          appstreamcli validate --no-net org.desmume.DeSmuME.GTK4.metainfo.xml
+          gtk4-builder-tool validate menu.ui
+          gtk4-builder-tool validate shortcuts.ui
+
+      - name: install to staging dir
+        run: |
+          cd desmume/src/frontend/posix/
+          DESTDIR=/tmp/gtk4-root meson install -C build-gtk4 --no-rebuild
+          test -x /tmp/gtk4-root/usr/local/bin/desmume
+          test -f /tmp/gtk4-root/usr/local/share/applications/org.desmume.DeSmuME.GTK4.desktop
+          test -f /tmp/gtk4-root/usr/local/share/metainfo/org.desmume.DeSmuME.GTK4.metainfo.xml
+          test -f /tmp/gtk4-root/usr/local/share/man/man1/desmume.1
 
   build_gtk2:
     name: Build DeSmuME (Linux/GTK+2)

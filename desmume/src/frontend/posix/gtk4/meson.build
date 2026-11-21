@@ -36,6 +36,7 @@ desmume_src = [
   '../../shared/ramwatch_core.cpp',
   '../../shared/ram_search_core.cpp',
   '../../shared/movie_info_core.cpp',
+  '../../shared/memory_viewer_core.cpp',
   'config.cpp',
   'display.cpp',
   'emulation.cpp',
@@ -45,6 +46,8 @@ desmume_src = [
   'tools/ioregs.cpp',
   'tools/ramwatch.cpp',
   'tools/ramsearch.cpp',
+  'tools/cheats.cpp',
+  'tools/memoryviewer.cpp',
   'tools/luaScriptConsole.cpp',
   'tools/rowmodel.cpp',
 ] + gresource
@@ -64,6 +67,15 @@ executable('desmume',
   install: true,
 )
 
-# The desktop file, appdata and man page are installed in P1/P8, when the
-# application id and the launcher name are final.  Do not install them here:
-# the GTK3 frontend still owns org.desmume.DeSmuME.desktop.
+# Packaging assets (P8).  Only one GTK frontend is built per Meson config, so
+# the GTK4 launcher/appdata use their own app-id (org.desmume.DeSmuME.GTK4)
+# and can coexist with the GTK3 files in a shared prefix.  The man page and
+# icon keep the shared names: there is exactly one `desmume` binary installed
+# at a time, so `man desmume` never points at two frontends.
+install_data('org.desmume.DeSmuME.GTK4.desktop',
+  install_dir: join_paths(get_option('datadir'), 'applications'))
+install_data('org.desmume.DeSmuME.GTK4.metainfo.xml',
+  install_dir: join_paths(get_option('datadir'), 'metainfo'))
+install_data('../gtk/org.desmume.DeSmuME.svg',
+  install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'apps'))
+install_man('doc/desmume.1')
