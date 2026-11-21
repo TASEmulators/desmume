@@ -4,7 +4,7 @@
 > 迁移目标：`desmume/src/frontend/posix/gtk4/`（新增目录，GTK4）
 > 原则：**`gtk/` 一行不改，保持可编译、可发布**；所有新工作只进 `gtk4/`
 > 基线版本：**GTK ≥ 4.10**（理由见 §3 D2），实际验证目标 4.14+
-> 状态：P0/P1 已完成；P2a（显示 widget）已落地，P2b/P3 待做（§14）
+> 状态：P0/P1/P2 已完成；P3 待做（§14）
 > 日期：2026-11-20
 
 ---
@@ -423,7 +423,7 @@ static void desmume_display_snapshot(GtkWidget *w, GtkSnapshot *snap)
 | `gtk_menu_popup_at_pointer` | `GtkPopoverMenu` + `gtk_popover_set_pointing_to()` + `popup()` |
 | `gtk_widget_set_events` | 删除，控制器自动拿事件 |
 
-触控笔优先用 `GtkGestureStylus`（提供 `stylus-down/up/motion` 和设备信息），鼠标/触摸回退到 `GtkGestureClick`。坐标变换继续复用现有的 `nds_screen.touch_matrix`（`cairo_matrix_t` 原样保留）。
+触控笔优先用 `GtkGestureStylus`（信号是 `down/up/motion`，坐标用 `gtk_gesture_stylus_get_axis()`），鼠标/触摸回退到 `GtkGestureClick`。`DesmumeDisplay` 已按 GTK3 的矩阵链把 widget 坐标映射成 NDS 逻辑坐标（0..255 / 0..191，含 hybrid 大屏的额外变换），P3 直接交给 `NDS_setTouchPos()` / HUD 编辑器即可（P2b 已落地，见 §14）。
 
 右键菜单：`GtkPopoverMenu` 从 `GMenu` 构建，`gtk_popover_set_parent()` 后 `popup()`；不再需要 `GtkMenu`。
 
@@ -972,7 +972,7 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 |---|---|---|
 | P0 骨架 | **进行中** | 目录、`frontend-gtk` 自动发现（gtk4→gtk3→gtk2）、最小窗口、CI |
 | P1 外壳/装饰 | **已完成** | gresource 菜单/快捷键/CSS、三个可见性开关、SSD/CSD 共用内容树；编译链接通过（§14） |
-| P2 显示/输入 | **P2a 已完成** | `DesmumeDisplay` + GdkTexture 呈现 + 基本布局/输入控制器；P2b（混合布局精调、触控笔、逐像素对齐）待做 |
+| P2 显示/输入 | **已完成** | `DesmumeDisplay` + GdkTexture 呈现；混合布局/旋转/间隙逐项对齐 GTK3；帧池双缓冲；触控笔 + 键鼠输入。真实帧与主循环在 P3 接入 |
 | P3 对话框 | 未开始 | |
 | P4 工具 | 未开始 | |
 | P5 金手指 | 未开始 | |
@@ -1078,16 +1078,35 @@ P1 刻意不做的事：不装 desktop/metainfo/man（留在 P8），不引入�
 | `posix/gtk4/main.cpp` | 用 `DesmumeDisplay` 替掉 `GtkDrawingArea`；`DESMUME_GTK4_TEST_FRAME=1` 时喂合成帧（默认仍是黑屏） |
 | `posix/gtk4/meson.build` | 把 `display.cpp` 并入 target |
 
-P2a 的边界（P2b/P3 再做）：
-
-- 混合布局（hybrid-equal/vertical）目前是近似放置，没有照搬 GTK3 `calc_hybrid_vertical_params()` 的比例运算，
-  也没有 `hybridBigScreenScale` 与两屏触控矩阵的逐像素对齐；
-- 纹理每帧多一次拷贝（为把 BGRX 的 X 强制成 `0xFF`）；§6.2 的双缓冲 `GBytes` 池留到 P2b；
-- 没有 `GtkGestureStylus`，触控笔走不到；
-- 帧来源只是测试钩子，真实帧缓冲与主循环在 P3 接入；`nds_screen.touch_matrix` 的转换同样留在 P3。
+P2a 的边界（P2b/P3 再做）→ 已在 P2b 收掉，见下。
 
 验证：Arch/WSL GTK 4.24.1 下完整链接通过；编译期无 `display.cpp`/`main.cpp` 警告。
 视觉效果（KWin/GNOME/X11、旋转、混合布局）还需要带显示环境的人工验收。
+
+### P2b 已落地内容（2026-11-21）
+
+对齐基准是 `gtk/main.cpp` 的 `draw_params` / `ExposeDrawingArea` / `drawTopScreen` /
+`drawBottomScreen` / `calc_hybrid_vertical_params()`：
+
+| 项 | 做法 | GTK3 对应 |
+|---|---|---|
+| hybrid-equal 大屏比例 | `2 + gap/h`，不再默认 1.0 | `main.cpp:3168` |
+| hybrid-vertical 大屏比例 | 按窗口（90/270 时交换宽高）算 `ratio2/ratio1`；`<=0` 覆盖值表示自动 | `main.cpp:2444` |
+| 混合布局两屏位置 | 大屏 `(0,0,w·hs,h·hs)`；小屏 top 在 `(w·hs,0)`、bottom 在 `(w·hs,h+gap)` | `2390` / `2424` |
+| gap 矩形 | vertical 在 `(0,h)`；hybrid 在 `(w·hs,h)`；颜色 0.3/0.3/0.3；horizontal/single 不画 | `3176` / `3219` |
+| 旋转后的中心平移 | 90/270 用交换后的 `fit_w/fit_h`，与 GTK3 `-imgH/2,-imgW/2` 一致 | `3209` |
+| 触控坐标 | 逆矩阵 + hybrid 大屏的 `h·(2-hs)+gap` 偏移，输出 NDS 逻辑 0..255 / 0..191；P3 可直接 `NDS_setTouchPos()` | `2428` / `3225` / `3527` |
+| 帧缓冲 | 池化 `wrap_frame()`：一次 `memcpy` + 每像素写一个 alpha；`GBytes` 持有池引用，纹理释放后缓冲归还，尺寸变化丢弃旧缓冲 | §6.2 双缓冲 |
+| 触控笔 | `GtkGestureStylus`（`stylus-only=TRUE`，`get_axis(GDK_AXIS_X/Y)`），与 click/motion 用 `stylus_active` 互斥 | §4.4 |
+
+`GDK_MEMORY_B8G8R8X8`（4.14+）可以彻底免 alpha 修正，但 4.10 底线没有这个枚举，故保留池化拷贝。
+布局几何与 GTK3 对齐；非整数倍缩放下 GSK 线性过滤与 GTK3 默认 `CAIRO_FILTER_NEAREST` 的差异仍属已知项（§4.3/R4）。
+`get_coordinates()` 已从当前 GTK4 API 移除，触控笔坐标走 `gtk_gesture_stylus_get_axis()`。
+
+顺带清掉 P1 遗留的 `gtk_widget_hide()` 弃用警告（换成 `gtk_widget_set_visible()`），§4.10 的"不累积弃用警告"保持成立。
+
+验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume` 全绿无警告；切到 `-Dfrontend-gtk=gtk3` 后
+`gtk/desmume` + `cli/desmume-cli` 26/26 构建通过（只有既有警告），再切回 gtk4 重新链接通过。
 
 ---
 

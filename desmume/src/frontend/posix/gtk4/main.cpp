@@ -295,7 +295,7 @@ static gboolean OnShortcutsClose(GtkWindow *window, gpointer user_data)
 	(void)user_data;
 
 	/* Keep the builder-owned window around so the action can present it again. */
-	gtk_widget_hide(GTK_WIDGET(window));
+	gtk_widget_set_visible(GTK_WIDGET(window), FALSE);
 	return TRUE;
 }
 
