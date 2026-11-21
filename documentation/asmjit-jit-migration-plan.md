@@ -2538,7 +2538,7 @@ prime 后的 R0），harness 只比寄存器状态，不受内存副作用干扰
 1. 抽两个后端的 `static int OP_*(const u32)` 定义集合 —— **各 571 个，逐名相同**；
 2. 比对 `#define OP_* NULL` 空槽块 —— **都是 20 行，逐字相同**；
 3. 对 571 个函数体做 `return 0` 匹配（含单行 `{ ... return 0; }` 这种 grep 行首会漏的写法）
-   —— x64 命中 6 个，arm64 命中 5 个，差集只有 **`OP_BKPT`**。
+   —— x64 命中 5 个，arm64 命中 4 个，差集只有 **`OP_BKPT`**。
 
 **结论**：x64 的 `OP_BKPT` 是一句 `printf("JIT: unimplemented OP_BKPT")` + `return 0`，
 arm64 则是完整的内联 abort 异常。其余 570 组的返回行为一致（`OP_MCR`/`OP_MRC` 的 ARM7 分支、
