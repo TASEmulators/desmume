@@ -924,7 +924,7 @@ build_window(void)
 	g_menu_append(fileMenu, "Auto-load", "toolwin.autoload");
 
 	GtkWidget *fileButton = gtk_menu_button_new();
-	gtk_button_set_label(GTK_BUTTON(fileButton), "File");
+	gtk_menu_button_set_label(GTK_MENU_BUTTON(fileButton), "File");
 	gtk_menu_button_set_menu_model(GTK_MENU_BUTTON(fileButton), G_MENU_MODEL(fileMenu));
 	gtk_box_append(GTK_BOX(sidebar), fileButton);
 	g_object_unref(fileMenu);

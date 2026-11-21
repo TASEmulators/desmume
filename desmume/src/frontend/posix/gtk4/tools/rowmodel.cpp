@@ -123,7 +123,11 @@ desmume_column_view_new(GListModel *model, const char *const *titles, int count)
 	/* GtkColumnView requires a selection model; wrap the list store in a
 	 * GtkMultiSelection so RAM Watch can select several rows at once, while
 	 * single-select tools simply use the first selected item. */
-	GtkMultiSelection *selection = gtk_multi_selection_new(model);
+	/* GtkMultiSelection takes ownership of the model (transfer full), so ref
+	 * it first: the caller keeps its own reference and releases it in its
+	 * clear_state().  Without this ref the caller's later g_object_unref()
+	 * would be a double unref once the view is destroyed. */
+	GtkMultiSelection *selection = gtk_multi_selection_new(G_LIST_MODEL(g_object_ref(model)));
 	gtk_column_view_set_model(GTK_COLUMN_VIEW(view), GTK_SELECTION_MODEL(selection));
 	g_object_unref(selection);
 	gtk_widget_add_css_class(view, "desmume-tool-view");
@@ -137,10 +141,12 @@ desmume_column_view_new(GListModel *model, const char *const *titles, int count)
 		g_signal_connect(factory, "unbind", G_CALLBACK(factory_unbind), NULL);
 
 		GtkColumnViewColumn *column = gtk_column_view_column_new(titles[i], factory);
+		/* gtk_column_view_column_new() takes ownership of factory (transfer
+		 * full); do NOT unref it here.  append_column() does NOT, so the
+		 * caller's column reference must be released below. */
 		gtk_column_view_column_set_expand(column, (i == 0));
 		gtk_column_view_append_column(GTK_COLUMN_VIEW(view), column);
 		g_object_unref(column);
-		g_object_unref(factory);
 	}
 
 	return view;
@@ -166,19 +172,20 @@ desmume_column_view_selected(GtkWidget *view, GArray **out_positions)
 
 	GArray *positions = g_array_new(FALSE, FALSE, sizeof(guint));
 	guint first = (guint)-1;
-	GtkBitset *bitset = gtk_selection_model_get_selection(selection);
-	for (guint i = 0; i < g_list_model_get_n_items(G_LIST_MODEL(selection)); ++i)
+	GtkBitset *bitset = gtk_selection_model_get_selection(selection); /* transfer full */
+	/* Iterate only the selected positions instead of scanning every row:
+	 * a first search can expose 50000 rows, and this runs on selection change. */
+	const guint64 selected = gtk_bitset_get_size(bitset);
+	for (guint64 i = 0; i < selected; ++i)
 	{
-		if (gtk_bitset_contains(bitset, i))
+		const guint index = gtk_bitset_get_nth(bitset, (guint)i);
+		if (first == (guint)-1)
 		{
-			if (first == (guint)-1)
-			{
-				first = i;
-			}
-			guint value = i;
-			g_array_append_val(positions, value);
+			first = index;
 		}
+		g_array_append_val(positions, index);
 	}
+	gtk_bitset_unref(bitset);
 
 	if (out_positions != NULL)
 	{

@@ -59,8 +59,7 @@ static void on_selection_changed(GtkSelectionModel *selection, guint position,
 
 static GtkWidget *sWindow = NULL;
 static GtkWidget *sColumnView = NULL;
-static GListStore *sRows = NULL;
-static std::vector<DesmumeRow *> sRowCache;
+static GListModel *sRows = NULL; /* lazy RamSearchModel; see below */
 
 static GtkWidget *sSearchTypeDropDown = NULL;
 static GtkWidget *sOperatorDropDown = NULL;
@@ -236,32 +235,100 @@ fill_row(DesmumeRow *row, size_t index)
 	g_free(changes);
 }
 
+/* --------------------------------------------------- lazy result GListModel
+ *
+ * A first search can expose millions of candidates.  Materialising that many
+ * DesmumeRow objects up front is what made opening the tool stall.  Instead,
+ * implement GListModel lazily: report the row count, and only build a row when
+ * GtkColumnView asks for one (i.e. for the ~20 rows actually on screen).  Value
+ * refreshes emit items-changed over the visible range so GTK rebinds those
+ * rows.  This is true virtual scrolling on both the widget and data sides. */
+
+typedef struct
+{
+	GObject parent;
+	guint n_items;
+} RamSearchModel;
+typedef struct { GObjectClass parent_class; } RamSearchModelClass;
+
+#define RAM_SEARCH_MODEL(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), ram_search_model_get_type(), RamSearchModel))
+
+static GType ram_search_model_get_type(void);
+static void ram_search_model_iface_init(GListModelInterface *iface);
+G_DEFINE_TYPE_WITH_CODE(RamSearchModel, ram_search_model, G_TYPE_OBJECT,
+	G_IMPLEMENT_INTERFACE(G_TYPE_LIST_MODEL, ram_search_model_iface_init))
+
+static GType
+ram_search_model_get_item_type(GListModel *model)
+{
+	(void)model;
+	return DESMUME_TYPE_ROW;
+}
+
+static guint
+ram_search_model_get_n_items(GListModel *model)
+{
+	return RAM_SEARCH_MODEL(model)->n_items;
+}
+
+static void
+ram_search_model_set_n_items(RamSearchModel *self, guint n_items)
+{
+	self->n_items = n_items;
+}
+
+static gpointer
+ram_search_model_get_item(GListModel *model, guint position)
+{
+	if (position >= RAM_SEARCH_MODEL(model)->n_items)
+	{
+		return NULL;
+	}
+	DesmumeRow *row = desmume_row_new("", "", "", "", "");
+	fill_row(row, (size_t)position);
+	return row; /* transfer full: GTK owns and unrefs it */
+}
+
+static void
+ram_search_model_iface_init(GListModelInterface *iface)
+{
+	iface->get_item_type = ram_search_model_get_item_type;
+	iface->get_n_items = ram_search_model_get_n_items;
+	iface->get_item = ram_search_model_get_item;
+}
+
+static void
+ram_search_model_class_init(RamSearchModelClass *klass)
+{
+	(void)klass;
+}
+
+static void
+ram_search_model_init(RamSearchModel *self)
+{
+	(void)self;
+}
+
+static GListModel *
+ram_search_model_new(void)
+{
+	return G_LIST_MODEL(g_object_new(ram_search_model_get_type(), NULL));
+}
+
 static void
 rebuild_model(void)
 {
 	const RAMSearchCore &core = RAMSearchCore::Get();
 	const size_t count = core.ResultCount();
 	const size_t rows = (count > kMaxDisplayedResults) ? kMaxDisplayedResults : count;
+	const guint previousCount = sModelRowCount;
 	const int previousSelection = selected_row();
 
-	for (DesmumeRow *row : sRowCache)
-	{
-		g_object_unref(row);
-	}
-	sRowCache.clear();
-	if (sRows != NULL)
-	{
-		g_list_store_remove_all(sRows);
-	}
-
-	for (size_t i = 0; i < rows; ++i)
-	{
-		DesmumeRow *row = desmume_row_new("", "", "", "", "");
-		fill_row(row, i);
-		sRowCache.push_back(row);
-		g_list_store_append(sRows, G_OBJECT(row));
-	}
+	/* No per-row work: the lazy model builds rows on demand.  Tell GTK the
+	 * row count changed so it rebinds whatever is currently visible. */
 	sModelRowCount = (guint)rows;
+	ram_search_model_set_n_items(RAM_SEARCH_MODEL(sRows), sModelRowCount);
+	g_list_model_items_changed(sRows, 0, previousCount, sModelRowCount);
 
 	GtkSelectionModel *selection = gtk_column_view_get_model(GTK_COLUMN_VIEW(sColumnView));
 	if ((previousSelection >= 0) && ((size_t)previousSelection < rows))
@@ -280,12 +347,13 @@ rebuild_model(void)
 static void
 refresh_visible_values(void)
 {
-	const RAMSearchCore &core = RAMSearchCore::Get();
-	const char sizeCode = selected_size_code();
-	const char typeCode = selected_display_code();
+	if (sModelRowCount == 0)
+	{
+		return;
+	}
 
 	guint first = 0;
-	guint last = sModelRowCount > 0 ? sModelRowCount - 1 : 0;
+	guint last = sModelRowCount - 1;
 
 	GtkWidget *parent = gtk_widget_get_parent(sColumnView);
 	GtkScrolledWindow *scrolled = (parent != NULL && GTK_IS_SCROLLED_WINDOW(parent))
@@ -306,24 +374,15 @@ refresh_visible_values(void)
 			}
 		}
 	}
-
-	for (guint i = first; i <= last && i < sModelRowCount; ++i)
+	if (first > last)
 	{
-		DesmumeRow *row = sRowCache[i];
-		if (row == NULL)
-		{
-			continue;
-		}
-		const RAMSearchCore::Result result = core.ResultAt((size_t)i);
-		const std::string value = RAMDebugCore::FormatValue(sizeCode, typeCode, result.currentValue);
-		const std::string previous = RAMDebugCore::FormatValue(sizeCode, typeCode, result.previousValue);
-		gchar *changes = g_strdup_printf("%u", (unsigned int)result.changeCount);
-
-		desmume_row_set(row, 1, value.c_str());
-		desmume_row_set(row, 2, previous.c_str());
-		desmume_row_set(row, 3, changes);
-		g_free(changes);
+		first = last;
 	}
+
+	/* Only the visible slice changed.  The lazy model rebuilds those rows on
+	 * GTK's next bind pass; no string work happens here. */
+	const guint changed = last - first + 1;
+	g_list_model_items_changed(sRows, first, changed, changed);
 }
 
 /* ----------------------------------------------------------------- options */
@@ -796,11 +855,6 @@ button_row(GtkWidget *left, GtkWidget *right)
 static void
 clear_state(void)
 {
-	for (DesmumeRow *row : sRowCache)
-	{
-		g_object_unref(row);
-	}
-	sRowCache.clear();
 	if (sRows != NULL)
 	{
 		g_object_unref(sRows);
@@ -860,8 +914,8 @@ build_window(void)
 	gtk_window_set_child(GTK_WINDOW(sWindow), root);
 
 	/* ---- result table ---- */
-	sRows = desmume_row_model_new();
-	sColumnView = desmume_column_view_new(G_LIST_MODEL(sRows),
+	sRows = ram_search_model_new();
+	sColumnView = desmume_column_view_new(sRows,
 	                                      sColumnTitles,
 	                                      G_N_ELEMENTS(sColumnTitles));
 	GtkSelectionModel *selection = gtk_column_view_get_model(GTK_COLUMN_VIEW(sColumnView));
@@ -983,6 +1037,27 @@ on_selection_changed(GtkSelectionModel *selection, guint position, guint n_items
 	update_control_states();
 }
 
+/* First open enumerates every candidate.  That walks ~4M addresses, so run it
+ * on the idle queue after the window is on screen: the user sees the tool
+ * immediately instead of staring at a frozen main window.  Re-opens keep the
+ * previous result and skip this. */
+static gboolean
+deferred_first_reset(gpointer data)
+{
+	(void)data;
+	if (sWindow == NULL)
+	{
+		return G_SOURCE_REMOVE; /* window closed before the idle ran */
+	}
+	if (RAMSearchCore::Get().ResultCount() == 0)
+	{
+		sync_options_from_ui();
+		RAMSearchCore::Get().Reset();
+		rebuild_model();
+	}
+	return G_SOURCE_REMOVE;
+}
+
 static void
 Open(void)
 {
@@ -995,16 +1070,13 @@ Open(void)
 	sLastRefreshTime = 0;
 	sStatusNote[0] = '\0';
 	build_window();
+	rebuild_model(); /* empty model: row count 0, no per-row work */
+	gtk_window_present(GTK_WINDOW(sWindow));
 
-	/* First open has nothing to show, so enumerate every candidate; later
-	 * opens keep the previous search result. */
 	if (RAMSearchCore::Get().ResultCount() == 0)
 	{
-		sync_options_from_ui();
-		RAMSearchCore::Get().Reset();
+		g_idle_add(deferred_first_reset, NULL);
 	}
-	rebuild_model();
-	gtk_window_present(GTK_WINDOW(sWindow));
 }
 
 static void

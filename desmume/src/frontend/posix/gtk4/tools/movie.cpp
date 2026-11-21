@@ -650,7 +650,7 @@ update_date_button(RecordDialog *d)
 	gchar *text = g_date_time_format(date, "%Y-%m-%d");
 	if (text != NULL)
 	{
-		gtk_button_set_label(GTK_BUTTON(d->dateButton), text);
+		gtk_menu_button_set_label(GTK_MENU_BUTTON(d->dateButton), text);
 		g_free(text);
 	}
 	g_date_time_unref(date);

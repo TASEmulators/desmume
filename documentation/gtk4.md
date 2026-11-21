@@ -1239,7 +1239,51 @@ ramwatch 的 editor 两处 entry 已全部切过去。
 这部分若要对齐 GTK3，需要先补 §4.8 的主循环泵与输入/菜单桥接，属独立后续项。
 
 **Movie 工具边界**：`Import Backup Memory`（导入 .dsv）未迁移；表只读字段按 GTK4 精简为 ROM/Firmware 两项。
-播放/录制需要带 ROM 与显示环境实机验收；本机无显示服务与 ROM，未做运行时验证。
+播放/录制需要带 ROM 与显示环境实机验收；本机无 ROM，未做运行时验证。
+
+### P4 运行时修复（2026-11-21）
+
+实机打开 RAM Search 曾触发 SIGSEGV，根因与修复：
+
+| 问题 | 根因 | 修复 |
+|---|---|---|
+| 打开任意 ColumnView 工具崩溃（`g_object_new` / `g_list_model_get_n_items` 断言） | `rowmodel.cpp` 里 `gtk_column_view_column_new()` 对 factory 是 **transfer full**，之后又 `g_object_unref(factory)` → 双重释放；view bind 时用到已释放的 factory | 移除多余的 `g_object_unref(factory)`；`gtk_column_view_append_column()` 是 transfer none，保留 column 的 unref |
+| selection 接管 model 后 `clear_state()` 再次释放 | `gtk_multi_selection_new(model)` 是 **transfer full** | 传 `g_object_ref(model)` 给 selection，调用方保留自己的引用由 `clear_state()` 释放 |
+| `invalid cast from 'GtkMenuButton' to 'GtkButton'` | GTK4 中 `GtkMenuButton` 不再是 `GtkButton` 子类 | ramwatch 的 File 按钮改 `gtk_menu_button_set_label()`；movie 的日期按钮同样处理 |
+
+验证：gdb 中 `break ramsearch.cpp:Open` 自动 continue，实际打开窗口并持续运行 20 秒，
+无 CRITICAL / SIGSEGV / GObject 断言。量产构建 `ninja gtk4/desmume` 全绿。
+
+**编译警告修复**（核心头文件，行为等价）：
+- `utils/datetime.h`：删除 `CalculateTicks()` 中已无用处的 `overflow` 变量（异常抛出早已注释掉）。
+- `rasterize.h`：`SoftRasterizerTexture` 加 `using TextureStore::Load;` 消除 `-Woverloaded-virtual`。
+- `cheatSystem.h`：`CHEATS_LIST` 构造函数由 `memset(this,...)` 改为成员初始化列表（消除 `-Wclass-memaccess`）。
+- `matrix.h`：SIMD helper 加局部 `MATRIX_UNUSED` 属性，消除 `-Wunused-function`。
+
+### RAM Search 虚拟滚动与打开性能（2026-11-21）
+
+**问题**：打开弹窗卡顿好一会。根因有两层：
+1. `rebuild_model()` 一次性物化最多 50000 个 `DesmumeRow` GObject，每个都做
+   `FormatAddress` + 2× `FormatValue` 字符串格式化；ColumnView 的 widget 虽是虚拟的，
+   但数据层不是，滚动 50000 行对象照样全部建好。
+2. 首次打开 `Reset()` 枚举 ~420 万候选地址（1 字节步长 × 3 个 RAM 区，约 67 MB），
+   同步执行在主线程上，窗口要等它跑完才出现。
+
+**修复**：
+- `tools/ramsearch.cpp`：用自定义 `RamSearchModel`（`G_DEFINE_TYPE_WITH_CODE` +
+  `G_IMPLEMENT_INTERFACE(G_TYPE_LIST_MODEL)`）替换 `GListStore`。`get_n_items()` 返回行数，
+  `get_item()` 只在 GTK 请求时从 `RAMSearchCore::ResultAt()` 格式化单行；
+  `items-changed` 通知 GTK 重新 bind 可见行。行数存在 model 对象自身（不读全局），
+  避免窗口销毁时全局被清零导致 `gtk_list_item_manager_clear_model` 断言。
+  删除 `sRowCache` 与逐行刷新逻辑——现在 widget 层和数据层都是真虚拟滚动。
+- 首次 `Reset()` 移到 `g_idle_add(deferred_first_reset)`，窗口先呈现再后台枚举，
+  用户不再对着冻结的主窗口干等。
+- `tools/rowmodel.cpp`：`desmume_column_view_selected()` 改用 `gtk_bitset_get_size/get_nth`
+  只遍历选中项（原先 O(50000) 全表扫描），并补上 `gtk_bitset_unref()`（`get_selection`
+  是 transfer full，原先泄漏）。
+
+验证：gdb 中 Open → 呈现 → deferred Reset → 持续帧刷新 → 正常退出，全程无 CRITICAL /
+SIGSEGV / GObject 断言；GTK4 与 GTK3/CLI 均编译通过。
 
 ---
 
