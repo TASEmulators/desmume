@@ -3194,7 +3194,52 @@ static int OP_SWI(const u32 i) { return op_swi((i >> 16) & 0x1F); }
 //-----------------------------------------------------------------------------
 //   BKPT
 //-----------------------------------------------------------------------------
-static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return 0; }
+// A prefetch abort, emitted the same way arm_instructions.cpp:OP_BKPT and the
+// AArch64 back end's OP_BKPT do it: the old CPSR becomes SPSR_abt, LR_abt
+// points past the BKPT, T is cleared, I is set and execution continues at the
+// abort vector. It is JIT_BYPASS in the attribute table, so the block ends
+// here and the tail copies next_instruction into instruct_adr.
+//
+// The registers are written straight to armcpu_t (this back end has no
+// deferred register file), so there is no flush to do before
+// armcpu_switchMode() banks R13/R14/SPSR.
+//
+// Like op_swi() above, the exception path does not charge cycles: the
+// interpreter returns 4 here, but neither JIT adds them for exceptions
+// (INSTR_CYCLES_V is 0 and the handler leaves bb_cycles untouched).
+static int OP_BKPT(const u32 i)
+{
+	x86::Gp oldCPSR = c.new_gp32();
+	x86::Gp mode = c.new_gp32();
+	Mem cpsrMem = cpu_ptr(CPSR.val);
+
+	JIT_COMMENT("BKPT: save CPSR");
+	c.mov(oldCPSR, cpsrMem);
+	JIT_COMMENT("BKPT: enter ABT mode");
+	c.mov(mode, imm(ABT));
+	InvokeNode* ctx;
+	c.invoke(Out(ctx), (void*)armcpu_switchMode, FuncSignature::build<void, void*, uint8_t>());
+	ctx->set_arg(0, bb_cpu);
+	ctx->set_arg(1, mode);
+
+	JIT_COMMENT("BKPT: R14_abt = address of BKPT + 4");
+	c.mov(reg_ptr(14), bb_adr + 4);
+	JIT_COMMENT("BKPT: SPSR_abt = old CPSR");
+	c.mov(cpu_ptr(SPSR.val), oldCPSR);
+
+	JIT_COMMENT("BKPT: CPSR clear T, set I");
+	x86::Gp cpsr = c.new_gp32();
+	c.mov(cpsr, cpsrMem);
+	c.and_(cpsr, ~(1 << 5));	/* clear T */
+	c.or_(cpsr, (1 << 7));		/* set I */
+	c.mov(cpsrMem, cpsr);
+
+	JIT_COMMENT("BKPT: PC = abort vector");
+	c.mov(reg_ptr(15), imm(cpu->intVector + 0x0C));
+	c.mov(cpu_ptr(next_instruction), imm(cpu->intVector + 0x0C));
+
+	return 1;
+}
 
 //-----------------------------------------------------------------------------
 //   THUMB
