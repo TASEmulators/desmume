@@ -4,7 +4,7 @@
 > 迁移目标：`desmume/src/frontend/posix/gtk4/`（新增目录，GTK4）
 > 原则：**`gtk/` 一行不改，保持可编译、可发布**；所有新工作只进 `gtk4/`
 > 基线版本：**GTK ≥ 4.10**（理由见 §3 D2），实际验证目标 4.14+
-> 状态：P0/P1/P2/P3a–P3c 已完成；P4 工具全部完成（IO registers / RAM Watch / RAM Search / Play·Record Movie / Lua 控制台）；金手指窗口与 P5–P8 待做（§14）
+> 状态：P0–P8 全部完成。P4 工具（IO registers / RAM Watch / RAM Search / Play·Record Movie / Lua 控制台）；P4c Windows 内存监视弹窗移植（RAM Watch Add Cheat + RAM Search Add Watch 注释弹窗）；P4d Memory Viewer 内存查看器（对齐 Windows `memView.cpp` / macOS `MemoryViewerWindow`，tool index 4）；P5 金手指列表窗口；P6 性能与打磨（停绘/帧池零拷贝重构/非活动降频/呈现计时）；P7 wgpu（离屏渲染 + buffer 回读 + GPU 滤镜对齐 + GResource WGSL + View→GPU Filter 菜单）；P8 收尾（GTK4 desktop/metainfo/man、安装布局、CI 资产校验、弃用审计）——迁移全部落地（§14）
 > 日期：2026-11-20
 
 ---
@@ -17,7 +17,7 @@
 |---|---|---|
 | 完整迁移到 GTK4 | 是 | 所有 GTK3 API 都有对应物；工作量集中在 44 处 `gtk_dialog_run` 的异步化 |
 | UI 明显更好看 | 是，收益大 | 现有代码已经是 GMenu + GAction 架构，换成 `GtkHeaderBar`/`GtkPopoverMenuBar` 主要是改外壳，不是重写 |
-| 性能提升 | **部分可以** | 帧呈现、缩放、resize、后台停绘有真实收益；模拟器核心和 RAM Search 算法不会因为 GTK4 变快 |
+| 性能提升 | **部分可以** | 帧呈现、缩放、resize、后台停绘有真实收益；帧缓冲路径零拷贝重构后像素工作量与 GTK3 持平、少了两次全帧 memcpy（不开倒车）；模拟器核心和 RAM Search 算法不会因为 GTK4 变快 |
 | KDE Wayland 下原生外观（SSD） | 是，且不需要 hack | 只要**不设置自定义 titlebar**，GTK 就会让 KWin 通过 KDE server-decoration 协议画窗口边框 |
 
 **已确认（2026-11-20）**：§13 的三项推荐全部接受——原生 GTK4 路线、GTK 4.10 底线、首版只做 texture 呈现。
@@ -656,7 +656,7 @@ CSD（GNOME）：
 
 ### 6.3 测量方法
 
-- 在 `DesmumeDisplay::snapshot()` 与纹理创建处加 `g_get_monotonic_time()` 计时，`DESMUME_GTK4_TIMING=1` 时每 120 帧打印一次均值/p95
+- ✅ **已实现**：`DesmumeDisplay::push_frame()` 的纹理上传与 `snapshot()` 的 GSK 合成各自计时，`DESMUME_GTK4_TIMING=1` 时每 120 个呈现帧向 stderr 打印一次均值/p50/p95/max（默认关闭，热路径零时钟读取）；详见 §14 P6 小节
 - `perf record -g ./desmume`，看 `cairo_*`、`gsk_*`、`gdk_texture_*` 占比
 - `hyperfine --warmup 3 './desmume rom.nds'`（配合自动退出参数）
 - resize：`xdotool`/`kdotool` 脚本循环改窗口大小，记录帧间隔
@@ -668,12 +668,13 @@ GTK4 里 `GtkDrawingArea` 不再有独立 `GdkWindow`，`WGPU_PresentFrame()` �
 
 处理顺序：
 
-- **P1–P5**：`presentation=texture` 为默认；配置里的 GPU 呈现选项置灰并提示"GTK4 版暂不可用"
-- **P7a（推荐）**：wgpu 离屏渲染 + 回读
-  - `WGPUPresent` 增加"渲染到 offscreen texture"模式，HUD/OSD 合成进同一 target
-  - `wgpuBufferMapAsync` 回读 → `GdkMemoryTexture` → 正常 `snapshot()`
-  - 只在"选了 GPU 滤镜"且输出 ≤ 1080p 时启用；4K 下回读带宽约 1.3 GB/s，不划算
-- **P7b（可选/实验）**：原生子 surface
+- **P1–P6**：`presentation=texture` 为默认；配置里的 GPU 呈现选项置灰并提示"GTK4 版暂不可用"
+- **P7a（已落地）**：wgpu 离屏渲染 + 回读
+  - `WGPUPresent` 增加 `beginOffscreen()` / `presentOffscreen()`：`present()` 的渲染主体把目标从 surface 换成自建 BGRA8Unorm 纹理（RENDER_ATTACHMENT | COPY_SRC），滤镜链和 HUD overlay 完全复用
+  - 渲染后 `wgpuCommandEncoderCopyTextureToBuffer` → `wgpuBufferMapAsync`（AllowProcessEvents）+ `wgpuDevicePoll` 同步等待 → 按 256 字节对齐的行距解开到调用者紧密排列的 BGRA 缓冲，回到 GSK 的 `GdkMemoryTexture` 路径
+  - 只在"选了非 Off 的 GPU 滤镜"时启用（`config.presentationWGPU && config.gpuFilter`），默认 Off 保持纯 texture 路径；回读缓冲按需增长，尺寸变化重建离屏 target
+  - 无 wgpu 构建下这些方法都是 stub、`beginOffscreen()` 返回 false，自动回退到未滤镜帧
+- **P7b（可选/实验，未做）**：原生子 surface
   - X11：在 toplevel XID 上 `XCreateWindow` 子窗口覆盖视频区
   - Wayland：`gdk_wayland_surface_get_wl_surface()` + `wl_subcompositor` 子 surface（现有 `WGPULinuxDisplay::beginWayland` 已是这个思路）
   - 定位用 `gtk_widget_compute_point(widget, toplevel, ...)` × scale
@@ -920,29 +921,33 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 
 ## 12. 验收标准
 
+> 下面标 `[x]` 的是本环境（Arch/WSL，GTK 4.24.1）已验证项；标 `[实机]` 的需在目标
+> 硬件/桌面环境验收（本环境无真实 ROM、无真 GPU、无 KDE/GNOME Wayland 会话）。
+
 **功能**
-- [ ] 所有 §1.1 条目可用，行为与 GTK3 版一致
-- [ ] GTK3 与 GTK4 两个 target 可同时构建、同时安装、互不影响
-- [ ] 配置文件互通；GTK4 新增键有默认值，不影响 GTK3
+- [实机] 所有 §1.1 条目可用，行为与 GTK3 版一致（无 ROM，逐项交互待实机）
+- [x] GTK3 与 GTK4 可分别构建；destdir 先后安装到同一 prefix，desktop/metainfo 共存不冲突、二进制/图标共享名各一份（§14 P8）
+- [x] 配置文件互通；GTK4 新增键有默认值，不影响 GTK3（GTK3+CLI 回归构建通过）
 
 **外观**
-- [ ] KDE Wayland：窗口装饰由 KWin 绘制（SSD），最大化/平铺/全屏正常
-- [ ] GNOME Wayland：`GtkHeaderBar`，无重复标题
-- [ ] X11：WM 装饰，无自绘标题栏
-- [ ] 视频区纯黑、等比、无闪烁；全屏自动隐藏 UI
-- [ ] 深浅色主题下文字/控件可读
+- [实机] KDE Wayland：窗口装饰由 KWin 绘制（SSD），最大化/平铺/全屏正常
+- [实机] GNOME Wayland：`GtkHeaderBar`，无重复标题
+- [实机] X11：WM 装饰，无自绘标题栏
+- [实机] 视频区纯黑、等比、无闪烁；全屏自动隐藏 UI（测试帧合成路径已验证无 CRITICAL）
+- [实机] 深浅色主题下文字/控件可读
 
 **性能**
-- [ ] §1.3 表格指标全部达标（或给出书面解释）
-- [ ] 最小化时无持续呈现
-- [ ] resize 无黑边/闪烁
+- [实机] §1.3 表格指标全部达标（或给出书面解释）——无 GTK3 Cairo 基线，见 §6.3/P6 说明
+- [x] 最小化/非活动时无持续呈现（P6 不可见停绘 + ~10 fps 降频）
+- [实机] resize 无黑边/闪烁
 
 **质量**
-- [ ] `gtk4-builder-tool validate` 通过
-- [ ] 无新增编译警告（弃用警告单独统计，不阻断）
-- [ ] 30 分钟连续运行无泄漏（RSS 稳定）
-- [ ] ASAN 短会话无错误
-- [ ] CI 双前端 job 绿
+- [x] `gtk4-builder-tool validate menu.ui / shortcuts.ui` 通过
+- [x] `desktop-file-validate` / `appstreamcli validate` 通过
+- [x] gtk4/ 前端目录零编译警告（全项目清洁重建后扫描确认；核心/3rdparty 历史警告与本次无关）
+- [实机] 30 分钟连续运行无泄漏（RSS 稳定）
+- [实机] ASAN 短会话无错误
+- [实机] CI 双前端 job 绿（workflow 已配置 build/build_gtk4/build_gtk2，YAML 校验通过，需推到 GitHub 实跑）
 
 ---
 
@@ -976,11 +981,11 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 | P3a 核心/主循环 | **已完成** | `emulation.cpp` 桥接核心：异步 ROM 选择、60 Hz 主线程帧回调、真实帧推送、键盘/触摸输入 |
 | P3b 动作/最近文件 | **核心动作已完成** | Reset / Close ROM / 10 槽即时存读档（F1–F10、Shift+F1–F10）/ 截图（Ctrl+S）；GTask 后台加载 ROM；自维护最近 ROM（GKeyFile）。录制/电影回放仍在后续阶段 |
 | P3c 视图控制 | **已完成** | 5 种 LCD 布局（Ctrl+0/1/2/3/4）、交换屏幕（Space）、4 档旋转、屏幕间隙；从 config 恢复并持久化；P2b 的 `DesmumeDisplay` setter 经菜单动作首次暴露给用户 |
-| P4 工具 | 已完成 | IO registers / RAM Watch / RAM Search / Play·Record Movie / Lua 控制台全部落地；金手指窗口属 P5 |
-| P5 金手指 | 未开始 | |
-| P6 性能 | 未开始 | |
-| P7 wgpu | 未开始（必做） | |
-| P8 收尾 | 未开始 | |
+| P4 工具 | 已完成 | IO registers / RAM Watch / RAM Search / Play·Record Movie / Lua 控制台全部落地；P4c 补齐 Windows 内存监视弹窗（RAM Watch Add Cheat 按钮 + RAM Search Add Watch 注释弹窗）；P4d 新增 Memory Viewer 内存查看器（tool index 4，见对应小节）；金手指窗口属 P5 |
+| P5 金手指 | **已完成** | `tools/cheats.{h,cpp}` 金手指列表窗口（tool index 3）：ColumnView + 勾选列、三类型增删改/启停/上下移、搜索过滤、R4 数据库导入、save/discard/cancel 关闭确认、全局禁用开关；详见 §14 P5 小节 |
+| P6 性能 | **已完成** | 不可见停绘 + 帧池双缓冲零拷贝；性能底线（GTK4 帧路径不低于 GTK3）已通过"颜色转换直写池化缓冲 + GBytes 所有权转移"重构达成——消除 `VideoFilter` 与 `wrap_frame` 两次全帧 memcpy 及逐像素 alpha 写，像素工作量与 GTK3 持平且少两次拷贝；非活动窗口 ~10 fps 降频、`DESMUME_GTK4_TIMING=1` 计时（upload 均值 124→16 µs）；状态栏去抖已在位。详见 §14 P6 小节 |
+| P7 wgpu | **已完成** | P7a 离屏渲染 + buffer 回读落地：`WGPUPresent::beginOffscreen/presentOffscreen`，emulation 桥接 `desmume_emu_set_gpu_filter()`，View→GPU Filter 菜单（13 档），GResource 打包 WGSL；gdb 自测 4 种滤镜渲染+回读成功。P7b 原生子 surface 未做（实验性，见 §6.4） |
+| P8 收尾 | **已完成** | GTK4 专属 desktop/metainfo（独立 app-id，与 GTK3 共存）+ 复用共享图标 + GTK4 版 man；`gtk4/meson.build` 安装项接线、destdir 安装与共存验证；CI build_gtk4 job 加资产校验 + 安装冒烟；全项目弃用审计（gtk4/ 零警告）。详见 §14 P8 小节 |
 
 P0 检查表：
 
@@ -1098,10 +1103,10 @@ P2a 的边界（P2b/P3 再做）→ 已在 P2b 收掉，见下。
 | gap 矩形 | vertical 在 `(0,h)`；hybrid 在 `(w·hs,h)`；颜色 0.3/0.3/0.3；horizontal/single 不画 | `3176` / `3219` |
 | 旋转后的中心平移 | 90/270 用交换后的 `fit_w/fit_h`，与 GTK3 `-imgH/2,-imgW/2` 一致 | `3209` |
 | 触控坐标 | 逆矩阵 + hybrid 大屏的 `h·(2-hs)+gap` 偏移，输出 NDS 逻辑 0..255 / 0..191；P3 可直接 `NDS_setTouchPos()` | `2428` / `3225` / `3527` |
-| 帧缓冲 | 池化 `wrap_frame()`：一次 `memcpy` + 每像素写一个 alpha；`GBytes` 持有池引用，纹理释放后缓冲归还，尺寸变化丢弃旧缓冲 | §6.2 双缓冲 |
+| 帧缓冲 | emulation 层 `FramePool` 直写：颜色转换直接写入池化 BGRA 缓冲（Opaque 转换器已写 alpha=0xFF），以 `GBytes` 移交 widget 建两张零拷贝 `GdkMemoryTexture`；无 `memcpy`、无 alpha 修正循环。GPU 滤镜的放大帧按尺寸分桶独立回收 | §6.2 双缓冲 |
 | 触控笔 | `GtkGestureStylus`（`stylus-only=TRUE`，`get_axis(GDK_AXIS_X/Y)`），与 click/motion 用 `stylus_active` 互斥 | §4.4 |
 
-`GDK_MEMORY_B8G8R8X8`（4.14+）可以彻底免 alpha 修正，但 4.10 底线没有这个枚举，故保留池化拷贝。
+颜色转换函数 `ColorspaceConvertBuffer*To8888Opaque` 已把每像素 alpha 写成 0xFF，产物本身就是合法的 `GDK_MEMORY_B8G8R8A8_PREMULTIPLIED`，因此不需要 `GDK_MEMORY_B8G8R8X8`（4.14+）也不需要 alpha 修正拷贝；这条路径比 GTK3 Cairo 少一次全帧 `memcpy`。
 布局几何与 GTK3 对齐；非整数倍缩放下 GSK 线性过滤与 GTK3 默认 `CAIRO_FILTER_NEAREST` 的差异仍属已知项（§4.3/R4）。
 `get_coordinates()` 已从当前 GTK4 API 移除，触控笔坐标走 `gtk_gesture_stylus_get_axis()`。
 
@@ -1207,8 +1212,8 @@ PopoverMenuBar 需要在 `main()` 里用 `gtk_application_set_accels_for_action(
 | `posix/gtk4/tools.{h,cpp}` | `DesmumeTool` 接口（open/update/close/is-open）、按索引开工具、每帧 `update()`（未映射窗口直接跳过）、全局父窗口 |
 | `posix/gtk4/tools/rowmodel.{h,cpp}` | 5 列 GObject 行 + GListStore + ColumnView 工厂；`desmume_column_view_selected()` 取选中位置 |
 | `posix/gtk4/tools/ioregs.cpp` | ARM9/ARM7 `GtkDropDown` 切换；6 个寄存器只读表（值 + 二进制位）；`emulation.cpp` 的 `desmume_emu_read_ioreg()` 桥接核心 MMU |
-| `posix/gtk4/tools/ramwatch.cpp` | `RAMWatchCore` 文档模型；新/编辑/删除/复制/分隔/上下移按钮；GtkFileDialog 打开/另存 + DnD（`GtkDropTarget`/`GDK_TYPE_FILE_LIST`）；`GtkPopoverMenu` 文件菜单 + 最近文件 GActions；窗口尺寸状态栏；自动加载偏好 |
-| `posix/gtk4/tools/ramsearch.cpp` | `RAMSearchCore` 引擎；4 类搜索 × 8 种比较 + Value/Parameter 输入；Size/Display `GtkDropDown`；misaligned/little-endian/auto-search 开关；Search/Reset/Clear/Undo/Redo/Eliminate/Poke/Add Watch/Add Cheat；结果表 50000 行上限 + 节流刷新（150/900 ms）；auto-search 耗尽走 `GtkAlertDialog` 三按钮异步回调（无嵌套循环）；Add Cheat 走 `desmume_emu_add_cheat()` 桥接（仅主 RAM，含 ROM 时） |
+| `posix/gtk4/tools/ramwatch.cpp` | `RAMWatchCore` 文档模型；新/编辑/删除/复制/分隔/上下移按钮；GtkFileDialog 打开/另存 + DnD（`GtkDropTarget`/`GDK_TYPE_FILE_LIST`）；`GtkPopoverMenu` 文件菜单 + 最近文件 GActions；窗口尺寸状态栏；自动加载偏好；**Add Cheat 按钮**（对齐 Windows `IDC_C_ADDCHEAT`：选中项的地址/缓存值/字节数/注释预填 Add Cheat 窗口，仅主 RAM + 含 ROM 时可用，见 P4c） |
+| `posix/gtk4/tools/ramsearch.cpp` | `RAMSearchCore` 引擎；4 类搜索 × 8 种比较 + Value/Parameter 输入；Size/Display `GtkDropDown`；misaligned/little-endian/auto-search 开关；Search/Reset/Clear/Undo/Redo/Eliminate/Poke/Add Watch/Add Cheat；结果表 50000 行上限 + 节流刷新（150/900 ms）；auto-search 耗尽走 `GtkAlertDialog` 三按钮异步回调（无嵌套循环）；Add Cheat 走 `desmume_emu_add_cheat()` 桥接（仅主 RAM，含 ROM 时）；**Add Watch 注释弹窗**（对齐 Windows `IDD_PROMPT`：单选弹窗输入注释，多选全部空注释，见 P4c） |
 | `posix/gtk4/emulation.{h,cpp}` | 新增 `desmume_emu_read_ioreg()`（IO 工具）与 `desmume_emu_add_cheat()`（RAM Search → `CHEATS::add` + `save`） |
 
 **GTK 4.24 API 变更**：本机 GTK 4.24.1 已移除 `gtk_entry_get_text/set_text/set_width_chars`
@@ -1219,7 +1224,8 @@ ramwatch 的 editor 两处 entry 已全部切过去。
 **已知边界**：
 - RAM Watch 的 dirty-close 目前静默保存到已关联文件，没有 GTK3 的"Save changes?"三态确认；
 - RAM Search 的 row 缓存仍按 `kMaxDisplayedResults` 截断（50000），但 ColumnView 只实例化可见行，滚动流畅度优于 GTK3；
-- 内部金手指（Add Cheat）与主 Cheats 窗口（P5）尚未打通 UI，仅提供写入 + 持久化桥接；
+- 内部金手指（Add Cheat）写入 + 持久化桥接已由 P4c 接入 RAM Watch / RAM Search 的 UI，
+  但添加后不自动跳到 P5 主 Cheats 窗口刷新（需重开该窗口）；
 - 三个工具的运行时行为（搜索结果、DnD、对话框交互）仍需带显示环境 + ROM 实机验收。
 
 验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume` 全绿（234/234，编译链接无新增警告）；
@@ -1240,6 +1246,46 @@ ramwatch 的 editor 两处 entry 已全部切过去。
 
 **Movie 工具边界**：`Import Backup Memory`（导入 .dsv）未迁移；表只读字段按 GTK4 精简为 ROM/Firmware 两项。
 播放/录制需要带 ROM 与显示环境实机验收；本机无 ROM，未做运行时验证。
+
+### P4c Windows 内存监视弹窗移植（2026-11-21）
+
+用户要求把 Windows 端 "Memory Watch"（即 RAM Watch）弹窗相关功能移植到 GTK4。
+代码里没有 "Memory Watch" 字面量，对照 `windows/ramwatch.cpp`、`ram_search.cpp`、`resources.rc`
+后确认 Windows 端比 GTK4 多两个交互，均已补齐（对齐 Windows 行为）：
+
+| 路径 | 说明 |
+|---|---|
+| `posix/gtk4/tools/ramwatch.cpp` | **Add Cheat 按钮**（对齐 `IDD_RAMWATCH` 的 `IDC_C_ADDCHEAT`）：选中非分隔行后用 `watch.Address` / `RAMWatchCore::ReadValue(watch)`（缓存值，等价于 Windows 的 `watch.CurValue`）/ `SizeInBytes(watch.Size)` / `watch.Comment` 预填一个普通 `GtkWindow` 表单，确认走 `desmume_emu_add_cheat()`；`WatchCheatCtx` 用 `g_object_set_data_full()` 绑定窗口生命周期；侧栏按钮 `update_control_states()` 随选中态 + `desmume_emu_has_rom()` 更新敏感状态 |
+| `posix/gtk4/tools/ramsearch.cpp` | **Add Watch 注释弹窗**（对齐 `ram_search.cpp` 从搜索结果加监视时的 `IDD_PROMPT`）：单选弹 "Input Prompt" 让用户输入注释（默认 `RAM Search <addr>`），多选一次性全部以空注释添加（Windows 对每行调 `InsertWatch(tempWatch, "")`）；选中位置先汇总到 `std::vector` 再弹窗，避免 modeless 窗口期间选择变化；`AddWatchCtx` 同样绑定窗口生命周期 |
+
+**边界与校验**：Add Cheat 仅在 main RAM（0x02000000–0x023FFFFF）且已载入 ROM 时可用，
+否则报错——与 RAM Search 的 Add Cheat 桥接约束一致；分隔行/无选中直接忽略。
+两个弹窗都复用 `desmume_tool_window_new()`（不设 titlebar，跟随 SSD 策略）。
+
+验证：`ninja gtk4/desmume` 全绿；gdb 在 `desmume_tools_update` 断点命中后（GUI 已初始化）
+依次调用 `desmume_tools_open(1/2/3)` 打开 RAM Watch / RAM Search / Cheats，
+三个窗口均成功构建、3 个新线程对应三次 open、全程无 CRITICAL / 断言 / 崩溃。
+无 ROM 环境下未走"添加成功"的完整数据路径，该路径与已验证的 RAM Search Add Cheat 桥接同构。
+
+### P4d Memory Viewer 内存查看器（2026-11-21）
+
+用户要求把 Windows `memView.cpp` / macOS `MemoryViewerWindow` 的 **Memory Viewer**
+弹窗移植到 GTK4。两端共用平台中立核心，GTK4 复用同一份核心，只重写视图层。
+
+| 路径 | 说明 |
+|---|---|
+| `shared/memory_viewer_core.{h,cpp}` | 从 `cocoa/userinterface/` 复制的平台中立核心（include 路径 `../../../`→`../../`）：5 个区域（ARM9/ARM7/Firmware/CartROM/Full）、字节/半字/字读写、主 RAM 读/写断点列表（`memReadBreakPoints` / `memWriteBreakPoints`）、区域导出尺寸；核心层不依赖任何 GUI 工具包，Cocoa 原文件未改动 |
+| `posix/gtk4/tools/memoryviewer.{h,cpp}` | `DesmumeTool`（tool index 4）：`GtkDrawingArea` + Cairo 等宽 hex dump（16 字节/行 + ASCII 列，字节/半字/字视图、大端、Full chars、断点红底、选中高亮、正在输入的位用 `.` 占位）；`GtkEventControllerKey` 处理方向键/Home/End/PageUp/PageDown + 十六进制原地编辑（写回 `MemoryViewerWrite*`，写完自动前进一格）；`GtkGestureClick` 定位选中；`GtkEventControllerScroll` 按行滚动；工具栏含区域 `GtkDropDown`、地址输入 + 历史下拉 + Go、视图模式 `GtkDropDown`、选中地址标签、`GtkMenuButton` 导出菜单；断点栏含地址输入、R+/W+/−/Clear、汇总、Full/BE 复选；`Update()` 每 150 ms 节流刷新、仅可见行读总线（4 GB Full 视图瞬时打开） |
+| `posix/gtk4/tools.cpp` / `menu.ui` / `meson.build` | 注册 tool index 4、Tools 菜单 `_Memory Viewer…`、编译 `memoryviewer.cpp` 与 `shared/memory_viewer_core.cpp` |
+
+**导出**：复用 macOS 的三种模式——Text Dump（追加，按当前视图宽度格式化 + ASCII）、
+Raw Dump（追加，可见窗口原始字节）、Dump All（整区二进制，CartROM/Full 无有效尺寸时提示改选区域）。
+全部走异步 `GtkFileDialog::save`，文件 I/O 在回调中进行，不阻塞主循环。
+
+**验证**：`gtk4-builder-tool validate menu.ui` 通过；`ninja gtk4/desmume` 全绿；
+gdb 在 `desmume_tools_update` 断点后 `desmume_tools_open(4)`，两次 `is_open()` 均返回 1，
+窗口成功构建、全程无 CRITICAL / 断言 / 崩溃；切 `-Dfrontend-gtk=gtk3` 后 GTK3 + CLI 无回归，
+再切回 gtk4 重链通过。无 ROM 环境下断点与导出写盘的完整数据路径未做实机验收。
 
 ### P4 运行时修复（2026-11-21）
 
@@ -1373,6 +1419,164 @@ call (void)exit(0)
 
 ⚠️ 两个坑：(a) `call` 之前必须 `disable` 掉 `gtk_window_present` 断点；(b) 不要用 `timeout`
 强杀进程看结果——强杀产生的 teardown 断言是假象，必须走 `close_all()` 的正常销毁路径。
+
+### P4 运行时修复：Gdk「Duplicate call to gdk_frame_timings_presented()」警告（2026-11-21）
+
+**现象**：运行中偶发一行
+
+```
+(desmume:29457): Gdk-WARNING **: Duplicate call to gdk_frame_timings_presented() with different values:
+presentation time is 16.358ms off from expected
+```
+
+**结论：这不是 gtk4/ 里的 bug，是 GDK 4.24 Wayland 后端的记账问题**，且无功能影响。
+
+**根因链**（全部在 GTK 侧，源码按 `gh api repos/GNOME/gtk/contents/...?ref=gtk-4-24` 核对）：
+
+| 位置 | 行为 |
+|---|---|
+| `gdk/wayland/gdksurface-wayland.c` `gdk_wayland_surface_request_frame()` | 每次请求一帧就建一个 `wp_presentation_feedback`，只按 `(frame clock, frame counter)` 记账 |
+| 同上，`gdk_wayland_surface_handle_empty_frame()` | 只提交状态（opaque/input region、scale、viewport…）的“空帧”也会 `request_frame()`，不带 buffer |
+| `gdk/wayland/gdkpopup-wayland.c:1040` | **popup 直接继承父 toplevel 的 frame clock** |
+| `gdk/gdkframetimings.c` `gdk_frame_timings_presented()` | 同一帧第二次上报且时间不同 → `g_warning_once`（只打一行） |
+
+于是同一个 frame counter 上会挂两个 feedback（父窗口 + popover/dropdown/tooltip，或正常帧 + 空帧），
+两者实际呈现时间差一个刷新周期（60 Hz ≈ 16.4 ms），第二个上报就成了“重复且不一致”。
+
+**上游状态**：`6b0b5ff7`（"wayland: Don't duplicate complete frames"，commit message 里点名
+"in particular in frames when popovers were shown/hidden"）已修常见情况，**4.24.1 里已包含**；
+`2da76eb2`（"wayland: Rewrite frame callback handling to use frames"）把记账重写成 per-surface frame，
+彻底消除这一类警告，但**没有进 4.24 分支**。所以 4.24.1 上仍会偶发。
+
+**影响**：无。`gdk_frame_timings_presented()` 对重复上报直接 `return`，该帧保留第一次的时间戳；
+警告本身是 `g_warning_once`，一个进程只输出一行。
+
+**处理**：`main.cpp` 装一个 `g_log_set_writer_func()`，只丢弃 `GLIB_DOMAIN=Gdk` 且消息以
+`Duplicate call to gdk_frame_timings_presented()` 开头的这一条，其余（包括其它 Gdk 警告）原样交给
+`g_log_writer_default()`。这样既不让上游噪音冒充 DeSmuME 的 bug，也不掩盖真问题。
+
+**验证**：独立小程序装同一个 writer 后发三条结构化日志——目标消息（Gdk + 该前缀）被吞；
+`Gdk` 的其它警告照常打印；`Gtk` domain 下同样的文本照常打印（证明匹配条件够窄）。
+带过滤器的 `gtk4/desmume` 跑 8 秒测试帧，输出只剩 Mesa 的 dzn 提示。
+
+### P5 已落地内容（2026-11-21）
+
+金手指列表窗口（`gtk/cheatsGTK.cpp` 的 `CheatList`）迁到 GTK4，作为一个工具注册进
+`tools.cpp` 的表（index 3，菜单 `app.tool` target=3）。Cheat 文档本身仍是核心
+`CHEATS` 对象（`cheatSystem.h`），与 `ramwatch.cpp`/`ramsearch.cpp` 直接 include 核心
+C++ 头同构；GTK 层只负责 UI。
+
+| 路径 | 说明 |
+|---|---|
+| `posix/gtk4/tools/cheats.{h,cpp}` | 金手指列表窗口：`CheatRow` GObject + 两个 `GListStore`（Internal / AR+CB） fed into 两个 `GtkColumnView`（`GtkMultiSelection`）；"On" 列是带 `toggled` 工厂的 `GtkCheckButton`（多选时整组启停）；`GtkNotebook` 两页；`GtkSearchEntry` 按描述/代码/地址/值即时过滤；Add 用 `GtkMenuButton`+`GMenu`（`win.add-internal`/`add-ar`/`add-cb`）；Edit/Remove/Move/数据库按钮；打开时暂停核心并复制 `CHEATS` 快照，关闭走 save/discard/cancel 三态确认（Discard 恢复快照），destroy 时按需要 resume |
+| 内部金手指对话框 | grid 表单（地址/十进制值/1–4 字节 `GtkDropDown`/描述/启用开关）+ 实时校验（地址 1–8 位 hex ≤0x0FFFFFFF、值按宽度取范围且接受负数补码）+ 等价 AR code 预览；OK 调 `CHEATS::add/update` |
+| AR / Codebreaker 对话框 | `GtkTextView`（等宽）+ 描述 + 启用开关 + 实时校验（`CHEATS::XXCodeFromString`）；OK 调 `CHEATS::add_AR/CB`、`update_AR/CB` |
+| Cheat Database 导入 | `GtkFileDialog` 选 `*.dat`（路径存 `config.cheats_database_path`）+ `CHEATSEXPORT::load()` 按当前 ROM 游戏码查找 + 带勾选列的 `GtkColumnView` 多选 + `CHEATS::add_AR_Direct`；错误按 `CheatSystemError` 分类提示 |
+| `emulation.{h,cpp}` | 新增 `desmume_emu_set/get_cheats_disabled()`（读写 `CommonSettings.cheatsDisable`）；暂停/恢复复用 `desmume_emu_set/get_running()` |
+| `main.cpp` / `menu.ui` | `app.cheatsdisable` stateful action（写 config 并桥接核心），OnActivate 时从 config 恢复；Tools 菜单新增 `_Cheat list…`（`app.tool` target 3）与 `Disable _cheats` |
+
+**GTK4 API 陷阱（本次踩到并修复）**：`GtkMenuButton` 在 GTK4 不是 `GtkButton` 子类，
+不能用 `gtk_button_set_label()`（运行时 GObject-CRITICAL），必须用
+`gtk_menu_button_set_label()`；`GtkEditable` 有 `get/set_text`、`set_width_chars`，
+但 `max-length` 仍是 `gtk_entry_set_max_length(GTK_ENTRY(...))`（无 editable 版本）；
+`gtk_widget_set_placeholder_text` → `gtk_search_entry_set_placeholder_text()`；
+`g_list_model_get_item()` 返回 `gpointer`，C++ 下需显式 `G_OBJECT(...)` cast。
+
+**范围说明**：`gtk/cheatsGTK.cpp` 里的 `CheatSearch`（基于 `CHEATSEARCH` 的简单内存搜索）
+未单独迁移——P4 的 RAM Search 工具已提供同类搜索且功能更强（4 类 × 8 比较 + Add Cheat
+桥接），重复迁移只会让 Tools 菜单出现两个入口。需要时可在后续阶段补一个薄封装工具。
+
+验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume` 全绿（编译链接无新增警告）。gdb 注入
+`desmume_emu_init()` + 强制 ROM 标志后 `desmume_tools_open(3)` 打开/关闭金手指窗口全程无
+CRITICAL/ERROR/Gtk 警告（仅 Mesa dzn 提示）。切 `-Dfrontend-gtk=gtk3` 后 GTK3 + CLI
+构建无回归，再切回 gtk4 重链通过。
+
+### P6 已落地内容（2026-11-21）
+
+P6 把 §6.2 的呈现侧优化收口。其中两项在 P2b 就已随 `display.cpp` 落地，本次补齐剩余
+的可量化部分：
+
+| 优化项 | 状态 / 实现 |
+|---|---|
+| §6.2-1 GPU 缩放代替 CPU 缩放 | P2 已落地：texture 路径把缩放交给 GSK，无 `cairo_scale` per-frame |
+| §6.2-2 不可见时停止呈现 | P2b 已落地：`push_frame()` 里 `!gtk_widget_get_mapped()` 直接返回，不建纹理、不 `queue_draw`；模拟/音频独立继续 |
+| §6.2-2b 非活动窗口降频 | **本次新增**：`display.cpp` 懒连接 toplevel 的 `notify::is-active`（首帧才连，避免无 WM 环境误判失焦黑屏）；失焦时呈现节流到 ~10 fps（`INACTIVE_PRESENT_INTERVAL_US=100000`），模拟/音频全速 |
+| §6.2-3 纹理双缓冲 + 零拷贝 GBytes | **本次重构**：`FramePool` 从 display 移到 emulation 层并按字节尺寸分桶；颜色转换直接写入池化缓冲（消除 `VideoFilter::RunFilter` 的 full-frame memcpy），`g_bytes_new_with_free_func()` 移交所有权给 display，`g_bytes_new_from_bytes()` 切出上下屏两个零拷贝子视图。每帧像素工作量与 GTK3 相同，额外拷贝为 0（GTK3 仍有 filter 的一次 memcpy） |
+| §6.2-4 resize 无 configure 风暴 | P2 已落地：单 surface，`snapshot()` 按当前尺寸即时算几何 |
+| §6.2-6 状态栏去抖 | 已在位：`SetStatus()` / `UpdateSpeedLabel()` 只在文本变化时 `gtk_label_set_text()` |
+| §6.3 呈现计时 | `DESMUME_GTK4_TIMING=1` 时记录 upload（两张零拷贝子 `GBytes` + 两张 `GdkMemoryTexture`，颜色转换与池化在 emulation 层另有计时）与 snapshot（GSK 合成准备）两条序列，每 120 呈现帧打印均值/p50/p95/max 到 stderr；默认关闭，热路径无时钟读取/无分配 |
+
+**设计要点**：计时开关由 `timing_init()` 经 `g_getenv()` 一次性读取（`class_init` 触发），
+关闭时 `push_frame`/`snapshot` 里的 `g_get_monotonic_time()` 调用被短路，不留运行开销。
+两条序列独立采样计数（GTK 调 `snapshot()` 的次数可能不等于 `push_frame()` 次数），
+各报各自 `n`；p95 用排序后 `n*95/100` 下标，小样本也安全。
+
+**实测**（Arch/WSL GTK 4.24.1，`DESMUME_GTK4_TEST_FRAME=1` 合成帧，6 秒）：
+零拷贝重构后 upload 均值约 16–19 µs、p50 约 15–17 µs、p95 约 26–35 µs；snapshot 均值约 5 µs、
+p50 约 5 µs、p95 约 6 µs。重构前同一测试 upload 均值约 124–131 µs、p95 约 174–190 µs，
+本次消除 full-frame `memcpy` + 逐像素 alpha 写后下降约 7–8 倍。每窗口 120 帧稳定输出，
+无 CRITICAL/断言。该数字是合成测试帧基线，真实 ROM 的颜色转换成本量级不变，但不再有
+GTK3 `VideoFilter` 与旧 GTK4 `wrap_frame` 的两次全帧拷贝，GSK 合成成本随窗口尺寸变化——
+§1.3 的"≤ 基线 50%"需在目标硬件上用同一工具对 GTK3 Cairo 路径做 A/B 才能定论，
+本环境无基线数据，不做虚假承诺。
+
+验证：`ninja gtk4/desmume` 无新警告；`DESMUME_GTK4_TIMING=1` 输出符合预期且关闭时零输出；
+切 `-Dfrontend-gtk=gtk3` 后 GTK3 + CLI 构建无回归，再切回 gtk4 重链通过。
+
+### P7 已落地内容（2026-11-21）
+
+P7 是文档标注的必做项：GTK4 的视频区不是原生 surface，`WGPU_PresentFrame()` 的
+X11 XID / Wayland wl_surface 直写路径失效。采用 P7a（离屏渲染 + 回读），避开 P7b
+原生子 surface 与 GSK 堆叠/裁剪冲突的实验性风险。
+
+| 路径 | 说明 |
+|---|---|
+| `src/frontend/shared/wgpu_present.{h,cpp}` | 新增 `beginOffscreen(w,h,backends)` / `presentOffscreen(...)`。`present()` 内部把"拿 surface texture + present"抽象成离屏分支：目标换成自建 BGRA8Unorm 纹理（`RENDER_ATTACHMENT \| COPY_SRC`），其余渲染（帧上传、upscaler chain、HUD overlay、gap、旋转、顶点）完全复用；提交后 `copyTextureToBuffer` → `mapAsync(AllowProcessEvents)` → `devicePoll` 等待 → 按 256B 行距解包到紧密 BGRA。离屏资源在 `Destroy()` 统一释放；无 wgpu 构建下均为 stub |
+| `gtk4/emulation.{h,cpp}` | 新增 `desmume_emu_set/get_gpu_filter()`、`desmume_emu_gpu_filter_active()`、`desmume_emu_self_test_gpu_filter()`（诊断）。`present_current_frame()` 在 `VideoFilter::RunFilter()` 之后，若滤镜激活则把帧交给 wgpu 离屏渲染，回读放大帧再推给同一个 display sink（布局/旋转/间隙不变，仍走 GSK texture）；任何失败回退到未滤镜帧，不黑屏。桥接用纯 int/float，GTK 层无需 WebGPU 头 |
+| `gtk4/desmume.gresource.xml` | 打包 23 个 libretro upscaler WGSL pass（与 GTK3/Windows 相同 alias），`WGPUCreateLinuxUpscalerShaderSource()` 按 alias 从 `/org/desmume/DeSmuME/` 按需读取、惰性编译 |
+| `gtk4/main.cpp` / `menu.ui` | OnActivate 从 `config.presentationWGPU && config.gpuFilter` 恢复滤镜；`app.gpufilter` 字符串 radio action（13 档：Off/XBRZ/Lanczos3/Bicubic/XBR LV2/LV3/SuperXBR/ScaleFX/XBR2x/MLV4/PT）+ 写回 config；View 菜单新增「GPU Filter」子菜单。缩放系数取 `config.gpuScaleFactor`（1–4×，钳制在桥接层） |
+
+**与 GTK3 的差异（明确记录）**：GTK3 的 GPU 滤镜作用在已按 `gpuScaleFactor` 放大的核心帧缓冲上，
+且直接 present 到 drawing area 的原生 surface；GTK4 的核心帧保持原生 256×192（未改
+`SetFramebufferDimensions`），滤镜在 present 阶段按 scale 放大到离屏 target 后回读，
+再交给 GSK 合成。像素输出在整数倍缩放下与 GTK3 接近，但非整数倍/旋转组合因回读路径
+不同可能有细微差异——当前环境无真实 ROM 与真 GPU，未做逐像素 A/B。
+
+**验证**（Arch/WSL GTK 4.24.1 + wgpu-native dzn 软件 Vulkan）：
+- `glib-compile-resources` 成功产出 80 KB gresource；`gtk4-builder-tool validate menu.ui` 通过
+- `ninja gtk4/desmume` 全绿无新警告
+- gdb 注入 `desmume_emu_set_gpu_filter()` 后调用 `desmume_emu_self_test_gpu_filter()`：
+  XBRZ(1) / Lanczos3(2) / SuperXBR(8) / ScaleFX(9) 均返回 1，证明渲染→map→回读→非空像素
+  全链路成功，无 "shader is missing"/CRITICAL/SIGSEGV；禁用滤镜后恢复默认路径
+- 默认无滤镜路径启动干净（仅 Mesa dzn 无关提示）
+- 切 GTK3 + CLI 构建无回归，切回 gtk4 重链通过
+
+`desmume_emu_self_test_gpu_filter()` 是保留的诊断入口，供自动化冒烟测试；不接显示 sink。
+
+---
+
+### P8 已落地内容（2026-11-21）
+
+P8 完成发布收尾。原则仍是 `gtk/` 一行不改——所有新资产都在 `gtk4/`。
+
+| 资产 | 说明 |
+|---|---|
+| `gtk4/org.desmume.DeSmuME.GTK4.desktop` | GTK4 专属启动器：`Name=DeSmuME (GTK4)`、`Exec=desmume`、`TryExec=desmume`、`StartupWMClass=org.desmume.DeSmuME.GTK4`、`Icon=org.desmume.DeSmuME`（复用图标）、MIME 同 GTK3。独立 app-id 使 GTK3/GTK4 的 desktop 可在同一 prefix 共存 |
+| `gtk4/org.desmume.DeSmuME.GTK4.metainfo.xml` | `<id>`/`<launchable>` 与 desktop 一致；现代 `<developer><name>`、https 主页、release 2.7.10。`appstreamcli validate --no-net` 普通模式全绿；pedantic 下仅剩 app-id 含大写（D1 既定，与 GTK3 一致，不改） |
+| `gtk4/doc/desmume.1` | GTK4 版 man：保留共享核心选项，新增 `DESMUME_GTK4_TEST_FRAME` / `DESMUME_GTK4_TIMING` / `GDK_BACKEND` 环境变量说明与 GPU 滤镜描述。`groff`/`man -l` 渲染无警告 |
+| `gtk4/meson.build` | 用 `install_data` 安装 GTK4 desktop/metainfo、复用 `../gtk/org.desmume.DeSmuME.svg`、`install_man('doc/desmume.1')`。一次配置只装一个前端，man page 与二进制共享名不会同时指向两个二进制 |
+| `.github/workflows/build.yml` | `build_gtk4` job 依赖加 `desktop-file-utils`/`appstream`，构建后新增 validate 步骤（desktop/metainfo/menu.ui/shortcuts.ui）与 destdir 安装冒烟（检查二进制、desktop、metainfo、man） |
+
+**弃用审计**：全项目清洁重建（238 目标）后扫描——`gtk4/` 前端目录零编译警告；无 `GTK_DISABLE_DEPRECATED`、无 `GtkTreeView`/`GtkFileChooserNative`/`GtkStatusbar` 等实际调用（`luaScriptConsole.cpp` 的 `gtk_button_set_label(GTK_BUTTON(...))` 作用在真正的 `GtkButton`，正确）。核心/`3rdparty` 的历史警告与本次迁移无关。
+
+**安装共存验证**（同一 destdir 先后安装 GTK3、GTK4）：
+- `share/applications/`：同时存在 `org.desmume.DeSmuME.desktop` 与 `org.desmume.DeSmuME.GTK4.desktop`
+- `share/metainfo/`：两份 metainfo 共存
+- `bin/desmume`、`share/icons/.../org.desmume.DeSmuME.svg`：共享名各一份（后装覆盖，始终只有一个二进制对应 `man desmume`）
+
+**验证**：CI 校验命令本地逐条跑通；workflow YAML 解析通过（5 个 job 齐全）；`gtk4-builder-tool validate` / `desktop-file-validate` / `appstreamcli validate` 全通过；destdir 安装布局与共存正确；GTK3 + CLI 回归通过，切回 gtk4 重链通过。
+
+**仍未实机验收**（本环境限制，非代码缺口）：KDE/GNOME Wayland 外观、真 ROM 下的逐项功能与像素 A/B、30 分钟 RSS 泄漏、ASAN、GitHub CI 实跑——见 §12 标 `[实机]` 项与 §13 仍待确认事项。
 
 ---
 
