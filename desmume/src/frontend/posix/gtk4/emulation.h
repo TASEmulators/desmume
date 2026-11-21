@@ -170,6 +170,31 @@ void desmume_emu_set_audio_volume(int volume);
 void desmume_emu_set_audio_sync(int sync_mode);
 void desmume_emu_set_audio_interpolation(int interpolation);
 
+/* ---- Emulation / graphics config -------------------------------------- */
+
+/* Configure the ARM dynamic recompiler.  Call before desmume_emu_init(); the
+ * setting is applied when the core starts and may also be changed live.  On
+ * builds without HAVE_JIT the request is remembered but has no effect. */
+void desmume_emu_set_jit_config(gboolean enabled, int block_size);
+
+/* The 3D renderer list compiled into this frontend.  Index 0..count-1, with
+ * desmume_emu_renderer_id() returning the RendererID to store in the config. */
+int desmume_emu_renderer_count(void);
+const char *desmume_emu_renderer_name(int index);
+int desmume_emu_renderer_id(int index);
+
+/* RendererID currently in use, or the one that will be selected at init. */
+int desmume_emu_get_renderer(void);
+
+/* Mirror the Graphics tab of the config dialog into the core.  Call before
+ * desmume_emu_init(); the values are applied at init and can be changed live.
+ * `texture_upscale` is 1, 2 or 4 and `multisample_size` is one of
+ * 0/2/4/8/16/32. */
+void desmume_emu_set_graphics_config(int renderer, int texture_upscale,
+                                     gboolean deposterize, gboolean smoothing,
+                                     gboolean high_color_interpolation,
+                                     int multisample_size);
+
 /* Keyvals use the GTK3 default keymap.  Touch coordinates are in NDS logical
  * space (0..255 / 0..191), exactly what DesmumeDisplay's signals emit. */
 void desmume_emu_set_key(guint keyval, gboolean pressed);

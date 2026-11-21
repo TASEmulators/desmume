@@ -257,56 +257,6 @@
           </section>
         </submenu>
       </section>
-      <section>
-        <item>
-          <attribute name='label' translatable='yes'>_Enable audio</attribute>
-          <attribute name='action'>app.enableaudio</attribute>
-        </item>
-        <item>
-          <attribute name='label' translatable='yes'>Set audio _volume…</attribute>
-          <attribute name='action'>app.setaudiovolume</attribute>
-        </item>
-        <submenu>
-          <attribute name='label' translatable='yes'>Audio _Synchronization</attribute>
-          <section id='audio-synchronisation'>
-            <item>
-              <attribute name='label' translatable='yes'>_Dual Asynchronous</attribute>
-              <attribute name='action'>app.spu-mode</attribute>
-              <attribute name='target' type='s'>'dual-async'</attribute>
-            </item>
-            <item>
-              <attribute name='label' translatable='yes'>_N: Crossfade resampler (low CPU)</attribute>
-              <attribute name='action'>app.spu-mode</attribute>
-              <attribute name='target' type='s'>'sync-n'</attribute>
-            </item>
-            <item>
-              <attribute name='label' translatable='yes'>_Z: Micro-resampler (low latency)</attribute>
-              <attribute name='action'>app.spu-mode</attribute>
-              <attribute name='target' type='s'>'sync-z'</attribute>
-            </item>
-          </section>
-        </submenu>
-        <submenu>
-          <attribute name='label' translatable='yes'>Audio _Interpolation</attribute>
-          <section>
-            <item>
-              <attribute name='label' translatable='yes'>_None</attribute>
-              <attribute name='action'>app.spu-interpolation</attribute>
-              <attribute name='target' type='s'>'none'</attribute>
-            </item>
-            <item>
-              <attribute name='label' translatable='yes'>_Linear</attribute>
-              <attribute name='action'>app.spu-interpolation</attribute>
-              <attribute name='target' type='s'>'linear'</attribute>
-            </item>
-            <item>
-              <attribute name='label' translatable='yes'>_Cosine</attribute>
-              <attribute name='action'>app.spu-interpolation</attribute>
-              <attribute name='target' type='s'>'cosine'</attribute>
-            </item>
-          </section>
-        </submenu>
-      </section>
     </submenu>
 
     <submenu>
@@ -471,6 +421,17 @@
         <item>
           <attribute name='label' translatable='yes'>Show _status bar</attribute>
           <attribute name='action'>app.view-statusbar</attribute>
+        </item>
+      </section>
+    </submenu>
+
+    <submenu>
+      <attribute name='label' translatable='yes'>_Config</attribute>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Config…</attribute>
+          <attribute name='action'>app.config</attribute>
+          <attribute name='accel'>&lt;Control&gt;p</attribute>
         </item>
       </section>
     </submenu>

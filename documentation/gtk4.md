@@ -757,6 +757,7 @@ GTK4 里 `GtkDrawingArea` 不再有独立 `GdkWindow`，`WGPU_PresentFrame()` �
 | `gtk_widget_translate_coordinates` | 仍在，但跨 surface 用 `gtk_widget_compute_point()` |
 | `gtk_widget_override_background_color` | CSS provider |
 | `gtk_widget_override_color` | CSS provider |
+| `g_object_ref_sink(gtk_window_new())` 接管 floating 引用 | GTK4 窗口引用**已非 floating**：不要再 `ref_sink`，否则多出的引用会让 `gtk_window_destroy()` 后对象不析构、`"destroy"` 信号不触发（单例窗口全局指针悬空）。见 §14 的 Config 对话框修复 |
 
 ### 8.4 菜单与动作
 
@@ -1577,6 +1578,31 @@ P8 完成发布收尾。原则仍是 `gtk/` 一行不改——所有新资产都
 **验证**：CI 校验命令本地逐条跑通；workflow YAML 解析通过（5 个 job 齐全）；`gtk4-builder-tool validate` / `desktop-file-validate` / `appstreamcli validate` 全通过；destdir 安装布局与共存正确；GTK3 + CLI 回归通过，切回 gtk4 重链通过。
 
 **仍未实机验收**（本环境限制，非代码缺口）：KDE/GNOME Wayland 外观、真 ROM 下的逐项功能与像素 A/B、30 分钟 RSS 泄漏、ASAN、GitHub CI 实跑——见 §12 标 `[实机]` 项与 §13 仍待确认事项。
+
+### 运行时修复：Config 对话框关闭后再打开不显示（2026-11-21）
+
+**现象**：打开 Config → 关闭 → 再打开，对话框不再出现；控制台报
+`(desmume:…): Gtk-WARNING **: A window is shown after it has been destroyed. This will leave the window in an inconsistent state.`
+
+**根因**（最小 GTK4 程序逐行复刻生命周期、同一版本 4.24.1 上 A/B 复现确认，非推测）：
+`configdialog.cpp` 创建窗口后调用了 `g_object_ref_sink(d->window)`。GTK4 里
+`gtk_window_new()` 返回的引用**已经不是 floating**，`ref_sink` 等于额外 `+1` 引用。
+于是关闭时 `gtk_window_destroy()` 只释放 GTK 自己那份，对象因多出的引用没有 finalize，
+**`"destroy"` 信号根本不触发**（实测 `destroy_fired=0`）。`OnDialogDestroy` 从不执行，
+全局 `sDialog` 一直指向已销毁的窗口；回调里那句 `g_object_unref(widget)` 也永远轮不到。
+第二次打开时 `sDialog != NULL`，直接对已销毁窗口 `gtk_window_present()` → 警告 + 不显示。
+
+**修复**（`configdialog.cpp`）：删除创建时的 `g_object_ref_sink()`，删除
+`OnDialogDestroy` 里的 `g_object_unref(widget)`，让 GTK 独占窗口唯一引用，`destroy`
+得以正常同步发出；两处都加注释说明为何不能再加回引用，防止回归。
+
+**教训（GTK3 → GTK4 引用语义）**：
+- GTK3 里 `gtk_window_new()` 是 floating，`g_object_ref_sink()` 是标准接管手法；GTK4 里窗口构造出来就不是 floating，照搬这句话会凭空多一个引用，是最容易踩的迁移坑之一。
+- 判断一个窗口/对象是否该 `ref_sink`，看构造函数文档里的返回值传递标注（transfer floating / full），不要凭 GTK3 肌肉记忆。
+- `"destroy"` 信号依赖引用归零触发 finalize；任何多余引用都会让它静默不触发，且不产生任何警告——这类 bug 只在"关闭后重开"路径暴露，首次打开完全正常。
+- 单例窗口的清理回调（置空全局指针）优先用 `g_object_add_weak_pointer` 自动置空（见 `ioregs.cpp` 等工具窗口），比手动连 `destroy` 更稳健。
+
+**验证**：最小复现变体 A（保留 ref_sink）稳定复现警告且 `destroy_fired=0`；变体 B/C（去掉 ref_sink）两轮"打开→销毁→重开"零警告、`sDialog` 正确置空、ASAN 零错误；真实 desmume 由用户实机确认开关正常。`ninja gtk4/desmume` 干净编译无警告。
 
 ---
 

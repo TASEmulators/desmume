@@ -39,6 +39,7 @@ desmume_src = [
   '../../shared/memory_viewer_core.cpp',
   '../shared/sndsdl.cpp',
   'config.cpp',
+  'configdialog.cpp',
   'display.cpp',
   'emulation.cpp',
   'main.cpp',

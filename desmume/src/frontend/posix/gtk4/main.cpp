@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "configdialog.h"
 #include "display.h"
 #include "emulation.h"
 #include "tools.h"
@@ -1214,6 +1215,9 @@ static void ActionGpuFilter(GSimpleAction *action, GVariant *parameter, gpointer
 	if (pConfig != NULL)
 	{
 		pConfig->gpuFilter.set(filter);
+		/* The GTK4 frontend has no separate presentation switch: a non-Off
+		 * filter is what enables the WebGPU off-screen path at startup. */
+		pConfig->presentationWGPU.set(filter != 0);
 		pConfig->save();
 	}
 	char state[16];
@@ -1381,234 +1385,35 @@ static void CheatsDisableChanged(GSimpleAction *action, GVariant *value, gpointe
 	}
 }
 
-/* ------------------------------------------------------- audio (config) */
+/* --------------------------------------------------------- config dialog */
 
-struct AudioVolumeDialog
-{
-	GtkWidget *window;
-	GtkWidget *scale;
-	int previous;
-	gboolean accepted;
-};
-
-static AudioVolumeDialog *sAudioVolumeDialog = NULL;
-
-static int
-AudioVolumeFromScale(GtkRange *range)
-{
-	return (int)(gtk_range_get_value(range) + 0.5);
-}
-
-static void
-OnAudioVolumeScaleChanged(GtkRange *range, gpointer user_data)
+static void OnConfigApplied(gpointer user_data)
 {
 	(void)user_data;
-	desmume_emu_set_audio_volume(AudioVolumeFromScale(range));
+
+	/* The dialog may have changed the GPU filter, which also has a View-menu
+	 * radio action; keep its state in step. */
+	char filter_state[16];
+	g_snprintf(filter_state, sizeof(filter_state), "%d",
+	           (pConfig != NULL) ? pConfig->gpuFilter.get() : 0);
+	SetActionStringState("gpufilter", filter_state);
+	SetStatus("Configuration applied");
 }
 
-static void
-OnAudioVolumeDialogDestroy(GtkWidget *widget, gpointer user_data)
-{
-	(void)widget;
-	AudioVolumeDialog *dialog = (AudioVolumeDialog *)user_data;
-
-	/* Closing the window with the WM button is a cancel: drop the preview. */
-	if (!dialog->accepted)
-	{
-		desmume_emu_set_audio_volume(dialog->previous);
-	}
-
-	if (sAudioVolumeDialog == dialog)
-	{
-		sAudioVolumeDialog = NULL;
-	}
-	g_free(dialog);
-}
-
-static void
-OnAudioVolumeCancel(GtkButton *button, gpointer user_data)
-{
-	(void)button;
-	AudioVolumeDialog *dialog = (AudioVolumeDialog *)user_data;
-
-	/* Undo the live preview. */
-	dialog->accepted = TRUE;
-	desmume_emu_set_audio_volume(dialog->previous);
-	gtk_window_destroy(GTK_WINDOW(dialog->window));
-}
-
-static void
-OnAudioVolumeOk(GtkButton *button, gpointer user_data)
-{
-	(void)button;
-	AudioVolumeDialog *dialog = (AudioVolumeDialog *)user_data;
-	const int volume = AudioVolumeFromScale(GTK_RANGE(dialog->scale));
-
-	dialog->accepted = TRUE;
-	desmume_emu_set_audio_volume(volume);
-	if (pConfig != NULL)
-	{
-		pConfig->audio_volume = volume;
-		pConfig->save();
-	}
-
-	char *status = g_strdup_printf("Audio volume: %d", volume);
-	SetStatus(status);
-	g_free(status);
-	gtk_window_destroy(GTK_WINDOW(dialog->window));
-}
-
-static void
-ActionSetAudioVolume(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+static void ActionConfig(GSimpleAction *action, GVariant *parameter,
+                         gpointer user_data)
 {
 	(void)action;
 	(void)parameter;
 	(void)user_data;
 
-	if (sAudioVolumeDialog != NULL)
+	if (pConfig == NULL)
 	{
-		gtk_window_present(GTK_WINDOW(sAudioVolumeDialog->window));
 		return;
 	}
 
-	AudioVolumeDialog *dialog = g_new0(AudioVolumeDialog, 1);
-	dialog->previous = (pConfig != NULL) ? pConfig->audio_volume.get() : 100;
-
-	int shown = dialog->previous;
-	if (shown < 0) shown = 0;
-	if (shown > 100) shown = 100;
-
-	dialog->window = gtk_window_new();
-	gtk_window_set_title(GTK_WINDOW(dialog->window), "Set audio volume");
-	gtk_window_set_transient_for(GTK_WINDOW(dialog->window), GTK_WINDOW(pWindow));
-	gtk_window_set_modal(GTK_WINDOW(dialog->window), TRUE);
-	gtk_window_set_resizable(GTK_WINDOW(dialog->window), FALSE);
-	gtk_window_set_default_size(GTK_WINDOW(dialog->window), 320, -1);
-
-	GtkWidget *root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
-	gtk_widget_set_margin_start(root, 12);
-	gtk_widget_set_margin_end(root, 12);
-	gtk_widget_set_margin_top(root, 12);
-	gtk_widget_set_margin_bottom(root, 12);
-	gtk_window_set_child(GTK_WINDOW(dialog->window), root);
-
-	GtkWidget *label = gtk_label_new("Audio volume");
-	gtk_widget_set_halign(label, GTK_ALIGN_START);
-	gtk_box_append(GTK_BOX(root), label);
-
-	dialog->scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 100, 1);
-	gtk_range_set_value(GTK_RANGE(dialog->scale), shown);
-	gtk_scale_set_draw_value(GTK_SCALE(dialog->scale), TRUE);
-	gtk_scale_set_value_pos(GTK_SCALE(dialog->scale), GTK_POS_RIGHT);
-	gtk_widget_set_hexpand(dialog->scale, TRUE);
-	g_signal_connect(dialog->scale, "value-changed",
-	                 G_CALLBACK(OnAudioVolumeScaleChanged), dialog);
-	gtk_box_append(GTK_BOX(root), dialog->scale);
-
-	GtkWidget *buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
-	gtk_widget_set_halign(buttons, GTK_ALIGN_END);
-	gtk_box_append(GTK_BOX(root), buttons);
-
-	GtkWidget *cancel = gtk_button_new_with_label("_Cancel");
-	gtk_button_set_use_underline(GTK_BUTTON(cancel), TRUE);
-	g_signal_connect(cancel, "clicked", G_CALLBACK(OnAudioVolumeCancel), dialog);
-	gtk_box_append(GTK_BOX(buttons), cancel);
-
-	GtkWidget *ok = gtk_button_new_with_label("_OK");
-	gtk_button_set_use_underline(GTK_BUTTON(ok), TRUE);
-	gtk_widget_add_css_class(ok, "suggested-action");
-	g_signal_connect(ok, "clicked", G_CALLBACK(OnAudioVolumeOk), dialog);
-	gtk_box_append(GTK_BOX(buttons), ok);
-
-	g_signal_connect(dialog->window, "destroy",
-	                 G_CALLBACK(OnAudioVolumeDialogDestroy), dialog);
-	sAudioVolumeDialog = dialog;
-	gtk_window_present(GTK_WINDOW(dialog->window));
-}
-
-static void
-AudioEnabledChanged(GSimpleAction *action, GVariant *value, gpointer user_data)
-{
-	(void)user_data;
-
-	g_simple_action_set_state(action, value);
-	const gboolean enabled = g_variant_get_boolean(value);
-	desmume_emu_set_audio_enabled(enabled);
-	if (pConfig != NULL)
-	{
-		pConfig->audio_enabled = (enabled != FALSE);
-		pConfig->save();
-	}
-	SetStatus(enabled ? "Audio enabled" : "Audio disabled");
-}
-
-static void
-ActionSpuMode(GSimpleAction *action, GVariant *parameter, gpointer user_data)
-{
-	(void)user_data;
-
-	const char *name = g_variant_get_string(parameter, NULL);
-	int mode = 0;
-	const char *status = "Audio synchronization: dual asynchronous";
-
-	if (g_strcmp0(name, "sync-n") == 0)
-	{
-		mode = 1;
-		status = "Audio synchronization: N (crossfade)";
-	}
-	else if (g_strcmp0(name, "sync-z") == 0)
-	{
-		mode = 2;
-		status = "Audio synchronization: Z (micro-resampler)";
-	}
-	else if (g_strcmp0(name, "sync-p") == 0)
-	{
-#ifdef HAVE_LIBSOUNDTOUCH
-		mode = 3;
-		status = "Audio synchronization: P (time-stretch)";
-#else
-		mode = 0;
-#endif
-	}
-
-	g_simple_action_set_state(action, parameter);
-	desmume_emu_set_audio_sync(mode);
-	if (pConfig != NULL)
-	{
-		pConfig->audio_sync = mode;
-		pConfig->save();
-	}
-	SetStatus(status);
-}
-
-static void
-ActionSpuInterpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data)
-{
-	(void)user_data;
-
-	const char *name = g_variant_get_string(parameter, NULL);
-	int mode = 1;
-	const char *status = "Audio interpolation: linear";
-
-	if (g_strcmp0(name, "none") == 0)
-	{
-		mode = 0;
-		status = "Audio interpolation: none";
-	}
-	else if (g_strcmp0(name, "cosine") == 0)
-	{
-		mode = 2;
-		status = "Audio interpolation: cosine";
-	}
-
-	g_simple_action_set_state(action, parameter);
-	desmume_emu_set_audio_interpolation(mode);
-	if (pConfig != NULL)
-	{
-		pConfig->audio_interpolation = mode;
-		pConfig->save();
-	}
-	SetStatus(status);
+	desmume_config_dialog_show(GTK_WINDOW(pWindow), pConfig,
+	                           OnConfigApplied, NULL);
 }
 
 /* ---- movie actions (P4b) --------------------------------------------- */
@@ -1706,10 +1511,7 @@ static const GActionEntry app_entries[] =
 	{ "view-statusbar",  NULL,             NULL, "true", StatusbarChanged },
 	{ "tool",           ActionTool,       "u",  NULL,   NULL },
 	{ "gpufilter",      ActionGpuFilter,  "s",  "'0'",  NULL },
-	{ "enableaudio",    NULL,             NULL, "true", AudioEnabledChanged },
-	{ "setaudiovolume", ActionSetAudioVolume, NULL, NULL, NULL },
-	{ "spu-mode",       ActionSpuMode,    "s",  "'dual-async'", NULL },
-	{ "spu-interpolation", ActionSpuInterpolation, "s", "'linear'", NULL },
+	{ "config",         ActionConfig,     NULL, NULL,   NULL },
 	{ "cheatsdisable",  NULL,             NULL, "false", CheatsDisableChanged },
 	{ "playmovie",      ActionPlayMovie,  NULL, NULL,   NULL },
 	{ "recordmovie",    ActionRecordMovie, NULL, NULL,  NULL },
@@ -1889,35 +1691,6 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 		SetActionBooleanState("cheatsdisable", cheats_disabled);
 	}
 
-	/* Restore the persisted audio configuration in the menu.  The core was
-	 * already configured in main() before the window existed; these calls only
-	 * make the radio/check marks reflect the saved values. */
-	{
-		const gboolean audio_enabled = pConfig->audio_enabled.get() ? TRUE : FALSE;
-		SetActionBooleanState("enableaudio", audio_enabled);
-
-		const char *sync_state = "dual-async";
-		switch (pConfig->audio_sync.get())
-		{
-		case 1: sync_state = "sync-n"; break;
-		case 2: sync_state = "sync-z"; break;
-#ifdef HAVE_LIBSOUNDTOUCH
-		case 3: sync_state = "sync-p"; break;
-#endif
-		default: break;
-		}
-		SetActionStringState("spu-mode", sync_state);
-
-		const char *interpolation_state = "linear";
-		switch (pConfig->audio_interpolation.get())
-		{
-		case 0: interpolation_state = "none"; break;
-		case 2: interpolation_state = "cosine"; break;
-		default: break;
-		}
-		SetActionStringState("spu-interpolation", interpolation_state);
-	}
-
 	/* P7a: restore the optional WebGPU upscaler filter. A filter is only run
 	 * when both presentation is enabled and a non-Off filter is selected;
 	 * the default (Off) keeps the plain GSK texture path. Failure to create
@@ -2044,6 +1817,15 @@ int main(int argc, char *argv[])
 	                             pConfig->audio_volume.get(),
 	                             pConfig->audio_sync.get(),
 	                             pConfig->audio_interpolation.get());
+	desmume_emu_set_jit_config(pConfig->use_jit.get(),
+	                           pConfig->jit_max_block_size.get());
+	desmume_emu_set_graphics_config(pConfig->core3D.get(),
+	                                pConfig->textureUpscale.get(),
+	                                pConfig->textureDeposterize.get() ? TRUE : FALSE,
+	                                pConfig->textureSmoothing.get() ? TRUE : FALSE,
+	                                pConfig->highColorInterpolation.get() ? TRUE : FALSE,
+	                                pConfig->multisampling.get()
+	                                    ? pConfig->multisamplingSize.get() : 0);
 
 	/* GtkApplication does not declare G_APPLICATION_HANDLES_OPEN, so a ROM on
 	 * the command line arrives as a plain argument.  Use the first existing
@@ -2077,6 +1859,7 @@ int main(int argc, char *argv[])
 	static const char *fast_forward_accels[] = { "Tab", NULL };
 	static const char *fullscreen_accels[] = { "F11", NULL };
 	static const char *screenshot_accels[] = { "<Control>s", NULL };
+	static const char *config_accels[] = { "<Control>p", NULL };
 	gtk_application_set_accels_for_action(app, "app.open", open_accels);
 	gtk_application_set_accels_for_action(app, "app.quit", quit_accels);
 	gtk_application_set_accels_for_action(app, "app.run", run_accels);
@@ -2084,6 +1867,7 @@ int main(int argc, char *argv[])
 	gtk_application_set_accels_for_action(app, "app.fast-forward", fast_forward_accels);
 	gtk_application_set_accels_for_action(app, "app.fullscreen", fullscreen_accels);
 	gtk_application_set_accels_for_action(app, "app.screenshot", screenshot_accels);
+	gtk_application_set_accels_for_action(app, "app.config", config_accels);
 
 	/* Slot accelerators for parameterised actions.  menu.ui also carries them,
 	 * but GTK only auto-installs accels for the application menubar; the

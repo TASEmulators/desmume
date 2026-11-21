@@ -32,6 +32,9 @@
 #include "utils/datetime.h"
 #include "utils/xstring.h"
 #include "path.h"
+#ifdef HAVE_JIT
+#include "arm_jit.h"
+#endif
 #include "../shared/sndsdl.h"
 #include "../../shared/ram_debug_core.h"
 #include "filter/videofilter.h"
@@ -82,6 +85,18 @@ static gboolean sAudioEnabled = TRUE;
 static int sAudioVolume = 128;
 static int sAudioSync = 0;
 static int sAudioInterpolation = 1;
+
+/* Emulation / graphics settings mirrored from the config dialog.  Defaults
+ * match config_opts.h; desmume_emu_init() applies them after NDS_Init(). */
+static gboolean sJitEnabled = FALSE;
+static int sJitBlockSize = 100;
+
+static int sRendererId = RENDERID_SOFTRASTERIZER;
+static int sTextureUpscale = 1;
+static gboolean sTextureDeposterize = FALSE;
+static gboolean sTextureSmoothing = FALSE;
+static gboolean sHighColorInterpolation = TRUE;
+static int sMultisampleSize = 0;
 
 /* ------------------------------------------------------- zero-copy frame pool
  * The core's custom buffer is converted straight into a pooled BGRA8888
@@ -712,6 +727,163 @@ desmume_emu_set_audio_interpolation(int interpolation)
 	}
 }
 
+/* ---------------------------------------------- emulation / graphics config */
+
+static int
+renderer_count(void)
+{
+	int count = 0;
+	while ((count < (int)G_N_ELEMENTS(core3DList)) && (core3DList[count] != NULL))
+	{
+		++count;
+	}
+	return count;
+}
+
+static gboolean
+renderer_id_is_valid(int id)
+{
+	return (id >= 0) && (id < renderer_count()) && (core3DList[id] != NULL);
+}
+
+static void
+apply_graphics_settings(void)
+{
+	CommonSettings.GFX3D_Renderer_TextureScalingFactor = sTextureUpscale;
+	CommonSettings.GFX3D_Renderer_TextureDeposterize =
+		(sTextureDeposterize != FALSE);
+	CommonSettings.GFX3D_Renderer_TextureSmoothing =
+		(sTextureSmoothing != FALSE);
+	CommonSettings.GFX3D_HighResolutionInterpolateColor =
+		(sHighColorInterpolation != FALSE);
+	CommonSettings.GFX3D_Renderer_MultisampleSize = sMultisampleSize;
+}
+
+/* Switch the live core to sRendererId.  A renderer can fail to start (for
+ * example when a driver disappears); fall back to the software rasteriser so
+ * the screens do not go blank. */
+static gboolean
+apply_renderer(void)
+{
+	if (!sInitialized || (cur3DCore == sRendererId))
+	{
+		return TRUE;
+	}
+
+	if (GPU->Change3DRendererByID(sRendererId))
+	{
+		return TRUE;
+	}
+
+	if (sRendererId != RENDERID_SOFTRASTERIZER)
+	{
+		sRendererId = RENDERID_SOFTRASTERIZER;
+		if (GPU->Change3DRendererByID(sRendererId))
+		{
+			g_printerr("GTK4: 3D renderer unavailable; using SoftRasterizer\n");
+			return FALSE;
+		}
+	}
+
+	g_printerr("GTK4: could not select a 3D renderer; 3D will be blank\n");
+	GPU->Change3DRendererByID(RENDERID_NULL);
+	sRendererId = RENDERID_NULL;
+	return FALSE;
+}
+
+void
+desmume_emu_set_jit_config(gboolean enabled, int block_size)
+{
+	if (block_size < 1)
+	{
+		block_size = 1;
+	}
+	if (block_size > 100)
+	{
+		block_size = 100;
+	}
+
+	sJitEnabled = (enabled != FALSE);
+	sJitBlockSize = block_size;
+
+#ifdef HAVE_JIT
+	CommonSettings.jit_max_block_size = (u32)sJitBlockSize;
+	CommonSettings.use_jit = (sJitEnabled != FALSE);
+
+	if (sInitialized)
+	{
+		arm_jit_sync();
+		arm_jit_reset(sJitEnabled != FALSE);
+	}
+#endif
+}
+
+int
+desmume_emu_renderer_count(void)
+{
+	return renderer_count();
+}
+
+const char *
+desmume_emu_renderer_name(int index)
+{
+	if ((index < 0) || (index >= renderer_count()))
+	{
+		return NULL;
+	}
+	return core3DList[index]->name;
+}
+
+int
+desmume_emu_renderer_id(int index)
+{
+	return ((index >= 0) && (index < renderer_count())) ? index : -1;
+}
+
+int
+desmume_emu_get_renderer(void)
+{
+	return sInitialized ? cur3DCore : sRendererId;
+}
+
+void
+desmume_emu_set_graphics_config(int renderer, int texture_upscale,
+                                gboolean deposterize, gboolean smoothing,
+                                gboolean high_color_interpolation,
+                                int multisample_size)
+{
+	if (!renderer_id_is_valid(renderer))
+	{
+		renderer = RENDERID_SOFTRASTERIZER;
+	}
+	if ((texture_upscale != 2) && (texture_upscale != 4))
+	{
+		texture_upscale = 1;
+	}
+	switch (multisample_size)
+	{
+	case 2:
+	case 4:
+	case 8:
+	case 16:
+	case 32:
+		break;
+	default:
+		multisample_size = 0;
+		break;
+	}
+
+	sRendererId = renderer;
+	sTextureUpscale = texture_upscale;
+	sTextureDeposterize = (deposterize != FALSE);
+	sTextureSmoothing = (smoothing != FALSE);
+	sHighColorInterpolation = (high_color_interpolation != FALSE);
+	sMultisampleSize = multisample_size;
+
+	apply_graphics_settings();
+	apply_renderer();
+}
+
 void
 desmume_emu_set_key(guint keyval, gboolean pressed)
 {
@@ -780,12 +952,27 @@ desmume_emu_init(void)
 	 * cannot be opened, so a headless machine can still emulate. */
 	apply_audio_settings();
 
+#ifdef HAVE_JIT
+	CommonSettings.jit_max_block_size = (u32)sJitBlockSize;
+	CommonSettings.use_jit = (sJitEnabled != FALSE);
+	arm_jit_sync();
+	arm_jit_reset(sJitEnabled != FALSE);
+#endif
+
+	apply_graphics_settings();
+
 	/* The null renderer would leave 3D screens black.  The rasteriser is
-	 * always compiled into libdesmume on POSIX builds. */
-	if (!GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER))
+	 * always compiled into libdesmume on POSIX builds and is the fallback
+	 * when the configured renderer cannot start. */
+	if (!GPU->Change3DRendererByID(sRendererId))
 	{
-		g_printerr("GTK4: software 3D renderer unavailable; 3D will be blank\n");
-		GPU->Change3DRendererByID(RENDERID_NULL);
+		sRendererId = RENDERID_SOFTRASTERIZER;
+		if (!GPU->Change3DRendererByID(sRendererId))
+		{
+			g_printerr("GTK4: software 3D renderer unavailable; 3D will be blank\n");
+			GPU->Change3DRendererByID(RENDERID_NULL);
+			sRendererId = RENDERID_NULL;
+		}
 	}
 
 	if (sFramePool == NULL)
