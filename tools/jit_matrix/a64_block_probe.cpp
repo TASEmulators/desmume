@@ -592,6 +592,113 @@ static void run_qsat_model()
 	g_fail += fail;
 }
 
+// --- marginal code size -------------------------------------------------
+// `--marginal` compiles the same block twice, once with one extra guest
+// instruction, and reports the byte difference. Prologue, epilogue and cycle
+// accounting are identical in both compiles, so the delta is that
+// instruction's marginal host cost. It is the arm64 counterpart of the x86
+// harness's `--block --slot` measurement, and it runs on the device.
+struct MarginalCase
+{
+	const char *name;
+	bool thumb;
+	u32 prefix[4];
+	int nprefix;
+	u32 target;
+	u32 ops[16];
+};
+
+static int compile_size(u32 adr, const u32 *words, int n, const u32 *ops, bool thumb)
+{
+	const u32 base = adr & _MMU_MAIN_MEM_MASK32;
+	for (int k = 0; k < n; k++)
+	{
+		if (thumb)
+			*(u16 *)(MMU.MAIN_MEM + base + 2 * k) = (u16)words[k];
+		else
+			*(u32 *)(MMU.MAIN_MEM + base + 4 * k) = words[k];
+	}
+
+	CommonSettings.jit_max_block_size = n;
+	g_thumb_pipe = thumb;
+	prime_cpu(adr, words[0], ops, thumb ? kCpsrThumb : kCpsrInit);
+	arm_jit_compile<0>();
+	CommonSettings.jit_max_block_size = 1;
+	g_thumb_pipe = false;
+
+	if ((ArmOpCompiled)JIT_COMPILED_FUNC(adr, 0) == (ArmOpCompiled)interp_stub)
+		return -1;
+	return g_TOTALBYTES;
+}
+
+static int run_marginal()
+{
+	// Both compiles end with this cheap, non-branch instruction, so the
+	// per-block "last instruction" handling cancels instead of being charged
+	// to the target.
+	const u32 kTailArm = 0xE1A00000u;   // mov r0,r0
+	const u32 kTailThumb = 0x1C00u;     // adds r0,r0,#0
+
+	static const MarginalCase list[] = {
+		// ALU: the S forms pay for the flag export, the plain ones do not. The
+		// pair is what makes "Thumb is more expensive" measurable instead of
+		// anecdotal -- `adds` is the only form Thumb has.
+		{ "arm  add r0,#1",                    false, {0}, 0, 0xE2800001u, {0} },
+		{ "arm  adds r0,#1",                   false, {0}, 0, 0xE2900001u, {0} },
+		{ "arm  cmp r0,#0",                    false, {0}, 0, 0xE3500000u, {0} },
+		{ "arm  ldr r0,[r1,#4]",               false, {0}, 0, 0xE5910004u, {0, 0x02003000u} },
+		{ "arm  ldr r0,[r1,r2]  R2 cold",      false, {0}, 0, 0xE7910002u, {0, 0x02003000u, 4} },
+		{ "arm  ldr r0,[r1,r2]  R2 dirty",     false, {0xE2822004u}, 1, 0xE7910002u, {0, 0x02003000u} },
+		{ "arm  ldr r0,[r1,r2,lsl #2] dirty",  false, {0xE2822001u}, 1, 0xE7910102u, {0, 0x02003000u, 0} },
+		// Stores carry the DMA early-exit check, whose cold path is emitted
+		// inline in every block that stores. Its size is part of this number
+		// even though only three instructions of it ever execute.
+		{ "arm  str r0,[r1,r2]  R2 dirty",     false, {0xE2822004u}, 1, 0xE7810002u, {0xDEADBEEFu, 0x02003000u} },
+		{ "arm  add r0,r0,r2,lsl #2  dirty",   false, {0xE2822004u}, 1, 0xE0800102u, {0x11111111u} },
+		{ "arm  ldrd r0,[r1,r2] R2 dirty",     false, {0xE2822004u}, 1, 0xE18100D2u, {0, 0x02003000u} },
+		{ "arm  swp r0,r2,[r1]  R1 dirty",     false, {0xE2811004u}, 1, 0xE1010092u, {0, 0x02003000u, 0xCAFEBABEu} },
+		{ "thumb adds r0,#1",                  true,  {0}, 0, 0x3001u, {0} },
+		{ "thumb cmp r0,#0",                   true,  {0}, 0, 0x2800u, {0} },
+		{ "thumb ldr r0,[r1,#4]",              true,  {0}, 0, 0x6848u, {0, 0x02003000u} },
+		{ "thumb ldr r0,[r1,r2]  R2 dirty",    true,  {0x3200u}, 1, 0x5888u, {0, 0x02003000u, 4} },
+	};
+
+	u32 adr = kCodeBase + 0x60000u;
+	int failed = 0;
+	printf("# marginal host cost (block with target minus block without it)\n");
+	for (size_t i = 0; i < sizeof(list) / sizeof(list[0]); i++)
+	{
+		const MarginalCase &c = list[i];
+		u32 base_words[8] = {0}, full_words[8] = {0};
+		int n = 0;
+		for (int k = 0; k < c.nprefix; k++)
+			base_words[n++] = c.prefix[k];
+		memcpy(full_words, base_words, sizeof(u32) * n);
+		full_words[n] = c.target;
+		full_words[n + 1] = c.thumb ? kTailThumb : kTailArm;
+		base_words[n] = c.thumb ? kTailThumb : kTailArm;
+
+		const int base_size = compile_size(adr, base_words, n + 1, c.ops, c.thumb);
+		adr += 0x100;
+		const int full_size = compile_size(adr, full_words, n + 2, c.ops, c.thumb);
+		adr += 0x100;
+
+		if (base_size < 0 || full_size < 0)
+		{
+			printf("%-38s FAILED TO COMPILE\n", c.name);
+			failed++;
+			continue;
+		}
+
+		const int delta = full_size - base_size;
+		printf("%-38s %4d bytes  %5.1f host insns   (%d -> %d)\n",
+		       c.name, delta, delta / 4.0, base_size, full_size);
+	}
+
+	arm_jit_reset(true, true);
+	return failed ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
 	// --dump N prints the words of case N's block instead of running the suite.
@@ -613,6 +720,11 @@ int main(int argc, char **argv)
 
 	CommonSettings.jit_max_block_size = 1;   // one instruction per block
 	arm_jit_reset(true, true);
+
+	// `--marginal` is a measurement, not a test: it compiles two blocks per
+	// entry and prints the byte delta, then exits.
+	if (argc > 1 && strcmp(argv[1], "--marginal") == 0)
+		return run_marginal();
 
 		printf("# a64 block execution: %u single-instruction blocks\n", (unsigned)kCaseCount);
 
@@ -969,6 +1081,22 @@ int main(int argc, char **argv)
 			{ "add r4,#1 ; stmia {r4}",   {0xE2844001u,0xE8800010u}, 2, {kDataAdr,0,0,0,0x40000000u}, {0,0}, -1, 0,  0, 0x40000001u },
 			{ "add r4,#1 ; stmdb r0!",    {0xE2844001u,0xE9200010u}, 2, {kDataAdr + 4,0,0,0,0x40000000u}, {0,0}, -1, 0, 0, 0x40000001u },
 			{ "add r1,#4 ; ldmia {r2}",   {0xE2811004u,0xE8B10004u}, 2, {0,B}, {0x11223344u,0x55667788u}, 2, 0x55667788u, -1, 0 },
+			// Register-offset forms where Rm is the result of the previous
+			// instruction. Before the cache-aware Rm change these evicted the
+			// dirty slot to memory and loaded it straight back; the values
+			// below are the same either way, which is the point.
+			{ "add r2,#4 ; ldr [r1,r2]",  {0xE2822004u,0xE7910002u}, 2, {0,B,0}, {0x11223344u,0x55667788u}, 0, 0x55667788u, -1, 0 },
+			{ "add r2,#1 ; ldr [r1,r2,lsl#2]", {0xE2822001u,0xE7910102u}, 2, {0,B,0}, {0x11223344u,0x55667788u}, 0, 0x55667788u, -1, 0 },
+			{ "add r2,#4 ; str [r1,r2]",  {0xE2822004u,0xE7810002u}, 2, {D,B,0}, {0,0},                      -1, 0,           1, D },
+			{ "add r2,#4 ; add r0,r0,r2,lsl#2", {0xE2822004u,0xE0800102u}, 2, {0x11111111u,B,0}, {0,0},        0, 0x11111121u,  -1, 0 },
+			// LDRD/STRD and SWP took the same treatment later: Rm (and SWP's
+			// base) are plain reads, so they come out of a slot instead of being
+			// evicted and reloaded. The pair/base write-backs still go through
+			// armcpu_t, which is why Rd stays on the memory path.
+			{ "add r2,#4 ; ldrd r0,[r1,r2]",  {0xE2822004u,0xE18100D2u}, 2, {0,B,0}, {0x11223344u,0x55667788u}, 0, 0x55667788u, -1, 0 },
+			{ "add r2,#4 ; strd r0,[r1,r2]",  {0xE2822004u,0xE18100F2u}, 2, {D,B,0}, {0,0},                      -1, 0,           1, D },
+			{ "add r4,#4 ; ldrd r2,[r1,r4]!", {0xE2844004u,0xE1A120D4u}, 2, {0,B,0}, {0x11223344u,0x55667788u}, 2, 0x55667788u, -1, 0 },
+			{ "add r1,#4 ; swp r0,r2,[r1]",   {0xE2811004u,0xE1010092u}, 2, {0,B,0xCAFEBABEu}, {0x11223344u,0x55667788u}, 0, 0x55667788u, 1, 0xCAFEBABEu },
 			// Base in the list: the write-back value is the one ARM leaves
 			// unspecified. Printed, not asserted -- it needs the interpreter as
 			// the oracle, which this probe cannot link (see the doc note).
@@ -1079,6 +1207,7 @@ int main(int argc, char **argv)
 		#define TX(nm, op, set, d, w)        { nm, {(u16)(op)}, 1, set, kCpsrThumb, d, w }
 		#define TF(nm, op, set, cs)          { nm, {(u16)(op)}, 1, set, cs, -1, 0 }
 		#define T2(nm, a, b, set)            { nm, {(u16)(a), (u16)(b)}, 2, set, kCpsrThumb, -1, 0 }
+		#define T2X(nm, a, b, set, d, w)     { nm, {(u16)(a), (u16)(b)}, 2, set, kCpsrThumb, d, w }
 
 		static const ThumbCase tc[] = {
 			// --- shifts -----------------------------------------------------
@@ -1177,6 +1306,10 @@ int main(int argc, char **argv)
 			T2("adds r0,#1 ; push {r0}", 0x3001u, 0xB401u, tA),
 			T2("sub sp,#8 ; push {r0}", 0xB082u, 0xB401u, tA),
 			T2("adds r1,#4 ; ldr r0,[r1]", 0x3104u, 0x6808u, tMem),
+			// Same dirty-Rm case as the ARM table above: R2 is written by the
+			// first instruction and read as the LDR/STR offset by the second.
+			T2X("adds r2,#0 ; ldr r0,[r1,r2]", 0x3200u, 0x5888u, tMem, 0, 0x80008000u),
+			T2("adds r2,#0 ; str r0,[r1,r2]",  0x3200u, 0x5088u, tMem),
 		};
 
 		// Stack window: PUSH writes below SP, POP and the SP-relative forms read
