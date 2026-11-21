@@ -4,7 +4,7 @@
 > 迁移目标：`desmume/src/frontend/posix/gtk4/`（新增目录，GTK4）
 > 原则：**`gtk/` 一行不改，保持可编译、可发布**；所有新工作只进 `gtk4/`
 > 基线版本：**GTK ≥ 4.10**（理由见 §3 D2），实际验证目标 4.14+
-> 状态：P0/P1/P2/P3a–P3c 已完成；P4 工具部分完成（IO registers / RAM Watch / RAM Search 已落地）；录制/金手指与 P5–P8 待做（§14）
+> 状态：P0/P1/P2/P3a–P3c 已完成；P4 工具全部完成（IO registers / RAM Watch / RAM Search / Play·Record Movie / Lua 控制台）；金手指窗口与 P5–P8 待做（§14）
 > 日期：2026-11-20
 
 ---
@@ -976,7 +976,7 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 | P3a 核心/主循环 | **已完成** | `emulation.cpp` 桥接核心：异步 ROM 选择、60 Hz 主线程帧回调、真实帧推送、键盘/触摸输入 |
 | P3b 动作/最近文件 | **核心动作已完成** | Reset / Close ROM / 10 槽即时存读档（F1–F10、Shift+F1–F10）/ 截图（Ctrl+S）；GTask 后台加载 ROM；自维护最近 ROM（GKeyFile）。录制/电影回放仍在后续阶段 |
 | P3c 视图控制 | **已完成** | 5 种 LCD 布局（Ctrl+0/1/2/3/4）、交换屏幕（Space）、4 档旋转、屏幕间隙；从 config 恢复并持久化；P2b 的 `DesmumeDisplay` setter 经菜单动作首次暴露给用户 |
-| P4 工具 | **进行中** | IO registers / RAM Watch / RAM Search 已迁移（ColumnView + DropDown + GtkFileDialog/AlertDialog）；moviePlay/Record、Lua 控制台未开始 |
+| P4 工具 | 已完成 | IO registers / RAM Watch / RAM Search / Play·Record Movie / Lua 控制台全部落地；金手指窗口属 P5 |
 | P5 金手指 | 未开始 | |
 | P6 性能 | 未开始 | |
 | P7 wgpu | 未开始（必做） | |
@@ -1224,6 +1224,22 @@ ramwatch 的 editor 两处 entry 已全部切过去。
 
 验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume` 全绿（234/234，编译链接无新增警告）；
 切 `-Dfrontend-gtk=gtk3` 后 GTK3 + CLI 248/248 无回归，再切回 gtk4 重链通过。
+
+### P4b 已落地内容（2026-11-21）
+
+| 路径 | 说明 |
+|---|---|
+| `posix/gtk4/tools/movie.{h,cpp}` | Play/Record 两个模态式表单窗口；`GtkFileDialog` 异步选文件；`GtkAlertDialog` 报错；共享 `movie_info_core.cpp` 做 DSM 头解析/比对/评论改写； GTK 4.24 已移除 `gtk_radio_button_*`（用 `GtkCheckButton` + `set_group`）与 `gtk_calendar_select_month/day`（用 `gtk_calendar_set_date(GDateTime*)`） |
+| `posix/gtk4/tools/luaScriptConsole.{h,cpp}` | Lua 控制台：多窗口（uid→console map）、inotify 文件监听 + 重载、`GtkDropTarget` 拖入脚本、`GtkFileDialog` 浏览、`GtkAlertDialog` About；`OpenLuaContext` 的 print/onstart/onstop 回调经 `G_PRIORITY_DEFAULT` idle 回主线程；引擎 UI hooks（popup/openscript/输入/菜单）未安装，走 `lua-engine.h` 的平台中立 fallback（CLI/GTK2 同款） |
+| `posix/gtk4/emulation.{h,cpp}` | 新增 `desmume_emu_load_movie/save_movie/stop_movie/movie_active/rom_base_name` 桥接；播放前自动暂停；`FCEUI_SaveMovie` 的 UTF-8→`std::wstring` 转换复用 `utils/xstring.h` 的 `mbstowcs()` |
+| `posix/gtk4/main.{cpp}`, `menu.ui` | `app.playmovie/recordmovie/stopmovie` 与 `app.luaconsole/closeluascripts/aboutlua`（后者 `#if HAVE_LUA`）；`stopmovie` 随 movieMode 启停；Tools 菜单加两组条目 |
+
+**Lua 控制台边界**：`emu.openscript()`、`gui.*` 弹窗、Lua 动态菜单、输入状态查询走引擎 fallback，
+没有 GTK4 专属实现（GTK3 的 `GtkLua_*` 主机回调未迁移）。脚本的 Run/Stop/print/文件监听/DnD 均可用。
+这部分若要对齐 GTK3，需要先补 §4.8 的主循环泵与输入/菜单桥接，属独立后续项。
+
+**Movie 工具边界**：`Import Backup Memory`（导入 .dsv）未迁移；表只读字段按 GTK4 精简为 ROM/Firmware 两项。
+播放/录制需要带 ROM 与显示环境实机验收；本机无显示服务与 ROM，未做运行时验证。
 
 ---
 

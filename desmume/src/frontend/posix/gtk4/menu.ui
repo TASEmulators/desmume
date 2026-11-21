@@ -374,6 +374,34 @@
           <attribute name='target' type='u'>2</attribute>
         </item>
       </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Play Movie…</attribute>
+          <attribute name='action'>app.playmovie</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Record Movie…</attribute>
+          <attribute name='action'>app.recordmovie</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Stop Movie</attribute>
+          <attribute name='action'>app.stopmovie</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Lua Script Console</attribute>
+          <attribute name='action'>app.luaconsole</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Close All Lua Scripts</attribute>
+          <attribute name='action'>app.closeluascripts</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_About Lua Scripting</attribute>
+          <attribute name='action'>app.aboutlua</attribute>
+        </item>
+      </section>
     </submenu>
 
     <submenu>

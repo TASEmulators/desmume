@@ -40,6 +40,10 @@
 #include "display.h"
 #include "emulation.h"
 #include "tools.h"
+#include "tools/movie.h"
+#if defined(HAVE_LUA)
+#include "tools/luaScriptConsole.h"
+#endif
 
 #if defined(HAVE_GTK4_WAYLAND)
 #include <gdk/wayland/gdkwayland.h>
@@ -1316,6 +1320,72 @@ static void ActionTool(GSimpleAction *action, GVariant *parameter, gpointer user
 	desmume_tools_open(index);
 }
 
+/* ---- movie actions (P4b) --------------------------------------------- */
+
+static void
+UpdateMovieActions(void)
+{
+	GSimpleAction *stop = G_SIMPLE_ACTION(
+		g_action_map_lookup_action(G_ACTION_MAP(pApp), "stopmovie"));
+	if (stop != NULL)
+	{
+		g_simple_action_set_enabled(stop, desmume_emu_movie_active());
+	}
+}
+
+static void ActionPlayMovie(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+	desmume_movie_play_dialog_show(GTK_WINDOW(pWindow));
+	UpdateMovieActions();
+}
+
+static void ActionRecordMovie(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+	desmume_movie_record_dialog_show(GTK_WINDOW(pWindow));
+	UpdateMovieActions();
+}
+
+static void ActionStopMovie(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+	desmume_emu_stop_movie();
+	UpdateMovieActions();
+}
+
+#if defined(HAVE_LUA)
+static void ActionLuaConsole(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+	lua_script_open_console(GTK_WINDOW(pWindow));
+}
+
+static void ActionCloseLuaScripts(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+	lua_script_close_all();
+}
+
+static void ActionAboutLua(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+	lua_script_show_about(GTK_WINDOW(pWindow));
+}
+#endif
+
 static const GActionEntry app_entries[] =
 {
 	/* Names match gtk/menu.ui so menu items can be enabled phase by phase. */
@@ -1342,8 +1412,16 @@ static const GActionEntry app_entries[] =
 	{ "gap",            NULL,             NULL, "false", GapChanged },
 	{ "view-menu",      NULL,             NULL, "true", MenuBarChanged },
 	{ "view-toolbar",   NULL,             NULL, "true", ToolbarChanged },
-	{ "view-statusbar", NULL,             NULL, "true", StatusbarChanged },
-	{ "tool",           ActionTool,       "u",  NULL,   NULL }
+	{ "view-statusbar",  NULL,             NULL, "true", StatusbarChanged },
+	{ "tool",           ActionTool,       "u",  NULL,   NULL },
+	{ "playmovie",      ActionPlayMovie,  NULL, NULL,   NULL },
+	{ "recordmovie",    ActionRecordMovie, NULL, NULL,  NULL },
+	{ "stopmovie",      ActionStopMovie,  NULL, NULL,   NULL }
+#if defined(HAVE_LUA)
+	, { "luaconsole",   ActionLuaConsole, NULL, NULL,   NULL }
+	, { "closeluascripts", ActionCloseLuaScripts, NULL, NULL, NULL }
+	, { "aboutlua",     ActionAboutLua,   NULL, NULL,   NULL }
+#endif
 };
 
 static GtkWidget *MakeToolButton(const char *icon_name, const char *tooltip, const char *action_name)
@@ -1589,6 +1667,9 @@ int main(int argc, char *argv[])
 	g_action_map_add_action_entries(G_ACTION_MAP(app),
 	                                app_entries, G_N_ELEMENTS(app_entries),
 	                                app);
+
+	/* Stop Movie is only meaningful while playback/recording is active. */
+	UpdateMovieActions();
 
 	static const char *open_accels[] = { "<Control>o", NULL };
 	static const char *quit_accels[] = { "<Control>q", NULL };

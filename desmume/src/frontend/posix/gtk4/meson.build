@@ -35,14 +35,17 @@ desmume_src = [
   '../../shared/ram_debug_core.cpp',
   '../../shared/ramwatch_core.cpp',
   '../../shared/ram_search_core.cpp',
+  '../../shared/movie_info_core.cpp',
   'config.cpp',
   'display.cpp',
   'emulation.cpp',
   'main.cpp',
   'tools.cpp',
+  'tools/movie.cpp',
   'tools/ioregs.cpp',
   'tools/ramwatch.cpp',
   'tools/ramsearch.cpp',
+  'tools/luaScriptConsole.cpp',
   'tools/rowmodel.cpp',
 ] + gresource
 

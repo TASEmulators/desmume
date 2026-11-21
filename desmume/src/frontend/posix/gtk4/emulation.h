@@ -96,6 +96,35 @@ guint32 desmume_emu_read_ioreg(int cpu, DesmumeIOReg reg);
 gboolean desmume_emu_add_cheat(guint32 address, int sizeInBytes, guint32 value,
                                const char *description, char **error_message);
 
+/* ---- movie playback / recording (P4b) -------------------------------- */
+
+/* Start-from modes mirror START_FROM in movie.h; kept as an enum here so the
+ * GTK layer never has to include the core header. */
+typedef enum
+{
+	DESMUME_MOVIE_START_BLANK = 0,
+	DESMUME_MOVIE_START_SRAM = 1,
+	DESMUME_MOVIE_START_SAVESTATE = 2
+} DesmumeMovieStartFrom;
+
+/* All functions return TRUE on success; on failure *error_message receives an
+ * owned UTF-8 string when requested.  A movie must only be started with a ROM
+ * loaded; StopMovie is always safe. */
+gboolean desmume_emu_load_movie(const char *path, gboolean read_only,
+                                int pause_frame, char **error_message);
+gboolean desmume_emu_save_movie(const char *path, const char *author,
+                                DesmumeMovieStartFrom start_from,
+                                const char *sram_path,
+                                int year, int month, int day,
+                                int hour, int minute, int second,
+                                const char *description, char **error_message);
+void desmume_emu_stop_movie(void);
+gboolean desmume_emu_movie_active(void);
+
+/* Base name of the loaded ROM path without its extension, or "" when no ROM
+ * is loaded.  Owned string; used to seed movie file names. */
+char *desmume_emu_rom_base_name(void);
+
 /* Keyvals use the GTK3 default keymap.  Touch coordinates are in NDS logical
  * space (0..255 / 0..191), exactly what DesmumeDisplay's signals emit. */
 void desmume_emu_set_key(guint keyval, gboolean pressed);

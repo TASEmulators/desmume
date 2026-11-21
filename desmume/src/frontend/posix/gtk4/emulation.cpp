@@ -29,6 +29,10 @@
 #include "rasterize.h"
 #include "saves.h"
 #include "cheatSystem.h"
+#include "movie.h"
+#include "utils/datetime.h"
+#include "utils/xstring.h"
+#include "path.h"
 #include "../../shared/ram_debug_core.h"
 #include "filter/videofilter.h"
 #include "utils/colorspacehandler/colorspacehandler.h"
@@ -151,7 +155,96 @@ desmume_emu_add_cheat(guint32 address, int sizeInBytes, guint32 value,
 	return TRUE;
 }
 
-/* ----------------------------------------------------------- key / touch */
+/* --------------------------------------------------------- movie (P4b) */
+
+static gboolean
+copy_movie_error(const char *error, char **error_message)
+{
+	if (error_message != NULL)
+	{
+		*error_message = (error != NULL) ? g_strdup(error) : NULL;
+	}
+	return error == NULL;
+}
+
+gboolean
+desmume_emu_load_movie(const char *path, gboolean read_only,
+                       int pause_frame, char **error_message)
+{
+	if (!sHasROM || (path == NULL))
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("Load a ROM before playing a movie.");
+		}
+		return FALSE;
+	}
+	/* Pause emulation while the movie takes over the frame loop. */
+	desmume_emu_set_running(FALSE);
+	const char *error = FCEUI_LoadMovie(path, read_only != FALSE, false, pause_frame);
+	return copy_movie_error(error, error_message);
+}
+
+gboolean
+desmume_emu_save_movie(const char *path, const char *author,
+                       DesmumeMovieStartFrom start_from, const char *sram_path,
+                       int year, int month, int day,
+                       int hour, int minute, int second,
+                       const char *description, char **error_message)
+{
+	if (!sHasROM || (path == NULL))
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("Load a ROM before recording a movie.");
+		}
+		return FALSE;
+	}
+
+	const START_FROM from = (start_from == DESMUME_MOVIE_START_SRAM)
+		? START_SRAM
+		: (start_from == DESMUME_MOVIE_START_SAVESTATE) ? START_SAVESTATE : START_BLANK;
+	const DateTime rtc(year, month, day, hour, minute, second);
+	const std::wstring wideAuthor = mbstowcs(author != NULL ? author : "");
+	const std::wstring wideDescription = mbstowcs(description != NULL ? description : "");
+	const char *error = FCEUI_SaveMovie(path, wideAuthor, from,
+	                                    sram_path != NULL ? sram_path : "",
+	                                    rtc, wideDescription);
+	return copy_movie_error(error, error_message);
+}
+
+void
+desmume_emu_stop_movie(void)
+{
+	FCEUI_StopMovie();
+}
+
+gboolean
+desmume_emu_movie_active(void)
+{
+	return (movieMode == MOVIEMODE_PLAY || movieMode == MOVIEMODE_RECORD)
+		? TRUE : FALSE;
+}
+
+char *
+desmume_emu_rom_base_name(void)
+{
+	if (!sHasROM || (sRomName == NULL))
+	{
+		return g_strdup("");
+	}
+	char *base = g_path_get_basename(sRomName);
+	char *dot = g_strrstr(base, ".");
+	if (dot != NULL)
+	{
+		*dot = '\0';
+	}
+	char *result = g_strdup(base);
+	g_free(base);
+	return result;
+}
+
+/* ------------------------------------------------------------- key / touch */
 
 static void
 apply_keys(void)
