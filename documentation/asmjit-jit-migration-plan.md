@@ -1488,8 +1488,8 @@ TST/TEQ/CMP/CMN/MOV/MOV_S 这类单源/比较指令则直接把原有的 `if(rhs
 | 16 指令块（8 个槽位样本） | 852–1044 字节 | 788–980 字节 | 约 −64 字节/块（−7.5%） |
 | 全量代码总字节 | 12,117,704 | 12,101,320 | −16,384（−0.14%） |
 
-收益小于族 1 是设计使然：Rm/Rs 仍走内存（arg 宏未改），只有 Rn/Rd 享受跨指令复用；
-3 槽缓存容不下 Rd/Rn/Rm/Rs 四个同时驻留。
+收益小于族 1 是设计使然：本批只让 Rn/Rd 享受跨指令复用，Rm/Rs 当时仍走内存（`arg`
+宏未改）。**这一项已在 §10.10 补齐**（`read_into()` 不占槽，所以 3 槽仍够用）。
 
 **验证**：每一批（无 S IMM → 无 S REG → 算术 S → 逻辑 S → ADC/SBC/RSC → 比较/移动类）
 都重建并跑 `--full`，功能桶（R0–R14 / CPSR / `instruct_adr` / invariant / engine fault）全 0；
@@ -2401,3 +2401,68 @@ prime 后的 R0），harness 只比寄存器状态，不受内存副作用干扰
 **经验（写进流程）**：差分前必须核对 `desmume_core.lib` 的时间戳 ≥ 所有 JIT 源的最后
 提交时间；否则"全绿"验证的是过期二进制。改 harness 或核心源后要同时重编核心库、
 重链 harness。
+
+### 10.10 族 2 补刀：Rm/Rs 进缓存 + 边际成本基线（2026-11-21）
+
+**背景**：§S4 族 2 的收益只有族 1 的一半，原因写在该小节里——`arg` 宏仍用
+`reg_pos_ptr()` 读 Rm（寄存器移位形式还有 Rs），而 3 槽缓存容不下 Rd/Rn/Rm/Rs 四个。
+但 Rm/Rs 和前两者形状不同：它们只被读一次就进固定 scratch（`rhs_reg` / `imm_reg`），
+不需要跨指令驻留。`ArmRegCache::read_into()`（族 5 为乘法加的入口）正好是这个形状：
+槽里有最新值就 `mov`，否则发与内存路径相同的 `ldr`，且**不占槽**。
+
+**改法**：
+
+| 位置 | 改前 | 改后 |
+|---|---|---|
+| `LSL/LSR/ASR/ROR_IMM`、`REG_OFF` 及 S 变体（10 个宏） | `reg_pos_ptr(0, rhs_reg, VALUE)` | `rc_read(REG_POS(i,0), rhs_reg)` |
+| `LSX_REG` / `S_LSX_REG` / `ROR_REG` / `S_ROR_REG`（4 个宏） | `reg_pos_ptrB(8, imm_reg, VALUE)` | `rc_read(REG_POS(i,8), imm_reg)` |
+| `LDRD/STRD` 寄存器偏移（POST/PRE 两处） | `reg_pos_ptr(0, idx, VALUE)` | `rc_read(REG_POS(i,0), idx)` |
+| `SWP/SWPB` 基址 | `reg_pos_ptr(16, addr, VALUE)` | `rc_read(REG_POS(i,16), addr)` |
+
+寄存器移位量原来按**字节**读（`reg_pos_ptrB`），现在按 dword 读：`emit_lsl_reg()` 等
+在用它之前都做了 `& 0xff` / `& 0x1f`，高位是死值。Rd 仍走内存（helper 通过 `u32*`
+写回），R15 仍走内存（规则 1），写回/列表类写操作仍先 evict（规则 4）。
+
+**验证（真机 aarch64 / Termux）**：
+
+| 项 | 结果 |
+|---|---|
+| `a64_block_probe` 全量 | **904 checks / 0 failed**（访存表新增 4 例） |
+| 改前 vs 改后的整份输出 | **逐字节相同**（`diff` 无输出；含 R0–R14 / CPSR / cycles / 内存 / resume 地址） |
+| `--marginal`：`ldrd r0,[r1,r2]`（R2 脏） | 124 → **120 字节（31 → 30 条）** |
+| `--marginal`：`swp r0,r2,[r1]`（R1 脏） | 224 → 224；转储里 `ldr w2,[x25,#4]` 变成 `mov w2,w12`，块尺寸被同一块的别处抵消 |
+| 本机语法门 | `clang++ -fsyntax-only`（x86_64 主机，`-DASMJIT_NO_X86`）exit=0 |
+
+**新增工具：`--marginal`**（`tools/jit_matrix/a64_block_probe.cpp`）。同一块编译两次，
+第二次多一条目标指令，差值就是该指令的边际 host 代码尺寸——x86 侧 `--block --slot`
+的 arm64 对应物，而且能在真机上跑。基线（2026-11-21）：
+
+| 用例 | 边际 | 说明 |
+|---|---|---|
+| `arm add r0,#1` | 4 条 | 无 S：只有 Rm 拷贝 + ALU |
+| `arm adds r0,#1` | 9 条 | +`SET_NZCV`（`mrs`/`ldr`/`lsr`/`bfxil`/`strb`） |
+| `arm cmp r0,#0` | 8 条 | 同上，少一条写目的 |
+| `thumb adds r0,#1` | 8 条 | Thumb 的 ALU 一律带 S |
+| `thumb cmp r0,#0` | 7 条 | |
+| `arm ldr r0,[r1,#4]` | 17 条 | |
+| `arm ldr r0,[r1,r2]`（R2 冷 / 脏） | 18 / 18 条 | 脏 Rm 不再多花 store+load |
+| `arm ldr r0,[r1,r2,lsl #2]`（脏） | 20 条 | |
+| `arm str r0,[r1,r2]`（脏） | 44 条 | 约 30 条是 `emit_dma_event_check` 的内联冷路径，实际只执行 3 条 |
+| `arm add r0,r0,r2,lsl #2`（脏） | 7 条 | |
+| `arm ldrd r0,[r1,r2]`（脏） | 30 条 | 本轮改动后 |
+| `arm swp r0,r2,[r1]`（脏） | 56 条 | |
+| `thumb ldr r0,[r1,#4]` | 14 条 | |
+| `thumb ldr r0,[r1,r2]`（脏） | 15 条 | |
+
+三条可直接用的结论：
+
+1. **S 位是 ALU 的主要成本**：`add` 4 条 vs `adds` 9 条，差值就是标志导出。§9.5 P2
+   （惰性标志）的收益上限由此可算——每条 S 指令最多能省 5 条 host 指令。
+2. **Thumb 的同语义 ALU 并不比 ARM 贵**：`thumb adds` 8 ≈ `arm adds` 9。Thumb 的差距
+   来自"每条都带 S"，不是编码导致。§9.5 P1 里"Thumb 比 ARM 贵"必须按同语义
+   （`adds` vs `adds`）比对，否则会高估。
+3. **`STR` 的 44 条不能当成执行成本**：冷路径只在 DMA 真的被触发时才执行。看性能要
+   把内联冷路径和热路径分开算。
+
+**未覆盖**：§10.5 的 macOS 三方差分仍待补——本节只增加真机块级等价性与代码尺寸证据，
+不替代 §8 的三方哈希；`--marginal` 量的是代码尺寸，不是执行成本。

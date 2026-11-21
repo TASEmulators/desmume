@@ -3,7 +3,8 @@
 > 本文把 `asmjit-jit-migration-plan.md`（下称「主文档」）中散落的未完成项集中成一份可勾选清单。
 > **主文档仍是权威来源**，本文是索引视图；状态变化时两处同步更新。
 >
-> 快照：2026-11-20，HEAD `fc6577ba` + 本轮未提交改动（x86 侧饱和算术内联，见主文档 §S4 族 7+8）。
+> 快照：2026-11-21，HEAD `76fcd6d2` + 本轮未提交改动（Rm/Rs 进缓存、LDRD/STRD/SWP 补刀、
+> `--marginal` 测量，见主文档 §10.10）。
 
 ## 当前进度快照
 
@@ -14,10 +15,10 @@
 | 族3 代码迁移 | **arm64 缓存接入完成**；x86 侧结构早已完成 |
 | **饱和算术（Q 系列）** | **两端都已内联**：arm64 见 §S4 族 7+8；x86 `arm_jit.cpp` 用同一份 DDI 0403E 语义（`seto` + `cmovnz`，两段饱和分别置 Q）。x86 侧 6 条 Q 探针 × 8 组操作数 × 2 种标志 = 704 次比较 0 mismatch，负对照（`cmovz`）确认探针有效 |
 | 访存差分安全网 | **本机已加固**（主文档 §10.8）：`kProbes` 新增 20 条访存定向探针，38/38 全绿 |
-| **arm64 handler 级真机验证** | `a64_block_probe` 170 个块（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + 37 访存 + **78 Thumb + 4 Q 指令 + 2 cp15**），**894 项自检全绿**（其中 768 组是 Q 系列对 ARM 伪代码的模型比对） |
+| **arm64 handler 级真机验证** | `a64_block_probe` **904 项自检全绿**（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + **41 访存** + 78 Thumb + 4 Q 指令 + 2 cp15）；其中访存表本轮新增 4 例（LDRD/STRD/SWP 的脏 Rm/基址），改前改后输出**逐字节相同** |
 | **helper 读 `armcpu_t` 的不变量** | `armcpu_switchMode()`（族 6）与 `OP_LDM_STM`/`OP_LDRD`/`op_swp`/Thumb 的 `PUSH`/`POP`/`STM`/`LDM`（族 7）都直接读写 `cpu->R[]`：**调用前必须把涉及的寄存器落盘**。族 7 把同一条规则套到 Thumb 的寄存器列表上（8 位掩码 + LR/PC 位） |
 | x64 fastmem | **已评估放弃**（主文档 §10.6），x64 保持现状 |
-| 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0（`R0-R14`/`CPSR`/`instruct_adr`/异常/不变量），仅周期差 12067 与既有 3 条 `jit not repeatable`；arm64 编码层 `check_a64` 4/241 已知基线差异（全部是 save/restore/startfunc/endfunc 的既有基线）；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` **894/894**（含 768 组 Q 对伪代码的模型比对） |
+| 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0（`R0-R14`/`CPSR`/`instruct_adr`/异常/不变量），仅周期差 12067 与既有 3 条 `jit not repeatable`；arm64 编码层 `check_a64` 4/241 已知基线差异（全部是 save/restore/startfunc/endfunc 的既有基线）；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` **904/904**（含 768 组 Q 对伪代码的模型比对）；arm64 后端另可在本机做 `clang++ -fsyntax-only` 语法门（x86_64 主机 + `-DASMJIT_NO_X86`） |
 | 未跟踪文件 | `issue.md`（会话开始前既有，不属本次迁移） |
 
 ---
@@ -31,8 +32,13 @@
 - [x] **handler 级真机验证通道（族 5 建立，族 6 扩展）**：`tools/jit_matrix/a64_block_probe.cpp` 直接 include `arm_jit_arm.cpp`、用 68 个桩符号补齐核心，在真机上执行 `compile_basicblock()` 生成的块。族 6 把其中的 `armcpu_switchMode` 桩换成**真正搬移 bank 的实现**（否则"缓存没 flush"这类 bug 一条都测不出来），并支持两指令块。**新增族时优先扩这个探针，而不是等 macOS。**
 - [ ] **§10.5/§10.7 访存差分（macOS / arm64）**：`build_diff_macos.sh` 重建后跑 `jit_diff --full`，确认访存槽位功能桶（R0–R14 / CPSR / `instruct_adr` / 内存写集）全 0。重点覆盖：LDR/STR 的 Rd==15 与写回变体、**LDRD/STRD 的 W 位写回、Thumb PUSH/POP、SWP、LDM/STM**。注意 macOS 的 `kProbes` 与本机同步后同样是 38 条。
 - [ ] **`ldmda`/`stmda` 的有效地址对解释器核对（新增，需 oracle）**：探针里这两条只做了 pin（迁移前后相同），没有断言——它们的地址推进跟 ARM ARM 的写法对不上，而块级探针链不到解释器，判不了谁对。macOS 上拿 `jit_diff` 的 LDM/STM 槽位对比即可定性；若 JIT 与解释器一致而与 ARM ARM 不一致，那是既有语义，另开 issue。
-- [ ] **带移位寄存器偏移的 LDR/STR 仍是全内存路径（新增）**：`ldr r0,[r1,r2,lsl #2]` 的 Rm 走 `reg_pos_ptr`（`arg` 宏与族 1/2 共用）。要提速得先让族 1/2 的 `rhs` 也吃缓存，属 §9.5 P3 的连带项。
-- [ ] **§10.5 代码体积**：`jit_diff --block --slot` 实测 LDR/STR 边际指令数，与 §10.5 推算的「下降约 25–40%」对照。
+- [x] **带移位寄存器偏移的 LDR/STR 已接缓存（2026-11-21 完成）**：移位 `arg` 宏（10 个
+  IMM/REG 变体）的 Rm/Rs 改用 `read_into()`——槽里有值就 `mov`，不占槽、不 evict；同一
+  形状的 `LDRD/STRD` 寄存器偏移与 `SWP/SWPB` 基址一并改掉。真机 904/904，改前改后输出
+  逐字节相同；`--marginal` 实测 `ldrd` 脏 Rm 从 31 → 30 条。详见主文档 §10.10。
+- [x] **§10.5 代码体积（arm64 侧已完成测量）**：`a64_block_probe --marginal` 在真机上量出
+  `ldr [r1,#4]` 17 条、`ldr [r1,r2]` 18 条（冷/脏同价）、`str [r1,r2]` 44 条（含 DMA 冷
+  路径）。§10.5 推算的「29 → 17~21」在 arm64 上成立。x86 侧仍需 `jit_diff --block --slot`。
 - [ ] **§10.5 整机 ROM**：花屏 / DMA 提前退出路径回归，确认缓存脏值在 helper 调用后未丢失。
   - 回退预案：任一族差分报错，把该族调用点单独换回 `callR3`/`callR7`（改动按族分点，回退粒度细）。
 - [ ] **§8 三方差分**：571 条 × 16 条件组 × 8 边界向量，`hash(interp) == hash(x86 JIT) == hash(arm64 JIT)`。
@@ -73,9 +79,21 @@
 
 ## 四、性能优化类
 
-- [ ] **§9.5 P1**：Thumb 现在已全部走缓存（族 7+8），但只是语义等价；Thumb 侧比 ARM 贵多少、缓存后省了多少，仍要 `jit_diff --block --slot` 实测。
-- [ ] **§9.5 P2**：死标志位消除 / 惰性标志 —— S 指令急切写标志，ALU 密集代码仍有冗余。
-- [ ] **§9.5 P3**：缓存扩到 4–6 槽，并覆盖 load/store 基址与数据 —— 当前 3 槽只够 ALU/移位，访存前必须 `evict`。
+> **代码尺寸基线（2026-11-21，真机 `a64_block_probe --marginal`）**：这是 x86
+> `--block --slot` 的 arm64 对应物，能量的是「该指令的边际 host 代码尺寸」。当前数字：
+> `add` 4 / `adds` 9 / `cmp` 8 / `ldr [r1,#4]` 17 / `ldr [r1,r2]` 18（冷脏同价）/
+> `str [r1,r2]` 44（含 DMA 冷路径，实际执行 3 条）/ `thumb adds` 8 / `thumb ldr` 14。
+> 完整表与三条结论见主文档 §10.10。
+
+- [ ] **§9.5 P1**：Thumb 已全部走缓存（族 7+8），`--marginal` 已有同语义对照：
+  `thumb adds` 8 条 ≈ `arm adds` 9 条，**同语义下 Thumb 并不更贵**；差距来自 Thumb 的
+  ALU 一律带 S。剩下要补的是整机帧率（不是代码尺寸）。
+- [ ] **§9.5 P2**：死标志位消除 / 惰性标志 —— S 指令急切写标志。`--marginal` 给出收益
+  上限：`add` 4 vs `adds` 9，即每条 S 最多可省 5 条 host 指令（`SET_NZCV` = `mrs` +
+  `ldr` 标志字节 + `lsr` + `bfxil` + `strb`）。
+- [x] **§9.5 P3（部分）**：load/store 的**基址与数据**已在族 3+4 接入 `rc_read`/`rc_store`，
+  寄存器偏移 Rm 与 SWP 基址在 §10.10 补齐；**不再需要扩到 4–6 槽**（`read_into()` 不占
+  槽）。仍走内存的只有 Rd(helper 经 `u32*` 写回)、R15 与列表类写回。
 - [ ] **§8/§S4 性能门槛**：ALU 密集场景 ≥1.3×（族 1 门槛）、≥1.5×（全量目标）——未测，代码尺寸门槛先失败。
 - [ ] **§8/§S4 帧率与编译**：x86 帧率 ±5%；冷启动 JIT 编译耗时 ≤1.2×；族 2 仍等整机帧率实测。
 - [ ] **§8 scratchpad/回收**：32MB scratchpad 行为未变（x86）/ 40MB 块回收路径未变（arm64）。
@@ -104,9 +122,9 @@
 ## 建议执行顺序
 
 1. **先 macOS 补测访存 15 个调用点**（§10.7）——当前唯一可能引入回归的未验证改动，优先排除风险。
-2. **继续迁移主线**：从族 3 访存语义迁移起步（C 组 206 组），但需先解决「x86 可差分、arm64 语义只能等 macOS」的验证不对称。
-3. **帧率门槛实测**：在族 1/2 上取解释器 / 旧 JIT / 迁移后 JIT 三组数字，确认 ALU 族真的 ≥1.3×，再决定是否继续推 571 条。
-4. **P1/P2/P3 优化** 与 **S7 收尾** 收口。
+2. **继续迁移主线**：从族 3 访存语义迁移起步（C 组 206 组），但需先解决「x86 可差分、arm64 语义只能等 macOS」的验证不对称。**该不对称已部分缓解**：`a64_block_probe` + `--marginal` 能在真机上给出等价性与代码尺寸，剩三方差分与整机帧率两块。
+3. **帧率门槛实测**：在族 1/2 上取解释器 / 旧 JIT / 迁移后 JIT 三组数字，确认 ALU 族真的 ≥1.3×，再决定是否继续推 571 条。代码尺寸一侧已可先用 `--marginal` 预判（§10.10 表）。
+4. **P1/P2/P3 优化** 与 **S7 收尾** 收口：P3 已按「不扩槽、用 `read_into()`」收口；P2 的收益上限由 `--marginal` 的 `add` 4 vs `adds` 9 直接给出。
 
 ---
 
