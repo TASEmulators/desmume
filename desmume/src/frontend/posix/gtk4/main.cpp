@@ -25,8 +25,11 @@
 	P1 adds the real menu model, the visibility toggles, a shortcuts window
 	and the semantic CSS, all from the gresource bundle.
 
-	ROM loading, the emulation loop, the display widget and the tools arrive in
-	later phases.  See documentation/gtk4.md for the phase plan.
+	P3a adds the emulation core: asynchronous ROM selection, a 60 Hz frame
+	callback on the GTK main thread, real frames pushed into DesmumeDisplay and
+	keyboard/touch input forwarded to the core.  The remaining P3 work (the
+	other menu actions and their dialogs) and P4-P8 are tracked in
+	documentation/gtk4.md.
 */
 
 #include <gtk/gtk.h>
@@ -34,6 +37,7 @@
 
 #include "config.h"
 #include "display.h"
+#include "emulation.h"
 
 #if defined(HAVE_GTK4_WAYLAND)
 #include <gdk/wayland/gdkwayland.h>
@@ -68,7 +72,9 @@ static GtkWidget *pStatusLabel = NULL;
 static GtkWidget *pRunButton = NULL;
 static GtkWidget *pDisplayArea = NULL;
 
-static gboolean sRunning = FALSE;
+/* A ROM given on the command line is loaded once the window exists, so the
+ * status line and title can be updated through the normal path. */
+static char *sInitialRom = NULL;
 
 static void SetStatus(const char *text)
 {
@@ -139,9 +145,29 @@ static gboolean UseClientSideDecorations(void)
 	       (strstr(desktop, "Unity") != NULL);
 }
 
-/* P2 ships the display widget and its input plumbing; the emulated frames
- * arrive in P3 together with the main loop.  Set DESMUME_GTK4_TEST_FRAME=1
- * to feed a synthetic frame so the texture path can be exercised on its own. */
+/* The emulation core runs on the GTK main thread: one NDS frame per 60 Hz
+ * tick.  Without a ROM this is a no-op, so the callback can be installed once
+ * when the window is built and left running for the whole application. */
+static gboolean
+OnFrameTick(gpointer user_data)
+{
+	(void)user_data;
+
+	if (desmume_emu_get_running() && desmume_emu_has_rom())
+	{
+		desmume_emu_step();
+	}
+	return G_SOURCE_CONTINUE;
+}
+
+static void
+PushFrameToDisplay(const guchar *bgra, int width, int height, gpointer user_data)
+{
+	desmume_display_push_frame(DESMUME_DISPLAY(user_data), bgra, width, height);
+}
+
+/* DESMUME_GTK4_TEST_FRAME=1 still feeds a synthetic frame so the texture path
+ * can be exercised without a ROM. */
 static gboolean PushTestFrame(gpointer user_data)
 {
 	DesmumeDisplay *display = DESMUME_DISPLAY(user_data);
@@ -191,9 +217,46 @@ static void OnTouchPress(DesmumeDisplay *display, double x, double y, gpointer u
 	(void)display;
 	(void)user_data;
 
-	char *text = g_strdup_printf("Touch (%.0f, %.0f)", x, y);
-	SetStatus(text);
-	g_free(text);
+	if (!desmume_emu_has_rom())
+	{
+		return;
+	}
+
+	desmume_emu_touch(x, y);
+}
+
+static void OnTouchMove(DesmumeDisplay *display, double x, double y, gpointer user_data)
+{
+	OnTouchPress(display, x, y, user_data);
+}
+
+static void OnTouchRelease(DesmumeDisplay *display, gpointer user_data)
+{
+	(void)display;
+	(void)user_data;
+
+	desmume_emu_release_touch();
+}
+
+static void OnKeyEvent(DesmumeDisplay *display, guint keyval,
+                       gboolean pressed, gpointer user_data)
+{
+	(void)display;
+	(void)user_data;
+
+	desmume_emu_set_key(keyval, pressed);
+}
+
+static void OnAlertDone(GObject *source, GAsyncResult *result, gpointer user_data);
+
+static void ShowErrorAlert(const char *message)
+{
+	GtkAlertDialog *dialog = gtk_alert_dialog_new("DeSmuME");
+	gtk_alert_dialog_set_message(dialog, message);
+	static const char *buttons[] = { "OK", NULL };
+	gtk_alert_dialog_set_buttons(dialog, buttons);
+	gtk_alert_dialog_choose(dialog, GTK_WINDOW(pWindow), NULL, OnAlertDone, NULL);
+	g_object_unref(dialog);
 }
 
 static void OnAlertDone(GObject *source, GAsyncResult *result, gpointer user_data)
@@ -202,21 +265,96 @@ static void OnAlertDone(GObject *source, GAsyncResult *result, gpointer user_dat
 	(void)gtk_alert_dialog_choose_finish(GTK_ALERT_DIALOG(source), result, NULL);
 }
 
+static void
+RomLoaded(void)
+{
+	char *title = g_strdup_printf("%s - DeSmuME", desmume_emu_rom_name());
+	gtk_window_set_title(GTK_WINDOW(pWindow), title);
+	g_free(title);
+
+	if (pRunButton != NULL)
+	{
+		gtk_button_set_icon_name(GTK_BUTTON(pRunButton), "media-playback-pause-symbolic");
+		gtk_widget_set_tooltip_text(pRunButton, "Pause");
+	}
+
+	char *status = g_strdup_printf("Running: %s", desmume_emu_rom_name());
+	SetStatus(status);
+	g_free(status);
+}
+
+static gboolean
+LoadRomAndReport(const char *path)
+{
+	char *load_error = NULL;
+	if (!desmume_emu_load_rom(path, &load_error))
+	{
+		ShowErrorAlert(load_error != NULL ? load_error : "Could not open the ROM.");
+		g_free(load_error);
+		return FALSE;
+	}
+
+	RomLoaded();
+	return TRUE;
+}
+
+static void
+OnOpenDone(GObject *source, GAsyncResult *result, gpointer user_data)
+{
+	(void)user_data;
+
+	GError *error = NULL;
+	GFile *file = gtk_file_dialog_open_finish(GTK_FILE_DIALOG(source), result, &error);
+	if (file == NULL)
+	{
+		/* A cancelled dialog is not an error worth reporting. */
+		if ((error != NULL) &&
+		    !g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_DISMISSED))
+		{
+			ShowErrorAlert(error->message);
+		}
+		g_clear_error(&error);
+		return;
+	}
+
+	char *path = g_file_get_path(file);
+	g_object_unref(file);
+
+	if (path == NULL)
+	{
+		ShowErrorAlert("Only local files can be opened as a ROM.");
+		return;
+	}
+
+	LoadRomAndReport(path);
+	g_free(path);
+}
+
 static void ActionOpen(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
 	(void)action;
 	(void)parameter;
 	(void)user_data;
 
-	GtkAlertDialog *dialog = gtk_alert_dialog_new("ROM loading arrives in phase P3.");
-	gtk_alert_dialog_set_detail(dialog,
-	                            "This is the P0 window shell. The menu, toolbar, decoration "
-	                            "policy and display area are live; the emulation loop and the "
-	                            "GdkTexture display widget land in P2/P3.");
-	static const char *buttons[] = { "OK", NULL };
-	gtk_alert_dialog_set_buttons(dialog, buttons);
-	gtk_alert_dialog_choose(dialog, GTK_WINDOW(pWindow), NULL, OnAlertDone, NULL);
+	GtkFileDialog *dialog = gtk_file_dialog_new();
+	gtk_file_dialog_set_title(dialog, "Open Nintendo DS ROM");
+
+	GtkFileFilter *filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, "Nintendo DS ROMs");
+	gtk_file_filter_add_pattern(filter, "*.nds");
+	gtk_file_filter_add_pattern(filter, "*.NDS");
+	gtk_file_filter_add_pattern(filter, "*.rom");
+	gtk_file_filter_add_pattern(filter, "*.ROM");
+	gtk_file_filter_add_pattern(filter, "*.zip");
+
+	GListStore *filters = g_list_store_new(GTK_TYPE_FILE_FILTER);
+	g_list_store_append(filters, filter);
+	gtk_file_dialog_set_filters(dialog, G_LIST_MODEL(filters));
+
+	gtk_file_dialog_open(dialog, GTK_WINDOW(pWindow), NULL, OnOpenDone, NULL);
 	g_object_unref(dialog);
+	g_object_unref(filter);
+	g_object_unref(filters);
 }
 
 static void ActionQuit(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -238,17 +376,24 @@ static void ActionRun(GSimpleAction *action, GVariant *parameter, gpointer user_
 	(void)parameter;
 	(void)user_data;
 
-	sRunning = !sRunning;
+	if (!desmume_emu_has_rom())
+	{
+		SetStatus("Open a ROM first (Ctrl+O).");
+		return;
+	}
+
+	const gboolean now_running = !desmume_emu_get_running();
+	desmume_emu_set_running(now_running);
 
 	if (pRunButton != NULL)
 	{
 		gtk_button_set_icon_name(GTK_BUTTON(pRunButton),
-		                         sRunning ? "media-playback-pause-symbolic"
-		                                  : "media-playback-start-symbolic");
-		gtk_widget_set_tooltip_text(pRunButton, sRunning ? "Pause" : "Run");
+		                         now_running ? "media-playback-pause-symbolic"
+		                                     : "media-playback-start-symbolic");
+		gtk_widget_set_tooltip_text(pRunButton, now_running ? "Pause" : "Run");
 	}
 
-	SetStatus(sRunning ? "Running (skeleton)" : "Paused");
+	SetStatus(now_running ? "Running" : "Paused");
 }
 
 static void ActionFullscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -451,6 +596,9 @@ static void BuildWindow(GtkApplication *app)
 	gtk_widget_set_hexpand(pDisplayArea, TRUE);
 	gtk_widget_set_vexpand(pDisplayArea, TRUE);
 	g_signal_connect(pDisplayArea, "touch-press", G_CALLBACK(OnTouchPress), NULL);
+	g_signal_connect(pDisplayArea, "touch-move", G_CALLBACK(OnTouchMove), NULL);
+	g_signal_connect(pDisplayArea, "touch-release", G_CALLBACK(OnTouchRelease), NULL);
+	g_signal_connect(pDisplayArea, "key-event", G_CALLBACK(OnKeyEvent), NULL);
 	gtk_box_append(GTK_BOX(root), pDisplayArea);
 
 	pStatusBar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
@@ -519,6 +667,17 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 
 	gtk_window_present(GTK_WINDOW(pWindow));
 
+	desmume_emu_set_frame_sink(PushFrameToDisplay, pDisplayArea);
+	g_timeout_add(1000 / 60, OnFrameTick, NULL);
+
+	if (sInitialRom != NULL)
+	{
+		char *path = sInitialRom;
+		sInitialRom = NULL;
+		LoadRomAndReport(path);
+		g_free(path);
+	}
+
 	if (g_getenv("DESMUME_GTK4_TEST_FRAME") != NULL)
 	{
 		g_timeout_add(1000 / 60, PushTestFrame, pDisplayArea);
@@ -538,6 +697,19 @@ int main(int argc, char *argv[])
 	pConfig = new desmume::config::Config();
 	pConfig->load();
 
+	/* GtkApplication does not declare G_APPLICATION_HANDLES_OPEN, so a ROM on
+	 * the command line arrives as a plain argument.  Use the first existing
+	 * regular file and ignore anything else (GTK's own options included). */
+	for (int i = 1; i < argc; ++i)
+	{
+		if ((argv[i][0] != '-') && g_file_test(argv[i], G_FILE_TEST_IS_REGULAR))
+		{
+			g_free(sInitialRom);
+			sInitialRom = g_strdup(argv[i]);
+			break;
+		}
+	}
+
 	GtkApplication *app = gtk_application_new("org.desmume.DeSmuME.GTK4",
 	                                          DESMUME_APPLICATION_FLAGS);
 	g_signal_connect(app, "activate", G_CALLBACK(OnActivate), NULL);
@@ -556,6 +728,10 @@ int main(int argc, char *argv[])
 	gtk_application_set_accels_for_action(app, "app.fullscreen", fullscreen_accels);
 
 	const int status = g_application_run(G_APPLICATION(app), argc, argv);
+
+	desmume_emu_shutdown();
+	g_free(sInitialRom);
+	sInitialRom = NULL;
 
 	g_object_unref(app);
 	delete pConfig;

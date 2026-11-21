@@ -4,7 +4,7 @@
 > 迁移目标：`desmume/src/frontend/posix/gtk4/`（新增目录，GTK4）
 > 原则：**`gtk/` 一行不改，保持可编译、可发布**；所有新工作只进 `gtk4/`
 > 基线版本：**GTK ≥ 4.10**（理由见 §3 D2），实际验证目标 4.14+
-> 状态：P0/P1/P2 已完成；P3 待做（§14）
+> 状态：P0/P1/P2 已完成；P3a（核心与主循环）已完成，P3b（其余动作/对话框）待做（§14）
 > 日期：2026-11-20
 
 ---
@@ -972,8 +972,9 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 |---|---|---|
 | P0 骨架 | **进行中** | 目录、`frontend-gtk` 自动发现（gtk4→gtk3→gtk2）、最小窗口、CI |
 | P1 外壳/装饰 | **已完成** | gresource 菜单/快捷键/CSS、三个可见性开关、SSD/CSD 共用内容树；编译链接通过（§14） |
-| P2 显示/输入 | **已完成** | `DesmumeDisplay` + GdkTexture 呈现；混合布局/旋转/间隙逐项对齐 GTK3；帧池双缓冲；触控笔 + 键鼠输入。真实帧与主循环在 P3 接入 |
-| P3 对话框 | 未开始 | |
+| P2 显示/输入 | **已完成** | `DesmumeDisplay` + GdkTexture 呈现；混合布局/旋转/间隙逐项对齐 GTK3；帧池双缓冲；触控笔 + 键鼠输入。真实帧与主循环已在 P3a 接入 |
+| P3a 核心/主循环 | **已完成** | `emulation.cpp` 桥接核心：异步 ROM 选择、60 Hz 主线程帧回调、真实帧推送、键盘/触摸输入 |
+| P3b 对话框 | 未开始 | 其余 25 处动作/对话框异步化、最近文件、存档/截图/录制 |
 | P4 工具 | 未开始 | |
 | P5 金手指 | 未开始 | |
 | P6 性能 | 未开始 | |
@@ -1107,6 +1108,33 @@ P2a 的边界（P2b/P3 再做）→ 已在 P2b 收掉，见下。
 
 验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume` 全绿无警告；切到 `-Dfrontend-gtk=gtk3` 后
 `gtk/desmume` + `cli/desmume-cli` 26/26 构建通过（只有既有警告），再切回 gtk4 重新链接通过。
+
+### P3a 已落地内容（2026-11-21）
+
+新增 `posix/gtk4/emulation.{h,cpp}`，把核心从 GTK 层隔离出来。`main.cpp` 只保留
+窗口/动作/对话框，不再直接 include 模拟器头文件。
+
+| 项 | 做法 | GTK3 对应 |
+|---|---|---|
+| 核心初始化 | `NDS_Init()` + `Change3DRendererByID(RENDERID_SOFTRASTERIZER)`；只注册 `SNDDummy`，不开音频设备 | `main.cpp:6657` / `gtk/desmume.cpp:33` |
+| 主循环 | `g_timeout_add(1000/60, OnFrameTick)`，主线程每 tick 一次 `desmume_emu_step()`；无 ROM 时空转 | `EmuLoop()` / `EmuSingleFrame()` |
+| 单帧 | `apply_keys()` → `NDS_begin/endProcessingInput()` → `NDS_exec<false>()` → `SPU_Emulate_user()` | `EmuProcessFrameInput()` / `desmume_cycle()` |
+| 取帧 | `GPU->GetDisplayInfo().masterCustomBuffer` → `ColorspaceConvertBuffer555xTo8888Opaque<true,false,BESwapNone>`（888 源走 `ColorspaceConvertBuffer888xTo8888Opaque<true,false>`）→ `VideoFilter(None)` → `DesmumeDisplay` | `Gtk3GPUEventHandler::DidFrameEnd()` `main.cpp:7663` / `PresentFrame()` `3369` |
+| ROM 选择 | `GtkFileDialog` 异步打开，过滤 `*.nds/*.rom/*.zip`；也接受命令行第一个普通文件；错误走 `GtkAlertDialog` | §4.6/D7 |
+| 键盘 | `DesmumeDisplay` 的 `key-event` 信号 → 15 键 latch → `NDS_setPad()`，默认键位与 GTK3 `gtk_kb_cfg` 一致 | `Key_Press/Release` `4500` / `update_keypad()` `477` |
+| 触摸 | `touch-press/move` → `NDS_setTouchPos(x,y)`，`touch-release` → `NDS_releaseTouch()`；坐标已由 P2b 映射为 NDS 逻辑值 | `EmuSingleFrame()` `5939` |
+
+P3a 的边界（留给 P3b/P4-P8）：
+
+- 没有帧速限制/跳帧补偿、声音、Lua、OSD/HUD、录像、电影回放；当前帧率由 60 Hz GLib timeout 决定；
+- 没有手柄、按键重映射对话框、最近文件、ROM 卸载/重置动作；工具栏 Reset 仍是禁用占位；
+- ROM 解析发生在文件对话框回调里（同步），大 ROM 会短暂无响应；P3b 再用 `GTask` 挪到后台；
+- `VideoFilter` 固定 `VideoFilterTypeID_None`，GPU 帧缓冲保持原生 256×192、BGR555、单页；滤镜/缩放设置留到 P4/P7；
+- 没有可运行 ROM 与显示环境，本轮只做编译/链接验证与 `--help` 启动冒烟，画面需人工验收。
+
+验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume` 链接通过；`gtk4/desmume --help` 正常退出；
+`-Dfrontend-gtk=gtk3` 下 GTK3+CLI 无回归，再切回 gtk4 重新链接通过。
+`emulation.cpp` 的警告来自核心头文件（`texcache.h` / `matrix.h`），GTK3 `main.cpp` 同样存在，非本次引入。
 
 ---
 
