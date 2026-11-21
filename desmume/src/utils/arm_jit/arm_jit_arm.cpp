@@ -862,11 +862,22 @@ static GpVar bb_profiler_entry;
 }
 
 // ============================================================================================= IMM
+// The shift/register forms read Rm -- and, for the register-shift forms, Rs --
+// through the register cache instead of reg_pos_ptr(). The operand still ends
+// up in the fixed scratch register the handler expects, but a value the cache
+// already owns is copied out of its slot instead of being evicted to memory and
+// immediately reloaded. That is the whole point of `add r2,#4 ; ldr r0,[r1,r2]`:
+// the LDR's Rm is the result of the preceding instruction, so the memory path
+// used to store R2 and load it straight back.
+//
+// The load is a dword even where the old code used reg_pos_ptrB (the
+// register-shift amount). emit_lsl_reg()/lsr/asr/ror mask the amount with 0xff
+// or 0x1f before using it, so the upper bytes are dead.
 #define LSL_IMM \
 	bool rhs_is_imm = false; \
 	static unsigned int rhs_var;\
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if(imm2) emit_lsl(g_out, rhs_reg, imm2); \
 	u32 rhs_first = cpu->R[REG_POS(i,0)] << imm2;\
 	emit_movimm(g_out, imm2, imm_reg);
@@ -876,7 +887,7 @@ static GpVar bb_profiler_entry;
 	u8 cf_change = 0; \
 	static unsigned int rhs_var;\
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if (imm2)  \
 	{ \
 		cf_change = 1; \
@@ -890,7 +901,7 @@ static GpVar bb_profiler_entry;
 	u32 imm2 = ((i>>7)&0x1F); \
 	if(imm2) \
 	{ \
-		reg_pos_ptr(0, rhs_reg, VALUE); \
+		rc_read(REG_POS(i,0), rhs_reg); \
 		emit_lsr(g_out, rhs, imm2); \
 	} \
 	else \
@@ -903,7 +914,7 @@ static GpVar bb_profiler_entry;
 	u8 cf_change = 1; \
 	static unsigned int rhs_var; \
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if (!imm2) \
 	{ \
 		emit_testimm(g_out, rhs_reg,  (1 << 31)); \
@@ -920,7 +931,7 @@ static GpVar bb_profiler_entry;
 	bool rhs_is_imm = false; \
 	static unsigned int rhs_var;\
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if(!imm2) imm2 = 31; \
 	emit_asr(g_out, rhs_reg, imm2); \
 	u32 rhs_first = (s32)cpu->R[REG_POS(i,0)] >> imm2; \
@@ -931,7 +942,7 @@ static GpVar bb_profiler_entry;
 	u8 cf_change = 1; \
 	static unsigned int rhs_var; \
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if (!imm2) imm2 = 31; \
 	emit_asrs(g_out, rhs_reg, imm2); \
 	emit_movimm(g_out, imm2, imm_reg); \
@@ -940,7 +951,7 @@ static GpVar bb_profiler_entry;
 	bool rhs_is_imm = false; \
 	u32 imm2 = ((i>>7)&0x1F); \
 	static unsigned int rhs_var; \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if (!imm2) \
 	{ \
 		GET_CARRY(0) \
@@ -956,7 +967,7 @@ static GpVar bb_profiler_entry;
 	u8 cf_change = 1; \
 	static unsigned int rhs_var; \
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if (!imm2) \
 	{ \
 		GET_CARRY(0) \
@@ -969,7 +980,7 @@ static GpVar bb_profiler_entry;
 #define REG_OFF \
 	bool rhs_is_imm = false; \
 	static unsigned int rhs_var; \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	u32 rhs_first = cpu->R[REG_POS(i,0)];
 
 #define IMM_VAL \
@@ -1010,16 +1021,16 @@ static GpVar bb_profiler_entry;
 #define LSX_REG(name, x86inst, sign) \
 	bool rhs_is_imm = false; \
 	static unsigned int rhs_var; \
-	reg_pos_ptrB(8, imm_reg, VALUE); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,8), imm_reg); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	x86inst(g_out, rhs_reg, imm_reg);
 
 #define S_LSX_REG(name, x86inst, sign) \
 	bool rhs_is_imm = false; \
 	u8 cf_change = 1; \
 	GET_CARRY(0); \
-	reg_pos_ptr(8, imm_reg, VALUE); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,8), imm_reg); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	x86inst(g_out, rhs_reg, imm_reg); \
 
 #define LSL_REG LSX_REG(LSL_REG, emit_lsl_reg, 0)
@@ -1032,8 +1043,8 @@ static GpVar bb_profiler_entry;
 #define ROR_REG \
 	bool rhs_is_imm = false; \
 	static unsigned int rhs_var; \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
-	reg_pos_ptrB(8, imm_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
+	rc_read(REG_POS(i,8), imm_reg); \
 	emit_ror_reg(g_out, rhs_reg, imm_reg);
 
 #define S_ROR_REG \
@@ -1041,8 +1052,8 @@ static GpVar bb_profiler_entry;
 	bool cf_change = 1; \
 	static unsigned int rhs_var; \
 	GET_CARRY(0); \
-	reg_pos_ptr(8, imm_reg, VALUE); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,8), imm_reg); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	emit_rors_reg(g_out, rhs_reg, imm_reg); \
 
 //==================================================================== common funcs
@@ -1087,10 +1098,11 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 	x86inst(g_out, rc_hn, rhs, rc_hd);
 
 // S4 family 2 pilot: the shift `arg` macros leave the shifted operand in the
-// physical `rhs` register (R6). Rn/Rd still go through the register cache,
-// which is the whole point -- only Rm/Rs keep using memory. R15 stays on the
-// memory path (rule 1). Kept separate from OP_ARITHMETIC so the other shift
-// handlers are unaffected until this pilot passes the differential sweep.
+// physical `rhs` register (R6). Rn/Rd and now Rm/Rs all go through the
+// register cache; read_into() copies from a slot on a hit and only touches
+// memory on a miss. R15 stays on the memory path (rule 1). Kept separate from
+// OP_ARITHMETIC so the other shift handlers are unaffected until this pilot
+// passes the differential sweep.
 #define OP_ARITHMETIC_SHIFT_RC(arg, x86inst, symmetric, flags) \
 	arg; \
 	if(REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
@@ -2556,8 +2568,11 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 	}
 	else
 	{
+		// Rm through the cache, like the plain LDR/STR register-offset forms:
+		// the address adjustment below only needs the value, and the eviction in
+		// reg_pos_ptr() would store the dirty slot and load it straight back.
 		#define idx R3
-		reg_pos_ptr(0, idx, VALUE);
+		rc_read(REG_POS(i,0), idx);
 		BIT23(i)?emit_add_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_ptr(16, R1, ADDRESS)), idx):emit_sub_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_ptr(16, R1, ADDRESS)), idx);
 		#undef idx
 	}
@@ -2623,7 +2638,9 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		BIT23(i)?emit_add(g_out, addr, rhs, addr):emit_sub(g_out, addr, rhs, addr);
 	}
 	else {
-		reg_pos_ptr(0, R1, VALUE);
+		// Rm through the cache (see the post-index form above). Rd/Rn still go
+		// through memory: the pair write-back below has to land in armcpu_t.
+		rc_read(REG_POS(i,0), R1);
 		BIT23(i)?emit_add(g_out, addr, R1, addr):emit_sub(g_out, addr, R1, addr);
 	}
 
@@ -2695,7 +2712,12 @@ static int op_swp_(const u32 i, int b)
 	#define Rd R4
 	#define Rs R5
 	
-	reg_pos_ptr(16, addr, VALUE);
+	// The base is a plain read: the helper takes the address by value, so a
+	// cached value can be copied out of its slot instead of being written back
+	// and reloaded. Rd stays on the memory path -- op_swp() writes through
+	// `u32* Rd`. Copy the base first: the Rd eviction below may be the same
+	// register, and it would otherwise turn the copy into a memory round trip.
+	rc_read(REG_POS(i,16), addr);
 	reg_pos_ptr(12, Rd, ADDRESS);
 	
 	// Rs is a plain source; SWPB's helper truncates to a byte itself, so the
