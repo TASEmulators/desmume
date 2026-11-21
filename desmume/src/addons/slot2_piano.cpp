@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2013 DeSmuME team
+	Copyright (C) 2010-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -79,8 +79,10 @@ public:
 
 ISlot2Interface* construct_Slot2_EasyPiano() { return new Slot2_EasyPiano(); }
 
-void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic)
+u16 piano_boolToKeys(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic)
 {
+	u16 theKeys = 0xFFFF;
+	
 	//0x09FFFFFE:0 = C
 	//0x09FFFFFE:1 = C#
 	//0x09FFFFFE:2 = D
@@ -99,7 +101,7 @@ void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, boo
 	//0x09FFFFFF:7 = ?
 
 	#define BIT_P(N,v) ((v)?(1<<(N)):0)
-		pianoKeyStatus = ~(
+		theKeys = ~(
 			BIT_P(0,c) |
 			BIT_P(1,cs) |
 			BIT_P(2,d) |
@@ -114,9 +116,22 @@ void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, boo
 			BIT_P(13,b) |
 			BIT_P(14,hic)
 			);
+	
+	return theKeys;
 }
 
-void piano_setKey(u16 theKeys)
+u16 piano_getKeys()
+{
+	return pianoKeyStatus;
+}
+
+void piano_setKeys(u16 theKeys)
 {
 	pianoKeyStatus = theKeys;
+}
+
+void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic)
+{
+	u16 theKeys = piano_boolToKeys(c, cs, d, ds, e, f, fs, g, gs, a, as, b, hic);
+	piano_setKeys(theKeys);
 }

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2025 DeSmuME team
+	Copyright (C) 2008-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -419,6 +419,7 @@ void NDS_setTouchPos(u16 x, u16 y);
 void NDS_releaseTouch(void);
 void NDS_setPad(bool right,bool left,bool down,bool up,bool select,bool start,bool B,bool A,bool Y,bool X,bool leftShoulder,bool rightShoulder,bool debug, bool lid);
 void NDS_setMic(bool pressed);
+bool NDS_IsLidClosed();
 
 // get physical user input
 // not including the results of autofire/etc.

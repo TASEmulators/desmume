@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -49,17 +49,31 @@ public:
 
 ISlot2Interface* construct_Slot2_GuitarGrip() { return new Slot2_GuitarGrip(); }
 
-void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue)
+u8 guitarGrip_boolToKeys(bool green, bool red, bool yellow, bool blue)
 {
+	u8 theKeys = 0xFF;
+	
 	const u8 g = (green)	? (1 << 6) : 0;
 	const u8 r = (red)		? (1 << 5) : 0;
 	const u8 y = (yellow)	? (1 << 4) : 0;
 	const u8 b = (blue)		? (1 << 3) : 0;
 	
-	guitarKeyStatus = ~(g | r | y | b);
+	theKeys = ~(g | r | y | b);
+	return theKeys;
 }
 
-void guitarGrip_setKey(u8 theKeys)
+u8 guitarGrip_getKeys()
+{
+	return guitarKeyStatus;
+}
+
+void guitarGrip_setKeys(u8 theKeys)
 {
 	guitarKeyStatus = theKeys;
+}
+
+void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue)
+{
+	u8 theKeys = guitarGrip_boolToKeys(green, red, yellow, blue);
+	guitarGrip_setKeys(theKeys);
 }
