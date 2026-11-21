@@ -32,6 +32,8 @@
 
 这些 handler 在 `arm_jit.cpp` 和 `arm_jit_arm.cpp` 里都被 `#define` 成 `NULL`，编译时根本不进入 `compile_basicblock`。迁移期间它们**不需要改**，但如果某天有人给其中一个补上实现，就必须同时补两个后端，否则两个后端会在同一份游戏上表现不同。
 
+> **2026-11-21 补记**：除了 `NULL`，还有第二种回退——函数存在但 `return 0`，`emit_armop_call()` 会当场改成调用解释器。逐函数审计（571 个定义、20 行 `NULL`、每具函数体里的 `return 0`）后，**唯一的差异是 ARM `OP_BKPT`**：x64 原先只有一句 `printf` + `return 0`，arm64 已内联 abort 异常。现已按 arm64 补齐，两边的回退集合从这一轮起完全一致。审计过程与验证见主文档 §10.12。
+
 | ISA | handler | 槽位 | 族 |
 |---|---|---|---|
 | ARM | `OP_STREX` | `0x189` | 访存 |
@@ -617,7 +619,7 @@
 |---|---|---|---|---|---|---|---|---|
 | A-0289 | `0x121` | `OP_BX` | arm_instructions.cpp:3084 | arm_jit.cpp:2664 | — | arm_jit_arm.cpp:3156 | diff-pass | |
 | A-0291 | `0x123` | `OP_BLX_REG` | arm_instructions.cpp:3099 | arm_jit.cpp:2665 | — | arm_jit_arm.cpp:3157 | diff-pass | |
-| A-0295 | `0x127` | `OP_BKPT` | arm_instructions.cpp:6306 | arm_jit.cpp:3197 | — | arm_jit_arm.cpp:3679 | diff-pass | |
+| A-0295 | `0x127` | `OP_BKPT` | arm_instructions.cpp:6306 | arm_jit.cpp:3210 | — | arm_jit_arm.cpp:3679 | diff-pass | |
 | A-2560 | `0xA00..0xAFF` | `OP_B` | arm_instructions.cpp:3116 | arm_jit.cpp:2634 | — | arm_jit_arm.cpp:3112 | diff-pass | |
 | A-2816 | `0xB00..0xBFF` | `OP_BL` | arm_instructions.cpp:3140 | arm_jit.cpp:2635 | — | arm_jit_arm.cpp:3113 | diff-pass | |
 

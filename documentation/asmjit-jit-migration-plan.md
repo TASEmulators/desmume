@@ -2466,3 +2466,109 @@ prime 后的 R0），harness 只比寄存器状态，不受内存副作用干扰
 
 **未覆盖**：§10.5 的 macOS 三方差分仍待补——本节只增加真机块级等价性与代码尺寸证据，
 不替代 §8 的三方哈希；`--marginal` 量的是代码尺寸，不是执行成本。
+
+### 10.11 把 arm64 块级探针的形状移植到 x64 差分台（2026-11-21）
+
+**动机**：arm64 的块级探针（§S4 族 5 起）只能证明"改动前后一致 + 手写期望成立"，
+它没有解释器当 oracle；而 macOS 机器与 x86 机器不在一处，三方对账排不上期。x64 差分台
+（`jit_diff`）链着**真解释器**，于是把 arm64 探针覆盖的形状搬过去，先在 x64 上把每条
+形状与解释器逐一对照。这是"能证明的一半"和"要等另一半"之间唯一能立刻做的事。
+
+**改法**（`desmume/src/utils/jit_diff/jit_diff_main.cpp`）：
+
+- `Probe` 增加两个字段：`ops`（操作数初值表，`nullptr` = 沿用 `kOperands` 轮转）与
+  `sp`（把 R13 从 `kStackTop` 下移进主存）。原因有两个：`kStackTop` = 0x02400000 正好
+  是主存**上界之后**，升序访问全部落在映射外；寄存器偏移形式的 Rm 又取自向量表
+  （`0x7FFFFFFF`），照搬只会测到 fault 路径。
+- 新增 **91** 条探针（总计 132）：
+
+| 组 | 条数 | 覆盖 |
+|---|---|---|
+| LDRD / STRD | 10 | 立即数 / 后索引 / 前索引 W 位 / 寄存器偏移 |
+| SWP / SWPB | 2 | 地址与数据按值、目的走 `u32*` |
+| LDM / STM | 10 | IA/IB/DA/DB × 读/写 + 列表含 PC |
+| 带移位的寄存器偏移 | 5 | `[r13,r1,lsl #2]`、`[r13,-r1]`、`asr #2` |
+| LDR Rd=PC | 1 | 块以分支收尾 |
+| 乘法族 | 12 | UMULL/SMULL/UMLAL/SMLAL、SMULxy/SMLAWy/SMLALxy、CLZ |
+| 寄存器移位 | 4 | LSR/ASR/ROR by Rs、`orr ...,lsl r3` |
+| PSR | 5 | MRS/MSR、`msr cpsr_c` 走模式切换 |
+| 分支 / 异常 | 6 | B/BL/BX/BLX/SWI/BKPT |
+| Thumb 访存 | 15 | 各宽度的立即数与寄存器偏移、PC 相对、PUSH/POP、LDM/STM |
+| Thumb 其它 | 21 | B/BEQ/SWI/BKPT/BX/BLX、高寄存器形态、立即数 ALU |
+
+全部编码用 `clang --target=armv5te` 汇编、`llvm-objdump` 反查过——上一轮 arm64 探针就有
+两条编码写反（`ldrd/strd` 的 0xD/0xF 互换），断言对着错的指令"通过"。
+
+**判定口径**：探针原先"任何差异都算失败"，而 sweep（`--full`）一直把周期差记成 bucket、
+不进仲裁（§3.5）。本次让两者一致：以 `cycles:` 开头的差异记入记录行，其余
+（R0–R14 / CPSR / `instruct_adr` / 异常 / 不变量 / 解释器可重复性）仍然判失败。
+
+**结果**：
+
+| 运行 | 规模 | 功能差异 | 周期记录 |
+|---|---|---|---|
+| 默认（探针） | 132 × 8 向量 × 2 标志 = 2112 | **0** | 176 |
+| `--full` | 81920 | 0（各功能桶全 0） | 12067（与基线一致） |
+| `--seq 2` | 6848 | 0（4012 跳过） | 28 |
+
+176 条周期记录集中在三类：
+
+| 类别 | 探针 | 典型值 |
+|---|---|---|
+| 异常 / 分支收尾 | SWI/BKPT、`LDR pc,[r13,#4]`、`LDMIA r13!,{r0,pc}`、`POP {r0,pc}` | interp=8，jit=2~4（`BKPT` 在 §10.12 改成内联后为 0） |
+| 长乘法 | UMULL/SMULL/UMLAL/SMLAL | interp 随操作数 3~7，jit 固定 7~8 |
+| 映射区字读 | `THUMB LDR r0,[r1,#4]`、`[r1,r2]` | interp=7，jit=3 |
+
+第三类与 §10.8 记的那条 `LDR r0,[r1,#4]` 同源：`MMU_timing` 的顺序访问模型带历史状态，
+两个引擎调用 helper 的次数不同，`m_lastAddress` 看到的不是同一条历史。前两类是 JIT 侧
+有意的近似（异常/分支不累加流水线重填，长乘法按最坏情况算）。三者都不改体系结构状态，
+属 §3.5 的既有边界——但这组数字第一次把它们的规模量化了。
+
+**仍未覆盖**：arm64 自己还没跑同一套（需要 macOS，或 arm64 设备上能链解释器的
+`jit_diff`）；`ldmda`/`stmda` 的写回值、`LDM ...^`（用户态 bank 传送）本轮没有进探针。
+
+### 10.12 后端覆盖对齐：x64 唯一的 "已实现却不编译" 是 ARM `BKPT`（2026-11-21）
+
+**动机**：`jit-opcode-matrix.md` 把 571 组标成 `diff-pass`，但"函数存在"不等于"函数会编译"。
+`emit_armop_call()` 的规则是 `if (fc && fc(opcode)) return;` —— **函数返回 0 就当场退回解释器**，
+比 `#define OP_X NULL` 更隐蔽：矩阵里看起来是已实现，运行时却是一句 `call`。
+
+**审计方法**（纯静态，可重复）：
+
+1. 抽两个后端的 `static int OP_*(const u32)` 定义集合 —— **各 571 个，逐名相同**；
+2. 比对 `#define OP_* NULL` 空槽块 —— **都是 20 行，逐字相同**；
+3. 对 571 个函数体做 `return 0` 匹配（含单行 `{ ... return 0; }` 这种 grep 行首会漏的写法）
+   —— x64 命中 6 个，arm64 命中 5 个，差集只有 **`OP_BKPT`**。
+
+**结论**：x64 的 `OP_BKPT` 是一句 `printf("JIT: unimplemented OP_BKPT")` + `return 0`，
+arm64 则是完整的内联 abort 异常。其余 570 组的返回行为一致（`OP_MCR`/`OP_MRC` 的 ARM7 分支、
+`LDRD/STRD` 的 Rd==14/奇数 Rd、带 `swi_tab` 的 `OP_SWI` 两边同样返回 0）。
+
+**改法**（`arm_jit.cpp`，照着 arm64 与 `arm_instructions.cpp:OP_BKPT` 的次序写）：
+
+| 步骤 | 说明 |
+|---|---|
+| 保存 CPSR | 进 ABT 前先读进临时寄存器（解释器的 `tmp`） |
+| `armcpu_switchMode(cpu, ABT)` | 与 `op_swi()` 同一套调用约定；x64 的寄存器是即时落盘的，没有 flush 要做 |
+| `R14_abt = bb_adr + 4` | `instruct_adr` 已由 `sync_r15()` 按 `JIT_BYPASS` 写成 `bb_adr` |
+| `SPSR_abt = 旧 CPSR` | 必须在 switchMode 之后写（前面那步会把 `SPSR_abt` 覆盖进 `SPSR`） |
+| CPSR 清 T、置 I | 与解释器一致；不调 `armcpu_changeCPSR()`（那只是 `NDS_Reschedule()`，两个后端都没调） |
+| `R15 = next_instruction = intVector + 0x0C` | `BKPT` 不在 `instr_does_prefetch()` 里，块尾会把 `next_instruction` 复制进 `instruct_adr` |
+
+**验证**：
+
+| 项 | 改前 | 改后 |
+|---|---|---|
+| `jit_diff` 132 探针 × 8 向量 × 2 标志 = 2112 | 0 功能差异 | **0 功能差异**（ARM `BKPT #0` 与 `THUMB BKPT` 都在表内） |
+| `ARM BKPT` 的周期记录 | `interp=8 jit=4`（回退时把解释器的 4 周期搬了回来） | `interp=8 jit=0`（内联后按两个后端的惯例不记异常周期） |
+| 周期记录总数 | 176 | **176**（BKPT 本来就在记，只是数值变了） |
+| `--full` | 81920 比较 / 12067 周期差 / 功能桶全 0 | **完全相同** |
+| `JIT: unimplemented OP_BKPT` 打印 | 每次编译该槽位一次 | **0** |
+
+**留下的一条已知差异**：BKPT 的周期。解释器 `return 4`，两个 JIT 的内联版本都记 0 —— 与
+`SWI` 的处理一致（`INSTR_CYCLES_V` = 0，异常处理函数不碰 `bb_cycles`）。这条不影响体系结构
+状态，按 §3.5 的边界不进仲裁；要修就得两个后端一起改，属性能/时序项，不在本轮范围。
+
+**顺带确认的两个"看起来像回退、其实不是"**：`OP_MCR`/`OP_MRC` 对未分配的协处理器
+`return 2` 且不发射任何代码 —— 解释器在这条路径上也只是 `INFO(...); return 2;`（什么都不做），
+所以三个引擎等价；ARM7 上两者都返回 0 退回解释器，也是对称的。

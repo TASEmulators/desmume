@@ -3,22 +3,23 @@
 > 本文把 `asmjit-jit-migration-plan.md`（下称「主文档」）中散落的未完成项集中成一份可勾选清单。
 > **主文档仍是权威来源**，本文是索引视图；状态变化时两处同步更新。
 >
-> 快照：2026-11-21，HEAD `76fcd6d2` + 本轮未提交改动（Rm/Rs 进缓存、LDRD/STRD/SWP 补刀、
-> `--marginal` 测量，见主文档 §10.10）。
+> 快照：2026-11-21，HEAD `beda713b` + 本轮未提交改动（x64 差分台移植 arm64 探针形状 §10.11、
+> x64 补上 ARM `BKPT` §10.12）。
 
 ## 当前进度快照
 
 | 项 | 状态 |
 |---|---|
 | 迁移主线（571 组 `diff-pass`） | **571 / 571，todo 归零**：族 1 数据处理 28 + 族 2 ARM 移位 224 + 族 3+4 访存 172 + LDM/STM 32 + 族 5 乘法/乘加 28 + CLZ + 族 6 分支/状态/异常 12 + **族 7+8 Thumb 68 + 饱和 4 + 协处理器 2**。余下 20 个 `interp-fallback`（`OP_UND`/`OP_CDP`/LDC-STC 全系/`LDREX`/`STREX`/Thumb 的 `BKPT`+`UND`）是有意不编译的 |
+| **两后端回退集合审计（2026-11-21）** | 逐函数比对 571 个 `OP_*`、20 行 `#define ... NULL` 与各函数体里的 `return 0`：**唯一差异是 ARM `OP_BKPT`**（x64 只有 `printf` + `return 0`，arm64 已内联 abort）。已按 arm64 补齐，两边现在一致；`OP_MCR`/`OP_MRC` 的 `return 2` 不发射代码，但解释器在同一条路径上也是空操作，三者等价（主文档 §10.12） |
 | P0 访存 ABI（arm64 `call_mem`） | **已落地提交**：`call_mem` / `_r7` / `_r2` 三变体，24 处调用点中 15 处转轻量（commits `b7225baa`、`b1f5b455`）；原语级 + 块级真机均已验证 |
 | 族3 代码迁移 | **arm64 缓存接入完成**；x86 侧结构早已完成 |
 | **饱和算术（Q 系列）** | **两端都已内联**：arm64 见 §S4 族 7+8；x86 `arm_jit.cpp` 用同一份 DDI 0403E 语义（`seto` + `cmovnz`，两段饱和分别置 Q）。x86 侧 6 条 Q 探针 × 8 组操作数 × 2 种标志 = 704 次比较 0 mismatch，负对照（`cmovz`）确认探针有效 |
-| 访存差分安全网 | **本机已加固**（主文档 §10.8）：`kProbes` 新增 20 条访存定向探针，38/38 全绿 |
+| 访存差分安全网 | **x64 侧已扩到 132 条探针**（§10.8 的 20 条访存 + §10.11 的 91 条，覆盖 LDRD/STRD/SWP/LDM/STM/乘法/PSR/分支/Thumb 各宽度）：2112 次比较 **0 功能差异**，176 条周期记录（异常收尾、长乘法、映射区字读三类，均属 §3.5 边界） |
 | **arm64 handler 级真机验证** | `a64_block_probe` **904 项自检全绿**（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + **41 访存** + 78 Thumb + 4 Q 指令 + 2 cp15）；其中访存表本轮新增 4 例（LDRD/STRD/SWP 的脏 Rm/基址），改前改后输出**逐字节相同** |
 | **helper 读 `armcpu_t` 的不变量** | `armcpu_switchMode()`（族 6）与 `OP_LDM_STM`/`OP_LDRD`/`op_swp`/Thumb 的 `PUSH`/`POP`/`STM`/`LDM`（族 7）都直接读写 `cpu->R[]`：**调用前必须把涉及的寄存器落盘**。族 7 把同一条规则套到 Thumb 的寄存器列表上（8 位掩码 + LR/PC 位） |
 | x64 fastmem | **已评估放弃**（主文档 §10.6），x64 保持现状 |
-| 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0（`R0-R14`/`CPSR`/`instruct_adr`/异常/不变量），仅周期差 12067 与既有 3 条 `jit not repeatable`；arm64 编码层 `check_a64` 4/241 已知基线差异（全部是 save/restore/startfunc/endfunc 的既有基线）；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` **904/904**（含 768 组 Q 对伪代码的模型比对）；arm64 后端另可在本机做 `clang++ -fsyntax-only` 语法门（x86_64 主机 + `-DASMJIT_NO_X86`） |
+| 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0（`R0-R14`/`CPSR`/`instruct_adr`/异常/不变量），仅周期差 12067 与既有 3 条 `jit not repeatable`；**132 条定向探针** 2112 次比较 0 功能差异（176 条周期记录，其中 ARM `BKPT` 已从"回退解释器"改成内联 abort，功能仍 0 差异、周期由 jit=4 变 jit=0）；`--seq 2` 6848 次 0 mismatch。arm64 编码层 `check_a64` 4/241 已知基线差异（全部是 save/restore/startfunc/endfunc 的既有基线）；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` **904/904**（含 768 组 Q 对伪代码的模型比对）；arm64 后端另可在本机做 `clang++ -fsyntax-only` 语法门（x86_64 主机 + `-DASMJIT_NO_X86`） |
 | 未跟踪文件 | `issue.md`（会话开始前既有，不属本次迁移） |
 
 ---
@@ -30,7 +31,7 @@
 - [x] **§10.8 访存差分安全网（本机）**：差分台 `kProbes` 新增 20 条访存定向探针（写回 / Rd≠Rn / 宽度 / 符号扩展 / 寄存器偏移 / Thumb SP 相对 / PUSH-POP），38/38 探针 0 mismatch，`--full` 功能桶全 0。这是本机侧能做的加固；**不替代**下面的 macOS arm64 语义验证。
 - [x] **`call_mem` 原语级真机验证（Termux aarch64，本轮）**：`tools/jit_matrix/a64_memcall_probe.cpp` 15/15。负对照（同函数去掉 stp/ldp）证明 helper 真的把 x12/x15/x2 毁成 `BEEF0000`/`F00D0000`/`DEAD0000`，正例证明 `call_mem` 保 x12/x15、`call_mem_r2` 保 x2+x12+x15，x21 靠 AAPCS64 callee-saved 免费保住；1e6 次调用验 `call_mem_r2` 的栈收支与 canary。
 - [x] **handler 级真机验证通道（族 5 建立，族 6 扩展）**：`tools/jit_matrix/a64_block_probe.cpp` 直接 include `arm_jit_arm.cpp`、用 68 个桩符号补齐核心，在真机上执行 `compile_basicblock()` 生成的块。族 6 把其中的 `armcpu_switchMode` 桩换成**真正搬移 bank 的实现**（否则"缓存没 flush"这类 bug 一条都测不出来），并支持两指令块。**新增族时优先扩这个探针，而不是等 macOS。**
-- [ ] **§10.5/§10.7 访存差分（macOS / arm64）**：`build_diff_macos.sh` 重建后跑 `jit_diff --full`，确认访存槽位功能桶（R0–R14 / CPSR / `instruct_adr` / 内存写集）全 0。重点覆盖：LDR/STR 的 Rd==15 与写回变体、**LDRD/STRD 的 W 位写回、Thumb PUSH/POP、SWP、LDM/STM**。注意 macOS 的 `kProbes` 与本机同步后同样是 38 条。
+- [ ] **§10.5/§10.7 访存差分（macOS / arm64）**：`build_diff_macos.sh` 重建后跑 `jit_diff --full`，确认访存槽位功能桶（R0–R14 / CPSR / `instruct_adr` / 内存写集）全 0。重点覆盖：LDR/STR 的 Rd==15 与写回变体、**LDRD/STRD 的 W 位写回、Thumb PUSH/POP、SWP、LDM/STM**。注意 macOS 的 `kProbes` 与本机同步后是 **132 条**（§10.11 把 arm64 探针的形状搬到了 x64）。
 - [ ] **`ldmda`/`stmda` 的有效地址对解释器核对（新增，需 oracle）**：探针里这两条只做了 pin（迁移前后相同），没有断言——它们的地址推进跟 ARM ARM 的写法对不上，而块级探针链不到解释器，判不了谁对。macOS 上拿 `jit_diff` 的 LDM/STM 槽位对比即可定性；若 JIT 与解释器一致而与 ARM ARM 不一致，那是既有语义，另开 issue。
 - [x] **带移位寄存器偏移的 LDR/STR 已接缓存（2026-11-21 完成）**：移位 `arg` 宏（10 个
   IMM/REG 变体）的 Rm/Rs 改用 `read_into()`——槽里有值就 `mov`，不占槽、不 evict；同一
@@ -60,6 +61,7 @@
 ## 三、迁移主线进度（核心，已完成）
 
 - [x] **§8 矩阵状态**：571 / 571 全部 `diff-pass`，`todo` 归零；其余 20 组是 `interp-fallback`（`OP_UND`/`OP_CDP`/LDC-STC 全系/`OP_LDREX`/`OP_STREX`/Thumb 的 `BKPT`+`UND`），有意不编译。见 §S4。
+- [x] **"已实现"与"会编译"对齐（2026-11-21）**：`emit_armop_call()` 把 `fc(opcode) == 0` 也当回退处理，所以矩阵上的 `diff-pass` 并不保证不跳解释器。逐函数审计后 571 组里只剩 ARM `OP_BKPT` 一处，x64 已按 arm64 内联 abort 异常补齐；`--full` 与 132 条探针的功能差异仍为 0（主文档 §10.12）。
 - 按 §7 分组的批次状态（数字取自重新生成的 `documentation/jit-opcode-matrix.csv`）：
 
 | 组 | 内容 | 组数 | 状态 |
