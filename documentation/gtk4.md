@@ -1136,6 +1136,19 @@ P3a 的边界（留给 P3b/P4-P8）：
 `-Dfrontend-gtk=gtk3` 下 GTK3+CLI 无回归，再切回 gtk4 重新链接通过。
 `emulation.cpp` 的警告来自核心头文件（`texcache.h` / `matrix.h`），GTK3 `main.cpp` 同样存在，非本次引入。
 
+#### P3a 实机修复：关闭窗口与 Ctrl+C 都能干净退出（2026-11-21）
+
+实机测试暴露两个生命周期问题，均已修复：
+
+| 症状 | 根因 | 修复 |
+|---|---|---|
+| 关闭主窗口后进程不退出 | 60 Hz `g_timeout_add` 从未移除，窗口销毁后继续 `desmume_emu_step()`；frame sink 还持有已销毁的 `pDisplayArea` 裸指针 | `main.cpp` 记录 `sFrameTickSource`/`sTestFrameSource`；新增幂等的 `StopEmulation()`（停 running、清 sink、移除两个 source）；窗口 `close-request` 先 `StopEmulation()` 再 `g_application_quit()`；`main()` 在 `g_application_run()` 返回后也兜底调用 |
+| 关窗瞬间 `DESMUME_IS_DISPLAY` 断言失败 | frame sink 的 user_data 是 widget 裸指针，晚到的 tick 用到已释放对象 | sink 的 user_data 改为 `&pDisplayArea`，并在 `BuildWindow()` 用 `g_object_add_weak_pointer()` 监护；widget 销毁时自动置 NULL，`PushFrameToDisplay()`/`PushTestFrame()` 先判空 |
+| 终端 Ctrl+C 杀不掉进程 | `NDS_Init()→MMU_Init()→Mic_Init()` 调用 `SDL_InitSubSystem(SDL_INIT_AUDIO)`，SDL3 默认安装 SIGINT/SIGTERM handler 并转成 `SDL_QUIT`；GTK4 前端无 SDL 事件循环，信号被吞 | 在任何 SDL 初始化之前（`main()` 开头 + `desmume_emu_init()`）`g_setenv("SDL_NO_SIGNAL_HANDLERS","1",TRUE)` |
+
+SIGINT 根因已用独立小程序验证（系统 SDL3 3.4.20）：不设 hint 时 `SDL_InitSubSystem(AUDIO)` 会把 SIGINT handler 从 `SIG_DFL` 改掉（default=1→0）；设 hint=1 后 handler 保持默认。
+GTK4 关窗时序的运行时验证受限于当前环境无显示服务/无 ROM，仍需实机复测确认。
+
 ---
 
 ## 附录 A：迁移顺序速查

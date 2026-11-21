@@ -71,6 +71,13 @@ static GtkWidget *pStatusBar = NULL;
 static GtkWidget *pStatusLabel = NULL;
 static GtkWidget *pRunButton = NULL;
 static GtkWidget *pDisplayArea = NULL;
+static GtkApplication *pApp = NULL;
+
+/* Frame sources are kept so a window close can stop them; otherwise the
+ * 60 Hz tick keeps calling into a display widget that has already been
+ * destroyed (see the close-request/destroy handlers below). */
+static guint sFrameTickSource = 0;
+static guint sTestFrameSource = 0;
 
 /* A ROM given on the command line is loaded once the window exists, so the
  * status line and title can be updated through the normal path. */
@@ -145,6 +152,28 @@ static gboolean UseClientSideDecorations(void)
 	       (strstr(desktop, "Unity") != NULL);
 }
 
+/* Stop all asynchronous work that touches either the core or the display
+ * widget.  Called before the window is destroyed and again from main() so it
+ * must be idempotent.  Clearing the frame sink first is what prevents a late
+ * tick from dereferencing a dead DesmumeDisplay. */
+static void
+StopEmulation(void)
+{
+	desmume_emu_set_running(FALSE);
+	desmume_emu_set_frame_sink(NULL, NULL);
+
+	if (sFrameTickSource != 0)
+	{
+		g_source_remove(sFrameTickSource);
+		sFrameTickSource = 0;
+	}
+	if (sTestFrameSource != 0)
+	{
+		g_source_remove(sTestFrameSource);
+		sTestFrameSource = 0;
+	}
+}
+
 /* The emulation core runs on the GTK main thread: one NDS frame per 60 Hz
  * tick.  Without a ROM this is a no-op, so the callback can be installed once
  * when the window is built and left running for the whole application. */
@@ -163,18 +192,47 @@ OnFrameTick(gpointer user_data)
 static void
 PushFrameToDisplay(const guchar *bgra, int width, int height, gpointer user_data)
 {
-	desmume_display_push_frame(DESMUME_DISPLAY(user_data), bgra, width, height);
+	/* pDisplayArea is guarded by a weak pointer: once the window is gone GTK
+	 * sets it to NULL.  A late tick can therefore no longer pass a dangling
+	 * widget into the display code (the DESMUME_IS_DISPLAY assertion in the
+	 * bug report).  The sink is also cleared by StopEmulation(). */
+	GtkWidget *display = *(GtkWidget **)user_data;
+	if (display == NULL)
+	{
+		return;
+	}
+	desmume_display_push_frame(DESMUME_DISPLAY(display), bgra, width, height);
+}
+
+/* Closing the last window must also tear the emulator down.  GtkApplication's
+ * automatic quit is not enough here: the frame source would otherwise keep
+ * firing into a destroyed widget.  Stop first, let GTK destroy the window
+ * (FALSE), and quit explicitly as a fallback for environments where
+ * quit-on-last-window has been turned off. */
+static gboolean
+OnWindowCloseRequest(GtkWindow *window, gpointer user_data)
+{
+	(void)window;
+	(void)user_data;
+
+	StopEmulation();
+	if (pApp != NULL)
+	{
+		g_application_quit(G_APPLICATION(pApp));
+	}
+	return FALSE;
 }
 
 /* DESMUME_GTK4_TEST_FRAME=1 still feeds a synthetic frame so the texture path
  * can be exercised without a ROM. */
 static gboolean PushTestFrame(gpointer user_data)
 {
-	DesmumeDisplay *display = DESMUME_DISPLAY(user_data);
-	if (!gtk_widget_get_mapped(GTK_WIDGET(display)))
+	GtkWidget *widget = *(GtkWidget **)user_data;
+	if ((widget == NULL) || !gtk_widget_get_mapped(widget))
 	{
 		return G_SOURCE_CONTINUE;
 	}
+	DesmumeDisplay *display = DESMUME_DISPLAY(widget);
 
 	static guchar buffer[256 * 192 * 2 * 4];
 	static int tick = 0;
@@ -547,6 +605,8 @@ static void BuildWindow(GtkApplication *app)
 	gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME");
 	gtk_window_set_default_size(GTK_WINDOW(pWindow), 1024, 768);
 	gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(pWindow), FALSE);
+	g_signal_connect(pWindow, "close-request",
+	                 G_CALLBACK(OnWindowCloseRequest), NULL);
 
 	GtkWidget *root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_window_set_child(GTK_WINDOW(pWindow), root);
@@ -593,6 +653,9 @@ static void BuildWindow(GtkApplication *app)
 	gtk_box_append(GTK_BOX(root), pToolBar);
 
 	pDisplayArea = desmume_display_new();
+	/* Clear the global as soon as GTK finalises the widget, so the frame sink
+	 * can never hand a stale pointer to desmume_display_push_frame(). */
+	g_object_add_weak_pointer(G_OBJECT(pDisplayArea), (gpointer *)&pDisplayArea);
 	gtk_widget_set_hexpand(pDisplayArea, TRUE);
 	gtk_widget_set_vexpand(pDisplayArea, TRUE);
 	g_signal_connect(pDisplayArea, "touch-press", G_CALLBACK(OnTouchPress), NULL);
@@ -667,8 +730,11 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 
 	gtk_window_present(GTK_WINDOW(pWindow));
 
-	desmume_emu_set_frame_sink(PushFrameToDisplay, pDisplayArea);
-	g_timeout_add(1000 / 60, OnFrameTick, NULL);
+	/* Pass the address of the widget pointer, guarded by a weak pointer in
+	 * BuildWindow, so a late frame after close sees NULL instead of a stale
+	 * GObject. */
+	desmume_emu_set_frame_sink(PushFrameToDisplay, &pDisplayArea);
+	sFrameTickSource = g_timeout_add(1000 / 60, OnFrameTick, NULL);
 
 	if (sInitialRom != NULL)
 	{
@@ -680,7 +746,7 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 
 	if (g_getenv("DESMUME_GTK4_TEST_FRAME") != NULL)
 	{
-		g_timeout_add(1000 / 60, PushTestFrame, pDisplayArea);
+		sTestFrameSource = g_timeout_add(1000 / 60, PushTestFrame, &pDisplayArea);
 	}
 
 	if (pConfig->window_fullscreen.get())
@@ -693,6 +759,10 @@ int main(int argc, char *argv[])
 {
 	g_set_prgname("desmume");
 	g_set_application_name("DeSmuME");
+
+	/* Belt and braces: the core's microphone init may touch SDL on any path.
+	 * Keep SDL from hijacking SIGINT/SIGTERM so Ctrl+C still terminates us. */
+	g_setenv("SDL_NO_SIGNAL_HANDLERS", "1", TRUE);
 
 	pConfig = new desmume::config::Config();
 	pConfig->load();
@@ -712,6 +782,7 @@ int main(int argc, char *argv[])
 
 	GtkApplication *app = gtk_application_new("org.desmume.DeSmuME.GTK4",
 	                                          DESMUME_APPLICATION_FLAGS);
+	pApp = app;
 	g_signal_connect(app, "activate", G_CALLBACK(OnActivate), NULL);
 
 	g_action_map_add_action_entries(G_ACTION_MAP(app),
@@ -729,10 +800,14 @@ int main(int argc, char *argv[])
 
 	const int status = g_application_run(G_APPLICATION(app), argc, argv);
 
+	/* The window close handler already did this, but ActionQuit and a
+	 * programmatic quit bypass it.  Stop here too before touching the core. */
+	StopEmulation();
 	desmume_emu_shutdown();
 	g_free(sInitialRom);
 	sInitialRom = NULL;
 
+	pApp = NULL;
 	g_object_unref(app);
 	delete pConfig;
 	pConfig = NULL;

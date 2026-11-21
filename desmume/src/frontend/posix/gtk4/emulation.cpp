@@ -146,6 +146,14 @@ desmume_emu_init(void)
 
 	execute = false;
 
+	/* NDS_Init() -> MMU_Init() -> Mic_Init() opens an SDL audio stream.  SDL
+	 * installs SIGINT/SIGTERM handlers by default and turns them into an
+	 * SDL_QUIT event; this frontend has no SDL event loop, so Ctrl+C would be
+	 * swallowed and the process would stay alive.  Ask SDL to leave POSIX
+	 * signals alone before any SDL subsystem is touched.  Overwrite=TRUE so a
+	 * stale environment value cannot reintroduce the hang. */
+	g_setenv("SDL_NO_SIGNAL_HANDLERS", "1", TRUE);
+
 	if (NDS_Init() != 0)
 	{
 		g_printerr("GTK4: NDS_Init() failed\n");
