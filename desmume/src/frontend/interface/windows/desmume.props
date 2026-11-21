@@ -91,7 +91,7 @@
 
 		<ClCompile>
 
-			<AdditionalIncludeDirectories>.;..\..;..\..\..;..\..\windows;.\SDL3\include;glib-2.20.1\build;..\..\windows\zlib128;..\..\windows\zziplib;..\..\windows\winpcap;userconfig;..\..\windows\agg\include;..\..\windows\agg\examples;..\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\..;..\..\..;..\..\windows;.\SDL3\include;glib-2.20.1\build;..\..\windows\zlib128;..\..\windows\zziplib;..\..\windows\winpcap;userconfig;..\..\windows\agg\include;..\..\windows\agg\examples;..\..\..\libretro-common\include;..\..\..\..\3rdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 			
 			<!-- We are building the interface -->
 			<PreprocessorDefinitions>TARGET_INTERFACE;WIN_EXPORT</PreprocessorDefinitions>
@@ -157,7 +157,7 @@
 			<PreprocessorDefinitions>EXPERIMENTAL_WIFI_COMM=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 			<!-- desmume configuration: features we always have in windows -->
-			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;ASMJIT_STATIC=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 		</ClCompile>
 

@@ -1,7 +1,7 @@
 project('desmume',
   ['c', 'cpp'],
   version: '2.7.10',
-  meson_version: '>=0.45',
+  meson_version: '>=0.54',
   default_options: [
     'warning_level=1',
     'c_std=c11',
@@ -143,11 +143,8 @@ libdesmume_src += [
   '../posix/shared/ctrlssdl.cpp'
 ]
 
-if have_jit
-  libdesmume_src += [
-    '../../arm_jit.cpp',
-  ]
-endif
+# The JIT front-end is compiled in a separate C++20 target below, together
+# with vendored asmjit; it is linked back in with link_whole.
 
 if get_option('opengles')
   if dep_gles.found()
@@ -230,9 +227,58 @@ rval = simd.check('colorspacehandler',
 )
 colorspacehandler_simd = rval[0]
 
+# asmjit and the ARM JIT front-end need C++20, while the rest of the emulator
+# stays on C++14.  Build them as separate archives and merge the objects into
+# libdesmume with link_whole: core code calls the JIT and the JIT calls core
+# code, so a plain link_with would leave a circular dependency between two
+# static archives.  This has to sit after the last add_global_arguments() call.
+jit_link_whole = []
+if have_jit
+  # Upstream includes look like <asmjit/core.h>, so the include root is
+  # 3rdparty, not 3rdparty/asmjit.
+  asmjit_inc = include_directories('../../../3rdparty')
+  asmjit_args = ['-DASMJIT_STATIC']
+  asmjit_std = ['cpp_std=c++20']
+
+  # tools/jit_matrix/gen_asmjit_sources.py is the single source of truth for
+  # the vendored source list (the MSVC and Xcode generators use it too), so
+  # adding a new upstream .cpp does not require editing this file as well.
+  python3 = import('python').find_installation('python3')
+  asmjit_list = run_command(
+    python3,
+    files('../../../../tools/jit_matrix/gen_asmjit_sources.py'),
+    '--format', 'txt',
+    check: true,
+  ).stdout().strip()
+
+  asmjit_src = []
+  foreach src : asmjit_list.split('\n')
+    asmjit_src += ['../../../' + src]
+  endforeach
+
+  libasmjit = static_library('asmjit',
+    asmjit_src,
+    include_directories: asmjit_inc,
+    cpp_args: asmjit_args,
+    override_options: asmjit_std,
+    dependencies: dep_threads,
+  )
+
+  libdesmume_jit = static_library('desmume_jit',
+    ['../../arm_jit.cpp'],
+    include_directories: [includes, asmjit_inc],
+    cpp_args: asmjit_args,
+    override_options: asmjit_std,
+    dependencies: dep_threads,
+  )
+
+  jit_link_whole = [libdesmume_jit, libasmjit]
+endif
+
 library('desmume',
   libdesmume_src,
   dependencies: dependencies,
   include_directories: [includes] + soundtouch_includes,
   link_with: colorspacehandler_simd,
+  link_whole: jit_link_whole,
 )

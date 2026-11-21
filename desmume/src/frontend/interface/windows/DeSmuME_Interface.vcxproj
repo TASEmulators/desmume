@@ -111,7 +111,9 @@
     <ClCompile Include="..\..\..\addons\slot2_paddle.cpp" />
     <ClCompile Include="..\..\..\arm_instructions.cpp" />
     <ClCompile Include="..\..\..\armcpu.cpp" />
-    <ClCompile Include="..\..\..\arm_jit.cpp" />
+    <ClCompile Include="..\..\..\arm_jit.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
     <ClCompile Include="..\..\..\bios.cpp" />
     <ClCompile Include="..\..\..\cheatSystem.cpp" />
     <ClCompile Include="..\..\..\commandline.cpp" />
@@ -183,6 +185,168 @@
     <ClCompile Include="..\..\..\texcache.cpp" />
     <ClCompile Include="..\..\..\thumb_instructions.cpp" />
     <ClCompile Include="..\..\..\utils\advanscene.cpp" />
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\arm\a64_assembler.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\arm\a64_builder.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\arm\a64_compiler.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\arm\a64_emit_helper.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\arm\a64_formatter.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\arm\a64_func.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\arm\a64_inst_api.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\arm\a64_inst_db.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\arm\a64_ra_pass.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\arm\arm_formatter.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\axl\arena.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\axl\arena_bit_set.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\axl\arena_hash.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\axl\arena_vector.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\arch_traits.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\assembler.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\builder.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\code_holder.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\code_writer.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\compiler.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\const_pool.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\cpu_info.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\debug_utils.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\emit_helper.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\emitter.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\emitter_utils.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\environment.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\error.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\error_handler.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\formatter.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\func.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\func_args_context.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\inst.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\inst_db.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\jit_allocator.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\jit_runtime.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\logger.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\pauth.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\ra_local.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\ra_pass.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\ra_stack.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\string.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\target.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\type.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\core\virt_mem.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\x86\x86_assembler.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\x86\x86_builder.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\x86\x86_compiler.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\x86\x86_emit_helper.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\x86\x86_formatter.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\x86\x86_func.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\x86\x86_inst_api.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\x86\x86_inst_db.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\3rdparty\asmjit\x86\x86_ra_pass.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
     <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler.cpp" />
     <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler_AltiVec.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
