@@ -537,6 +537,25 @@ ClientInputDevicePropertiesList InputListFromHIDValue(IOHIDValueRef hidValueRef,
 		return inputPropertyList;
 	}
 	
+	const IOHIDElementRef element = IOHIDValueGetElement(hidValueRef);
+	const IOHIDDeviceRef device = IOHIDElementGetDevice(element);
+	// The Switch Pro 0x30 report uses a proprietary layout, not its HID descriptor.
+	// macOS controller compatibility supplies decoded inputs through a separate device.
+	if (IOHIDElementGetReportID(element) == 0x30 &&
+		[(id)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDVendorIDKey)) isEqual:[NSNumber numberWithInt:0x057e]] &&
+		[(id)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductIDKey)) isEqual:[NSNumber numberWithInt:0x2009]])
+	{
+		return inputPropertyList;
+	}
+
+	const IOHIDElementType type = IOHIDElementGetType(element);
+	if ((type != kIOHIDElementTypeInput_Misc && type != kIOHIDElementTypeInput_Button && type != kIOHIDElementTypeInput_Axis) ||
+		IOHIDElementGetUsagePage(element) == 0 || IOHIDElementGetUsage(element) == 0 ||
+		IOHIDElementGetLogicalMax(element) <= IOHIDElementGetLogicalMin(element))
+	{
+		return inputPropertyList;
+	}
+
 	ClientInputDeviceProperties inputProperty = InputAttributesOfHIDValue(hidValueRef);
 	if (inputProperty.deviceCode[0] == '\0' || inputProperty.elementCode[0] == '\0')
 	{
@@ -606,7 +625,7 @@ ClientInputDevicePropertiesList InputListFromHIDValue(IOHIDValueRef hidValueRef,
 				hatUp.state = ClientInputDeviceState_Off;
 			}
 			
-			inputPropertyList.resize(4);
+			inputPropertyList.reserve(4);
 			inputPropertyList.push_back(hatUp);
 			inputPropertyList.push_back(hatRight);
 			inputPropertyList.push_back(hatDown);
@@ -660,7 +679,7 @@ ClientInputDevicePropertiesList InputListFromHIDValue(IOHIDValueRef hidValueRef,
 					hiInputProperty.state = ClientInputDeviceState_Off;
 				}
 				
-				inputPropertyList.resize(2);
+				inputPropertyList.reserve(2);
 				inputPropertyList.push_back(loInputProperty);
 				inputPropertyList.push_back(hiInputProperty);
 			}
@@ -733,18 +752,21 @@ bool InputDeviceCodeFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charB
 {
 	CFNumberRef cfVendorIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDVendorIDKey));
 	SInt32 vendorID = 0;
-	CFNumberGetValue(cfVendorIDNumber, kCFNumberSInt32Type, &vendorID);
+	if (cfVendorIDNumber != NULL && CFGetTypeID(cfVendorIDNumber) == CFNumberGetTypeID())
+		CFNumberGetValue(cfVendorIDNumber, kCFNumberSInt32Type, &vendorID);
 	
 	CFNumberRef cfProductIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDProductIDKey));
 	SInt32 productID = 0;
-	CFNumberGetValue(cfProductIDNumber, kCFNumberSInt32Type, &productID);
+	if (cfProductIDNumber != NULL && CFGetTypeID(cfProductIDNumber) == CFNumberGetTypeID())
+		CFNumberGetValue(cfProductIDNumber, kCFNumberSInt32Type, &productID);
 	
 	CFStringRef cfDeviceCode = (CFStringRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDSerialNumberKey));
 	if (cfDeviceCode == nil)
 	{
 		CFNumberRef cfLocationIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDLocationIDKey));
 		SInt32 locationID = 0;
-		CFNumberGetValue(cfLocationIDNumber, kCFNumberSInt32Type, &locationID);
+		if (cfLocationIDNumber != NULL && CFGetTypeID(cfLocationIDNumber) == CFNumberGetTypeID())
+			CFNumberGetValue(cfLocationIDNumber, kCFNumberSInt32Type, &locationID);
 		
 		snprintf(charBuffer, INPUT_HANDLER_STRING_LENGTH, "%d/%d/0x%08X", (int)vendorID, (int)productID, (unsigned int)locationID);
 	}
