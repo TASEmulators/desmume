@@ -99,6 +99,13 @@ static void takeSnapshot(CpuSnapshot *s, u32 cycles)
 // instruct_adr. Leaving the prefetch at zero makes the interpreter execute
 // ANDeq r0,r0,r0 (condition false, i.e. a no-op) and every comparison then
 // looks like a JIT bug.
+// Stack pointer the probes prime with. kStackTop is the first byte *past* main
+// RAM, which is fine for the descending forms (PUSH/STMDB write below it) but
+// puts every ascending access outside the mapped region. Probes that read at or
+// above the base set this to a spot 64 bytes inside RAM instead, so the data
+// path is compared rather than only the fault path.
+static u32 gPrimeSp = 0;
+
 static void primeState(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr)
 {
 	memset(NDS_ARM9.R, 0, sizeof(NDS_ARM9.R));
@@ -117,7 +124,7 @@ static void primeState(u32 codeAdr, const u32 *ops, u32 opcode, u32 cpsr)
 	// R13 must point at real memory: the JIT writes to the stack on some paths
 	// (measured as an access violation when SP was left at 0), and an emulated
 	// instruction may legitimately push. Keep it inside ARM9 main RAM.
-	NDS_ARM9.R[13] = kStackTop;
+	NDS_ARM9.R[13] = gPrimeSp ? gPrimeSp : kStackTop;
 
 	// R15 must be primed to the value the pipeline would have left there, not to
 	// the address of the instruction. armcpu_prefetch() establishes
@@ -487,7 +494,44 @@ struct Probe
 	const char *name;
 	u32 opcode;
 	bool thumb;
+	// null = the default kOperands rotation. Probes whose base or target
+	// register cannot be an arbitrary 32-bit value pin their own set: an
+	// address of 0x7FFFFFFF would put every access outside main RAM and the
+	// comparison would only ever cover the fault path.
+	const u32 *ops;
+	// 0 = kStackTop. See gPrimeSp.
+	u32 sp;
 };
+
+// A stack pointer inside main RAM, 64 bytes below the end. The default
+// kStackTop sits one byte past the last mapped byte, which is fine for the
+// descending forms but leaves every ascending access unmapped.
+static const u32 kStackProbe = 0x023FFFC0u;
+
+// R0 = base, the rest is data. Used by the Thumb forms whose base is not SP.
+static const u32 kOpsStack[8] = {
+	kStackProbe, 0x11223344u, 0x55667788u, 0x99AABBCCu,
+	0xDEADBEEFu, 0x00000004u, 0x00000008u, 0x00000010u,
+};
+
+// R1 = base, R2 = offset, R0 = value. The Thumb register-offset forms have no
+// SP-relative encoding, and a 0x7FFFFFFF base would only test the fault path.
+static const u32 kOpsThumbMem[8] = {
+	0xDEADBEEFu, kStackProbe, 0x00000004u, 0, 0, 0, 0, 0,
+};
+
+// Small offsets for the ARM register-offset forms (R1 = Rm).
+static const u32 kOpsOffsets[8] = {
+	0x00000000u, 0x00000004u, 0x00000008u, 0x0000000Cu,
+	0x00000010u, 0x00000020u, 0x00000040u, 0x00000080u,
+};
+
+// R0 = IRQ mode: `msr cpsr_c, r0` has to bank R13/R14 rather than switch to an
+// architecturally invalid mode.
+static const u32 kOpsMode[8] = { 0x00000012u, kStackProbe, 0, 0, 0, 0, 0, 0 };
+
+// BX/BLX targets: ARM state 0x02000300 and Thumb state 0x02000305.
+static const u32 kOpsBx[8] = { 0x02000301u, 0x02000305u, 0, 0, 0, 0, 0, 0 };
 
 // Targeted probes, on top of the slot sweep. The sweep's opcodes all have zero
 // low bits, so a register-shift instruction always ends up with Rs == Rd == r0;
@@ -557,6 +601,140 @@ static const Probe kProbes[] = {
 	{ "THUMB ASR  r0,r1",        0x4108u, true },
 	{ "THUMB ROR  r0,r0",        0x41C0u, true },
 	{ "THUMB ROR  r0,r1",        0x41C8u, true },
+
+	// ----------------------------------------------------------------------
+	// The block-level probe on the arm64 device covers shapes the slot sweep
+	// cannot reach, because the sweep forces every operand field to zero. These
+	// are the same shapes, ported so the x64 backend is held to them too.
+	// ----------------------------------------------------------------------
+
+	// LDRD/STRD: the only doubleword accesses, and the only handlers whose
+	// helper walks cpu->R[] by *index* (op_ldrd_tab / op_strd_tab). A
+	// destination still sitting in a cache slot is the mistake to catch, and
+	// the W bit has its own write-back ordering per index mode.
+	{ "ARM   LDRD r0,[r13]",       0xE1CD00D0u, false, nullptr, kStackProbe },
+	{ "ARM   LDRD r0,[r13,#8]",    0xE1CD00D8u, false, nullptr, kStackProbe },
+	{ "ARM   LDRD r0,[r13],#8",    0xE0CD00D8u, false, nullptr, kStackProbe },
+	{ "ARM   LDRD r0,[r13,#8]!",   0xE1ED00D8u, false, nullptr, kStackProbe },
+	{ "ARM   LDRD r0,[r13,r1]",    0xE18D00D1u, false, kOpsOffsets, kStackProbe },
+	{ "ARM   STRD r0,[r13]",       0xE1CD00F0u, false, nullptr, kStackProbe },
+	{ "ARM   STRD r0,[r13,#8]",    0xE1CD00F8u, false, nullptr, kStackProbe },
+	{ "ARM   STRD r0,[r13],#8",    0xE0CD00F8u, false, nullptr, kStackProbe },
+	{ "ARM   STRD r0,[r13,#8]!",   0xE1ED00F8u, false, nullptr, kStackProbe },
+	{ "ARM   STRD r0,[r13,r1]",    0xE18D00F1u, false, kOpsOffsets, kStackProbe },
+
+	// SWP/SWPB: address and data by value, destination through `u32*`.
+	{ "ARM   SWP  r0,r1,[r13]",    0xE10D0091u, false, nullptr, kStackProbe },
+	{ "ARM   SWPB r0,r1,[r13]",    0xE14D0091u, false, nullptr, kStackProbe },
+
+	// LDM/STM: all four address modes. The list also carries a PC variant,
+	// because a load with bit 15 set is a branch and a store with bit 15 set
+	// leaks whatever the pipeline holds.
+	{ "ARM   LDMIA r13!,{r0-r2}",  0xE8BD0007u, false, nullptr, kStackProbe },
+	{ "ARM   LDMIB r13,{r0-r2}",   0xE99D0007u, false, nullptr, kStackProbe },
+	{ "ARM   LDMDA r13,{r0-r2}",   0xE81D0007u, false, nullptr, kStackProbe },
+	{ "ARM   LDMDB r13,{r0-r2}",   0xE91D0007u, false, nullptr, kStackProbe },
+	{ "ARM   STMIA r13!,{r0-r2}",  0xE8AD0007u, false, nullptr, kStackProbe },
+	{ "ARM   STMIB r13!,{r0-r2}",  0xE9AD0007u, false, nullptr, kStackProbe },
+	{ "ARM   STMDA r13,{r0-r2}",   0xE80D0007u, false, nullptr, kStackProbe },
+	{ "ARM   STMDB r13!,{r0-r2}",  0xE92D0007u, false, nullptr, kStackProbe },
+	{ "ARM   LDMIA r13!,{r0,pc}",  0xE8BD8001u, false, nullptr, kStackProbe },
+	{ "ARM   STMDB r13!,{r0,pc}",  0xE92D8001u, false, nullptr, kStackProbe },
+
+	// Register offset *with a shift*: Rm goes through the shifter, which is the
+	// path the arm64 backend only just moved onto its register cache.
+	{ "ARM   LDR r0,[r13,r1,LSL2]",0xE79D0101u, false, kOpsOffsets, kStackProbe },
+	{ "ARM   LDR r0,[r13,-r1]",    0xE71D0001u, false, kOpsOffsets, kStackProbe },
+	{ "ARM   LDR r0,[r13,r1,ASR2]",0xE79D0141u, false, kOpsOffsets, kStackProbe },
+	{ "ARM   STR r0,[r13,r1,LSL2]",0xE78D0101u, false, kOpsOffsets, kStackProbe },
+	{ "ARM   STR r0,[r13,-r1]",    0xE70D0001u, false, kOpsOffsets, kStackProbe },
+
+	// Rd == PC on a load: the block ends by branching to the loaded word. This
+	// is the shape that used to fail asmjit's finalize pass on arm64.
+	{ "ARM   LDR pc,[r13,#4]",     0xE59DF004u, false, nullptr, kStackProbe },
+
+	// Multiply family: the operand that the cycle tail rewrites in place is the
+	// reason these cannot take a cache slot, on either backend.
+	{ "ARM   MULS r0,r1,r2",       0xE0100291u, false },
+	{ "ARM   MLA  r0,r1,r2,r3",    0xE0203291u, false },
+	{ "ARM   UMULL r4,r5,r1,r2",   0xE0854291u, false },
+	{ "ARM   SMULL r4,r5,r1,r2",   0xE0C54291u, false },
+	{ "ARM   UMLAL r4,r5,r1,r2",   0xE0A54291u, false },
+	{ "ARM   SMLAL r4,r5,r1,r2",   0xE0E54291u, false },
+	{ "ARM   SMULBB r0,r1,r2",     0xE1600281u, false },
+	{ "ARM   SMLABT r0,r1,r2,r3",  0xE10032C1u, false },
+	{ "ARM   SMULWB r0,r1,r2",     0xE12002A1u, false },
+	{ "ARM   SMLAWX r0,r1,r2,r3",  0xE12032C1u, false },
+	{ "ARM   SMLALBB r4,r5,r1,r2", 0xE1454281u, false },
+	{ "ARM   CLZ  r0,r1",          0xE16F0F11u, false },
+
+	// Shifts by register: Rm and Rs are separate fields, and Rs is what the
+	// sweep pins to zero.
+	{ "ARM   MOV r0,r1,LSR r2",    0xE1A00231u, false },
+	{ "ARM   MOV r0,r1,ASR r2",    0xE1A00251u, false },
+	{ "ARM   MOV r0,r1,ROR r2",    0xE1A00271u, false },
+	{ "ARM   ORR r0,r1,r2,LSL r3", 0xE1810312u, false },
+
+	// PSR transfer. The last one leaves supervisor mode, which forces the
+	// banking path (armcpu_switchMode) through both engines.
+	{ "ARM   MRS  r0,CPSR",        0xE10F0000u, false },
+	{ "ARM   MRS  r0,SPSR",        0xE14F0000u, false },
+	{ "ARM   MSR  CPSR_f,r0",      0xE128F000u, false },
+	{ "ARM   MSR  SPSR_f,r0",      0xE168F000u, false },
+	{ "ARM   MSR  CPSR_c,r0",      0xE121F000u, false, kOpsMode },
+
+	// Branch / exception.
+	{ "ARM   B    #+8",            0xEA000002u, false },
+	{ "ARM   BL   #+8",            0xEB000002u, false },
+	{ "ARM   BX   r0",             0xE12FFF10u, false, kOpsBx },
+	{ "ARM   BLX  r1",             0xE12FFF31u, false, kOpsBx },
+	{ "ARM   SWI  #0",             0xEF000000u, false },
+	{ "ARM   BKPT #0",             0xE1200070u, false },
+
+	// Thumb memory: immediate and register-offset forms for every width, with a
+	// base inside main RAM (format 3 has no SP-relative encoding).
+	{ "THUMB LDR  r0,[r1,#4]",     0x6848u, true, kOpsThumbMem },
+	{ "THUMB STR  r0,[r1,#4]",     0x6048u, true, kOpsThumbMem },
+	{ "THUMB LDRB r0,[r1,#1]",     0x7848u, true, kOpsThumbMem },
+	{ "THUMB STRB r0,[r1,#1]",     0x7048u, true, kOpsThumbMem },
+	{ "THUMB LDRH r0,[r1,#2]",     0x8848u, true, kOpsThumbMem },
+	{ "THUMB STRH r0,[r1,#2]",     0x8048u, true, kOpsThumbMem },
+	{ "THUMB LDR  r0,[r1,r2]",     0x5888u, true, kOpsThumbMem },
+	{ "THUMB LDRB r0,[r1,r2]",     0x5C88u, true, kOpsThumbMem },
+	{ "THUMB STRB r0,[r1,r2]",     0x5488u, true, kOpsThumbMem },
+	{ "THUMB LDRH r0,[r1,r2]",     0x5A88u, true, kOpsThumbMem },
+	{ "THUMB STRH r0,[r1,r2]",     0x5288u, true, kOpsThumbMem },
+	{ "THUMB LDRSB r0,[r1,r2]",    0x5688u, true, kOpsThumbMem },
+	{ "THUMB LDRSH r0,[r1,r2]",    0x5E88u, true, kOpsThumbMem },
+
+	// Thumb PC/SP arithmetic and the block-level stack forms.
+	{ "THUMB LDR  r0,[pc,#4]",     0x4801u, true },
+	{ "THUMB ADR  r0,#4",          0xA001u, true },
+	{ "THUMB ADD  r0,sp,#4",       0xA801u, true },
+	{ "THUMB PUSH {r0,lr}",        0xB501u, true },
+	{ "THUMB POP  {r0,pc}",        0xBD01u, true },
+	{ "THUMB LDMIA r0!,{r1,r2}",   0xC806u, true, kOpsStack },
+	{ "THUMB STMIA r0!,{r1,r2}",   0xC006u, true, kOpsStack },
+
+	// Thumb control flow and exceptions.
+	{ "THUMB B    #+8",            0xE004u, true },
+	{ "THUMB BEQ  #+8",            0xD004u, true },
+	{ "THUMB SWI  #0",             0xDF00u, true },
+	{ "THUMB BKPT #0",             0xBE00u, true },
+	{ "THUMB BX   r1",             0x4708u, true, kOpsBx },
+	{ "THUMB BLX  r1",             0x4788u, true, kOpsBx },
+
+	// Thumb high-register forms (both registers low is the deprecated encoding
+	// the assembler refuses to emit, so these are spelled as `.inst`).
+	{ "THUMB MOV  r0,r1 (hi)",     0x4608u, true },
+	{ "THUMB ADD  r0,r1 (hi)",     0x4408u, true },
+	{ "THUMB CMP  r0,r1 (hi)",     0x4288u, true },
+
+	// Thumb immediate ALU: the sweep only reaches the zero immediate.
+	{ "THUMB MOVS r0,#5",          0x2005u, true },
+	{ "THUMB CMP  r0,#5",          0x2805u, true },
+	{ "THUMB ADDS r0,#5",          0x3005u, true },
+	{ "THUMB SUBS r0,#5",          0x3805u, true },
 };
 
 // CPSR variants. For ARM the condition field is part of the dispatch index
@@ -584,16 +762,22 @@ static int runProbes(void)
 	const int probeCount = (int)(sizeof(kProbes) / sizeof(kProbes[0]));
 	const int vectors = 8;
 	int failures = 0;
+	int cycleRecords = 0;
 	u32 codeAdr = kCodeBase;
 
 	for (int p = 0; p < probeCount; p++)
 	{
+		// Probes that read at or above their base have to see mapped memory;
+		// see gPrimeSp. Restored after the probe so the sweep is unaffected.
+		gPrimeSp = kProbes[p].sp;
+
 		for (int v = 0; v < vectors; v++)
 		{
-			const u32 ops[8] = {
+			const u32 rotated[8] = {
 				kOperands[v], kOperands[(v + 1) & 7], kOperands[(v + 2) & 7], kOperands[(v + 3) & 7],
 				kOperands[(v + 4) & 7], kOperands[(v + 5) & 7], kOperands[(v + 6) & 7], kOperands[(v + 7) & 7],
 			};
+			const u32 *ops = kProbes[p].ops ? kProbes[p].ops : rotated;
 
 			if (kProbes[p].thumb)
 				_MMU_write16<0>(codeAdr, (u16)kProbes[p].opcode);
@@ -611,9 +795,25 @@ static int runProbes(void)
 				u32 jitCycles = 0;
 				if (!compareOne(codeAdr, ops, kProbes[p].opcode, cpsr, why, sizeof(why), &jitCycles))
 				{
-					printf("FAIL  %-24s vec%d f=%d  %s\n", kProbes[p].name, v, f, why);
-					fflush(stdout);
-					failures++;
+					// Same arbitration as the sweep: a cycle difference is a
+					// record, not a failure. The JIT's cycle model is
+					// approximate by design (§3.5), and one encoder decision can
+					// move every instruction in a class at once -- which is
+					// exactly what `--full` already reports as a bucket. An
+					// architectural difference (R0-R14, CPSR, instruct_adr, a
+					// fault, an invariant break) still fails.
+					if (strncmp(why, "cycles:", 7) == 0)
+					{
+						cycleRecords++;
+						if (gTrace)
+							printf("note  %-24s vec%d f=%d  %s\n", kProbes[p].name, v, f, why);
+					}
+					else
+					{
+						printf("FAIL  %-24s vec%d f=%d  %s\n", kProbes[p].name, v, f, why);
+						fflush(stdout);
+						failures++;
+					}
 				}
 			}
 
@@ -621,9 +821,12 @@ static int runProbes(void)
 			// block compiled for a different opcode.
 			codeAdr += 4;
 		}
+
+		gPrimeSp = 0;
 	}
 
-	printf("\n%d probe(s) x %d vectors x 2 flags: %d mismatch(es)\n", probeCount, vectors, failures);
+	printf("\n%d probe(s) x %d vectors x 2 flags: %d mismatch(es), %d cycle record(s)\n",
+		probeCount, vectors, failures, cycleRecords);
 	return failures;
 }
 // The emulator's own mnemonic tables, so a report line names the same
