@@ -160,6 +160,16 @@ gboolean desmume_emu_movie_active(void);
  * is loaded.  Owned string; used to seed movie file names. */
 char *desmume_emu_rom_base_name(void);
 
+/* Mirror the GTK config's Audio section into the core.  Call before
+ * desmume_emu_init(); the settings are applied when the core starts.  The
+ * individual setters also work at runtime and update a live sound core. */
+void desmume_emu_set_audio_config(gboolean enabled, int volume,
+                                  int sync_mode, int interpolation);
+void desmume_emu_set_audio_enabled(gboolean enabled);
+void desmume_emu_set_audio_volume(int volume);
+void desmume_emu_set_audio_sync(int sync_mode);
+void desmume_emu_set_audio_interpolation(int interpolation);
+
 /* Keyvals use the GTK3 default keymap.  Touch coordinates are in NDS logical
  * space (0..255 / 0..191), exactly what DesmumeDisplay's signals emit. */
 void desmume_emu_set_key(guint keyval, gboolean pressed);

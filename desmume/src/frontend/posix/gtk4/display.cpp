@@ -143,6 +143,9 @@ struct _DesmumeDisplay
 	double hybrid_scale; /* <= 0: compute like GTK3 */
 
 	gboolean stylus_active;
+	/* Primary button is held down over the touch screen.  Motion only feeds
+	 * the stylus position while this is set, matching GTK3's `click` latch. */
+	gboolean touch_active;
 
 	/* §6.2: presentation throttle while the toplevel is not active. */
 	gint64 last_present_us;
@@ -652,14 +655,16 @@ desmume_display_map_touch(DesmumeDisplay *self, double x, double y,
 
 /* --------------------------------------------------------------- controllers */
 
-static void
+static gboolean
 emit_touch(DesmumeDisplay *self, guint signal, double x, double y)
 {
 	double nx, ny;
 	if (desmume_display_map_touch(self, x, y, &nx, &ny))
 	{
 		g_signal_emit(self, display_signals[signal], 0, nx, ny);
+		return TRUE;
 	}
+	return FALSE;
 }
 
 static void
@@ -678,7 +683,7 @@ on_click_pressed(GtkGestureClick *gesture, int n_press,
 	}
 
 	gtk_widget_grab_focus(GTK_WIDGET(self));
-	emit_touch(self, SIG_TOUCH_PRESS, x, y);
+	self->touch_active = emit_touch(self, SIG_TOUCH_PRESS, x, y);
 }
 
 static void
@@ -691,11 +696,12 @@ on_click_released(GtkGestureClick *gesture, int n_press,
 	(void)x;
 	(void)y;
 
-	if (self->stylus_active)
+	if (self->stylus_active || !self->touch_active)
 	{
 		return;
 	}
 
+	self->touch_active = FALSE;
 	g_signal_emit(self, display_signals[SIG_TOUCH_RELEASE], 0);
 }
 
@@ -706,7 +712,9 @@ on_motion(GtkEventControllerMotion *controller,
 	DesmumeDisplay *self = DESMUME_DISPLAY(user_data);
 	(void)controller;
 
-	if (self->stylus_active)
+	/* Hovering must not touch the screen: only drag the stylus while the
+	 * primary button (or a pen, via the stylus gesture) is down. */
+	if (self->stylus_active || !self->touch_active)
 	{
 		return;
 	}
@@ -730,6 +738,9 @@ on_stylus_down(GtkGestureStylus *stylus, gpointer user_data)
 	double x, y;
 
 	self->stylus_active = TRUE;
+	/* The pen owns the touch until it lifts, so a pending mouse press must
+	 * not keep motion active afterwards. */
+	self->touch_active = FALSE;
 	gtk_widget_grab_focus(GTK_WIDGET(self));
 	if (get_stylus_point(stylus, &x, &y))
 	{

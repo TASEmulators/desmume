@@ -32,6 +32,7 @@
 #include "utils/datetime.h"
 #include "utils/xstring.h"
 #include "path.h"
+#include "../shared/sndsdl.h"
 #include "../../shared/ram_debug_core.h"
 #include "filter/videofilter.h"
 #include "utils/colorspacehandler/colorspacehandler.h"
@@ -47,13 +48,12 @@
 volatile bool execute = false;
 BOOL click = FALSE;
 
-/* Sound is deliberately disabled in P3a: no SDL audio device is opened, so
- * the main loop stays entirely on the GTK thread.  A real sound core will be
- * selected when the audio settings dialog arrives. */
+/* SDL output is selected after NDS_Init(); the dummy core stays first so the
+ * core's own SPU_Init(SNDCORE_DUMMY) keeps working. */
 SoundInterface_struct *SNDCoreList[] =
 {
 	&SNDDummy,
-	&SNDDummy,
+	&SNDSDL,
 	NULL
 };
 
@@ -74,6 +74,14 @@ static gboolean sStateExists[NB_STATES] = { FALSE };
 
 static DesmumeFrameSink sFrameSink = NULL;
 static gpointer sFrameSinkData = NULL;
+
+/* Audio settings mirrored from the GTK config (Audio/Enabled, Volume, ...).
+ * Defaults match config_opts.h; the values are applied in desmume_emu_init()
+ * once the core has been initialised. */
+static gboolean sAudioEnabled = TRUE;
+static int sAudioVolume = 128;
+static int sAudioSync = 0;
+static int sAudioInterpolation = 1;
 
 /* ------------------------------------------------------- zero-copy frame pool
  * The core's custom buffer is converted straight into a pooled BGRA8888
@@ -567,6 +575,143 @@ apply_keys(void)
 	           (k >> 15) & 1); /* Lid */
 }
 
+/* ---------------------------------------------------------------- audio */
+
+static void
+apply_audio_sync(void)
+{
+	switch (sAudioSync)
+	{
+	case 1: /* SPUMODE_SYNCN */
+	case 2: /* SPUMODE_SYNCZ */
+		SPU_SetSynchMode(1, sAudioSync - 1);
+		break;
+#ifdef HAVE_LIBSOUNDTOUCH
+	case 3: /* SPUMODE_SYNCP */
+		SPU_SetSynchMode(1, 2);
+		break;
+#endif
+	default:
+		SPU_SetSynchMode(0, 0);
+		break;
+	}
+}
+
+/* Push the current settings into a live core.  Safe to call repeatedly: the
+ * enable path tears down and recreates the SDL core, so it doubles as the
+ * "audio settings changed" refresh. */
+static void
+apply_audio_settings(void)
+{
+	CommonSettings.spuInterpolationMode =
+		(SPUInterpolationMode)sAudioInterpolation;
+
+	if (!sAudioEnabled)
+	{
+		return;
+	}
+
+	if (SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4) != 0)
+	{
+		g_printerr("GTK4: SDL audio output unavailable; sound disabled\n");
+		return;
+	}
+
+	SPU_SetVolume(sAudioVolume);
+	apply_audio_sync();
+}
+
+void
+desmume_emu_set_audio_config(gboolean enabled, int volume,
+                             int sync_mode, int interpolation)
+{
+#ifndef HAVE_LIBSOUNDTOUCH
+	if (sync_mode == 3)
+	{
+		sync_mode = 0;
+	}
+#endif
+
+	sAudioEnabled = enabled;
+	sAudioVolume = volume;
+	sAudioSync = sync_mode;
+	sAudioInterpolation = interpolation;
+
+	if (!sInitialized)
+	{
+		return;
+	}
+
+	if (sAudioEnabled)
+	{
+		apply_audio_settings();
+	}
+	else
+	{
+		CommonSettings.spuInterpolationMode =
+			(SPUInterpolationMode)sAudioInterpolation;
+		SPU_ChangeSoundCore(0, 0);
+	}
+}
+
+void
+desmume_emu_set_audio_enabled(gboolean enabled)
+{
+	sAudioEnabled = enabled;
+
+	if (!sInitialized)
+	{
+		return;
+	}
+
+	if (enabled)
+	{
+		apply_audio_settings();
+	}
+	else
+	{
+		SPU_ChangeSoundCore(0, 0);
+	}
+}
+
+void
+desmume_emu_set_audio_volume(int volume)
+{
+	sAudioVolume = volume;
+	if (sInitialized && sAudioEnabled)
+	{
+		SPU_SetVolume(sAudioVolume);
+	}
+}
+
+void
+desmume_emu_set_audio_sync(int sync_mode)
+{
+#ifndef HAVE_LIBSOUNDTOUCH
+	if (sync_mode == 3)
+	{
+		sync_mode = 0;
+	}
+#endif
+
+	sAudioSync = sync_mode;
+	if (sInitialized && sAudioEnabled)
+	{
+		apply_audio_sync();
+	}
+}
+
+void
+desmume_emu_set_audio_interpolation(int interpolation)
+{
+	sAudioInterpolation = interpolation;
+	if (sInitialized)
+	{
+		CommonSettings.spuInterpolationMode =
+			(SPUInterpolationMode)sAudioInterpolation;
+	}
+}
+
 void
 desmume_emu_set_key(guint keyval, gboolean pressed)
 {
@@ -629,6 +774,11 @@ desmume_emu_init(void)
 		g_printerr("GTK4: NDS_Init() failed\n");
 		return FALSE;
 	}
+
+	/* NDS_Init() selects the dummy SPU core; switch to the configured SDL
+	 * output now that the core exists.  Keep running silently if the device
+	 * cannot be opened, so a headless machine can still emulate. */
+	apply_audio_settings();
 
 	/* The null renderer would leave 3D screens black.  The rasteriser is
 	 * always compiled into libdesmume on POSIX builds. */
