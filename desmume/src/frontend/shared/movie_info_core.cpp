@@ -421,7 +421,9 @@ std::string FormatRecordDate(const std::string &raw)
 
 	const time_t tt = (time_t)t;
 	struct tm tmBuf;
-#if defined(_MSC_VER)
+#if defined(_WIN32)
+	// Both MSVC and MinGW provide the C11 localtime_s(tm*, time_t*) form;
+	// MinGW has no localtime_r(), so gate on _WIN32 rather than _MSC_VER.
 	if (localtime_s(&tmBuf, &tt) != 0)
 		return "Unknown";
 #else

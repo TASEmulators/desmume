@@ -137,20 +137,80 @@ libdesmume_a_SOURCES += \
 	shared/wgpu_present_linux.cpp
 endif
 
+# asmjit and the ARM JIT front-end need C++20 while the rest of the core
+# stays at C++14 (configure.ac).  Compile them in a convenience library with
+# per-target flags, then fold its objects into libdesmume.a: core code calls
+# the JIT and the JIT calls core code, so two separate archives would be
+# circular.  This is the autotools equivalent of Meson's link_whole.
 if HAVE_JIT
-libdesmume_a_SOURCES += \
-	../../arm_jit.h ../../instruction_attributes.h
+noinst_LIBRARIES += libdesmume_jit.a
+libdesmume_a_LIBADD = $(libdesmume_jit_a_OBJECTS)
+libdesmume_jit_a_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/../../../3rdparty -DASMJIT_STATIC
+libdesmume_jit_a_CXXFLAGS = $(AM_CXXFLAGS) $(CXXFLAGS) -std=c++20
+libdesmume_jit_a_SOURCES = \
+	../../arm_jit.h ../../instruction_attributes.h \
+	../../../3rdparty/asmjit/arm/a64_assembler.cpp \
+	../../../3rdparty/asmjit/arm/a64_builder.cpp \
+	../../../3rdparty/asmjit/arm/a64_compiler.cpp \
+	../../../3rdparty/asmjit/arm/a64_emit_helper.cpp \
+	../../../3rdparty/asmjit/arm/a64_formatter.cpp \
+	../../../3rdparty/asmjit/arm/a64_func.cpp \
+	../../../3rdparty/asmjit/arm/a64_inst_api.cpp \
+	../../../3rdparty/asmjit/arm/a64_inst_db.cpp \
+	../../../3rdparty/asmjit/arm/a64_ra_pass.cpp \
+	../../../3rdparty/asmjit/arm/arm_formatter.cpp \
+	../../../3rdparty/asmjit/axl/arena.cpp \
+	../../../3rdparty/asmjit/axl/arena_bit_set.cpp \
+	../../../3rdparty/asmjit/axl/arena_hash.cpp \
+	../../../3rdparty/asmjit/axl/arena_vector.cpp \
+	../../../3rdparty/asmjit/core/arch_traits.cpp \
+	../../../3rdparty/asmjit/core/assembler.cpp \
+	../../../3rdparty/asmjit/core/builder.cpp \
+	../../../3rdparty/asmjit/core/code_holder.cpp \
+	../../../3rdparty/asmjit/core/code_writer.cpp \
+	../../../3rdparty/asmjit/core/compiler.cpp \
+	../../../3rdparty/asmjit/core/const_pool.cpp \
+	../../../3rdparty/asmjit/core/cpu_info.cpp \
+	../../../3rdparty/asmjit/core/debug_utils.cpp \
+	../../../3rdparty/asmjit/core/emit_helper.cpp \
+	../../../3rdparty/asmjit/core/emitter.cpp \
+	../../../3rdparty/asmjit/core/emitter_utils.cpp \
+	../../../3rdparty/asmjit/core/environment.cpp \
+	../../../3rdparty/asmjit/core/error.cpp \
+	../../../3rdparty/asmjit/core/error_handler.cpp \
+	../../../3rdparty/asmjit/core/formatter.cpp \
+	../../../3rdparty/asmjit/core/func.cpp \
+	../../../3rdparty/asmjit/core/func_args_context.cpp \
+	../../../3rdparty/asmjit/core/inst.cpp \
+	../../../3rdparty/asmjit/core/inst_db.cpp \
+	../../../3rdparty/asmjit/core/jit_allocator.cpp \
+	../../../3rdparty/asmjit/core/jit_runtime.cpp \
+	../../../3rdparty/asmjit/core/logger.cpp \
+	../../../3rdparty/asmjit/core/pauth.cpp \
+	../../../3rdparty/asmjit/core/ra_local.cpp \
+	../../../3rdparty/asmjit/core/ra_pass.cpp \
+	../../../3rdparty/asmjit/core/ra_stack.cpp \
+	../../../3rdparty/asmjit/core/string.cpp \
+	../../../3rdparty/asmjit/core/target.cpp \
+	../../../3rdparty/asmjit/core/type.cpp \
+	../../../3rdparty/asmjit/core/virt_mem.cpp \
+	../../../3rdparty/asmjit/x86/x86_assembler.cpp \
+	../../../3rdparty/asmjit/x86/x86_builder.cpp \
+	../../../3rdparty/asmjit/x86/x86_compiler.cpp \
+	../../../3rdparty/asmjit/x86/x86_emit_helper.cpp \
+	../../../3rdparty/asmjit/x86/x86_formatter.cpp \
+	../../../3rdparty/asmjit/x86/x86_func.cpp \
+	../../../3rdparty/asmjit/x86/x86_inst_api.cpp \
+	../../../3rdparty/asmjit/x86/x86_inst_db.cpp \
+	../../../3rdparty/asmjit/x86/x86_ra_pass.cpp
 
 if HOST_CPU_KIND_X86
-libdesmume_a_SOURCES += \
-	../../arm_jit.cpp \
+libdesmume_jit_a_SOURCES += ../../arm_jit.cpp
 else
 if HOST_CPU_KIND_ARM
-libdesmume_a_SOURCES += \
-	../../utils/arm_jit/arm_jit_arm.cpp
+libdesmume_jit_a_SOURCES += ../../utils/arm_jit/arm_jit_arm.cpp
 endif
 endif
-
 endif
 
 libdesmume_a_SOURCES += shared/desmume_config.cpp shared/desmume_config.h

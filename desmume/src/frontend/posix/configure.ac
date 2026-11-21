@@ -22,9 +22,11 @@ AC_PROG_CXX
 
 dnl -- types.h uses std::atomic / std::memory_order_*, which needs C++11 at
 dnl    minimum.  Meson builds the POSIX frontends with cpp_std=c++14, so use
-dnl    the same standard here; otherwise autotools silently falls back to the
+dnl    the same baseline here; otherwise autotools silently falls back to the
 dnl    compiler's (possibly C++98) default and the CLI/GTK2 build fails.
-CXXFLAGS="$CXXFLAGS -std=c++14"
+dnl    The baseline lives in AM_CXXFLAGS (desmume.mk), not CXXFLAGS: automake
+dnl    appends CXXFLAGS last, which would override a per-target -std=c++20 on
+dnl    the JIT/asmjit objects.  AM_CXXFLAGS can be overridden per target.
 
 dnl -- use ranlib for libraries
 AC_PROG_RANLIB
