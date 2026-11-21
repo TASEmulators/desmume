@@ -33,6 +33,19 @@ const char *desmume_emu_rom_name(void);
 void desmume_emu_set_running(gboolean running);
 gboolean desmume_emu_get_running(void);
 
+/* Reset the running ROM in place (equivalent of the core's NDS_Reset()). */
+void desmume_emu_reset(void);
+
+/* Savestate slots are numbered 0..9 (the UI shows them as 1..10). */
+gboolean desmume_emu_save_state(int slot);
+gboolean desmume_emu_load_state(int slot);
+void desmume_emu_scan_states(void);
+gboolean desmume_emu_state_exists(int slot);
+
+/* Save a PNG screenshot of the current frame (both screens) to path.
+ * Returns TRUE on success; on failure *error_message holds a owned string. */
+gboolean desmume_emu_screenshot(const char *path, char **error_message);
+
 void desmume_emu_set_frame_sink(DesmumeFrameSink sink, gpointer user_data);
 
 /* Run one frame and push it to the frame sink.  Safe to call with no ROM. */

@@ -4,7 +4,7 @@
 > 迁移目标：`desmume/src/frontend/posix/gtk4/`（新增目录，GTK4）
 > 原则：**`gtk/` 一行不改，保持可编译、可发布**；所有新工作只进 `gtk4/`
 > 基线版本：**GTK ≥ 4.10**（理由见 §3 D2），实际验证目标 4.14+
-> 状态：P0/P1/P2 已完成；P3a（核心与主循环）已完成，P3b（其余动作/对话框）待做（§14）
+> 状态：P0/P1/P2 已完成；P3a（核心与主循环）、P3b 核心动作已完成；P3b 录制/工具与 P4–P8 待做（§14）
 > 日期：2026-11-20
 
 ---
@@ -974,7 +974,7 @@ meson install -C build-gtk4 --destdir /tmp/gtk4-root
 | P1 外壳/装饰 | **已完成** | gresource 菜单/快捷键/CSS、三个可见性开关、SSD/CSD 共用内容树；编译链接通过（§14） |
 | P2 显示/输入 | **已完成** | `DesmumeDisplay` + GdkTexture 呈现；混合布局/旋转/间隙逐项对齐 GTK3；帧池双缓冲；触控笔 + 键鼠输入。真实帧与主循环已在 P3a 接入 |
 | P3a 核心/主循环 | **已完成** | `emulation.cpp` 桥接核心：异步 ROM 选择、60 Hz 主线程帧回调、真实帧推送、键盘/触摸输入 |
-| P3b 对话框 | 未开始 | 其余 25 处动作/对话框异步化、最近文件、存档/截图/录制 |
+| P3b 动作/最近文件 | **核心动作已完成** | Reset / Close ROM / 10 槽即时存读档（F1–F10、Shift+F1–F10）/ 截图（Ctrl+S）；GTask 后台加载 ROM；自维护最近 ROM（GKeyFile）。录制/电影回放仍在后续阶段 |
 | P4 工具 | 未开始 | |
 | P5 金手指 | 未开始 | |
 | P6 性能 | 未开始 | |
@@ -1148,6 +1148,28 @@ P3a 的边界（留给 P3b/P4-P8）：
 
 SIGINT 根因已用独立小程序验证（系统 SDL3 3.4.20）：不设 hint 时 `SDL_InitSubSystem(AUDIO)` 会把 SIGINT handler 从 `SIG_DFL` 改掉（default=1→0）；设 hint=1 后 handler 保持默认。
 GTK4 关窗时序的运行时验证受限于当前环境无显示服务/无 ROM，仍需实机复测确认。
+
+### P3b 已落地内容（2026-11-21）
+
+GTK4 前端是从零写的，并没有 GTK3 `main.cpp` 里那批 `gtk_dialog_run` 调用——它们主要集中在
+`cheatsGTK.cpp` / `tools/*`（由 P4/P5 处理）。本阶段补齐日常使用所需的动作与后台加载：
+
+| 项 | 做法 |
+|---|---|
+| Reset | 工具栏与 Emulation 菜单接线 `app.reset` → `NDS_Reset()`（保留 ROM，不重载） |
+| Close ROM | `app.close` → `NDS_FreeROM()`，复位标题/按钮/动作灵敏度，状态栏提示 |
+| 即时存/读档 | `app.save-state(u)` / `app.load-state(u)` 覆盖槽位 0..9（标签 1..10）；`savestate_slot()` / `loadstate_slot()`；快捷键 Shift+F1–F10 / F1–F10；加载 ROM 后 `scan_savestates()` 汇总槽位占用 |
+| 截图 | `app.screenshot`（Ctrl+S）从 `masterCustomBuffer` 转 BGRA8888 → `GdkTexture` → `gdk_texture_save_to_png()`，存到 XDG 图片目录，文件名带时间戳；无需新增依赖 |
+| 后台加载 | `GtkFileDialog` 选中后用 `GTask` 把 `desmume_emu_load_rom()`（含解压与解析）挪到 worker 线程；加载期置 `sLoadingRom`，60 Hz tick 跳过，避免与 `NDS_LoadROM` 换内存映射竞态；`StopEmulation()` 用 `GCond` 等所有 in-flight worker 退出后才让 `main()` 析构 core |
+| 最近文件 | GTK4 已移除 `GtkRecentManager`，改为自维护 `GKeyFile`（`~/.config/desmume/recent-roms.ini`，最多 10 条）；`app.recent(s)` 接收 URI，动态重建 `open_recent` 子菜单；加载失败的路径被移除 |
+| 动作灵敏度 | `UpdateRomActions()` 在无 ROM 时置灰 run/reset/save-state/load-state/screenshot/close；命令行 ROM 仍走同步 `LoadRomAndReport()`（主循环尚未启动） |
+
+**已知边界**：录像/电影回放、声音设备、手柄、按键重映射、FS 兼容性仍属后续阶段；最近文件不写 `shared-mime-info` 的 `recently-used.xbel`；
+截图以 GPU 原生复合缓冲（两屏纵向叠加）保存，未含 HUD/OSD 叠加层（该层在 P4/P7 的渲染路径里）。
+
+验证：Arch/WSL GTK 4.24.1 下 `ninja gtk4/desmume` 编译链接全绿无警告；`gtk4/desmume --help` 正常退出；
+`-Dfrontend-gtk=gtk3` 下 GTK3+CLI 26/26 无回归，再切回 gtk4 重新链接通过。
+动作的实际触发（存读档、截图落盘、最近菜单、后台加载进度）仍需带显示环境 + ROM 实机验收。
 
 ---
 

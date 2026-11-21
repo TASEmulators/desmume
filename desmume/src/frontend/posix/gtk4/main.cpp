@@ -83,6 +83,176 @@ static guint sTestFrameSource = 0;
  * status line and title can be updated through the normal path. */
 static char *sInitialRom = NULL;
 
+/* Set while a background ROM load is in flight; prevents a late GTask
+ * callback from touching the UI after the window has been torn down. */
+static gboolean sShuttingDown = FALSE;
+
+/* While a load runs on a worker thread the 60 Hz tick must not touch the
+ * core (NDS_LoadROM replaces the whole memory map).  Both this flag and the
+ * tick run on the main thread, so no atomics are needed. */
+static gboolean sLoadingRom = FALSE;
+
+/* A background load touches the core, so shutdown must wait for any in-flight
+ * worker before NDS_DeInit() runs.  The counter is decremented on the worker
+ * itself, so waiting here cannot deadlock even if the main loop is exiting. */
+static GMutex sLoadLock;
+static GCond sLoadCond;
+static guint sLoadsInFlight = 0;
+
+/* Dynamically rebuilt "Open recent" submenu (GtkRecentManager is gone in 4). */
+static GMenu *sRecentMenu = NULL;
+
+#define RECENT_MAX 10
+
+static char *
+RecentConfigPath(void)
+{
+	return g_build_filename(g_get_user_config_dir(), "desmume", "recent-roms.ini", NULL);
+}
+
+static GKeyFile *
+RecentLoadKeyFile(void)
+{
+	GKeyFile *keyfile = g_key_file_new();
+	char *path = RecentConfigPath();
+	g_key_file_load_from_file(keyfile, path, G_KEY_FILE_NONE, NULL);
+	g_free(path);
+	return keyfile;
+}
+
+static void
+RecentSaveKeyFile(GKeyFile *keyfile)
+{
+	char *path = RecentConfigPath();
+	char *dir = g_path_get_dirname(path);
+	g_mkdir_with_parents(dir, 0700);
+	g_free(dir);
+	g_key_file_save_to_file(keyfile, path, NULL);
+	g_free(path);
+}
+
+static gchar **
+RecentGetURIs(GKeyFile *keyfile, gsize *length)
+{
+	GError *error = NULL;
+	gchar **uris = g_key_file_get_string_list(keyfile, "Recent", "ROMs", length, &error);
+	if (error != NULL)
+	{
+		g_clear_error(&error);
+		if (length != NULL)
+		{
+			*length = 0;
+		}
+	}
+	return uris;
+}
+
+/* Replace the stored list with `list`.  The strings are borrowed from the
+ * caller's GPtrArray (which stays alive and must still be freed by caller). */
+static void
+RecentSetURIs(GPtrArray *list)
+{
+	GKeyFile *keyfile = RecentLoadKeyFile();
+	gchar **uris = (gchar **)g_malloc0((list->len + 1) * sizeof(gchar *));
+	for (guint i = 0; i < list->len; ++i)
+	{
+		uris[i] = (gchar *)g_ptr_array_index(list, i);
+	}
+	g_key_file_set_string_list(keyfile, "Recent", "ROMs",
+	                           (const gchar * const *)uris, list->len);
+	RecentSaveKeyFile(keyfile);
+	g_key_file_unref(keyfile);
+	g_free(uris);
+}
+
+static void
+RecentAdd(const char *path)
+{
+	char *uri = g_filename_to_uri(path, NULL, NULL);
+	if (uri == NULL)
+	{
+		return;
+	}
+
+	GKeyFile *keyfile = RecentLoadKeyFile();
+	gsize length = 0;
+	gchar **old = RecentGetURIs(keyfile, &length);
+
+	GPtrArray *list = g_ptr_array_new_with_free_func(g_free);
+	g_ptr_array_add(list, g_strdup(uri));
+	for (gsize i = 0; i < length; ++i)
+	{
+		if (g_strcmp0(old[i], uri) != 0)
+		{
+			g_ptr_array_add(list, g_strdup(old[i]));
+		}
+	}
+	if (list->len > RECENT_MAX)
+	{
+		g_ptr_array_set_size(list, RECENT_MAX);
+	}
+	g_strfreev(old);
+	g_key_file_unref(keyfile);
+
+	RecentSetURIs(list);
+	g_ptr_array_unref(list);
+	g_free(uri);
+}
+
+static void
+RecentRemove(const char *uri)
+{
+	GKeyFile *keyfile = RecentLoadKeyFile();
+	gsize length = 0;
+	gchar **old = RecentGetURIs(keyfile, &length);
+
+	GPtrArray *list = g_ptr_array_new_with_free_func(g_free);
+	for (gsize i = 0; i < length; ++i)
+	{
+		if (g_strcmp0(old[i], uri) != 0)
+		{
+			g_ptr_array_add(list, g_strdup(old[i]));
+		}
+	}
+	g_strfreev(old);
+	g_key_file_unref(keyfile);
+
+	RecentSetURIs(list);
+	g_ptr_array_unref(list);
+}
+
+static void
+RecentRebuildMenu(void)
+{
+	if (sRecentMenu == NULL)
+	{
+		return;
+	}
+	g_menu_remove_all(sRecentMenu);
+
+	GKeyFile *keyfile = RecentLoadKeyFile();
+	gsize length = 0;
+	gchar **uris = RecentGetURIs(keyfile, &length);
+	for (gsize i = 0; i < length; ++i)
+	{
+		char *path = g_filename_from_uri(uris[i], NULL, NULL);
+		if (path == NULL)
+		{
+			continue;
+		}
+		char *label = g_path_get_basename(path);
+		GMenuItem *item = g_menu_item_new(label, NULL);
+		g_menu_item_set_action_and_target_value(
+			item, "app.recent", g_variant_new_string(uris[i]));
+		g_menu_append_item(sRecentMenu, item);
+		g_object_unref(item);
+		g_free(label);
+		g_free(path);
+	}
+	g_strfreev(uris);
+	g_key_file_unref(keyfile);
+}
+
 static void SetStatus(const char *text)
 {
 	if (pStatusLabel == NULL)
@@ -159,6 +329,7 @@ static gboolean UseClientSideDecorations(void)
 static void
 StopEmulation(void)
 {
+	sShuttingDown = TRUE;
 	desmume_emu_set_running(FALSE);
 	desmume_emu_set_frame_sink(NULL, NULL);
 
@@ -172,6 +343,15 @@ StopEmulation(void)
 		g_source_remove(sTestFrameSource);
 		sTestFrameSource = 0;
 	}
+
+	/* Wait for any background ROM load to finish before the caller tears the
+	 * core down in desmume_emu_shutdown(). */
+	g_mutex_lock(&sLoadLock);
+	while (sLoadsInFlight > 0)
+	{
+		g_cond_wait(&sLoadCond, &sLoadLock);
+	}
+	g_mutex_unlock(&sLoadLock);
 }
 
 /* The emulation core runs on the GTK main thread: one NDS frame per 60 Hz
@@ -182,7 +362,7 @@ OnFrameTick(gpointer user_data)
 {
 	(void)user_data;
 
-	if (desmume_emu_get_running() && desmume_emu_has_rom())
+	if (!sLoadingRom && desmume_emu_get_running() && desmume_emu_has_rom())
 	{
 		desmume_emu_step();
 	}
@@ -323,6 +503,26 @@ static void OnAlertDone(GObject *source, GAsyncResult *result, gpointer user_dat
 	(void)gtk_alert_dialog_choose_finish(GTK_ALERT_DIALOG(source), result, NULL);
 }
 
+/* Enable/disable the actions that only make sense once a ROM is loaded. */
+static void
+UpdateRomActions(void)
+{
+	const gboolean has_rom = desmume_emu_has_rom();
+	static const char *const rom_actions[] = {
+		"run", "reset", "save-state", "load-state", "screenshot", "close"
+	};
+	for (guint i = 0; i < G_N_ELEMENTS(rom_actions); ++i)
+	{
+		GAction *action = (pApp != NULL)
+			? g_action_map_lookup_action(G_ACTION_MAP(pApp), rom_actions[i])
+			: NULL;
+		if (action != NULL)
+		{
+			g_simple_action_set_enabled(G_SIMPLE_ACTION(action), has_rom);
+		}
+	}
+}
+
 static void
 RomLoaded(void)
 {
@@ -339,8 +539,109 @@ RomLoaded(void)
 	char *status = g_strdup_printf("Running: %s", desmume_emu_rom_name());
 	SetStatus(status);
 	g_free(status);
+
+	RecentRebuildMenu();
+	UpdateRomActions();
 }
 
+/* ------------------------------------------------------- background load */
+
+typedef struct
+{
+	char *path;      /* owned by the task data */
+	char *error;     /* owned by the task data, may be NULL */
+	gboolean success;
+} LoadRomData;
+
+static void
+LoadRomDataFree(gpointer data)
+{
+	LoadRomData *load = (LoadRomData *)data;
+	g_free(load->path);
+	g_free(load->error);
+	g_free(load);
+}
+
+/* Runs on a GTask worker thread: NDS_LoadROM does file IO and decompression
+ * and can block for a noticeable time on large images. */
+static void
+LoadRomThread(GTask *task, gpointer source_object, gpointer task_data,
+              GCancellable *cancellable)
+{
+	(void)source_object;
+	(void)cancellable;
+
+	LoadRomData *load = (LoadRomData *)task_data;
+	load->success = desmume_emu_load_rom(load->path, &load->error);
+	g_task_return_boolean(task, load->success);
+
+	/* The worker is done touching the core.  Release shutdown's barrier from
+	 * the worker itself so it cannot deadlock against the main loop. */
+	g_mutex_lock(&sLoadLock);
+	--sLoadsInFlight;
+	g_cond_broadcast(&sLoadCond);
+	g_mutex_unlock(&sLoadLock);
+}
+
+/* Runs on the main thread once the worker finishes. */
+static void
+LoadRomDone(GObject *source_object, GAsyncResult *result, gpointer user_data)
+{
+	(void)source_object;
+	(void)user_data;
+
+	GTask *task = G_TASK(result);
+	LoadRomData *load = (LoadRomData *)g_task_get_task_data(task);
+	const gboolean success = g_task_propagate_boolean(task, NULL);
+
+	sLoadingRom = FALSE;
+
+	if (sShuttingDown || (pWindow == NULL))
+	{
+		return;
+	}
+
+	if (!success || !desmume_emu_has_rom())
+	{
+		ShowErrorAlert((load != NULL && load->error != NULL)
+			? load->error : "Could not open the ROM.");
+		SetStatus("Ready");
+		UpdateRomActions();
+		return;
+	}
+
+	RecentAdd(load->path);
+	RomLoaded();
+}
+
+static void
+LoadRomAsync(const char *path)
+{
+	if ((path == NULL) || sShuttingDown)
+	{
+		return;
+	}
+
+	/* Stop the frame loop before the worker swaps the ROM out from under it. */
+	desmume_emu_set_running(FALSE);
+	sLoadingRom = TRUE;
+	SetStatus("Loading ROM…");
+
+	LoadRomData *load = g_new0(LoadRomData, 1);
+	load->path = g_strdup(path);
+
+	g_mutex_lock(&sLoadLock);
+	++sLoadsInFlight;
+	g_mutex_unlock(&sLoadLock);
+
+	GTask *task = g_task_new(NULL, NULL, LoadRomDone, NULL);
+	g_task_set_task_data(task, load, LoadRomDataFree);
+	g_task_run_in_thread(task, LoadRomThread);
+	g_object_unref(task);
+}
+
+/* Synchronous variant used only for the command-line ROM, before the main
+ * loop is pumping frames. */
 static gboolean
 LoadRomAndReport(const char *path)
 {
@@ -352,6 +653,7 @@ LoadRomAndReport(const char *path)
 		return FALSE;
 	}
 
+	RecentAdd(path);
 	RomLoaded();
 	return TRUE;
 }
@@ -384,7 +686,7 @@ OnOpenDone(GObject *source, GAsyncResult *result, gpointer user_data)
 		return;
 	}
 
-	LoadRomAndReport(path);
+	LoadRomAsync(path);
 	g_free(path);
 }
 
@@ -426,6 +728,125 @@ static void ActionQuit(GSimpleAction *action, GVariant *parameter, gpointer user
 	{
 		g_application_quit(G_APPLICATION(app));
 	}
+}
+
+static void ActionReset(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+
+	if (!desmume_emu_has_rom())
+	{
+		return;
+	}
+	desmume_emu_reset();
+	SetStatus("ROM reset");
+}
+
+static void ActionClose(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+
+	if (!desmume_emu_has_rom())
+	{
+		return;
+	}
+	desmume_emu_unload_rom();
+	gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME");
+	if (pRunButton != NULL)
+	{
+		gtk_button_set_icon_name(GTK_BUTTON(pRunButton), "media-playback-start-symbolic");
+		gtk_widget_set_tooltip_text(pRunButton, "Run");
+	}
+	SetStatus("ROM closed");
+	UpdateRomActions();
+}
+
+static void ActionSaveState(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)user_data;
+
+	const guint32 slot = g_variant_get_uint32(parameter);
+	if (!desmume_emu_save_state((int)slot))
+	{
+		return;
+	}
+	char *status = g_strdup_printf("Saved state %u", slot + 1);
+	SetStatus(status);
+	g_free(status);
+}
+
+static void ActionLoadState(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)user_data;
+
+	const guint32 slot = g_variant_get_uint32(parameter);
+	if (!desmume_emu_load_state((int)slot))
+	{
+		return;
+	}
+	char *status = g_strdup_printf("Loaded state %u", slot + 1);
+	SetStatus(status);
+	g_free(status);
+}
+
+static void ActionScreenshot(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+
+	const char *dir = g_get_user_special_dir(G_USER_DIRECTORY_PICTURES);
+	if (dir == NULL)
+	{
+		dir = g_get_home_dir();
+	}
+
+	GDateTime *now = g_date_time_new_now_local();
+	char *stamp = g_date_time_format(now, "%Y%m%d-%H%M%S");
+	char *filename = g_strdup_printf("desmume-%s.png", stamp);
+	char *path = g_build_filename(dir, filename, NULL);
+	g_date_time_unref(now);
+
+	char *error = NULL;
+	const gboolean ok = desmume_emu_screenshot(path, &error);
+	if (ok)
+	{
+		char *status = g_strdup_printf("Screenshot: %s", path);
+		SetStatus(status);
+		g_free(status);
+	}
+	else
+	{
+		ShowErrorAlert(error != NULL ? error : "Could not save the screenshot.");
+	}
+
+	g_free(error);
+	g_free(path);
+	g_free(filename);
+	g_free(stamp);
+}
+
+static void ActionRecent(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)user_data;
+
+	const char *uri = g_variant_get_string(parameter, NULL);
+	char *path = g_filename_from_uri(uri, NULL, NULL);
+	if (path == NULL)
+	{
+		RecentRemove(uri);
+		RecentRebuildMenu();
+		return;
+	}
+	LoadRomAsync(path);
+	g_free(path);
 }
 
 static void ActionRun(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -530,6 +951,8 @@ static GMenuModel *LoadMenuModel(void)
 		"/org/desmume/DeSmuME/menu.ui");
 	GMenuModel *menu = G_MENU_MODEL(g_object_ref(
 		gtk_builder_get_object(builder, "menubar")));
+	sRecentMenu = G_MENU(g_object_ref(
+		gtk_builder_get_object(builder, "open_recent")));
 	g_object_unref(builder);
 	return menu;
 }
@@ -578,8 +1001,14 @@ static const GActionEntry app_entries[] =
 {
 	/* Names match gtk/menu.ui so menu items can be enabled phase by phase. */
 	{ "open",           ActionOpen,       NULL, NULL,   NULL },
+	{ "recent",         ActionRecent,     "s",  NULL,   NULL },
 	{ "quit",           ActionQuit,       NULL, NULL,   NULL },
 	{ "run",            ActionRun,        NULL, NULL,   NULL },
+	{ "reset",          ActionReset,      NULL, NULL,   NULL },
+	{ "close",          ActionClose,      NULL, NULL,   NULL },
+	{ "save-state",     ActionSaveState,  "u",  NULL,   NULL },
+	{ "load-state",     ActionLoadState,  "u",  NULL,   NULL },
+	{ "screenshot",     ActionScreenshot, NULL, NULL,   NULL },
 	{ "fullscreen",     ActionFullscreen, NULL, NULL,   NULL },
 	{ "about",          ActionAbout,      NULL, NULL,   NULL },
 	{ "shortcuts",      ActionShortcuts,  NULL, NULL,   NULL },
@@ -634,12 +1063,8 @@ static void BuildWindow(GtkApplication *app)
 	pRunButton = MakeToolButton("media-playback-start-symbolic", "Run", "app.run");
 	gtk_box_append(GTK_BOX(pToolBar), pRunButton);
 
-	GtkWidget *reset_button = gtk_button_new_from_icon_name("view-refresh-symbolic");
-	gtk_widget_add_css_class(reset_button, "flat");
-	gtk_widget_set_tooltip_text(reset_button, "Reset (not wired yet)");
-	gtk_accessible_update_property(GTK_ACCESSIBLE(reset_button),
-	                               GTK_ACCESSIBLE_PROPERTY_LABEL, "Reset", -1);
-	gtk_widget_set_sensitive(reset_button, FALSE);
+	GtkWidget *reset_button = MakeToolButton("view-refresh-symbolic",
+	                                        "Reset ROM", "app.reset");
 	gtk_box_append(GTK_BOX(pToolBar), reset_button);
 
 	GtkWidget *spacer = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -728,6 +1153,9 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 	g_simple_action_set_state(toolbar_action, g_variant_new_boolean(pConfig->view_toolbar.get()));
 	g_simple_action_set_state(statusbar_action, g_variant_new_boolean(pConfig->view_statusbar.get()));
 
+	RecentRebuildMenu();
+	UpdateRomActions();
+
 	gtk_window_present(GTK_WINDOW(pWindow));
 
 	/* Pass the address of the widget pointer, guarded by a weak pointer in
@@ -793,10 +1221,31 @@ int main(int argc, char *argv[])
 	static const char *quit_accels[] = { "<Control>q", NULL };
 	static const char *run_accels[] = { "Pause", NULL };
 	static const char *fullscreen_accels[] = { "F11", NULL };
+	static const char *screenshot_accels[] = { "<Control>s", NULL };
 	gtk_application_set_accels_for_action(app, "app.open", open_accels);
 	gtk_application_set_accels_for_action(app, "app.quit", quit_accels);
 	gtk_application_set_accels_for_action(app, "app.run", run_accels);
 	gtk_application_set_accels_for_action(app, "app.fullscreen", fullscreen_accels);
+	gtk_application_set_accels_for_action(app, "app.screenshot", screenshot_accels);
+
+	/* Slot accelerators for parameterised actions.  menu.ui also carries them,
+	 * but GTK only auto-installs accels for the application menubar; the
+	 * PopoverMenuBar needs them registered explicitly. */
+	for (guint slot = 0; slot < 10; ++slot)
+	{
+		char *save_action = g_strdup_printf("app.save-state(uint32 %u)", slot);
+		char *load_action = g_strdup_printf("app.load-state(uint32 %u)", slot);
+		char *save_accel_str = g_strdup_printf("<Shift>F%u", slot + 1);
+		char *load_accel_str = g_strdup_printf("F%u", slot + 1);
+		const char *save_accels[] = { save_accel_str, NULL };
+		const char *load_accels[] = { load_accel_str, NULL };
+		gtk_application_set_accels_for_action(app, save_action, save_accels);
+		gtk_application_set_accels_for_action(app, load_action, load_accels);
+		g_free(save_action);
+		g_free(load_action);
+		g_free(save_accel_str);
+		g_free(load_accel_str);
+	}
 
 	const int status = g_application_run(G_APPLICATION(app), argc, argv);
 

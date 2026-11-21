@@ -57,6 +57,7 @@ static gboolean sInitialized = FALSE;
 static gboolean sHasROM = FALSE;
 static gboolean sRunning = FALSE;
 static char *sRomName = NULL;
+static gboolean sStateExists[NB_STATES] = { FALSE };
 
 static VideoFilter *sVideo = NULL;
 static DesmumeFrameSink sFrameSink = NULL;
@@ -256,6 +257,7 @@ desmume_emu_load_rom(const char *path, char **error_message)
 	sHasROM = TRUE;
 	sRunning = TRUE;
 	execute = true;
+	desmume_emu_scan_states();
 	return TRUE;
 }
 
@@ -271,6 +273,11 @@ desmume_emu_unload_rom(void)
 	sRunning = FALSE;
 	NDS_FreeROM();
 	sHasROM = FALSE;
+
+	for (int slot = 0; slot < NB_STATES; ++slot)
+	{
+		sStateExists[slot] = FALSE;
+	}
 
 	g_free(sRomName);
 	sRomName = NULL;
@@ -299,6 +306,125 @@ gboolean
 desmume_emu_get_running(void)
 {
 	return sRunning;
+}
+
+void
+desmume_emu_reset(void)
+{
+	if (!sHasROM)
+	{
+		return;
+	}
+	NDS_Reset();
+}
+
+static void
+refresh_state_exists(void)
+{
+	for (int slot = 0; slot < NB_STATES; ++slot)
+	{
+		sStateExists[slot] = (savestates[slot].exists != FALSE);
+	}
+}
+
+void
+desmume_emu_scan_states(void)
+{
+	if (!sHasROM)
+	{
+		return;
+	}
+	scan_savestates();
+	refresh_state_exists();
+}
+
+gboolean
+desmume_emu_state_exists(int slot)
+{
+	if ((slot < 0) || (slot >= NB_STATES))
+	{
+		return FALSE;
+	}
+	return sStateExists[slot];
+}
+
+gboolean
+desmume_emu_save_state(int slot)
+{
+	if (!sHasROM || (slot < 0) || (slot >= NB_STATES))
+	{
+		return FALSE;
+	}
+	savestate_slot(slot);
+	refresh_state_exists();
+	return TRUE;
+}
+
+gboolean
+desmume_emu_load_state(int slot)
+{
+	if (!sHasROM || (slot < 0) || (slot >= NB_STATES))
+	{
+		return FALSE;
+	}
+	loadstate_slot(slot);
+	return TRUE;
+}
+
+gboolean
+desmume_emu_screenshot(const char *path, char **error_message)
+{
+	if (!sHasROM || (path == NULL) || (*path == '\0'))
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("No ROM is loaded.");
+		}
+		return FALSE;
+	}
+
+	const NDSDisplayInfo &info = GPU->GetDisplayInfo();
+	if ((info.masterCustomBuffer == NULL) || (info.customWidth == 0) ||
+	    (info.customHeight == 0))
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("No frame is available yet.");
+		}
+		return FALSE;
+	}
+
+	const gsize width = (gsize)info.customWidth;
+	const gsize height = (gsize)info.customHeight * 2;
+	const gsize pixel_count = width * height;
+	const gsize stride = width * 4;
+
+	guchar *bgra = (guchar *)g_malloc(stride * height);
+	if (info.colorFormat == NDSColorFormat_BGR555_Rev)
+	{
+		ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapNone>(
+			(const u16 *)info.masterCustomBuffer, (u32 *)bgra, pixel_count);
+	}
+	else
+	{
+		ColorspaceConvertBuffer888xTo8888Opaque<true, false>(
+			(const u32 *)info.masterCustomBuffer, (u32 *)bgra, pixel_count);
+	}
+
+	GBytes *bytes = g_bytes_new_take(bgra, stride * height);
+	GdkTexture *texture = gdk_memory_texture_new((int)width, (int)height,
+	                                             GDK_MEMORY_B8G8R8A8_PREMULTIPLIED,
+	                                             bytes, stride);
+	g_bytes_unref(bytes);
+
+	const gboolean ok = gdk_texture_save_to_png(texture, path);
+	g_object_unref(texture);
+
+	if (!ok && (error_message != NULL))
+	{
+		*error_message = g_strdup_printf("Could not write '%s'.", path);
+	}
+	return ok;
 }
 
 void
