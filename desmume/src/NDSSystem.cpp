@@ -1067,14 +1067,32 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 
 				over = true;
 				int remain = 65536 - MMU.timerReload[procnum][i];
+				const u64 timerPeriod = (u64)remain << MMU.timerMODE[procnum][i];
+#ifndef NDEBUG
+				const u64 timerDue = nds.timerCycle[procnum][i];
+				const u64 timerLate = nds_timer - timerDue;
+#endif
 				int ctr=0;
 				while(nds.timerCycle[procnum][i] <= nds_timer) {
-					nds.timerCycle[procnum][i] += (remain << MMU.timerMODE[procnum][i]);
+					nds.timerCycle[procnum][i] += timerPeriod;
 					ctr++;
 				}
 #ifndef NDEBUG
+				//ctr>1 means this timer event was serviced late enough to miss at least
+				//one overflow. The catch-up loop keeps timerCycle correct, but this call
+				//only raises one IRQ and advances a chained timer by one.
 				if(ctr>1) {
-					printf("yikes!!!!! please report!\n");
+					printf("Timer overrun: %s timer%d serviced %d overflows at once "
+						"(%d missed, %llu cycles late), period=%llu reload=%04X shift=%d, "
+						"due=%llu now=%llu, frame=%d line=%d\n",
+						procnum == 0 ? "ARM9" : "ARM7", i, ctr, ctr-1,
+						(unsigned long long)timerLate,
+						(unsigned long long)timerPeriod,
+						(unsigned)MMU.timerReload[procnum][i],
+						MMU.timerMODE[procnum][i],
+						(unsigned long long)timerDue,
+						(unsigned long long)nds_timer,
+						currFrameCounter, nds.VCount);
 				}
 #endif
 			}
