@@ -13,6 +13,12 @@
 	same framebuffer.  Input arrives through GTK4 event controllers; mapping
 	ends in NDS screen coordinates (0..255, 0..191), ready for P3 to feed
 	NDS_setTouchPos() and the HUD editor.
+
+	The frame buffer itself is produced by the emulation layer as a pooled,
+	opaque BGRA8888 GBytes. The widget wraps two zero-copy GdkMemoryTexture
+	views over it and lets GSK do the scaling on the GPU, so no per-frame
+	memcpy or alpha fixup happens here (the GTK3 Cairo path also draws
+	straight from the filter buffer).
 */
 
 #include "display.h"
@@ -23,13 +29,103 @@
 #define DESMUME_NDS_W 256.0
 #define DESMUME_NDS_H 192.0
 
+
+/* ------------------------------------------------- §6.3 presentation timing */
+/* DESMUME_GTK4_TIMING=1 records the two costs the migration can actually
+ * influence -- texture upload in push_frame() and GSK snapshot preparation --
+ * and prints mean/p50/p95/max every TIMING_WINDOW presented frames to stderr.
+ * Disabled by default: no clock reads, no samples, no allocation on the hot
+ * path. */
+#define TIMING_WINDOW 120
+
 typedef struct
 {
-	gatomicrefcount ref_count;
-	GMutex lock;
-	GQueue free_buffers;
-	gsize buffer_size;
-} FramePool;
+	gint64 samples[TIMING_WINDOW];
+	guint count;
+	gint64 total;
+} TimingSeries;
+
+typedef struct
+{
+	gboolean enabled;
+	TimingSeries upload;
+	TimingSeries snapshot;
+	guint frames;
+} TimingState;
+
+static TimingState sTiming;
+
+static gboolean
+timing_init(void)
+{
+	static gint initialized = 0;
+	if (!initialized)
+	{
+		initialized = 1;
+		const char *env = g_getenv("DESMUME_GTK4_TIMING");
+		sTiming.enabled = (env != NULL) &&
+		                  ((g_strcmp0(env, "1") == 0) ||
+		                   (g_ascii_strcasecmp(env, "true") == 0));
+	}
+	return sTiming.enabled;
+}
+
+static void
+timing_add(TimingSeries *series, gint64 usec)
+{
+	if (series->count < TIMING_WINDOW)
+	{
+		series->samples[series->count++] = usec;
+		series->total += usec;
+	}
+}
+
+static gint
+compare_gint64(gconstpointer a, gconstpointer b)
+{
+	const gint64 va = *(const gint64 *)a;
+	const gint64 vb = *(const gint64 *)b;
+	return (va < vb) ? -1 : (va > vb) ? 1 : 0;
+}
+
+static void
+timing_report(const TimingSeries *series, const char *name)
+{
+	if (series->count == 0)
+	{
+		return;
+	}
+	gint64 sorted[TIMING_WINDOW];
+	memcpy(sorted, series->samples, series->count * (gsize)sizeof(gint64));
+	qsort(sorted, series->count, sizeof(gint64), compare_gint64);
+	const gdouble mean = (gdouble)series->total / (gdouble)series->count;
+	const gint64 p50 = sorted[series->count / 2];
+	const gint64 p95 = sorted[(series->count * 95) / 100];
+	const gint64 max = sorted[series->count - 1];
+	g_printerr("[gtk4-timing] %-8s n=%3u mean=%6.1fus p50=%5" G_GINT64_FORMAT
+	           "us p95=%5" G_GINT64_FORMAT "us max=%5" G_GINT64_FORMAT "us\n",
+	           name, series->count, mean, p50, p95, max);
+}
+
+static void
+timing_flush_if_due(void)
+{
+	/* Driven by presented frames (push_frame), after both series for this
+	 * frame have been recorded.  GTK may call snapshot() a different number
+	 * of times, so each report uses its own sample count. */
+	if (++sTiming.frames < TIMING_WINDOW)
+	{
+		return;
+	}
+	sTiming.frames = 0;
+	g_printerr("[gtk4-timing] ---- %d presented frames ----\n", TIMING_WINDOW);
+	timing_report(&sTiming.upload, "upload");
+	timing_report(&sTiming.snapshot, "snapshot");
+	sTiming.upload.count = 0;
+	sTiming.upload.total = 0;
+	sTiming.snapshot.count = 0;
+	sTiming.snapshot.total = 0;
+}
 
 struct _DesmumeDisplay
 {
@@ -46,8 +142,12 @@ struct _DesmumeDisplay
 	gboolean swap;
 	double hybrid_scale; /* <= 0: compute like GTK3 */
 
-	FramePool *pool;
 	gboolean stylus_active;
+
+	/* §6.2: presentation throttle while the toplevel is not active. */
+	gint64 last_present_us;
+	gboolean inactive;
+	gboolean active_signal_connected;
 };
 
 G_DEFINE_TYPE(DesmumeDisplay, desmume_display, GTK_TYPE_WIDGET)
@@ -287,6 +387,9 @@ desmume_display_snapshot(GtkWidget *widget, GtkSnapshot *snapshot)
 		return;
 	}
 
+	/* §6.3: timing starts only once there is a real frame to compose. */
+	const gint64 snapshot_start = sTiming.enabled ? g_get_monotonic_time() : 0;
+
 	Geometry g;
 	compute_geometry(self, width, height, &g);
 
@@ -323,6 +426,11 @@ desmume_display_snapshot(GtkWidget *widget, GtkSnapshot *snapshot)
 	}
 
 	gtk_snapshot_restore(snapshot);
+
+	if (sTiming.enabled)
+	{
+		timing_add(&sTiming.snapshot, g_get_monotonic_time() - snapshot_start);
+	}
 }
 
 static void
@@ -346,130 +454,91 @@ desmume_display_measure(GtkWidget *widget, GtkOrientation orientation,
 
 /* ------------------------------------------------------------ frame input */
 
-typedef struct
-{
-	FramePool *pool;
-	guchar *data;
-	gsize size;
-} BufferRef;
-
-static FramePool *
-frame_pool_new(void)
-{
-	FramePool *pool = g_new0(FramePool, 1);
-	g_atomic_ref_count_init(&pool->ref_count);
-	g_mutex_init(&pool->lock);
-	g_queue_init(&pool->free_buffers);
-	return pool;
-}
+/* ------------------------------------------------- §6.2 inactive throttling */
+/* §6.2 item 2: when the toplevel loses focus, presentation drops to ~10 fps
+ * while emulation and audio keep running at full speed.  The connection is
+ * lazy -- on the first presented frame -- so a WM-less X server (where
+ * gtk_window_is_active() may report FALSE forever) still renders normally
+ * until GTK actually reports an is-active transition. */
+#define INACTIVE_PRESENT_INTERVAL_US 100000 /* 10 fps */
 
 static void
-frame_pool_unref(FramePool *pool)
+on_toplevel_is_active_changed(GObject *toplevel, GParamSpec *pspec,
+                              gpointer user_data)
 {
-	if (g_atomic_ref_count_dec(&pool->ref_count))
+	(void)pspec;
+	DesmumeDisplay *self = DESMUME_DISPLAY(user_data);
+	self->inactive = !gtk_window_is_active(GTK_WINDOW(toplevel));
+}
+
+static gboolean
+should_present(DesmumeDisplay *self)
+{
+	GtkWidget *widget = GTK_WIDGET(self);
+
+	if (!self->active_signal_connected)
 	{
-		guchar *data;
-		while ((data = (guchar *)g_queue_pop_head(&pool->free_buffers)) != NULL)
+		GtkRoot *root = gtk_widget_get_root(widget);
+		if (GTK_IS_WINDOW(root))
 		{
-			g_free(data);
+			self->inactive = !gtk_window_is_active(GTK_WINDOW(root));
+			g_signal_connect_object(root, "notify::is-active",
+			                        G_CALLBACK(on_toplevel_is_active_changed),
+			                        self, (GConnectFlags)0);
+			self->active_signal_connected = TRUE;
 		}
-		g_mutex_clear(&pool->lock);
-		g_free(pool);
 	}
-}
 
-static void
-release_buffer(gpointer user_data)
-{
-	BufferRef *ref = (BufferRef *)user_data;
-	FramePool *pool = ref->pool;
-
-	g_mutex_lock(&pool->lock);
-	if (ref->size == pool->buffer_size)
+	if (!self->inactive)
 	{
-		g_queue_push_head(&pool->free_buffers, ref->data);
+		return TRUE;
 	}
-	else
+
+	const gint64 now = g_get_monotonic_time();
+	if ((self->last_present_us != 0) &&
+	    ((now - self->last_present_us) < INACTIVE_PRESENT_INTERVAL_US))
 	{
-		/* The frame size changed while the texture was alive. */
-		g_free(ref->data);
+		return FALSE;
 	}
-	g_mutex_unlock(&pool->lock);
-
-	frame_pool_unref(pool);
-	g_free(ref);
-}
-
-static GBytes *
-wrap_frame(DesmumeDisplay *self, const guchar *src, gsize size)
-{
-	FramePool *pool = self->pool;
-	guchar *dst = NULL;
-
-	g_mutex_lock(&pool->lock);
-	dst = (guchar *)g_queue_pop_head(&pool->free_buffers);
-	if ((dst != NULL) && (pool->buffer_size != size))
-	{
-		g_free(dst);
-		dst = NULL;
-	}
-	pool->buffer_size = size;
-	g_mutex_unlock(&pool->lock);
-
-	const gboolean from_pool = (dst != NULL);
-	if (!from_pool)
-	{
-		dst = (guchar *)g_malloc(size);
-	}
-
-	/* The emulator's buffer is BGRX.  GDK_MEMORY_B8G8R8A8_PREMULTIPLIED
-	 * needs a defined alpha; a plain memcpy plus one byte per pixel is
-	 * cheaper than the old element-by-element copy.  GTK 4.14 could use
-	 * GDK_MEMORY_B8G8R8X8 and skip this entirely, but the 4.10 baseline
-	 * does not have that format. */
-	memcpy(dst, src, size);
-	for (gsize i = 3; i < size; i += 4)
-	{
-		dst[i] = 0xFF;
-	}
-
-	if (from_pool)
-	{
-		BufferRef *ref = g_new0(BufferRef, 1);
-		ref->pool = pool;
-		ref->data = dst;
-		ref->size = size;
-		/* The borrowed buffer keeps the pool alive past widget dispose. */
-		g_atomic_ref_count_inc(&pool->ref_count);
-		return g_bytes_new_with_free_func(dst, size, release_buffer, ref);
-	}
-
-	return g_bytes_new_with_free_func(dst, size, (GDestroyNotify)g_free, dst);
+	self->last_present_us = now;
+	return TRUE;
 }
 
 void
-desmume_display_push_frame(DesmumeDisplay *self, const guchar *bgra,
+desmume_display_push_frame(DesmumeDisplay *self, GBytes *frame,
                            int width, int height)
 {
 	g_return_if_fail(DESMUME_IS_DISPLAY(self));
-	g_return_if_fail(bgra != NULL);
+	g_return_if_fail(frame != NULL);
 	g_return_if_fail(width > 0 && height >= 2 && (height % 2) == 0);
+	g_return_if_fail(g_bytes_get_size(frame) >= (gsize)width * height * 4);
 
 	/* §6.2: an unmapped window needs no texture upload or redraw; emulation
-	 * continues independently of presentation. */
-	if (!gtk_widget_get_mapped(GTK_WIDGET(self)))
+	 * continues independently of presentation.  An unfocused toplevel is
+	 * throttled to ~10 fps by should_present().  We still own `frame` on the
+	 * early path and must release it so its buffer returns to the pool. */
+	if (!gtk_widget_get_mapped(GTK_WIDGET(self)) || !should_present(self))
 	{
+		g_bytes_unref(frame);
 		return;
 	}
+
+	/* §6.3: time the upload path (two zero-copy GBytes views and two
+	 * GdkMemoryTextures) on presented frames only.  The color conversion and
+	 * pooling happen in the emulation layer and are timed there. */
+	const gint64 upload_start = sTiming.enabled ? g_get_monotonic_time() : 0;
 
 	const int screen_h = height / 2;
 	const gsize stride = (gsize)width * 4;
 	const gsize screen_bytes = stride * (gsize)screen_h;
-	const gsize total = screen_bytes * 2;
 
-	GBytes *parent = wrap_frame(self, bgra, total);
-	GBytes *top_bytes = g_bytes_new_from_bytes(parent, 0, screen_bytes);
-	GBytes *bottom_bytes = g_bytes_new_from_bytes(parent, screen_bytes, screen_bytes);
+	/* Both screen textures are zero-copy views over the pooled frame. The
+	 * child GBytes hold a ref to `frame`, and each GdkMemoryTexture holds a
+	 * ref to its child, so the buffers stay alive until GSK is done with
+	 * them. The converters already wrote alpha=0xFF, matching
+	 * GDK_MEMORY_B8G8R8A8_PREMULTIPLIED, so no alpha fixup is needed. */
+	GBytes *top_bytes = g_bytes_new_from_bytes(frame, 0, screen_bytes);
+	GBytes *bottom_bytes = g_bytes_new_from_bytes(frame, screen_bytes, screen_bytes);
 
 	GdkTexture *top = gdk_memory_texture_new(width, screen_h,
 	                                         GDK_MEMORY_B8G8R8A8_PREMULTIPLIED,
@@ -480,7 +549,7 @@ desmume_display_push_frame(DesmumeDisplay *self, const guchar *bgra,
 
 	g_bytes_unref(top_bytes);
 	g_bytes_unref(bottom_bytes);
-	g_bytes_unref(parent);
+	g_bytes_unref(frame);
 
 	g_clear_object(&self->tex_top);
 	g_clear_object(&self->tex_bottom);
@@ -490,6 +559,12 @@ desmume_display_push_frame(DesmumeDisplay *self, const guchar *bgra,
 	self->frame_h = screen_h;
 
 	gtk_widget_queue_draw(GTK_WIDGET(self));
+
+	if (sTiming.enabled)
+	{
+		timing_add(&sTiming.upload, g_get_monotonic_time() - upload_start);
+		timing_flush_if_due();
+	}
 }
 
 #define DEFINE_SETTER(name, type, field)                                     \
@@ -720,9 +795,6 @@ desmume_display_dispose(GObject *object)
 	g_clear_object(&self->tex_top);
 	g_clear_object(&self->tex_bottom);
 
-	frame_pool_unref(self->pool);
-	self->pool = NULL;
-
 	G_OBJECT_CLASS(desmume_display_parent_class)->dispose(object);
 }
 
@@ -731,6 +803,12 @@ desmume_display_class_init(DesmumeDisplayClass *klass)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS(klass);
 	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
+
+	if (timing_init())
+	{
+		g_printerr("[gtk4-timing] enabled (DESMUME_GTK4_TIMING=1), "
+		           "reporting every %d presented frames\n", TIMING_WINDOW);
+	}
 
 	object_class->dispose = desmume_display_dispose;
 	widget_class->snapshot = desmume_display_snapshot;
@@ -755,7 +833,6 @@ desmume_display_init(DesmumeDisplay *self)
 {
 	self->layout = DESMUME_LAYOUT_VERTICAL;
 	self->hybrid_scale = -1.0; /* auto, matching GTK3's draw_params */
-	self->pool = frame_pool_new();
 
 	gtk_widget_set_focusable(GTK_WIDGET(self), TRUE);
 	gtk_widget_add_css_class(GTK_WIDGET(self), "desmume-display");

@@ -7,12 +7,11 @@
 	DesmumeDisplay.  Keeping this separate from main.cpp means the GTK layer
 	never has to include the emulator's C++ headers.
 
-	The frame path is the same one GTK3 uses in Gtk3GPUEventHandler::DidFrameEnd
-	plus VideoFilter::RunFilter(): GPU->GetDisplayInfo().masterCustomBuffer is
-	converted to opaque BGRA8888 into the filter's source buffer, the filter
-	copies it to the destination, and the destination is handed to the display.
-	With VideoFilterTypeID_None the filter is a straight memcpy, so this is a
-	single conversion per frame; the widget then pools the texture backing.
+	The frame path converts GPU->GetDisplayInfo().masterCustomBuffer straight
+	into a pooled opaque BGRA8888 buffer (the Opaque converters already set
+	alpha=0xFF) and hands the GBytes to the display, which builds zero-copy
+	GdkMemoryTextures from it.  No filter memcpy and no per-pixel alpha fixup:
+	per-frame pixel work matches GTK3's DidFrameEnd path with fewer copies.
 */
 
 #include "emulation.h"
@@ -36,6 +35,12 @@
 #include "../../shared/ram_debug_core.h"
 #include "filter/videofilter.h"
 #include "utils/colorspacehandler/colorspacehandler.h"
+
+/* P7a: WebGPU off-screen GPU filters. wgpu_present.cpp is compiled into
+ * libdesmume for every POSIX build; without -Dwgpu=true its methods are stubs
+ * and beginOffscreen() simply returns false, so the plain frame path remains. */
+#include "../../shared/wgpu_present.h"
+#include "../shared/wgpu_upscaler_linux.h"
 
 /* ------------------------------------------------ host globals used by core */
 
@@ -67,9 +72,145 @@ static gboolean sRunning = FALSE;
 static char *sRomName = NULL;
 static gboolean sStateExists[NB_STATES] = { FALSE };
 
-static VideoFilter *sVideo = NULL;
 static DesmumeFrameSink sFrameSink = NULL;
 static gpointer sFrameSinkData = NULL;
+
+/* ------------------------------------------------------- zero-copy frame pool
+ * The core's custom buffer is converted straight into a pooled BGRA8888
+ * buffer, which is handed to the display as a refcounted GBytes. GDK wraps
+ * those bytes in GdkMemoryTexture without copying; GSK keeps its own refs
+ * until rendering is done. This removes the two extra full-frame copies the
+ * original path paid per frame (VideoFilter::RunFilter's memcpy and the
+ * widget's wrap_frame memcpy + per-pixel alpha fixup): the Opaque converters
+ * already write alpha=0xFF, so no fixup is needed. */
+/* Buffers are bucketed by byte size so the plain (native-size) path and the
+ * GPU-filter (upscaled-size) path never allocate on each other's behalf. */
+typedef struct
+{
+	gatomicrefcount ref_count;
+	GMutex lock;
+	GHashTable *buckets; /* gsize (via GSIZE_TO_POINTER) -> GQueue of guchar* */
+} FramePool;
+
+typedef struct
+{
+	FramePool *pool;
+	guchar *data;
+	gsize size;
+} BufferRef;
+
+static FramePool *sFramePool = NULL;
+
+static void
+free_buffer_queue(gpointer data)
+{
+	GQueue *queue = (GQueue *)data;
+	guchar *buffer;
+	while ((buffer = (guchar *)g_queue_pop_head(queue)) != NULL)
+	{
+		g_free(buffer);
+	}
+	g_queue_free(queue);
+}
+
+static FramePool *
+frame_pool_new(void)
+{
+	FramePool *pool = g_new0(FramePool, 1);
+	g_atomic_ref_count_init(&pool->ref_count);
+	g_mutex_init(&pool->lock);
+	pool->buckets = g_hash_table_new_full(g_direct_hash, g_direct_equal,
+	                                      NULL, free_buffer_queue);
+	return pool;
+}
+
+static void
+frame_pool_unref(FramePool *pool)
+{
+	if (g_atomic_ref_count_dec(&pool->ref_count))
+	{
+		g_hash_table_destroy(pool->buckets);
+		g_mutex_clear(&pool->lock);
+		g_free(pool);
+	}
+}
+
+static void
+release_buffer(gpointer user_data)
+{
+	BufferRef *ref = (BufferRef *)user_data;
+	FramePool *pool = ref->pool;
+
+	g_mutex_lock(&pool->lock);
+	GQueue *queue = (GQueue *)g_hash_table_lookup(
+		pool->buckets, GSIZE_TO_POINTER(ref->size));
+	if (queue == NULL)
+	{
+		queue = g_queue_new();
+		g_hash_table_insert(pool->buckets, GSIZE_TO_POINTER(ref->size), queue);
+	}
+	g_queue_push_head(queue, ref->data);
+	g_mutex_unlock(&pool->lock);
+
+	frame_pool_unref(pool);
+	g_free(ref);
+}
+
+/* Acquire a writable frame buffer of `size` bytes. Returns a GBytes owning
+ * the buffer; callers write into g_bytes_get_data() cast to non-const before
+ * the GBytes is published, then transfer ownership. */
+static GBytes *
+frame_pool_acquire(gsize size, guchar **out_data)
+{
+	FramePool *pool = sFramePool;
+	guchar *data = NULL;
+
+	g_mutex_lock(&pool->lock);
+	GQueue *queue = (GQueue *)g_hash_table_lookup(
+		pool->buckets, GSIZE_TO_POINTER(size));
+	if (queue != NULL)
+	{
+		data = (guchar *)g_queue_pop_head(queue);
+	}
+	g_mutex_unlock(&pool->lock);
+
+	if (data == NULL)
+	{
+		data = (guchar *)g_malloc(size);
+	}
+
+	BufferRef *ref = g_new0(BufferRef, 1);
+	ref->pool = pool;
+	ref->data = data;
+	ref->size = size;
+	/* The frame keeps the pool alive past shutdown while GSK still holds it. */
+	g_atomic_ref_count_inc(&pool->ref_count);
+
+	*out_data = data;
+	return g_bytes_new_with_free_func(data, size, release_buffer, ref);
+}
+
+/* P7a GPU filter state.  The present object renders the composited core frame
+ * into an off-screen texture and reads the filtered result back into a pooled
+ * frame buffer, which present_current_frame() forwards to the display. */
+static WGPUPresent *sGpuFilterPresent = NULL;
+static WGPUPresentShaderSource *sGpuShaderSource = NULL;
+static int sGpuFilterUpscaler = 0;      /* WGPUPresentUpscaler_Off */
+static float sGpuFilterScale = 1.0f;
+static gboolean sGpuFilterWanted = FALSE;
+static gboolean sGpuFilterReady = FALSE;
+
+/* P7a: tear down the off-screen WebGPU filter pipeline.  Called on setting
+ * changes, ROM unload and shutdown; safe to call repeatedly. */
+static void
+release_gpu_filter(void)
+{
+	delete sGpuFilterPresent;
+	sGpuFilterPresent = NULL;
+	/* sGpuShaderSource is a process-lifetime static from the GResource loader;
+	 * never delete it here. */
+	sGpuFilterReady = FALSE;
+}
 
 /* Bit layout mirrors shared/ctrlssdl.h so the defaults are identical to the
  * GTK3 frontend: 0 A, 1 B, 2 Select, 3 Start, 4 Right, 5 Left, 6 Up,
@@ -153,6 +294,166 @@ desmume_emu_add_cheat(guint32 address, int sizeInBytes, guint32 value,
 	/* Persist the list the same way the Cheat List window does on close. */
 	cheats->save();
 	return TRUE;
+}
+
+void
+desmume_emu_set_cheats_disabled(gboolean disabled)
+{
+	CommonSettings.cheatsDisable = (disabled != FALSE);
+}
+
+gboolean
+desmume_emu_get_cheats_disabled(void)
+{
+	return CommonSettings.cheatsDisable ? TRUE : FALSE;
+}
+
+/* ------------------------------------------------------- P7a GPU filter */
+
+gboolean
+desmume_emu_set_gpu_filter(int upscaler, float scale)
+{
+	if (!WGPUPresent::isUpscaler(upscaler))
+	{
+		upscaler = WGPUPresentUpscaler_Off;
+	}
+	if (!(scale >= 1.0f))
+	{
+		scale = 1.0f;
+	}
+	if (scale > 4.0f)
+	{
+		scale = 4.0f;
+	}
+
+	const gboolean was_ready = sGpuFilterReady;
+	const int old_upscaler = sGpuFilterUpscaler;
+
+	sGpuFilterWanted = (upscaler != WGPUPresentUpscaler_Off) ? TRUE : FALSE;
+	sGpuFilterUpscaler = upscaler;
+	sGpuFilterScale = scale;
+
+	if (!sGpuFilterWanted)
+	{
+		release_gpu_filter();
+		return TRUE;
+	}
+
+	/* A device/pipeline is only created once and reused; changing the filter
+	 * or scale takes effect on the next presented frame. */
+	if (sGpuFilterPresent == NULL)
+	{
+		sGpuFilterPresent = new WGPUPresent();
+		if (sGpuShaderSource == NULL)
+		{
+			sGpuShaderSource = WGPUCreateLinuxUpscalerShaderSource();
+		}
+		if (sGpuShaderSource != NULL)
+		{
+			sGpuFilterPresent->setUpscalerShaderSource(sGpuShaderSource);
+		}
+		// The off-screen target is (re)allocated by presentOffscreen() to match
+		// the frame size, so the begin dimensions here are just a seed.
+		if (!sGpuFilterPresent->beginOffscreen(256, 384, 0))
+		{
+			g_printerr("GTK4: WebGPU off-screen filter unavailable; "
+			           "falling back to the plain frame path\n");
+			release_gpu_filter();
+			return FALSE;
+		}
+	}
+
+	sGpuFilterPresent->setUpscaler(upscaler);
+	sGpuFilterReady = TRUE;
+
+	(void)was_ready;
+	(void)old_upscaler;
+	return TRUE;
+}
+
+int
+desmume_emu_get_gpu_filter(void)
+{
+	return sGpuFilterUpscaler;
+}
+
+float
+desmume_emu_get_gpu_scale(void)
+{
+	return sGpuFilterScale;
+}
+
+gboolean
+desmume_emu_gpu_filter_active(void)
+{
+	return (sGpuFilterReady && sGpuFilterPresent != NULL &&
+	        sGpuFilterUpscaler != WGPUPresentUpscaler_Off) ? TRUE : FALSE;
+}
+
+gboolean
+desmume_emu_self_test_gpu_filter(void)
+{
+	if (!desmume_emu_gpu_filter_active())
+	{
+		return FALSE;
+	}
+
+	const int src_w = 256;
+	const int src_h = 384;
+	const int screen_h = src_h / 2;
+	const int dst_w = (int)(src_w * sGpuFilterScale + 0.5f);
+	const int dst_h = (int)(src_h * sGpuFilterScale + 0.5f);
+	const size_t src_size = (size_t)src_w * src_h * 4;
+	const size_t dst_size = (size_t)dst_w * dst_h * 4;
+
+	uint32_t *src = (uint32_t *)g_malloc0(src_size);
+	uint32_t *dst = (uint32_t *)g_malloc0(dst_size);
+	if ((src == NULL) || (dst == NULL))
+	{
+		g_free(src);
+		g_free(dst);
+		return FALSE;
+	}
+
+	// A cheap gradient so the shader has non-uniform input to sample.
+	for (int y = 0; y < src_h; ++y)
+	{
+		for (int x = 0; x < src_w; ++x)
+		{
+			src[(size_t)y * src_w + x] =
+				(uint32_t)(0xFF000000u | ((x & 0xFF) << 16) | ((y & 0xFF) << 8));
+		}
+	}
+
+	WGPUPresentRect srcRects[2];
+	srcRects[0] = { 0, 0, src_w, screen_h };
+	srcRects[1] = { 0, screen_h, src_w, src_h };
+
+	WGPUPresentRect dstRects[2];
+	dstRects[0] = { 0, 0, dst_w, dst_h / 2 };
+	dstRects[1] = { 0, dst_h / 2, dst_w, dst_h };
+
+	const bool ok = sGpuFilterPresent->presentOffscreen(
+		src, src_w, src_h, srcRects, dstRects, NULL, 0, 0,
+		dst, dst_w, dst_h, NULL);
+
+	// Sanity: at least one pixel must be non-black after the blit.
+	bool has_pixels = false;
+	if (ok)
+	{
+		for (size_t i = 0; i < dst_w * (size_t)dst_h; ++i)
+		{
+			if ((dst[i] & 0x00FFFFFFu) != 0)
+			{
+				has_pixels = true;
+				break;
+			}
+		}
+	}
+
+	g_free(src);
+	g_free(dst);
+	return (ok && has_pixels) ? TRUE : FALSE;
 }
 
 /* --------------------------------------------------------- movie (P4b) */
@@ -337,6 +638,11 @@ desmume_emu_init(void)
 		GPU->Change3DRendererByID(RENDERID_NULL);
 	}
 
+	if (sFramePool == NULL)
+	{
+		sFramePool = frame_pool_new();
+	}
+
 	sInitialized = TRUE;
 	return TRUE;
 }
@@ -347,8 +653,7 @@ desmume_emu_shutdown(void)
 	execute = false;
 	sRunning = FALSE;
 
-	delete sVideo;
-	sVideo = NULL;
+	release_gpu_filter();
 
 	if (sHasROM)
 	{
@@ -363,6 +668,14 @@ desmume_emu_shutdown(void)
 	{
 		NDS_DeInit();
 		sInitialized = FALSE;
+	}
+
+	/* Drop the bridge's pool reference. Any GBytes still held by GSK keep the
+	 * pool alive until their release callbacks run. */
+	if (sFramePool != NULL)
+	{
+		frame_pool_unref(sFramePool);
+		sFramePool = NULL;
 	}
 }
 
@@ -403,20 +716,6 @@ desmume_emu_load_rom(const char *path, char **error_message)
 			                                 path, result);
 		}
 		return FALSE;
-	}
-
-	const NDSDisplayInfo &info = GPU->GetDisplayInfo();
-	const size_t src_width = info.customWidth;
-	const size_t src_height = info.customHeight * 2;
-
-	if (sVideo == NULL)
-	{
-		sVideo = new VideoFilter(src_width, src_height,
-		                         VideoFilterTypeID_None, CommonSettings.num_cores);
-	}
-	else
-	{
-		sVideo->SetSourceSize(src_width, src_height);
 	}
 
 	g_free(sRomName);
@@ -630,11 +929,22 @@ run_core_frame(gboolean skip)
 	SPU_Emulate_user();
 }
 
-/* Convert the GPU's composite frame to BGRA8888 and hand it to the display. */
+/* Convert the GPU's composite frame to BGRA8888 and hand it to the display.
+ *
+ * Performance note: this writes the color conversion straight into a pooled
+ * opaque BGRA8888 buffer and transfers that GBytes to the sink. The previous
+ * implementation ran VideoFilter::RunFilter() (a full-frame memcpy for the
+ * None filter this frontend uses) and then the widget ran wrap_frame() (a
+ * second full-frame memcpy plus a per-pixel alpha fixup). Both are gone:
+ * ColorspaceConvertBuffer*Opaque already writes alpha=0xFF on every pixel,
+ * so the pool buffer is a valid premultiplied B8G8R8A8 image for GDK as-is.
+ * GTK3's Cairo path writes the conversion into the VideoFilter source buffer
+ * and draws from it with zero copies; this path now does the same amount of
+ * pixel work with no intermediate copies at all. */
 static void
 present_current_frame(void)
 {
-	if (sFrameSink == NULL)
+	if (sFrameSink == NULL || sFramePool == NULL)
 	{
 		return;
 	}
@@ -648,19 +958,18 @@ present_current_frame(void)
 
 	const size_t src_width = info.customWidth;
 	const size_t src_height = info.customHeight * 2;
-	if ((sVideo->GetSrcWidth() != src_width) ||
-	    (sVideo->GetSrcHeight() != src_height))
-	{
-		sVideo->SetSourceSize(src_width, src_height);
-	}
+	const size_t pixel_count = src_width * src_height;
+	const gsize src_bytes = pixel_count * 4;
 
-	u32 *dst = sVideo->GetSrcBufferPtr();
-	if (dst == NULL)
+	/* The Opaque converters fill alpha with 0xFF, so no alpha pass is needed. */
+	guchar *src_data = NULL;
+	GBytes *frame = frame_pool_acquire(src_bytes, &src_data);
+	if (frame == NULL)
 	{
 		return;
 	}
 
-	const size_t pixel_count = src_width * src_height;
+	u32 *dst = (u32 *)src_data;
 	if (info.colorFormat == NDSColorFormat_BGR555_Rev)
 	{
 		ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapNone>(
@@ -672,14 +981,64 @@ present_current_frame(void)
 			(const u32 *)info.masterCustomBuffer, dst, pixel_count);
 	}
 
-	u32 *filtered = sVideo->RunFilter();
-	if (filtered != NULL)
+	int out_width = (int)src_width;
+	int out_height = (int)src_height;
+
+	/* P7a: run the selected GPU upscaler through the WebGPU off-screen path.
+	 * The result is read back into a second pooled buffer and forwarded to the
+	 * same sink, so the GSK texture path (and all layout/rotation logic) is
+	 * unchanged. Any failure falls back to the unfiltered frame for this tick
+	 * rather than showing a stale or black screen. */
+	if (sGpuFilterReady && sGpuFilterPresent != NULL)
 	{
-		sFrameSink((const guchar *)filtered,
-		           (int)sVideo->GetDstWidth(),
-		           (int)sVideo->GetDstHeight(),
-		           sFrameSinkData);
+		const int screen_h = out_height / 2;
+		const int dst_w = (int)(out_width * sGpuFilterScale + 0.5f);
+		const int dst_h = (int)(out_height * sGpuFilterScale + 0.5f);
+		const int dst_screen_h = dst_h / 2;
+
+		if ((screen_h > 0) && (dst_w > 0) && (dst_screen_h > 0))
+		{
+			const gsize needed = (gsize)dst_w * (gsize)dst_h * 4;
+			guchar *gpu_data = NULL;
+			GBytes *gpu_frame = frame_pool_acquire(needed, &gpu_data);
+
+			if (gpu_frame != NULL)
+			{
+				WGPUPresentRect srcRects[2];
+				srcRects[0].left = 0; srcRects[0].top = 0;
+				srcRects[0].right = out_width; srcRects[0].bottom = screen_h;
+				srcRects[1].left = 0; srcRects[1].top = screen_h;
+				srcRects[1].right = out_width; srcRects[1].bottom = out_height;
+
+				WGPUPresentRect dstRects[2];
+				dstRects[0].left = 0; dstRects[0].top = 0;
+				dstRects[0].right = dst_w; dstRects[0].bottom = dst_screen_h;
+				dstRects[1].left = 0; dstRects[1].top = dst_screen_h;
+				dstRects[1].right = dst_w; dstRects[1].bottom = dst_h;
+
+				const bool ok = sGpuFilterPresent->presentOffscreen(
+					(const uint32_t *)src_data, out_width, out_height,
+					srcRects, dstRects, NULL, 0, 0,
+					(uint32_t *)gpu_data, dst_w, dst_h, NULL);
+
+				if (ok)
+				{
+					g_bytes_unref(frame);
+					frame = gpu_frame;
+					out_width = dst_w;
+					out_height = dst_h;
+				}
+				else
+				{
+					g_bytes_unref(gpu_frame);
+					/* Fall through with the unfiltered frame. */
+				}
+			}
+		}
 	}
+
+	/* Ownership of `frame` transfers to the sink. */
+	sFrameSink(frame, out_width, out_height, sFrameSinkData);
 }
 
 /* Number of emulated frames run per tick when the frame-rate limiter is off
@@ -691,7 +1050,7 @@ present_current_frame(void)
 void
 desmume_emu_step(void)
 {
-	if (!sHasROM || (sVideo == NULL) || !sRunning)
+	if (!sHasROM || !sRunning)
 	{
 		return;
 	}
@@ -785,7 +1144,7 @@ desmume_emu_step(void)
 gboolean
 desmume_emu_step_frame_advance(void)
 {
-	if (!sHasROM || (sVideo == NULL))
+	if (!sHasROM)
 	{
 		return FALSE;
 	}

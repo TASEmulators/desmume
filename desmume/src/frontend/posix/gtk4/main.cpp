@@ -413,7 +413,7 @@ OnFrameTick(gpointer user_data)
 }
 
 static void
-PushFrameToDisplay(const guchar *bgra, int width, int height, gpointer user_data)
+PushFrameToDisplay(GBytes *frame, int width, int height, gpointer user_data)
 {
 	/* pDisplayArea is guarded by a weak pointer: once the window is gone GTK
 	 * sets it to NULL.  A late tick can therefore no longer pass a dangling
@@ -422,9 +422,10 @@ PushFrameToDisplay(const guchar *bgra, int width, int height, gpointer user_data
 	GtkWidget *display = *(GtkWidget **)user_data;
 	if (display == NULL)
 	{
+		g_bytes_unref(frame);
 		return;
 	}
-	desmume_display_push_frame(DESMUME_DISPLAY(display), bgra, width, height);
+	desmume_display_push_frame(DESMUME_DISPLAY(display), frame, width, height);
 }
 
 /* Closing the last window must also tear the emulator down.  GtkApplication's
@@ -489,7 +490,11 @@ static gboolean PushTestFrame(gpointer user_data)
 		}
 	}
 
-	desmume_display_push_frame(display, buffer, 256, 192 * 2);
+	/* The static buffer is rewritten next tick, so copy it into an owned
+	 * GBytes; the widget takes ownership and the textures release it when
+	 * GSK is done (test-only path, the copy cost is irrelevant here). */
+	GBytes *frame = g_bytes_new(buffer, sizeof(buffer));
+	desmume_display_push_frame(display, frame, 256, 192 * 2);
 	return G_SOURCE_CONTINUE;
 }
 
@@ -1187,6 +1192,35 @@ GapChanged(GSimpleAction *action, GVariant *value, gpointer user_data)
 	ApplyViewSettings();
 }
 
+/* P7a: GPU filter radio action. The string target is the WGPUPresentUpscaler
+ * value; "0" (Off) frees the WebGPU device and restores the plain path. */
+static void ActionGpuFilter(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)user_data;
+	const char *value = g_variant_get_string(parameter, NULL);
+	int filter = (value != NULL) ? (int)g_ascii_strtoll(value, NULL, 10) : 0;
+
+	/* Reuse the core's validator so a stale config/menu value cannot select an
+	 * index outside the shader chain table. */
+	if (!desmume_emu_set_gpu_filter(filter,
+	                                (pConfig != NULL) ? pConfig->gpuScaleFactor.get() : 1.0f))
+	{
+		filter = 0;
+		desmume_emu_set_gpu_filter(0, 1.0f);
+	}
+
+	g_simple_action_set_state(action, g_variant_new_string(value != NULL ? value : "0"));
+
+	if (pConfig != NULL)
+	{
+		pConfig->gpuFilter.set(filter);
+		pConfig->save();
+	}
+	char state[16];
+	g_snprintf(state, sizeof(state), "%d", filter);
+	SetActionStringState("gpufilter", state);
+}
+
 static void ActionFullscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
 	(void)action;
@@ -1320,6 +1354,22 @@ static void ActionTool(GSimpleAction *action, GVariant *parameter, gpointer user
 	desmume_tools_open(index);
 }
 
+/* Cheats are applied by the core, so this only stops it from doing so; the
+ * cheat list itself is left intact, matching the GTK3 debugging switch. */
+static void CheatsDisableChanged(GSimpleAction *action, GVariant *value, gpointer user_data)
+{
+	(void)user_data;
+
+	g_simple_action_set_state(action, value);
+	const gboolean disabled = g_variant_get_boolean(value);
+	desmume_emu_set_cheats_disabled(disabled);
+	if (pConfig != NULL)
+	{
+		pConfig->cheats_disabled = (disabled != FALSE);
+		pConfig->save();
+	}
+}
+
 /* ---- movie actions (P4b) --------------------------------------------- */
 
 static void
@@ -1414,6 +1464,8 @@ static const GActionEntry app_entries[] =
 	{ "view-toolbar",   NULL,             NULL, "true", ToolbarChanged },
 	{ "view-statusbar",  NULL,             NULL, "true", StatusbarChanged },
 	{ "tool",           ActionTool,       "u",  NULL,   NULL },
+	{ "gpufilter",      ActionGpuFilter,  "s",  "'0'",  NULL },
+	{ "cheatsdisable",  NULL,             NULL, "false", CheatsDisableChanged },
 	{ "playmovie",      ActionPlayMovie,  NULL, NULL,   NULL },
 	{ "recordmovie",    ActionRecordMovie, NULL, NULL,  NULL },
 	{ "stopmovie",      ActionStopMovie,  NULL, NULL,   NULL }
@@ -1584,6 +1636,28 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 		ApplyViewSettings();
 	}
 
+	/* Restore the persisted "Disable cheats" debugging switch and mirror it
+	 * in the menu action without triggering a redundant config save. */
+	{
+		const gboolean cheats_disabled = pConfig->cheats_disabled.get() ? TRUE : FALSE;
+		desmume_emu_set_cheats_disabled(cheats_disabled);
+		SetActionBooleanState("cheatsdisable", cheats_disabled);
+	}
+
+	/* P7a: restore the optional WebGPU upscaler filter. A filter is only run
+	 * when both presentation is enabled and a non-Off filter is selected;
+	 * the default (Off) keeps the plain GSK texture path. Failure to create
+	 * the device is non-fatal and emulation continues unfiltered. */
+	{
+		const gboolean wgpu_on = pConfig->presentationWGPU.get() ? TRUE : FALSE;
+		const int filter = wgpu_on ? pConfig->gpuFilter.get() : 0;
+		const float scale = pConfig->gpuScaleFactor.get();
+		desmume_emu_set_gpu_filter(filter, scale);
+		char filter_state[16];
+		g_snprintf(filter_state, sizeof(filter_state), "%d", filter);
+		SetActionStringState("gpufilter", filter_state);
+	}
+
 	/* Push persisted emulation-speed settings into the core and mirror them
 	 * in the toggle/radio actions so the menu checkmarks match reality. */
 	{
@@ -1634,10 +1708,57 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 	}
 }
 
+/* GDK 4.24 tracks Wayland presentation feedback per (frame clock, frame
+ * counter) only, while several surfaces can share one clock: a popup inherits
+ * its parent toplevel's clock (gdkpopup-wayland.c), and a state-only "empty
+ * frame" (gdk_wayland_surface_handle_empty_frame()) asks for a frame without
+ * a new buffer.  Showing or hiding a popover while the main window animates
+ * therefore registers two feedback objects for the same frame; the second
+ * presentation report arrives one refresh later and GDK logs it as
+ * "Duplicate call to gdk_frame_timings_presented() ... off from expected".
+ * The duplicate is discarded inside gdk_frame_timings_presented() and the
+ * frame keeps the first timestamp, so nothing is lost.  Upstream fixed the
+ * common case in 6b0b5ff7 ("wayland: Don't duplicate complete frames") and
+ * restructured the tracking per surface in 2da76eb2 ("wayland: Rewrite frame
+ * callback handling to use frames"), which the 4.24 branch does not have.
+ * Drop exactly this one message so a GTK bookkeeping artifact does not look
+ * like a DeSmuME bug; every other Gdk warning still reaches the default
+ * writer. */
+static GLogWriterOutput
+FilterGdkPresentationWarning(GLogLevelFlags log_level, const GLogField *fields,
+                             gsize n_fields, gpointer user_data)
+{
+	const char *domain = NULL;
+	const char *message = NULL;
+
+	for (gsize i = 0; i < n_fields; ++i)
+	{
+		if (g_strcmp0(fields[i].key, "GLIB_DOMAIN") == 0)
+		{
+			domain = (const char *)fields[i].value;
+		}
+		else if (g_strcmp0(fields[i].key, "MESSAGE") == 0)
+		{
+			message = (const char *)fields[i].value;
+		}
+	}
+
+	if ((g_strcmp0(domain, "Gdk") == 0) && (message != NULL) &&
+	    g_str_has_prefix(message, "Duplicate call to gdk_frame_timings_presented()"))
+	{
+		return G_LOG_WRITER_HANDLED;
+	}
+
+	return g_log_writer_default(log_level, fields, n_fields, user_data);
+}
+
 int main(int argc, char *argv[])
 {
 	g_set_prgname("desmume");
 	g_set_application_name("DeSmuME");
+
+	/* Must be installed before the first frame is drawn. */
+	g_log_set_writer_func(FilterGdkPresentationWarning, NULL, NULL);
 
 	/* Belt and braces: the core's microphone init may touch SDL on any path.
 	 * Keep SDL from hijacking SIGINT/SIGTERM so Ctrl+C still terminates us. */

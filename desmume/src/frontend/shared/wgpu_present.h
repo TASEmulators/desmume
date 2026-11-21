@@ -155,6 +155,15 @@ public:
 	// again with a different mask rebuilds everything.
 	bool begin(WGPUPresentWindow *window, uint32_t instanceBackends = 0);
 
+	// P7a off-screen mode: for frontends (GTK4) whose video area is not a
+	// native surface and therefore cannot be presented to directly. Creates
+	// the device, pipeline and buffers exactly like begin(), but renders into
+	// an owned texture instead of a WGPUSurface. `width`/`height` are the
+	// texture size in physical pixels; the result is read back into the
+	// caller's BGRA8888 buffer by presentOffscreen(). Returns false when
+	// WebGPU is unavailable, exactly like begin().
+	bool beginOffscreen(uint32_t width, uint32_t height, uint32_t instanceBackends = 0);
+
 	// Releases everything, including the surface. Safe to call at any time and
 	// repeatedly; begin() starts from a clean slate afterwards.
 	void kill();
@@ -199,6 +208,21 @@ public:
 				 const WGPUPresentRect *gapRect,
 				 int rotation, uint32_t gapColor,
 				 const WGPUPresentOverlay *overlay = NULL);
+
+	// Renders one frame through the same pipeline (including GPU filters and
+	// the optional HUD overlay) into the off-screen target created by
+	// beginOffscreen(), then reads it back synchronously into `outBgra`.
+	// `outBgra` must hold at least outWidth * outHeight * 4 bytes and be
+	// 4-byte aligned. `outWidth`/`outHeight` may differ from the begin size;
+	// the texture is recreated when they change. Returns false if not ready,
+	// the readback failed, or beginOffscreen() was never called.
+	bool presentOffscreen(const uint32_t *pixels, int width, int height,
+						  const WGPUPresentRect *srcRects,
+						  const WGPUPresentRect *dstRects,
+						  const WGPUPresentRect *gapRect,
+						  int rotation, uint32_t gapColor,
+						  uint32_t *outBgra, int outWidth, int outHeight,
+						  const WGPUPresentOverlay *overlay = NULL);
 
 	bool isReady() const;
 

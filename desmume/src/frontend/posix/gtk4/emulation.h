@@ -18,8 +18,13 @@ G_BEGIN_DECLS
 
 /* Called once per emulated frame with a BGRA8888 buffer containing both
  * screens stacked vertically (first the main screen, then the touch screen).
- * The buffer belongs to the emulation layer and stays valid for the call. */
-typedef void (*DesmumeFrameSink)(const guchar *bgra, int width, int height,
+ *
+ * `frame` is a GBytes whose data is the opaque BGRA8888 frame; its lifetime is
+ * managed by the reference count. The sink must keep a reference for as long
+ * as it needs the pixels (GTK4's GdkMemoryTexture does exactly that) and
+ * unref it when done. This is what lets the widget build textures with zero
+ * copies instead of memcpy-ing the frame a second time. */
+typedef void (*DesmumeFrameSink)(GBytes *frame, int width, int height,
                                  gpointer user_data);
 
 gboolean desmume_emu_init(void);
@@ -95,6 +100,36 @@ guint32 desmume_emu_read_ioreg(int cpu, DesmumeIOReg reg);
  * otherwise; *error_message, when set, receives an owned UTF-8 string. */
 gboolean desmume_emu_add_cheat(guint32 address, int sizeInBytes, guint32 value,
                                const char *description, char **error_message);
+
+/* Globally stop the core from applying the cheat list without removing any
+ * entry (the "Disable cheats" menu switch).  The list itself is untouched. */
+void desmume_emu_set_cheats_disabled(gboolean disabled);
+gboolean desmume_emu_get_cheats_disabled(void);
+
+/* ---- P7a: WebGPU off-screen GPU filters ----------------------------- */
+
+/* Configure the optional GPU upscaler filter that runs between the core frame
+ * and the display.  `upscaler` is a WGPUPresentUpscaler value (0 = off);
+ * `scale` is the linear upscale factor applied to the two screens (>= 1).
+ * Both are mirrored here as plain ints/floats so the GTK layer never needs the
+ * WebGPU headers. Calling with upscaler 0 disables the path entirely and
+ * releases the WebGPU device. Returns TRUE when the filter was accepted; a
+ * build without WebGPU simply returns FALSE and the plain frame path is used. */
+gboolean desmume_emu_set_gpu_filter(int upscaler, float scale);
+
+/* Current GPU filter settings (0 / 1.0 when the path is off). */
+int desmume_emu_get_gpu_filter(void);
+float desmume_emu_get_gpu_scale(void);
+
+/* Whether a GPU filter is actually running (device created and filter not
+ * off). Useful for the menu tick / status readout. */
+gboolean desmume_emu_gpu_filter_active(void);
+
+/* Diagnostic: run one synthetic frame through the active off-screen filter
+ * and report whether the GPU render + readback completed.  Does not touch the
+ * display sink. Returns TRUE only when a filter is active and the whole path
+ * (render, map, copy) succeeded; used by automated smoke tests. */
+gboolean desmume_emu_self_test_gpu_filter(void);
 
 /* ---- movie playback / recording (P4b) -------------------------------- */
 

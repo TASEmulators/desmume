@@ -30,13 +30,14 @@ typedef enum
 
 GtkWidget *desmume_display_new(void);
 
-/* `bgra` is a width x height BGRX framebuffer: the top screen occupies the
- * first height/2 rows and the bottom screen the remaining rows.  The widget
- * copies it into a pooled, alpha-fixed buffer and wraps that in two
- * GdkMemoryTextures, so the caller may reuse its buffer as soon as this
- * returns. An unmapped widget drops the frame (no texture upload, no draw). */
-void desmume_display_push_frame(DesmumeDisplay *display,
-                                const guchar *bgra, int width, int height);
+/* `frame` is an opaque BGRA8888 GBytes of width x height pixels: the top
+ * screen occupies the first height/2 rows and the bottom screen the rest.
+ * Ownership transfers to the widget: it wraps the bytes in two zero-copy
+ * GdkMemoryTextures and releases its reference when they are replaced or
+ * the widget is disposed.  The caller must NOT unref `frame` after this
+ * call.  An unmapped widget drops the frame (no texture creation, no draw). */
+void desmume_display_push_frame(DesmumeDisplay *display, GBytes *frame,
+                                int width, int height);
 
 void desmume_display_set_layout(DesmumeDisplay *display, DesmumeLayout layout);
 void desmume_display_set_rotation(DesmumeDisplay *display, int degrees);

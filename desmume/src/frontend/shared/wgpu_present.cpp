@@ -28,6 +28,7 @@ WGPUPresent::WGPUPresent() : _impl(NULL) {}
 WGPUPresent::~WGPUPresent() {}
 
 bool WGPUPresent::begin(WGPUPresentWindow *, uint32_t) { return false; }
+bool WGPUPresent::beginOffscreen(uint32_t, uint32_t, uint32_t) { return false; }
 void WGPUPresent::kill() {}
 void WGPUPresent::setvsync(bool) {}
 void WGPUPresent::setUseOutputFilter(bool) {}
@@ -44,6 +45,13 @@ bool WGPUPresent::isReady() const { return false; }
 bool WGPUPresent::present(const uint32_t *, int, int, const WGPUPresentRect *,
 						  const WGPUPresentRect *, const WGPUPresentRect *, int, uint32_t,
 						  const WGPUPresentOverlay *)
+{
+	return false;
+}
+
+bool WGPUPresent::presentOffscreen(const uint32_t *, int, int, const WGPUPresentRect *,
+								   const WGPUPresentRect *, const WGPUPresentRect *, int, uint32_t,
+								   uint32_t *, int, int, const WGPUPresentOverlay *)
 {
 	return false;
 }
@@ -335,6 +343,24 @@ struct WGPUPresent::Impl
 	WGPUQueue queue;
 	WGPUSurface surface;
 
+	// P7a off-screen target. When `offscreen` is true the frame is rendered
+	// into `offscreenTex` (BGRA8Unorm, RENDER_ATTACHMENT | COPY_SRC) instead of
+	// a surface, then copied to `readbackBuffer` and mapped into CPU memory.
+	// `format` is pinned to BGRA8Unorm in this mode so the readback is a plain
+	// memcpy with no swizzle.
+	bool offscreen;
+	WGPUTexture offscreenTex;
+	WGPUTextureView offscreenView;
+	WGPUBuffer readbackBuffer;
+	size_t readbackBufferSize;
+	uint32_t readbackBytesPerRow;
+
+	// Set for the duration of one present() call that captures off-screen.
+	// present() copies the mapped staging rows into this caller buffer.
+	uint32_t *captureOut;
+	int captureOutWidth;
+	int captureOutHeight;
+
 	WGPUTextureFormat format;
 	WGPUPresentMode presentMode;
 	WGPUCompositeAlphaMode alphaMode;
@@ -437,6 +463,15 @@ struct WGPUPresent::Impl
 		device(NULL),
 		queue(NULL),
 		surface(NULL),
+		offscreen(false),
+		offscreenTex(NULL),
+		offscreenView(NULL),
+		readbackBuffer(NULL),
+		readbackBufferSize(0),
+		readbackBytesPerRow(0),
+		captureOut(NULL),
+		captureOutWidth(0),
+		captureOutHeight(0),
 		format(WGPUTextureFormat_BGRA8Unorm),
 		presentMode(WGPUPresentMode_Fifo),
 		alphaMode(WGPUCompositeAlphaMode_Auto),
@@ -487,6 +522,10 @@ struct WGPUPresent::Impl
 	void Destroy();
 	bool CreateDevice(uint32_t instanceBackends);
 	bool CreateSurface();
+	// P7a: (re)allocate the off-screen texture and staging buffer for the given
+	// physical pixel size. Row bytes are rounded up to wgpu's 256-byte copy
+	// alignment; the caller's tighter rows are copied out of the padded result.
+	bool EnsureOffscreenTarget(uint32_t w, uint32_t h);
 	bool CreatePipeline();
 	bool CreateBuffers();
 	bool ConfigureSurface(uint32_t w, uint32_t h);
@@ -946,6 +985,68 @@ bool WGPUPresent::Impl::ConfigureSurface(uint32_t w, uint32_t h)
 	this->surfaceWidth = w;
 	this->surfaceHeight = h;
 
+	return true;
+}
+
+bool WGPUPresent::Impl::EnsureOffscreenTarget(uint32_t w, uint32_t h)
+{
+	if ( (this->device == NULL) || (w == 0) || (h == 0) )
+	{
+		return false;
+	}
+
+	const size_t bytesPerRow = (((size_t)w * 4 + 255) / 256) * 256;
+	const size_t bufferSize = bytesPerRow * (size_t)h;
+
+	if ( (this->offscreenTex != NULL) && (w == this->surfaceWidth) &&
+		 (h == this->surfaceHeight) && (this->readbackBuffer != NULL) &&
+		 (bytesPerRow == this->readbackBytesPerRow) )
+	{
+		return true;
+	}
+
+	// Drop the old target first; a resize must not leave a half-bound chain.
+	if (this->offscreenView != NULL) { wgpuTextureViewRelease(this->offscreenView); this->offscreenView = NULL; }
+	if (this->offscreenTex != NULL) { wgpuTextureRelease(this->offscreenTex); this->offscreenTex = NULL; }
+	if (this->readbackBuffer != NULL) { wgpuBufferRelease(this->readbackBuffer); this->readbackBuffer = NULL; }
+
+	WGPUTextureDescriptor textureDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
+	textureDesc.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
+	textureDesc.dimension = WGPUTextureDimension_2D;
+	textureDesc.size.width = w;
+	textureDesc.size.height = h;
+	textureDesc.size.depthOrArrayLayers = 1;
+	textureDesc.format = WGPUTextureFormat_BGRA8Unorm;
+	textureDesc.mipLevelCount = 1;
+	textureDesc.sampleCount = 1;
+	this->offscreenTex = wgpuDeviceCreateTexture(this->device, &textureDesc);
+
+	if (this->offscreenTex == NULL)
+	{
+		return false;
+	}
+	this->offscreenView = wgpuTextureCreateView(this->offscreenTex, NULL);
+
+	if (this->offscreenView == NULL)
+	{
+		return false;
+	}
+
+	WGPUBufferDescriptor bufferDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
+	bufferDesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+	bufferDesc.size = bufferSize;
+	this->readbackBuffer = wgpuDeviceCreateBuffer(this->device, &bufferDesc);
+
+	if (this->readbackBuffer == NULL)
+	{
+		return false;
+	}
+
+	this->format = WGPUTextureFormat_BGRA8Unorm;
+	this->surfaceWidth = w;
+	this->surfaceHeight = h;
+	this->readbackBytesPerRow = bytesPerRow;
+	this->readbackBufferSize = bufferSize;
 	return true;
 }
 
@@ -1738,6 +1839,15 @@ void WGPUPresent::Impl::Destroy()
 	if (this->shader != NULL) { wgpuShaderModuleRelease(this->shader); this->shader = NULL; }
 
 	if (this->surface != NULL) { wgpuSurfaceRelease(this->surface); this->surface = NULL; }
+
+	// P7a off-screen resources.
+	if (this->offscreenView != NULL) { wgpuTextureViewRelease(this->offscreenView); this->offscreenView = NULL; }
+	if (this->offscreenTex != NULL) { wgpuTextureRelease(this->offscreenTex); this->offscreenTex = NULL; }
+	if (this->readbackBuffer != NULL) { wgpuBufferRelease(this->readbackBuffer); this->readbackBuffer = NULL; }
+	this->readbackBufferSize = 0;
+	this->readbackBytesPerRow = 0;
+	this->offscreen = false;
+
 	this->surfaceWidth = 0;
 	this->surfaceHeight = 0;
 
@@ -1821,6 +1931,61 @@ bool WGPUPresent::begin(WGPUPresentWindow *window, uint32_t instanceBackends)
 
 	_impl->ready = true;
 
+	return true;
+}
+
+bool WGPUPresent::beginOffscreen(uint32_t width, uint32_t height, uint32_t instanceBackends)
+{
+	if (_impl == NULL)
+	{
+		return false;
+	}
+
+	const bool isSameRequest = _impl->offscreen &&
+	                           (_impl->instanceBackends == instanceBackends) &&
+	                           (_impl->surfaceWidth == width) &&
+	                           (_impl->surfaceHeight == height);
+
+	if (_impl->ready && isSameRequest)
+	{
+		return true;
+	}
+
+	if (_impl->failed && isSameRequest)
+	{
+		return false;
+	}
+
+	_impl->failed = false;
+	_impl->Destroy();
+
+	// No WGPUPresentWindow: the device/pipeline/buffers do not need one, and
+	// the texture target is created lazily by EnsureOffscreenTarget() on the
+	// first presentOffscreen() call (so a resize can recreate it).
+	_impl->offscreen = true;
+	_impl->format = WGPUTextureFormat_BGRA8Unorm;
+
+	if (!_impl->CreateDevice(instanceBackends))
+	{
+		return false;
+	}
+
+	if (!_impl->CreatePipeline())
+	{
+		return false;
+	}
+
+	if (!_impl->CreateBuffers())
+	{
+		return false;
+	}
+
+	if (!_impl->EnsureOffscreenTarget(width, height))
+	{
+		return false;
+	}
+
+	_impl->ready = true;
 	return true;
 }
 
@@ -1976,57 +2141,74 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 
 	Impl &d = *_impl;
 
-	if ( (d.window == NULL) || !d.window->isAlive() )
-	{
-		return false;
-	}
-
 	int windowWidth  = 0;
 	int windowHeight = 0;
+	WGPUSurfaceTexture surfaceTexture = WGPU_SURFACE_TEXTURE_INIT; // surface mode only
+	WGPUTextureView targetView = NULL;
+	bool ownsTargetView = false;
 
-	if ( !d.window->getClientSize(&windowWidth, &windowHeight) ||
-		 (windowWidth <= 0) || (windowHeight <= 0) )
+	if (d.offscreen)
 	{
-		return false;
-	}
-
-	if (!d.ConfigureSurface((uint32_t)windowWidth, (uint32_t)windowHeight))
-	{
-		return false;
-	}
-
-	WGPUSurfaceTexture surfaceTexture = WGPU_SURFACE_TEXTURE_INIT;
-	wgpuSurfaceGetCurrentTexture(d.surface, &surfaceTexture);
-
-	const bool gotTexture =
-		(surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal) ||
-		(surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal);
-
-	if (!gotTexture)
-	{
-		if (surfaceTexture.texture != NULL)
+		// P7a: render into our own texture. The size was validated by
+		// presentOffscreen() (which also reallocated the target on resize).
+		windowWidth = (int)d.surfaceWidth;
+		windowHeight = (int)d.surfaceHeight;
+		targetView = d.offscreenView;
+		if ( (targetView == NULL) || (windowWidth <= 0) || (windowHeight <= 0) )
 		{
-			wgpuTextureRelease(surfaceTexture.texture);
+			return false;
+		}
+	}
+	else
+	{
+		if ( (d.window == NULL) || !d.window->isAlive() )
+		{
+			return false;
 		}
 
-		// Force a reconfigure and retry on the next frame.
-		d.surfaceWidth = 0;
-		d.surfaceHeight = 0;
-		return false;
-	}
+		if ( !d.window->getClientSize(&windowWidth, &windowHeight) ||
+			 (windowWidth <= 0) || (windowHeight <= 0) )
+		{
+			return false;
+		}
 
-	WGPUTextureView targetView = wgpuTextureCreateView(surfaceTexture.texture, NULL);
+		if (!d.ConfigureSurface((uint32_t)windowWidth, (uint32_t)windowHeight))
+		{
+			return false;
+		}
 
-	if (targetView == NULL)
-	{
-		wgpuTextureRelease(surfaceTexture.texture);
-		return false;
+		wgpuSurfaceGetCurrentTexture(d.surface, &surfaceTexture);
+
+		const bool gotTexture =
+			(surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal) ||
+			(surfaceTexture.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal);
+
+		if (!gotTexture)
+		{
+			if (surfaceTexture.texture != NULL)
+			{
+				wgpuTextureRelease(surfaceTexture.texture);
+			}
+
+			// Force a reconfigure and retry on the next frame.
+			d.surfaceWidth = 0;
+			d.surfaceHeight = 0;
+			return false;
+		}
+
+		targetView = wgpuTextureCreateView(surfaceTexture.texture, NULL);
+		ownsTargetView = true;
+		if (targetView == NULL)
+		{
+			wgpuTextureRelease(surfaceTexture.texture);
+			return false;
+		}
 	}
 
 	if (!d.EnsureVideoTexture((uint32_t)width, (uint32_t)height, d.videoFilter))
 	{
-		wgpuTextureViewRelease(targetView);
-		wgpuTextureRelease(surfaceTexture.texture);
+		if (ownsTargetView) { wgpuTextureViewRelease(targetView); }
+		if (!d.offscreen && (surfaceTexture.texture != NULL)) { wgpuTextureRelease(surfaceTexture.texture); }
 		return false;
 	}
 
@@ -2329,6 +2511,26 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 
 	wgpuRenderPassEncoderEnd(pass);
 
+	// P7a: copy the off-screen render target into the staging buffer so it can
+	// be mapped after submit. The surface path never reaches this branch.
+	if (d.offscreen)
+	{
+		WGPUTexelCopyTextureInfo copySource = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
+		copySource.texture = d.offscreenTex;
+
+		WGPUTexelCopyBufferInfo copyDest = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
+		copyDest.buffer = d.readbackBuffer;
+		copyDest.layout.bytesPerRow = d.readbackBytesPerRow;
+		copyDest.layout.rowsPerImage = (uint32_t)windowHeight;
+
+		WGPUExtent3D copySize = WGPU_EXTENT_3D_INIT;
+		copySize.width = (uint32_t)windowWidth;
+		copySize.height = (uint32_t)windowHeight;
+		copySize.depthOrArrayLayers = 1;
+
+		wgpuCommandEncoderCopyTextureToBuffer(encoder, &copySource, &copyDest, &copySize);
+	}
+
 	WGPUCommandBufferDescriptor commandBufferDesc = WGPU_COMMAND_BUFFER_DESCRIPTOR_INIT;
 	WGPUCommandBuffer commandBuffer = wgpuCommandEncoderFinish(encoder, &commandBufferDesc);
 
@@ -2343,12 +2545,76 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 	wgpuRenderPassEncoderRelease(pass);
 	wgpuCommandEncoderRelease(encoder);
 
+	if (d.offscreen)
+	{
+		// Wait for the submitted copy, then run the map callback and unpack the
+		// 256-byte-padded rows into the caller's tightly packed BGRA buffer.
+		struct MapState
+		{
+			bool done;
+			bool ok;
+		} mapState = { false, false };
+
+		WGPUBufferMapCallbackInfo mapInfo = WGPU_BUFFER_MAP_CALLBACK_INFO_INIT;
+		mapInfo.mode = WGPUCallbackMode_AllowProcessEvents;
+		mapInfo.callback = +[](WGPUMapAsyncStatus status, WGPUStringView message,
+		                       void *userdata1, void *userdata2) {
+			(void)message; (void)userdata2;
+			MapState *state = (MapState *)userdata1;
+			if (state != NULL)
+			{
+				state->ok = (status == WGPUMapAsyncStatus_Success);
+				state->done = true;
+			}
+		};
+		mapInfo.userdata1 = &mapState;
+
+		wgpuBufferMapAsync(d.readbackBuffer, WGPUMapMode_Read, 0,
+		                   d.readbackBufferSize, mapInfo);
+
+		// Pump the device event loop until the map callback fires. present()
+		// is called on the emulation thread; a bounded wait keeps a lost device
+		// from hanging the UI forever.
+		const int kMaxPolls = 10000;
+		for (int i = 0; (i < kMaxPolls) && !mapState.done; ++i)
+		{
+			wgpuDevicePoll(d.device, true, NULL);
+		}
+
+		if (!mapState.done || !mapState.ok || (d.captureOut == NULL))
+		{
+			if (mapState.done && mapState.ok)
+			{
+				wgpuBufferUnmap(d.readbackBuffer);
+			}
+			return false;
+		}
+
+		const uint8_t *mapped = (const uint8_t *)wgpuBufferGetMappedRange(
+			d.readbackBuffer, 0, d.readbackBufferSize);
+		const int rows = (d.captureOutHeight < windowHeight)
+		               ? d.captureOutHeight : windowHeight;
+		const size_t rowBytes = (size_t)d.captureOutWidth * 4;
+
+		if (mapped != NULL)
+		{
+			for (int y = 0; y < rows; ++y)
+			{
+				memcpy(d.captureOut + (size_t)y * (size_t)d.captureOutWidth,
+				       mapped + (size_t)y * d.readbackBytesPerRow, rowBytes);
+			}
+		}
+		wgpuBufferUnmap(d.readbackBuffer);
+
+		return mapped != NULL;
+	}
+
 	// Present before dropping the surface texture: wgpu-native needs the
 	// acquired image to still be alive while it hands it to the compositor.
 	const WGPUStatus presentStatus = wgpuSurfacePresent(d.surface);
 
-	wgpuTextureViewRelease(targetView);
-	wgpuTextureRelease(surfaceTexture.texture);
+	if (ownsTargetView) { wgpuTextureViewRelease(targetView); }
+	if (surfaceTexture.texture != NULL) { wgpuTextureRelease(surfaceTexture.texture); }
 
 	if (presentStatus != WGPUStatus_Success)
 	{
@@ -2358,6 +2624,42 @@ bool WGPUPresent::present(const uint32_t *pixels, int width, int height,
 	}
 
 	return true;
+}
+
+bool WGPUPresent::presentOffscreen(const uint32_t *pixels, int width, int height,
+								   const WGPUPresentRect *srcRects,
+								   const WGPUPresentRect *dstRects,
+								   const WGPUPresentRect *gapRect,
+								   int rotation, uint32_t gapColor,
+								   uint32_t *outBgra, int outWidth, int outHeight,
+								   const WGPUPresentOverlay *overlay)
+{
+	if ( (_impl == NULL) || !_impl->ready || !_impl->offscreen ||
+		 (pixels == NULL) || (outBgra == NULL) ||
+		 (width <= 0) || (height <= 0) || (outWidth <= 0) || (outHeight <= 0) ||
+		 (srcRects == NULL) || (dstRects == NULL) )
+	{
+		return false;
+	}
+
+	// Grow the render target when the widget size changed. present() itself
+	// uses surfaceWidth/Height as the render size in off-screen mode.
+	if (!_impl->EnsureOffscreenTarget((uint32_t)outWidth, (uint32_t)outHeight))
+	{
+		return false;
+	}
+
+	_impl->captureOut = outBgra;
+	_impl->captureOutWidth = outWidth;
+	_impl->captureOutHeight = outHeight;
+
+	const bool result = present(pixels, width, height, srcRects, dstRects,
+	                            gapRect, rotation, gapColor, overlay);
+
+	_impl->captureOut = NULL;
+	_impl->captureOutWidth = 0;
+	_impl->captureOutHeight = 0;
+	return result;
 }
 
 #endif // ENABLE_WGPU
