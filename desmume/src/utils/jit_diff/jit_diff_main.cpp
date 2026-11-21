@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <chrono>
 
 #if defined(__APPLE__)
 	#include <mach-o/dyld.h>
@@ -1074,6 +1075,70 @@ static int measureBlockSize(int n, int slot, bool thumb, u32 dumpAdr)
 	return 0;
 }
 
+// Block benchmark. --block reports code size, which cannot show a change that
+// only removes work from a C helper: the emitted block is unchanged there and
+// the win is entirely inside the call. This plants `n` copies of one opcode,
+// compiles the block once and times repeated calls of the compiled function.
+//
+// The whole block re-reads the same address, so after the first access the
+// cache controller's last-block shortcut is primed. That is the best case for
+// any main-RAM fast-path work, which makes the number a ceiling rather than a
+// prediction -- see the note in the migration plan (10.13).
+static int runBench(int n, int slot, bool thumb, int iters)
+{
+	if (slot < 0)
+	{
+		printf("--bench needs --slot (and --thumb for the Thumb set)\n");
+		return 2;
+	}
+	if (n < 1 || n > 100 || iters < 1)
+	{
+		printf("--bench needs 1..100 instructions and 1+ iterations\n");
+		return 2;
+	}
+
+	const u32 opcode = thumb ? ((u32)slot << 6) : ((u32)slot << 20);
+	const u32 insnSize = thumb ? 2u : 4u;
+	for (int i = 0; i < n; i++)
+	{
+		if (thumb) _MMU_write16<0>(kCodeBase + i * insnSize, (u16)opcode);
+		else _MMU_write32<0>(kCodeBase + i * insnSize, opcode);
+	}
+
+	CommonSettings.jit_max_block_size = n;
+	arm_jit_reset(true, true);
+	// Every register points into main RAM, so load and store shapes both land
+	// in the region the fast path covers (kOperands[1] is 1, which would send
+	// every access down the generic path instead).
+	u32 ops[8];
+	for (int i = 0; i < 8; i++)
+		ops[i] = kCodeBase + 0x3000;
+	primeState(kCodeBase, ops, opcode, 0x00000013u | (thumb ? 0x20u : 0u));
+	execJit();
+
+	u32 (*fn)() = (u32 (*)())JIT_COMPILED_FUNC(kCodeBase, 0);
+	if (!fn)
+	{
+		printf("bench: no compiled block at %08X\n", kCodeBase);
+		return 1;
+	}
+
+	// Warm up: the first calls also fill the emulated cache, and priming the
+	// branch predictor keeps the measurement from rewarding luck.
+	for (int i = 0; i < 10000; i++)
+		fn();
+
+	const std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+	for (int i = 0; i < iters; i++)
+		fn();
+	const std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
+	const double nsPerBlock = std::chrono::duration<double, std::nano>(t1 - t0).count() / iters;
+	printf("bench: %s slot %03X x %d -> %.1f ns/block, %.3f ns/instruction (%d iterations)\n",
+		thumb ? "thumb" : "arm", slot, n, nsPerBlock, nsPerBlock / n, iters);
+	return 0;
+}
+
 // ---------------------------------------------------------------------------
 // Multi-instruction sequences
 // ---------------------------------------------------------------------------
@@ -1405,6 +1470,7 @@ int main(int argc, char **argv)
 	bool listAll = false;
 	int onlySlot = -1;
 	int measureBlock = 0;
+	int benchIters = 0;
 	int sequenceLen = 0;
 	bool measureThumb = false;
 	u32 dumpBlockAdr = 0;
@@ -1416,6 +1482,7 @@ int main(int argc, char **argv)
 		else if (strcmp(argv[i], "--all") == 0) listAll = true;
 		else if (strcmp(argv[i], "--slot") == 0 && i + 1 < argc) onlySlot = atoi(argv[++i]);
 		else if (strcmp(argv[i], "--block") == 0 && i + 1 < argc) measureBlock = atoi(argv[++i]);
+		else if (strcmp(argv[i], "--bench") == 0 && i + 1 < argc) benchIters = atoi(argv[++i]);
 		else if (strcmp(argv[i], "--seq") == 0 && i + 1 < argc) { sequenceLen = atoi(argv[++i]); sweep = true; }
 		else if (strcmp(argv[i], "--thumb") == 0) measureThumb = true;
 		else if (strcmp(argv[i], "--dump") == 0 && i + 1 < argc)
@@ -1471,6 +1538,9 @@ int main(int argc, char **argv)
 	// multi-instruction block would make a mismatch ambiguous.
 	CommonSettings.jit_max_block_size = 1;
 	arm_jit_reset(true, true);
+
+	if (benchIters > 0)
+		return runBench(measureBlock > 0 ? measureBlock : 16, onlySlot, measureThumb, benchIters);
 
 	if (measureBlock > 0)
 		return measureBlockSize(measureBlock, onlySlot, measureThumb, dumpBlockAdr);
