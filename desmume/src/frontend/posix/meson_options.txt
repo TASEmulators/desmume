@@ -21,7 +21,7 @@ option('egl',
 option('frontend-gtk',
   type: 'combo',
   choices: ['auto', 'gtk4', 'gtk3', 'gtk2', 'none'],
-  value: 'auto',
+  value: 'gtk3',
   description: 'GTK frontend to build. auto probes pkg-config in the order gtk4 (>=4.10) -> gtk3 (>=3.24) -> gtk2 (>=2.24) and builds the first one found; none disables the GTK frontends.',
 )
 option('frontend-cli',

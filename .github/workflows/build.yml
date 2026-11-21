@@ -35,17 +35,16 @@ jobs:
       - name: install dependencies
         run: sudo apt update && sudo apt install meson libgtk-4-dev libsdl3-dev libpcap-dev desktop-file-utils appstream
 
-      # No -Dfrontend-gtk here on purpose: the default is 'auto', which must
-      # prefer gtk4 over any gtk3 the runner image happens to ship.
+      # The default frontend is gtk3, so pin gtk4 explicitly for this job.
       - name: meson
         run: |
           cd desmume/src/frontend/posix/
-          meson setup build-gtk4
+          meson setup build-gtk4 -Dfrontend-gtk=gtk4
 
       - name: ninja
         run: ninja -C desmume/src/frontend/posix/build-gtk4
 
-      - name: check that auto picked gtk4
+      - name: check that gtk4 was built
         run: test -x desmume/src/frontend/posix/build-gtk4/gtk4/desmume
 
       # P8: validate the GTK4 packaging assets and the UI resource so a
