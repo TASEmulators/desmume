@@ -671,6 +671,14 @@ u32 DESMUME_FASTCALL _MMU_ARM7_read32(u32 adr);
 
 extern u32 partie;
 
+// Set when the CPU programs a DMA channel in a mode that starts immediately, so
+// the transfer is due at the current timestamp (nextEvent == nds_timer right
+// after the write). The JIT watches this flag and leaves the current compiled
+// block as soon as it becomes non-zero, so the CPU cannot run past a DMA trigger
+// and overwrite the parameters that were just latched. Cleared by the sequencer
+// once execHardware() has executed every armed transfer.
+extern u32 mmu_dma_event_pending;
+
 extern u32 _MMU_MAIN_MEM_MASK;
 extern u32 _MMU_MAIN_MEM_MASK16;
 extern u32 _MMU_MAIN_MEM_MASK32;

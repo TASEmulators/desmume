@@ -305,41 +305,16 @@ private:
 		s64 t = ((s64)(hrssec + minsec + seconds) * 1000L + (s64)milliseconds);
 		t *= 10000;
 
-		bool overflow = false;
-		// days is problematic because it can overflow but that overflow can be 
-		// "legal" (i.e. temporary) (e.g. if other parameters are negative) or 
-		// illegal (e.g. sign change).
+		// days arithmetic may temporarily overflow; the old overflow checks
+		// were removed (see below), so only the resulting value matters.
 		if (days > 0) {
 			s64 td = TicksPerDay * days;
-			if (t < 0) {
-				s64 ticks = t;
-				t += td;
-				// positive days -> total ticks should be lower
-				overflow = (ticks > t);
-			}
-			else {
-				t += td;
-				// positive + positive != negative result
-				overflow = (t < 0);
-			}
+			t += td;
 		}
 		else if (days < 0) {
 			s64 td = TicksPerDay * days;
-			if (t <= 0) {
-				t += td;
-				// negative + negative != positive result
-				overflow = (t > 0);
-			}
-			else {
-				s64 ticks = t;
-				t += td;
-				// negative days -> total ticks should be lower
-				overflow = (t > ticks);
-			}
+			t += td;
 		}
-
-		//removed:
-		//if (overflow) throw ArgumentOutOfRangeException ("The timespan is too big or too small.");
 
 		return t;
 	}

@@ -21,6 +21,7 @@
 #include "ClientEmulationOutput.h"
 #include "ClientExecutionControl.h"
 #include "ClientDisplayView.h"
+#include "../../filter/videofilter.h"
 
 #include "../../types.h"
 #undef BOOL
@@ -52,12 +53,58 @@ public:
 	virtual void HandleReceiveGPUFrame();
 };
 
-class ClientVideoCaptureOutput : public ClientVideoOutput
+// AV capture frame consumer.  Deliberately NOT a ClientEmulationOutput: it
+// owns no thread and receives no dispatched messages.  ProcessFrame() runs
+// synchronously on the display output thread right after the main view has
+// presented.
+//
+// Video frames reach the encoder in exactly one way: a dedicated Metal capture
+// presenter renders the frame through the same shaders the on-screen view uses
+// and writes it straight into an IOSurface-backed CVPixelBuffer, which
+// VideoToolbox encodes in place.  No CPU copy, no colorspace conversion, and
+// every display option (rotation, view scale, hybrid layouts, output filter,
+// pixel scaler, deposterize, backlight) behaves exactly as it does on screen.
+//
+// There is intentionally no CPU fallback any more.  The CPU compositor used to
+// hand the encoder a raw RGB888 pointer into a staging buffer, and when that
+// buffer was not there the encoder thread crashed inside vImage
+// (vImageConvert_RGB888toBGRA8888 on NULL + slot offset).  It also re-implemented
+// the presenter's geometry, so CPU and GPU frames of the same settings did not
+// even share a framing.  Recording now requires the Metal display path; on a
+// non-Metal build or an OpenGL fallback it reports that it is unavailable and
+// produces no video.
+//
+// The capture presenter must NEVER be created from a non-display thread and
+// must never block on the GPU: a presenter built off the display thread
+// retains/releases the same shared texPairFetch textures the fetch object is
+// replacing, which corrupts command buffer completion handlers, and any
+// per-frame waitUntilCompleted destroys frame pacing.
+class ClientVideoCaptureOutput
 {
-protected:
-	ClientDisplay3DPresenter *_cdp;
+private:
 	ClientAVCaptureObject *_avCaptureObject;
-	Color4u8 *_videoCaptureBuffer;
+	size_t _targetWidth;
+	size_t _targetHeight;
+	ClientDisplayMode _mode;
+	ClientDisplayLayout _layout;
+	ClientDisplayOrder _order;
+	double _gapScale;
+	double _rotation;
+	bool _useDeposterize;
+	OutputFilterTypeID _outputFilterID;
+	VideoFilterTypeID _pixelScalerID;
+	
+	// Opaque MacMetalVideoCapture.  Created lazily on the display thread.  When
+	// creation fails, recording reports that it is unavailable and stops
+	// feeding frames; there is no other path to fall back to.
+	void *_gpuCapture;
+	bool _gpuCaptureDisabled;
+	unsigned int _gpuDroppedFrameCount;
+	
+	// Capture tick counter.  Advances once per captured frame, whether or not
+	// that frame could be rendered, so dropped frames leave a gap in the video
+	// timeline instead of drifting against the audio.
+	int64_t _gpuFrameIndex;
 	
 	pthread_mutex_t _mutexCaptureBuffer;
 	
@@ -65,14 +112,22 @@ public:
 	ClientVideoCaptureOutput();
 	~ClientVideoCaptureOutput();
 	
-	void SetPresenter(ClientDisplay3DPresenter *cdp);
-	ClientDisplay3DPresenter* GetPresenter();
+	void SetProperties(size_t width, size_t height,
+					   ClientDisplayMode mode, ClientDisplayLayout layout,
+					   ClientDisplayOrder order, double gapScale, double rotation,
+					   bool useDeposterize, OutputFilterTypeID outputFilterID,
+					   VideoFilterTypeID pixelScalerID);
 	
 	void SetCaptureObject(ClientAVCaptureObject *captureObject);
 	ClientAVCaptureObject* GetCaptureObject();
 	
-	virtual void HandleReceiveGPUFrame();
+	void ProcessFrame(ClientDisplay3DPresenter *srcPresenter);
 };
+
+// Exactly one capture output may be active at a time; pass NULL to clear it.
+// This is driven synchronously on the display output thread -- no manager
+// registration, no thread and no message dispatch.
+void SetActiveVideoCaptureOutput(ClientVideoCaptureOutput *output);
 
 class ClientDisplayViewOutput : public ClientVideoOutput
 {

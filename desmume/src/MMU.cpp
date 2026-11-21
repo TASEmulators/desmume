@@ -165,6 +165,11 @@ MMU_struct MMU;
 MMU_struct_new MMU_new;
 MMU_struct_timing MMU_timing;
 
+// Set when the CPU arms a DMA channel that starts immediately. The JIT polls
+// this and abandons the current block, so the transfer runs before the CPU can
+// touch the DMA registers again. See MMU.h.
+u32 mmu_dma_event_pending = 0;
+
 u8 * MMU_struct::MMU_MEM[2][256] = {
 	//arm9
 	{
@@ -2203,7 +2208,14 @@ void DmaController::write32(const u32 val)
 	//this dma may need to trigger now, so give it a chance
 	//if(!(wasRepeatMode && !repeatMode)) //this was an older test
 	if(!doNotStart)
+	{
 		doSchedule();
+		// nextEvent is now, so the transfer has to run before the CPU may retire
+		// another instruction: otherwise a following write to the same channel
+		// would overwrite the parameters that were just latched. Tell the JIT to
+		// leave its current block after the store that got us here.
+		mmu_dma_event_pending = 1;
+	}
 
 	driver->DEBUG_UpdateIORegView(BaseDriver::EDEBUG_IOREG_DMA);
 }

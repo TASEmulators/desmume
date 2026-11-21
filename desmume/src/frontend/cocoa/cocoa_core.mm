@@ -41,6 +41,24 @@
 #include "../../SPU.h"
 #include "../../wifi.h"
 #undef BOOL
+#include "../../utils/xstring.h"
+#undef BOOL
+
+#ifdef DESMUME_COCOA_METAL_OSD
+#include "userinterface/MacMetalOSDDraw.h"
+#endif
+
+// Cocoa used to amalgamate the vendored Lua 5.1.5 sources into this translation
+// unit.  It no longer does: the Lua entry points now come from a LuaJIT dylib
+// that is dlopen()ed at runtime, exactly like the Windows build's lua51.dll
+// delay-load.  See LuaJITApi.cpp for the loader and LuaJITApiSymbols.h for the
+// resolved function table.  Nothing is linked against LuaJIT at build time, so
+// the emulator still starts (with scripting disabled) when it is missing.
+#ifdef HAVE_LUA
+#include "MacLuaScriptConsole.mm"
+#include "MacLuaFrontend.mm"
+#include "../../lua-engine.cpp"
+#endif
 
 //accessed from other files
 volatile bool execute = true;
@@ -197,6 +215,7 @@ volatile bool execute = true;
 	newDriver->SetCoreThreadMutexLock(&threadParam.mutexThreadExecute);
 	newDriver->SetCoreExecuteRWLock(&threadParam.rwlockCoreExecute);
 	newDriver->SetExecutionControl(execControl);
+	newDriver->SetDisplayOutputManager(macDisplayOutputManager);
 	driver = newDriver;
 	
 	frameStatus = @"---";
@@ -946,50 +965,70 @@ volatile bool execute = true;
 
 - (BOOL) startReplayRecording:(NSURL *)fileURL sramURL:(NSURL *)sramURL
 {
+	return [self startReplayRecording:fileURL
+	                          sramURL:sramURL
+	                           author:NSFullUserName()
+	                      description:@""
+	                        startFrom:START_BLANK
+	                          rtcDate:nil];
+}
+
+- (BOOL) startReplayRecording:(NSURL *)fileURL
+                      sramURL:(NSURL *)sramURL
+                       author:(NSString *)author
+                  description:(NSString *)description
+                    startFrom:(int)startFrom
+                      rtcDate:(NSDate *)rtcDate
+{
 	if (fileURL == nil)
 	{
 		return NO;
 	}
-	
-	const char *cSramPath = [CocoaDSUtil cPathFromFileURL:sramURL];
-	std::string sramPath = (cSramPath != NULL) ? std::string(cSramPath) : "";
+
 	const char *fileName = [CocoaDSUtil cPathFromFileURL:fileURL];
-	
-	NSDateFormatter *df = [[NSDateFormatter alloc] init];
-	[df setDateFormat:@"Y M d H m s SSS"];
-	
-	 // Copy the current date into a formatted string.
-	NSString *dateString = [df stringFromDate:[NSDate date]];
-	
-	[df release];
-	df = nil;
-	
-	int dateYear = 2009;
-	int dateMonth = 1;
-	int dateDay = 1;
-	int dateHour = 0;
-	int dateMinute = 0;
-	int dateSecond = 0;
-	int dateMillisecond = 0;
-	sscanf([dateString cStringUsingEncoding:NSUTF8StringEncoding], "%i %i %i %i %i %i %i",
-		   &dateYear, &dateMonth, &dateDay, &dateHour, &dateMinute, &dateSecond, &dateMillisecond);
-	
-	DateTime rtcDate = DateTime(dateYear,
-								dateMonth,
-								dateDay,
-								dateHour,
-								dateMinute,
-								dateSecond,
-								dateMillisecond);
-	
-	FCEUI_SaveMovie(fileName, L"Test Author", START_BLANK, sramPath, rtcDate);
-	
+	if (fileName == NULL)
+	{
+		return NO;
+	}
+
+	// SRAM is only meaningful for the "From reset / SRAM" start point.
+	std::string sramPath;
+	if ((START_FROM)startFrom == START_SRAM)
+	{
+		const char *cSramPath = [CocoaDSUtil cPathFromFileURL:sramURL];
+		sramPath = (cSramPath != NULL) ? std::string(cSramPath) : "";
+	}
+
+	NSDate *date = (rtcDate != nil) ? rtcDate : [NSDate date];
+	NSDateComponents *parts = [[NSCalendar currentCalendar]
+	                           components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay |
+	                                       NSCalendarUnitHour | NSCalendarUnitMinute | NSCalendarUnitSecond)
+	                           fromDate:date];
+	DateTime rtcStart((int)[parts year], (int)[parts month], (int)[parts day],
+	                  (int)[parts hour], (int)[parts minute], (int)[parts second]);
+
+	const std::string authorUtf8 = (author != nil) ? std::string([author UTF8String]) : std::string();
+	const std::string descriptionUtf8 = (description != nil) ? std::string([description UTF8String]) : std::string();
+	const std::wstring wAuthor = mbstowcs(authorUtf8);
+	const std::wstring wDescription = mbstowcs(descriptionUtf8);
+
+	const char *recordError = FCEUI_SaveMovie(fileName, wAuthor, (START_FROM)startFrom, sramPath, rtcStart, wDescription);
+	if (recordError != NULL)
+	{
+		NSLog(@"FCEUI_SaveMovie failed: %s", recordError);
+		return NO;
+	}
 	return YES;
 }
 
 - (void) stopReplay
 {
 	FCEUI_StopMovie();
+}
+
+- (BOOL) isMovieActive
+{
+	return (movieMode == MOVIEMODE_PLAY || movieMode == MOVIEMODE_RECORD) ? YES : NO;
 }
 
 - (void) postNDSError:(const NDSError &)ndsError
@@ -1174,7 +1213,10 @@ static void* RunCoreThread(void *arg)
 		frameJumpTarget = execControl->GetFrameJumpTargetApplied();
 		
 		inputHandler->ProcessInputs();
-		inputHandler->ApplyInputs();
+		// The input stays in the processing state (movie playback has injected
+		// its frames here) until CommitInputs() below, matching Windows'
+		// single begin/end block that also contains the Lua before-emulation
+		// hook. ApplySettingsOnNDSExec() does not depend on the final input.
 		execControl->ApplySettingsOnNDSExec();
 		
 		avCaptureObject = execControl->GetClientAVCaptureObjectApplied();
@@ -1192,13 +1234,64 @@ static void* RunCoreThread(void *arg)
 		// Execute the frame and increment the frame counter.
 		pthread_rwlock_wrlock(&param->rwlockCoreExecute);
 		outputManager->NDSExecPreAll();
+#ifdef HAVE_LUA
+		intptr_t queuedUid;
+		std::string queuedFilename;
+		if (((macOS_driver *)driver)->GetQueuedScript(queuedUid, queuedFilename)) {
+			RunLuaScriptFile(queuedUid, queuedFilename.c_str());
+		}
+#endif
 		cheatManager->ApplyToMaster();
 		cheatManager->ApplyPendingInternalCheatWrites();
+#ifdef DESMUME_COCOA_METAL_OSD
+		MacMetalOSD_ClearBack();
+#endif
+#ifdef HAVE_LUA
+		lua_script_clear_graphics_buffer();
+		// Same single processing block as Windows' StepRunLoop_Core(): the Lua
+		// before-emulation hook runs while the input is still open, so it can
+		// adjust the movie-injected input in place (joy_set itself refuses to
+		// touch a playing movie). No second begin/end is needed.
+		CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+#endif
+		// Commit once, after Lua, so the game receives one final input value.
+		inputHandler->CommitInputs();
 		NDS_exec<false>();
 		SPU_Emulate_user();
+
+		// Pause-at-frame is shared with Windows via the core's one-shot check.
+		// Cocoa's pause action is an execution-behavior change; it is applied
+		// at the next loop start, so this frame still completes normally.
+		if (FCEUMOV_ShouldPause())
+		{
+			execControl->SetExecutionBehavior(ExecutionBehavior_Pause);
+		}
 		
 		outputManager->NDSExecPostAll();
 		execControl->FetchOutputPostNDSExec();
+#ifdef HAVE_LUA
+		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+		// Menu clicks arrive on the main thread; run their handlers here, on the
+		// thread that actually owns the Lua states.
+		MacLua_DrainMenuCalls();
+		// Flush GUI draw calls deferred from the script body, then publish the
+		// completed overlay frame to the renderer.
+		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+		lua_script_present_graphics_buffer();
+#endif
+#ifdef DESMUME_COCOA_METAL_OSD
+#ifdef HAVE_LUA
+		// emu.message() (and any driver info message) has no OSDCLASS to live
+		// in on this port, so paint the pending one into the Metal OSD frame
+		// here, on top of whatever the script drew this frame.
+		{
+			char osdMessage[512];
+			if (MacLua_GetActiveOsdMessage(osdMessage, (int)sizeof(osdMessage)))
+				MacMetalOSD_AddFixedText(0, 8, osdMessage);
+		}
+#endif
+		MacMetalOSD_PresentBack();
+#endif
 		pthread_rwlock_unlock(&param->rwlockCoreExecute);
 		
 		outputManager->DispatchAll(MESSAGE_EMU_FRAME_PROCESSED);
@@ -1402,3 +1495,22 @@ static void* RunCoreThread(void *arg)
 	
 	return NULL;
 }
+
+extern "C" void macOS_PumpEvents()
+{
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	while (true)
+	{
+		NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny
+											untilDate:[NSDate dateWithTimeIntervalSinceNow:0.0]
+											   inMode:NSDefaultRunLoopMode
+											  dequeue:YES];
+		if (event == nil)
+		{
+			break;
+		}
+		[NSApp sendEvent:event];
+	}
+	[pool release];
+}
+

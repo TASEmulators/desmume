@@ -48,11 +48,17 @@ enum CheatSystemError
 
 struct CHEATS_LIST
 {
+	/* All members are POD; zero them field by field instead of memset(this),
+	 * which is UB for a non-trivial class and warns as -Wclass-memaccess. */
 	CHEATS_LIST()
-	{
-		memset(this,0,sizeof(*this));
-		type = CHEAT_TYPE_EMPTY;
-	}
+		: type(CHEAT_TYPE_EMPTY)
+		, enabled(0)
+		, freezeType(0)
+		, code{}
+		, description{}
+		, num(0)
+		, size(0)
+	{}
 	u8 type;
 	u8 enabled;
 	// TODO

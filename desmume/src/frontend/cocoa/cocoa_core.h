@@ -156,7 +156,15 @@ typedef struct
 - (NSString *) slot2DeviceTypeString;
 
 - (BOOL) startReplayRecording:(NSURL *)fileURL sramURL:(NSURL *)sramURL;
+- (BOOL) startReplayRecording:(NSURL *)fileURL
+                      sramURL:(NSURL *)sramURL
+                       author:(NSString *)author
+                  description:(NSString *)description
+                    startFrom:(int)startFrom
+                      rtcDate:(NSDate *)rtcDate;
 - (void) stopReplay;
+// YES while a movie is being played or recorded; used to enable Stop Replay.
+- (BOOL) isMovieActive;
 
 - (void) postNDSError:(const NDSError &)ndsError;
 

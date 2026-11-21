@@ -17,7 +17,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include "interface.h"
 
 #include <stdio.h>
@@ -73,7 +73,7 @@ EXPORTED int desmume_init()
     // TODO: Option to configure 3d
     GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
     // TODO: Without SDL init?
-    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == -1) {
+    if(!SDL_Init(SDL_INIT_VIDEO)) {
         fprintf(stderr, "Error trying to initialize SDL: %s\n",
                 SDL_GetError());
         return -1;
@@ -160,7 +160,7 @@ EXPORTED void desmume_cycle(BOOL with_joystick)
 
 EXPORTED int desmume_sdl_get_ticks()
 {
-    return SDL_GetTicks();
+    return (int)SDL_GetTicks();
 }
 
 #ifdef INCLUDE_OPENGL_2D

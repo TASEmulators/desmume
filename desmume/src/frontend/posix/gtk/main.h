@@ -66,4 +66,9 @@ public:
 void Pause(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 void Launch(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 
+// Base name of the loaded ROM, without directory or extension ("" when no ROM
+// is loaded). Tools use it for default file names, e.g. RAM Watch suggests
+// "<ROM>.wch" when a watch list is saved for the first time.
+const char *Desmume_CurrentROMBaseName(void);
+
 #endif

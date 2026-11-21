@@ -23,10 +23,14 @@
 #include "dTool.h"
 #include "../types.h"
 #include "tools/ioregsView.h"
+#include "tools/ramWatch.h"
+#include "tools/ramSearch.h"
 
 dTool_t *dTools_list[] =
 {
-	&dTool_ioregsView
+	&dTool_ioregsView,
+	&dTool_ramWatch,
+	&dTool_ramSearch
 };
 
 int dTools_list_size = ARRAY_SIZE(dTools_list);

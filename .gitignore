@@ -82,3 +82,16 @@ xcuserdata/
 /config.log
 /.project
 .DS_Store
+
+## Local assistant/IDE scratch state
+/.workbuddy
+/.workbuddy-ai
+
+## Local Xcode derived data (out-of-tree so it does not collide with the
+## default ~/Library/Developer/Xcode/DerivedData)
+/.build
+/build_core/
+/build_check/
+
+## Written by the differential harness on --dump
+block.bin

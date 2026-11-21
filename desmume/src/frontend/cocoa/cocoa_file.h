@@ -35,6 +35,7 @@
 + (BOOL) saveState:(NSURL *)saveStateURL;
 + (BOOL) loadRom:(NSURL *)romURL;
 + (BOOL) loadReplay:(NSURL *)replayURL;
++ (BOOL) loadReplay:(NSURL *)replayURL readOnly:(BOOL)readOnly pauseFrame:(int)pauseFrame;
 + (BOOL) importRomSave:(NSURL *)romSaveURL;
 + (BOOL) exportRomSaveToURL:(NSURL *)destinationURL romSaveURL:(NSURL *)romSaveURL fileType:(NSInteger)fileTypeID;
 + (NSURL *) romSaveURLFromRomURL:(NSURL *)romURL;

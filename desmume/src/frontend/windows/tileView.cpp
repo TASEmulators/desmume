@@ -56,6 +56,30 @@ public:
 
 tileview_struct		*TileView = NULL;
 
+// The atlas is 512x256 pixels at 96 DPI.  The 344 x 160 dialog unit control has
+// a 2 pixel client edge on each side, so its client area is exactly 512 x 256 at
+// 96 DPI and the 16 colour atlas fills it.  The control does not necessarily
+// grow by the same factor on both axes at fractional DPIs, so fit the atlas to
+// the actual client instead of scaling it by the DPI.
+static float TileView_AtlasScale(HWND hwnd)
+{
+	RECT client;
+	GetClientRect(hwnd, &client);
+
+	if ( (client.right <= 0) || (client.bottom <= 0) )
+		return 1.0f;
+
+	const float sx = (float)client.right / 512.0f;
+	const float sy = (float)client.bottom / 256.0f;
+
+	return (sx < sy) ? sx : sy;
+}
+
+static int TileView_Scaled(HWND hwnd, int pixels)
+{
+	return (int)((float)pixels * TileView_AtlasScale(hwnd) + 0.5f);
+}
+
 LRESULT TileViewBox_Direct(HWND hwnd, tileview_struct * win, WPARAM wParam, LPARAM lParam)
 {
         HDC          hdc;
@@ -68,6 +92,7 @@ LRESULT TileViewBox_Direct(HWND hwnd, tileview_struct * win, WPARAM wParam, LPAR
         HBITMAP mem_bmp;
         int lg;
         int ht;
+        const float scale = TileView_AtlasScale(hwnd);
         
         memset(&bmi, 0, sizeof(bmi));
         bmi.bV4Size = sizeof(bmi);
@@ -98,7 +123,14 @@ LRESULT TileViewBox_Direct(HWND hwnd, tileview_struct * win, WPARAM wParam, LPAR
 		else
 			mem = (u8*)MMU_gpu_map(win->target);
 		if(mem)
-			SetDIBitsToDevice(mem_dc, 0, 0, 256, 256, 0, 0, 0, 256, mem, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+		{
+			// The atlas is 256x256 at 96 DPI.  The control grows with the
+			// dialog, so the pixels have to grow with it as well.
+			const int size = (int)(256.0f * scale + 0.5f);
+			SetStretchBltMode(mem_dc, COLORONCOLOR);
+			StretchDIBits(mem_dc, 0, 0, size, size,
+				0, 0, 256, 256, mem, (BITMAPINFO*)&bmi, DIB_RGB_COLORS, SRCCOPY);
+		}
         
         BitBlt(hdc, 0, 0, lg, ht, mem_dc, 0, 0, SRCCOPY);
         
@@ -124,6 +156,7 @@ LRESULT TileViewBox_Pal256(HWND hwnd, tileview_struct * win, WPARAM wParam, LPAR
         int ht;
         HDC mem_dc;
         HBITMAP mem_bmp;
+        const float scale = TileView_AtlasScale(hwnd);
 
         memset(&bmi, 0, sizeof(bmi));
         bmi.bV4Size = sizeof(bmi);
@@ -164,11 +197,14 @@ LRESULT TileViewBox_Pal256(HWND hwnd, tileview_struct * win, WPARAM wParam, LPAR
 				 for(y = 0; y<8; ++y)
 				 for(x = 0; x<8; ++x)
 					  bitmap[x + (y*256) + (num*8) +(num2*256*8)] = pal[mem[x + (y*8) + (num*64) +(num2*2048)]];        
-				 SetDIBitsToDevice(mem_dc, 0, 0, 256, 256, 0, 0, 0, 256, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+				 const int size = (int)(256.0f * scale + 0.5f);
+				 SetStretchBltMode(mem_dc, COLORONCOLOR);
+				 StretchDIBits(mem_dc, 0, 0, size, size,
+					 0, 0, 256, 256, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS, SRCCOPY);
 			 }
         }
         else
-             TextOut(mem_dc, 3, 3, "Il n'y a pas de palette", 23);
+             TextOut(mem_dc, (int)(3.0f * scale + 0.5f), (int)(3.0f * scale + 0.5f), "Il n'y a pas de palette", 23);
              
         BitBlt(hdc, 0, 0, lg, ht, mem_dc, 0, 0, SRCCOPY);
         
@@ -194,6 +230,7 @@ LRESULT TileViewBox_Pal16(HWND hwnd, tileview_struct * win, WPARAM wParam, LPARA
         int ht;
         HDC mem_dc;
         HBITMAP mem_bmp;
+        const float scale = TileView_AtlasScale(hwnd);
 
         memset(&bmi, 0, sizeof(bmi));
         bmi.bV4Size = sizeof(bmi);
@@ -213,7 +250,7 @@ LRESULT TileViewBox_Pal16(HWND hwnd, tileview_struct * win, WPARAM wParam, LPARA
         hdc = BeginPaint(hwnd, &ps);
         
         mem_dc = CreateCompatibleDC(hdc);
-        mem_bmp = CreateCompatibleBitmap(hdc, 512, 256);
+        mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
         SelectObject(mem_dc, mem_bmp);
         
         FillRect(mem_dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
@@ -237,11 +274,15 @@ LRESULT TileViewBox_Pal16(HWND hwnd, tileview_struct * win, WPARAM wParam, LPARA
 					  bitmap[(x<<1) + (y*512) + (num*8) +(num2*512*8)] = pal[mem[x + (y*4) + (num*32) +(num2*2048)]&0xF];
 					  bitmap[(x<<1)+1 + (y*512) + (num*8) +(num2*512*8)] = pal[mem[x + (y*4) + (num*32) +(num2*2048)]>>4];
 				 }        
-				 SetDIBitsToDevice(mem_dc, 0, 0, 512, 256, 0, 0, 0, 256, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+				 const int dstW = (int)(512.0f * scale + 0.5f);
+				 const int dstH = (int)(256.0f * scale + 0.5f);
+				 SetStretchBltMode(mem_dc, COLORONCOLOR);
+				 StretchDIBits(mem_dc, 0, 0, dstW, dstH,
+					 0, 0, 512, 256, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS, SRCCOPY);
 			}
         }
         else
-             TextOut(mem_dc, 3, 3, "Il n'y a pas de palette", 23);
+             TextOut(mem_dc, (int)(3.0f * scale + 0.5f), (int)(3.0f * scale + 0.5f), "Il n'y a pas de palette", 23);
         
         BitBlt(hdc, 0, 0, lg, ht, mem_dc, 0, 0, SRCCOPY);
         
@@ -279,22 +320,23 @@ LRESULT CALLBACK TileViewBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 			}
 			break;
 		case WM_LBUTTONDOWN :
-			switch(TileView->coul)
 			{
-				 case 0 :
-				 case 1 :
-					  if(LOWORD(lParam)<(32*8))
-					  {
-						   TileView->x = ((LOWORD(lParam)>>3)<<3);
-						   TileView->y = (HIWORD(lParam)>>3)<<3;
-						   TileView->tilenum = (LOWORD(lParam)>>3) + (HIWORD(lParam)>>3)*32;
-					  }
-					  break;
-				 case 2 :
-					  TileView->x = ((LOWORD(lParam)>>3)<<3);
-					  TileView->y = (HIWORD(lParam)>>3)<<3;
-					  TileView->tilenum = (LOWORD(lParam)>>3) + (HIWORD(lParam)>>3)*64;
-					  break;
+				// The atlas is stretched to the control, so a click has to be
+				// mapped through the width that is actually on screen.  x/y
+				// stay in atlas coordinates (96 DPI), which is what the mini
+				// view asks the tile box for.
+				const int count = (TileView->coul == 2) ? 64 : 32;
+				const int atlasW = TileView_Scaled(hwnd, (TileView->coul == 2) ? 512 : 256);
+				const int atlasH = TileView_Scaled(hwnd, 256);
+
+				if ( (LOWORD(lParam) < atlasW) && (HIWORD(lParam) < atlasH) )
+				{
+					const int tileX = MulDiv(LOWORD(lParam), count, atlasW);
+					const int tileY = MulDiv(HIWORD(lParam), 32, atlasH);
+					TileView->x = tileX * 8;
+					TileView->y = tileY * 8;
+					TileView->tilenum = tileX + tileY * count;
+				}
 			}
 			InvalidateRect(GetDlgItem(hwnd, IDC_MINI_TILE), NULL, FALSE);
 			return 1;
@@ -310,14 +352,23 @@ LRESULT MiniTileViewBox_Paint(HWND hwnd, tileview_struct * win, WPARAM wParam, L
         HDC          hdc_src;
         HDC          hdc_dst;
         char txt[80];
+        const float scale = TileView_AtlasScale(hwnd_src);
+        const int size = (int)(80.0f * scale + 0.5f);
+        const int cell = (int)(8.0f * scale + 0.5f);
         
         PAINTSTRUCT  ps;
 
         hdc_dst = BeginPaint(hwnd, &ps);
         hdc_src = GetDC(hwnd_src);
-        StretchBlt(hdc_dst, 0, 0, 80, 80, hdc_src, win->x, win->y, 8, 8, SRCCOPY);
+        SetStretchBltMode(hdc_dst, COLORONCOLOR);
+        // win->x/y are atlas coordinates at 96 DPI; the atlas on screen is
+        // stretched to the control, so the source rectangle has to be as well.
+        StretchBlt(hdc_dst, 0, 0, size, size, hdc_src,
+                   (int)((float)win->x * scale + 0.5f), (int)((float)win->y * scale + 0.5f),
+                   cell, cell, SRCCOPY);
         sprintf(txt, "Tile num : 0x%X", win->tilenum);
         SetWindowText(GetDlgItem(win->hwnd, IDC_TILENUM), txt);        
+        ReleaseDC(hwnd_src, hdc_src);
         EndPaint(hwnd, &ps);
         return 0;
 }

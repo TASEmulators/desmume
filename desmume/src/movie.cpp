@@ -22,7 +22,9 @@
 #include <limits.h>
 #include <ctype.h>
 #include <time.h>
+#include <new>
 #include <string>
+#include <vector>
 
 #include "utils/guid.h"
 #include "utils/xstring.h"
@@ -76,6 +78,10 @@ bool firstReset = false;
 int currRerecordCount;
 bool movie_reset_command = false;
 //--------------
+
+// Defined with the timeline editing API at the bottom of this file; the movie
+// engine calls it whenever it rebuilds the record vector.
+static void FCEUMOV_BumpGeneration();
 
 
 void MovieData::clearRecordRange(int start, int len)
@@ -201,6 +207,64 @@ DateTime FCEUI_MovieGetRTCDefault()
 	return DateTime(2009,1,1,0,0,0);
 }
 
+// The firmware configuration stores text as UTF-16 code units, which is what
+// the DS itself uses. The movie header stores the same text as UTF-8.
+// Windows can reinterpret the u16 buffer as wchar_t* because its wchar_t is
+// 16 bits wide, but on macOS/Linux wchar_t is 32 bits and doing so pairs up
+// adjacent code units into bogus code points. Convert explicitly instead.
+static std::string FirmwareTextToUTF8(const u16 *text, size_t length)
+{
+	std::vector<uint8_t> utf8(length * 4 + 1);
+	size_t utf8Length = 0;
+
+	utf16_conv_utf8(&utf8[0], &utf8Length, (const uint16_t *)text, length);
+
+	return std::string((const char *)&utf8[0], utf8Length);
+}
+
+// Convert UTF-8 back to UTF-16 code units, truncating to maxLength units.
+// Movies written by older POSIX builds contain bytes that are not valid
+// UTF-8; copy those byte-by-byte so they still load the way they used to.
+static size_t UTF8ToFirmwareText(const std::string &utf8, u16 *text, size_t maxLength)
+{
+	std::vector<uint32_t> codePoints(utf8.size() + 1);
+	const size_t codePointCount = utf8_conv_utf32(&codePoints[0], codePoints.size(),
+	                                              utf8.c_str(), utf8.size());
+
+	size_t length = 0;
+	for (size_t i = 0; i < codePointCount && length < maxLength; i++)
+	{
+		uint32_t cp = codePoints[i];
+		if (cp <= 0xFFFF)
+		{
+			text[length++] = (u16)cp;
+		}
+		else if (cp <= 0x10FFFF && length + 2 <= maxLength)
+		{
+			cp -= 0x10000;
+			text[length++] = (u16)(0xD800 + (cp >> 10));
+			text[length++] = (u16)(0xDC00 + (cp & 0x3FF));
+		}
+		else
+		{
+			// Out-of-range value (legacy garbage) or no room for a surrogate
+			// pair: stop at the last complete character.
+			break;
+		}
+	}
+
+	if (length == 0 && !utf8.empty())
+	{
+		length = utf8.size() > maxLength ? maxLength : utf8.size();
+		for (size_t i = 0; i < length; i++)
+			text[i] = (u8)utf8[i];
+	}
+
+	text[length] = 0;
+
+	return length;
+}
+
 MovieData::MovieData(bool fromCurrentSettings)
 	: version(MOVIE_VERSION)
 	, emuVersion(EMU_DESMUME_VERSION_NUMERIC())
@@ -235,7 +299,8 @@ MovieData::MovieData(bool fromCurrentSettings)
 	installValueMap["guid"] = &MovieData::installGuid;
 	installValueMap["rtcStart"] = &MovieData::installRtcStart;
 	installValueMap["rtcStartNew"] = &MovieData::installRtcStartNew;
-	
+	installValueMap["recordDate"] = &MovieData::installRecordDate;
+
 	installValueMap["comment"] = &MovieData::installComment;
 	installValueMap["binary"] = &MovieData::installBinary;
 	installValueMap["useExtBios"] = &MovieData::installUseExtBios;
@@ -272,12 +337,8 @@ MovieData::MovieData(bool fromCurrentSettings)
 			bootFromFirmware = CommonSettings.BootFromFirmware;
 		if (!CommonSettings.UseExtFirmware)
 		{
-			firmNickname.resize(CommonSettings.fwConfig.nicknameLength);
-			for (int i = 0; i < CommonSettings.fwConfig.nicknameLength; i++)
-				firmNickname[i] = CommonSettings.fwConfig.nickname[i];
-			firmMessage.resize(CommonSettings.fwConfig.messageLength);
-			for (int i = 0; i < CommonSettings.fwConfig.messageLength; i++)
-				firmMessage[i] = CommonSettings.fwConfig.message[i];
+			firmNickname = FirmwareTextToUTF8(CommonSettings.fwConfig.nickname, CommonSettings.fwConfig.nicknameLength);
+			firmMessage = FirmwareTextToUTF8(CommonSettings.fwConfig.message, CommonSettings.fwConfig.messageLength);
 
 			firmFavColour = CommonSettings.fwConfig.favoriteColor;
 			firmBirthMonth = CommonSettings.fwConfig.birthdayMonth;
@@ -297,14 +358,7 @@ void MovieData::truncateAt(int frame)
 
 void MovieData::installRomChecksum(std::string& key, std::string& val)
 {
-	// TODO: The current implementation of reading the checksum doesn't work correctly, and can
-	// cause crashes when the MovieData object is deallocated. (This is caused by StringToBytes()
-	// overrunning romChecksum into romSerial, making romSerial undefined.) Set romChecksum to
-	// some dummy value for now to prevent crashing. This is okay, since romChecksum isn't actually
-	// used in practice at this time. - rogerman, 2012/08/24
-	//StringToBytes(val,&romChecksum,MD5DATA::size);
-
-	romChecksum = 0;
+	romChecksum = strtoul(val.c_str(), NULL, 16);
 }
 void MovieData::installRtcStart(std::string& key, std::string& val)
 {
@@ -376,11 +430,8 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	}
 	else
 	{
-		std::wstring wnick((wchar_t*)CommonSettings.fwConfig.nickname, CommonSettings.fwConfig.nicknameLength);
-		std::string nick = wcstombs(wnick);
-		
-		std::wstring wmessage((wchar_t*)CommonSettings.fwConfig.message, CommonSettings.fwConfig.messageLength);
-		std::string message = wcstombs(wmessage);
+		std::string nick = FirmwareTextToUTF8(CommonSettings.fwConfig.nickname, CommonSettings.fwConfig.nicknameLength);
+		std::string message = FirmwareTextToUTF8(CommonSettings.fwConfig.message, CommonSettings.fwConfig.messageLength);
 		
 		fp.fprintf("firmNickname %s\n", nick.c_str());
 		fp.fprintf("firmMessage %s\n", message.c_str());
@@ -394,6 +445,11 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	fp.fprintf("jitBlockSize %d\n", CommonSettings.use_jit ? CommonSettings.jit_max_block_size : 0);
 
 	fp.fprintf("rtcStartNew %s\n", rtcStart.ToString().c_str());
+
+	// Optional: movies recorded before this field existed stay without it, and
+	// older builds silently ignore the key when they load the file.
+	if (!recordDate.empty())
+		fp.fprintf("recordDate %s\n", recordDate.c_str());
 
 	for (u32 i = 0; i < comments.size(); i++)
 		fp.fprintf("comment %s\n", wcstombs(comments[i]).c_str());
@@ -609,15 +665,11 @@ static void LoadSettingsFromMovie(MovieData movieData)
 	{
 		if (movieData.firmNickname != "")
 		{
-			CommonSettings.fwConfig.nicknameLength = movieData.firmNickname.length() > MAX_FW_NICKNAME_LENGTH ? MAX_FW_NICKNAME_LENGTH : movieData.firmNickname.length();
-			for (int i = 0; i < CommonSettings.fwConfig.nicknameLength; i++)
-				CommonSettings.fwConfig.nickname[i] = movieData.firmNickname[i];
+			CommonSettings.fwConfig.nicknameLength = (u8)UTF8ToFirmwareText(movieData.firmNickname, CommonSettings.fwConfig.nickname, MAX_FW_NICKNAME_LENGTH);
 		}
 		if (movieData.firmMessage != "")
 		{
-			CommonSettings.fwConfig.messageLength = movieData.firmMessage.length() > MAX_FW_MESSAGE_LENGTH ? MAX_FW_MESSAGE_LENGTH : movieData.firmMessage.length();
-			for (int i = 0; i < CommonSettings.fwConfig.messageLength; i++)
-				CommonSettings.fwConfig.message[i] = movieData.firmMessage[i];
+			CommonSettings.fwConfig.messageLength = (u8)UTF8ToFirmwareText(movieData.firmMessage, CommonSettings.fwConfig.message, MAX_FW_MESSAGE_LENGTH);
 		}
 
 		if (movieData.firmFavColour != -1)
@@ -737,6 +789,9 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	freshMovie = true;
 	ClearAutoHold();
 
+	// The editor's column set and input usage belong to the old movie.
+	FCEUMOV_BumpGeneration();
+
 	if(movie_readonly)
 		driver->USR_InfoMessage("Replay started Read-Only.");
 	else
@@ -745,13 +800,18 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	return NULL; // success
 }
 
-static void openRecordingMovie(const char* fname)
+static bool openRecordingMovie(const char* fname)
 {
 	//osRecordingMovie = FCEUD_UTF8_fstream(fname, "wb");
 	osRecordingMovie = new EMUFILE_FILE(fname, "wb");
-	/*if(!osRecordingMovie)
-		FCEU_PrintError("Error opening movie output file: %s",fname);*/
+	if (osRecordingMovie->fail())
+	{
+		delete osRecordingMovie;
+		osRecordingMovie = NULL;
+		return false;
+	}
 	strcpy(curMovieFilename, fname);
+	return true;
 }
 
 bool MovieData::loadSramFrom(std::vector<u8>* buf)
@@ -796,7 +856,7 @@ bool MovieData::loadSramFrom(std::vector<u8>* buf)
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
-void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart)
+const char* FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart, const std::wstring &description)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
@@ -805,7 +865,8 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 
 	FCEUI_StopMovie();
 
-	openRecordingMovie(fname);
+	if (!openRecordingMovie(fname))
+		return "Could not open the movie file for writing.";
 
 	currFrameCounter = 0;
 	//LagCounterReset();
@@ -813,12 +874,21 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 	currMovieData = MovieData();
 	currMovieData.guid.newGuid();
 
+	FCEUMOV_BumpGeneration();
+
 	if(author != L"") currMovieData.comments.push_back(L"author " + author);
+	if(description != L"") currMovieData.comments.push_back(description);
 	currMovieData.romChecksum = gameInfo.crc;
 	currMovieData.romSerial = gameInfo.ROMserial;
 	currMovieData.romFilename = path.GetRomName();
 	currMovieData.rtcStart = rtcstart;
 	currMovieData.micSamples = ::micSamples;
+
+	// Wall-clock recording time, as a decimal Unix timestamp. Movies written by
+	// older builds have no such key; those simply leave recordDate empty.
+	char dateBuf[32];
+	snprintf(dateBuf, sizeof(dateBuf), "%lld", (long long)time(NULL));
+	currMovieData.recordDate = dateBuf;
 
 	// reset firmware (some games can write to it)
 	if (!CommonSettings.UseExtFirmware)
@@ -843,12 +913,22 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 		//todo ?
 		//poweron(true);
 
-		if (startFrom == START_SRAM)
-			EMUFILE::readAllBytes(&currMovieData.sram, sramfname);
+		if (startFrom == START_SRAM && !EMUFILE::readAllBytes(&currMovieData.sram, sramfname))
+		{
+			delete osRecordingMovie;
+			osRecordingMovie = NULL;
+			return "Could not read the SRAM file. Recording was cancelled.";
+		}
 	}
 
 	//we are going to go ahead and dump the header. from now on we will only be appending frames
 	currMovieData.dump(*osRecordingMovie, false);
+	if (osRecordingMovie->fail())
+	{
+		delete osRecordingMovie;
+		osRecordingMovie = NULL;
+		return "Could not write the movie header.";
+	}
 
 	currFrameCounter=0;
 	lagframecounter=0;
@@ -864,10 +944,25 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 	if(currMovieData.sram.size() != 0)
 	{
 		bool success = MovieData::loadSramFrom(&currMovieData.sram);
-		if(!success) return;
+		if(!success)
+		{
+			movieMode = MOVIEMODE_INACTIVE;
+			delete osRecordingMovie;
+			osRecordingMovie = NULL;
+			return "Could not load the movie's SRAM into the emulator.";
+		}
+	}
+	else if (startFrom == START_BLANK)
+	{
+		// Playback of a movie with no "sram" header starts from a blank backup
+		// device. Do the same when recording from power on, otherwise the
+		// recorded input would be captured against the previous game's save
+		// and desync on playback.
+		MMU_new.backupDevice.load_movie_blank();
 	}
 
 	driver->USR_InfoMessage("Movie recording started.");
+	return NULL;
 }
 
 
@@ -885,7 +980,9 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 	 if(movieMode == MOVIEMODE_PLAY)
 	 {
 		 //stop when we run out of frames
-		 if(currFrameCounter == (int)currMovieData.records.size())
+		 //(>= rather than == because the timeline editor can shorten the movie
+		 // under a frame counter that has already run past the new end)
+		 if(currFrameCounter >= (int)currMovieData.records.size())
 		 {
 			 FinishPlayback();
 		 }
@@ -904,12 +1001,11 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 			 }*/
 		 }
 
-		 //pause the movie at a specified frame 
-		 //if(FCEUMOV_ShouldPause() && FCEUI_EmulationPaused()==0)
-		 //{
-		 //	FCEUI_ToggleEmulationPause();
-		 //	FCEU_DispMessage("Paused at specified movie frame");
-		 //}
+		 // Pause-at-frame is decided by FCEUMOV_ShouldPause(), which each
+		 // frontend calls from its own frame loop AFTER NDS_exec() (when
+		 // currFrameCounter has advanced). Doing it here in playback injection
+		 // would use the pre-exec frame count and would also force the core to
+		 // know every frontend's pause action.
 
 		 // it's apparently un-threadsafe to do this here
 		 // (causes crazy flickering in other OSD elements, at least)
@@ -920,6 +1016,20 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 
 	 }
  }
+
+bool FCEUMOV_ShouldPause()
+{
+	// One-shot: a movie pauses at the requested frame exactly once. The frame
+	// count has to be checked after NDS_exec() advanced it, which is why this
+	// is called from each frontend's frame loop and not from playback injection.
+	if (pauseframe < 0 || movieMode != MOVIEMODE_PLAY)
+		return false;
+	if (currFrameCounter < pauseframe)
+		return false;
+
+	pauseframe = -1;
+	return true;
+}
 
  void FCEUMOV_HandleRecording()
  {
@@ -1178,8 +1288,7 @@ bool mov_loadstate(EMUFILE &fp, int size)
 			currMovieData.rerecordCount = currRerecordCount;
 			currMovieData.truncateAt(currFrameCounter);
 
-			openRecordingMovie(curMovieFilename);
-			if(!osRecordingMovie)
+			if(!openRecordingMovie(curMovieFilename))
 			{
 			   driver->SetLineColor(255, 0, 0);
 			   driver->AddLine("Can't save movie file!");
@@ -1446,3 +1555,193 @@ void DesmumeInputToReplayRec(const UserInput &inInput, MovieRecord &outRecord)
 	if (inInput.mic.micButtonPressed != 0)
 		outRecord.commands |= MOVIECMD_MIC;
 }
+
+//------------------------------------------------------------------------------
+// Timeline editing (see the contract above the declarations in movie.h).
+//
+// movieGeneration is the editor's change detector: it moves whenever the record
+// vector is rebuilt, so the frontend knows its column set and its cached
+// "which inputs does this movie use" answer are stale.  Editing a single record
+// does not move it - the shape of the timeline did not change.
+//------------------------------------------------------------------------------
+static u32 movieGeneration = 0;
+
+static void FCEUMOV_BumpGeneration()
+{
+	movieGeneration++;
+}
+
+bool FCEUMOV_IsEditable()
+{
+	// Recording owns the file (it is open for appending), and without a movie
+	// there is nothing to edit.  A finished movie still has its records, and
+	// editing them is how you fix the tail of a run after playback stopped.
+	return movieMode == MOVIEMODE_PLAY || movieMode == MOVIEMODE_FINISHED;
+}
+
+u32 FCEUMOV_GetLength()
+{
+	if (movieMode == MOVIEMODE_INACTIVE)
+		return 0;
+
+	return (u32)currMovieData.records.size();
+}
+
+u32 FCEUMOV_GetGeneration()
+{
+	return movieGeneration;
+}
+
+MovieInputUsage FCEUMOV_GetInputUsage()
+{
+	MovieInputUsage usage;
+	usage.padMask = 0;
+	usage.commandMask = 0;
+	usage.touch = false;
+	usage.micSample = false;
+
+	for (size_t i = 0; i < currMovieData.records.size(); i++)
+	{
+		const MovieRecord &record = currMovieData.records[i];
+
+		usage.padMask |= record.pad;
+		usage.commandMask |= record.commands;
+
+		if (record.touch.touch != 0)
+			usage.touch = true;
+		if (record.touch.micsample != 0)
+			usage.micSample = true;
+	}
+
+	return usage;
+}
+
+bool FCEUMOV_GetRecord(u32 frame, MovieRecord &record)
+{
+	if (frame >= currMovieData.records.size())
+		return false;
+
+	record = currMovieData.records[frame];
+	return true;
+}
+
+MOVIE_EDIT_RESULT FCEUMOV_SetRecord(u32 frame, const MovieRecord &record)
+{
+	if (!FCEUMOV_IsEditable())
+		return (movieMode == MOVIEMODE_RECORD) ? MOVIE_EDIT_RECORDING : MOVIE_EDIT_NO_MOVIE;
+
+	if (frame >= currMovieData.records.size())
+		return MOVIE_EDIT_RANGE;
+
+	currMovieData.records[frame] = record;
+	freshMovie = false;
+
+	return MOVIE_EDIT_OK;
+}
+
+MOVIE_EDIT_RESULT FCEUMOV_InsertRecords(u32 at, const MovieRecord *records, u32 count)
+{
+	if (!FCEUMOV_IsEditable())
+		return (movieMode == MOVIEMODE_RECORD) ? MOVIE_EDIT_RECORDING : MOVIE_EDIT_NO_MOVIE;
+
+	if (count == 0)
+		return MOVIE_EDIT_OK;
+
+	const size_t length = currMovieData.records.size();
+	if (at > length)
+		return MOVIE_EDIT_RANGE;
+
+	try
+	{
+		if (records != NULL)
+		{
+			currMovieData.records.insert(currMovieData.records.begin() + at, records, records + count);
+		}
+		else
+		{
+			currMovieData.records.insert(currMovieData.records.begin() + at, count, MovieRecord());
+
+			// MovieRecord has no constructor of its own, so the inserted copies
+			// are only value-initialised; clear() is what makes them "nothing
+			// pressed".
+			for (u32 i = 0; i < count; i++)
+				currMovieData.records[at + i].clear();
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return MOVIE_EDIT_NO_MEMORY;
+	}
+
+	freshMovie = false;
+	movieGeneration++;
+
+	return MOVIE_EDIT_OK;
+}
+
+MOVIE_EDIT_RESULT FCEUMOV_DeleteRecords(const u32 *frames, u32 count)
+{
+	if (!FCEUMOV_IsEditable())
+		return (movieMode == MOVIEMODE_RECORD) ? MOVIE_EDIT_RECORDING : MOVIE_EDIT_NO_MOVIE;
+
+	if (count == 0)
+		return MOVIE_EDIT_OK;
+
+	if (frames[count - 1] >= currMovieData.records.size())
+		return MOVIE_EDIT_RANGE;
+
+	// One compaction for the whole selection: frames is ascending and unique,
+	// so a single read and a single write cursor walk the vector once and no
+	// frame is moved more than it has to be.
+	std::vector<MovieRecord> &records = currMovieData.records;
+
+	size_t read = frames[0];
+	size_t write = frames[0];
+
+	for (u32 i = 0; i < count; i++)
+	{
+		while (read < frames[i])
+			records[write++] = records[read++];
+		read++;	// the deleted frame
+	}
+
+	while (read < records.size())
+		records[write++] = records[read++];
+
+	records.resize(write);
+
+	// The frame counter is an index into this vector.  A delete that takes the
+	// tail away would leave it past the end, and the next playback step would
+	// read outside the movie.
+	if (currFrameCounter > (int)records.size())
+		currFrameCounter = (int)records.size();
+
+	freshMovie = false;
+	movieGeneration++;
+
+	return MOVIE_EDIT_OK;
+}
+
+MOVIE_EDIT_RESULT FCEUMOV_SaveMovie(const char *fname)
+{
+	if (movieMode == MOVIEMODE_INACTIVE)
+		return MOVIE_EDIT_NO_MOVIE;
+	if (movieMode == MOVIEMODE_RECORD)
+		return MOVIE_EDIT_RECORDING;
+
+	EMUFILE_FILE fp(fname, "wb");
+	if (!fp.is_open())
+		return MOVIE_EDIT_IO;
+
+	// The header is written from the current settings rather than from the
+	// values the file happened to carry.  That is not a loss: loading a movie
+	// applies its settings to CommonSettings, so a movie that was loaded and
+	// then saved comes back byte for byte, and a movie that was recorded in
+	// this session gets the settings it was recorded with.
+	currMovieData.dump(fp, currMovieData.binaryFlag);
+
+	freshMovie = false;
+
+	return MOVIE_EDIT_OK;
+}
+

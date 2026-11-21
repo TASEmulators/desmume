@@ -21,15 +21,21 @@
 GKeyFile *desmume_config_read_file(const u32 *, const char *keysection = "KEYS");
 void desmume_config_dispose(GKeyFile *);
 
-/* since GTK uses GDK keysymbols, not SDL2 ones, we need
+/* since GTK uses GDK keysymbols, not SDL3 ones, we need
   different sections for cli/gtk frontends.
   KEYS = gtk keys,
-  SDLKEYS = sdl2 keys
+  SDLKEYS = sdl3 keys
 */
 gboolean desmume_config_update_keys(GKeyFile*, const char *section = "KEYS");
 gboolean desmume_config_read_keys(GKeyFile*, const char *section = "KEYS");
 
 gboolean desmume_config_update_joykeys(GKeyFile*);
 gboolean desmume_config_read_joykeys(GKeyFile*);
+
+/* Per-button autofire flags, stored as one 0/1 entry per NDS button in the
+   "TURBO" group.  Older config files simply have no group, which means "no
+   button auto-fires". */
+gboolean desmume_config_update_turbo(GKeyFile*);
+gboolean desmume_config_read_turbo(GKeyFile*);
 
 #endif

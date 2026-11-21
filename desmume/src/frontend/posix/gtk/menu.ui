@@ -25,6 +25,11 @@
           <attribute name='accel'>Pause</attribute>
         </item>
         <item>
+          <attribute name='label' translatable='yes'>_Frame advance</attribute>
+          <attribute name='action'>app.frame-advance</attribute>
+          <attribute name='accel'>&lt;Control&gt;n</attribute>
+        </item>
+        <item>
           <attribute name='label' translatable='yes'>Re_set</attribute>
           <attribute name='action'>app.reset</attribute>
         </item>
@@ -32,11 +37,11 @@
       <section>
         <item>
           <attribute name='label' translatable='yes'>Save state _to…</attribute>
-          <attribute name='action'>app.save_state_to</attribute>
+          <attribute name='action'>app.save-state-to</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>Load state _from…</attribute>
-          <attribute name='action'>app.load_state_from</attribute>
+          <attribute name='action'>app.load-state-from</attribute>
         </item>
         <submenu>
           <attribute name='label' translatable='yes'>_Save state</attribute>
@@ -182,15 +187,15 @@
       <section>
         <item>
           <attribute name='label' translatable='yes'>Record movie _to…</attribute>
-          <attribute name='action'>app.record_movie_to</attribute>
+          <attribute name='action'>app.recordmovie</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>Play movie _from…</attribute>
-          <attribute name='action'>app.play_movie_from</attribute>
+          <attribute name='action'>app.playmovie</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>Stop movie</attribute>
-          <attribute name='action'>app.stop_movie</attribute>
+          <attribute name='action'>app.stopmovie</attribute>
         </item>
       </section>
       <section>
@@ -198,18 +203,27 @@
           <attribute name='label' translatable='yes'>Record _video/audio</attribute>
           <section>
             <item>
-              <attribute name='label' translatable='yes'>Record lossless H._264 (video only)…</attribute>
-              <attribute name='action'>app.record_x264</attribute>
-            </item>
-            <item>
-              <attribute name='label' translatable='yes'>Record _FLAC (audio only)…</attribute>
-              <attribute name='action'>app.record_flac</attribute>
+              <attribute name='label' translatable='yes'>Record _video (FFmpeg)…</attribute>
+              <attribute name='action'>app.record-video</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_Stop recording</attribute>
-              <attribute name='action'>app.stop_recording</attribute>
+              <attribute name='action'>app.record-stop</attribute>
             </item>
           </section>
+          <submenu>
+            <attribute name='label' translatable='yes'>_Old recorders</attribute>
+            <section>
+              <item>
+                <attribute name='label' translatable='yes'>Record lossless H._264 (video only)…</attribute>
+                <attribute name='action'>app.record-x264</attribute>
+              </item>
+              <item>
+                <attribute name='label' translatable='yes'>Record _FLAC (audio only)…</attribute>
+                <attribute name='action'>app.record-flac</attribute>
+              </item>
+            </section>
+          </submenu>
         </submenu>
 <!--#ifdef DESMUME_GTK_FIRMWARE_BROKEN
         <item>
@@ -377,127 +391,127 @@
           <section>
             <item>
               <attribute name='label' translatable='yes'>_None</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>none</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_LQ2X</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>lq2x</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_LQ2XS</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>lq2xs</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_HQ2X</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>hq2x</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_HQ2XS</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>hq2xs</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_HQ3X</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>hq3x</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_HQ3XS</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>hq3xs</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_HQ4X</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>hq4x</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_HQ4XS</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>hq4xs</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_2xSaI</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>2xsai</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_Super2xSaI</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>super2xsai</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_SuperEagle</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>supereagle</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_Scanline</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>scanline</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_Bilinear</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>bilinear</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_Nearest2X</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>nearest2x</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_Nearest1_5X</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>nearest_1point5x</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_NearestPlus1_5X</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>nearestplus_1point5x</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_EPX</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>epx</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_EPXPlus</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>epxplus</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_EPX1_5X</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>epx_1point5x</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_EPXPlus1_5X</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>epxplus_1point5x</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_2xBRZ</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>2xbrz</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_3xBRZ</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>3xbrz</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_4xBRZ</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>4xbrz</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_5xBRZ</attribute>
-              <attribute name='action'>app.pri_interpolation</attribute>
+              <attribute name='action'>app.pri-interpolation</attribute>
               <attribute name='target'>5xbrz</attribute>
             </item>
           </section>
@@ -536,15 +550,15 @@
       <section>
         <item>
           <attribute name='label' translatable='yes'>Show _menu</attribute>
-          <attribute name='action'>app.view_menu</attribute>
+          <attribute name='action'>app.view-menu</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>Show _toolbar</attribute>
-          <attribute name='action'>app.view_toolbar</attribute>
+          <attribute name='action'>app.view-toolbar</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>Show _statusbar</attribute>
-          <attribute name='action'>app.view_statusbar</attribute>
+          <attribute name='action'>app.view-statusbar</attribute>
         </item>
       </section>
     </submenu>
@@ -626,7 +640,7 @@
 #endif -->
         <item>
           <attribute name='label' translatable='yes'>_Graphics settings</attribute>
-          <attribute name='action'>app.graphics_settings</attribute>
+          <attribute name='action'>app.graphics-settings</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>_Enable audio</attribute>
@@ -643,23 +657,23 @@
           <section id='audio-synchronisation'>
             <item>
               <attribute name='label' translatable='yes'>_Dual Asynchronous</attribute>
-              <attribute name='action'>app.spu_mode</attribute>
+              <attribute name='action'>app.spu-mode</attribute>
               <attribute name='target'>dual-async</attribute>
             </item>
             <item>
-              <attribute name='label' translatable='yes'>Synchronous (_N)</attribute>
-              <attribute name='action'>app.spu_mode</attribute>
+              <attribute name='label' translatable='yes'>_N: Crossfade resampler (low CPU)</attribute>
+              <attribute name='action'>app.spu-mode</attribute>
               <attribute name='target'>sync-n</attribute>
             </item>
             <item>
-              <attribute name='label' translatable='yes'>Synchronous (_Z)</attribute>
-              <attribute name='action'>app.spu_mode</attribute>
+              <attribute name='label' translatable='yes'>_Z: Micro-resampler (low latency)</attribute>
+              <attribute name='action'>app.spu-mode</attribute>
               <attribute name='target'>sync-z</attribute>
             </item>
 <!-- #ifdef HAVE_LIBSOUNDTOUCH
             <item>
-              <attribute name='label' translatable='yes'>Synchronous (_P)</attribute>
-              <attribute name='action'>app.spu_mode</attribute>
+              <attribute name='label' translatable='yes'>_P: Time-stretch (keeps pitch)</attribute>
+              <attribute name='action'>app.spu-mode</attribute>
               <attribute name='target'>sync-p</attribute>
             </item>
 #endif -->
@@ -670,17 +684,17 @@
           <section>
             <item>
               <attribute name='label' translatable='yes'>_None</attribute>
-              <attribute name='action'>app.spu_interpolation</attribute>
+              <attribute name='action'>app.spu-interpolation</attribute>
               <attribute name='target'>none</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_Linear</attribute>
-              <attribute name='action'>app.spu_interpolation</attribute>
+              <attribute name='action'>app.spu-interpolation</attribute>
               <attribute name='target'>linear</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_Cosine</attribute>
-              <attribute name='action'>app.spu_interpolation</attribute>
+              <attribute name='action'>app.spu-interpolation</attribute>
               <attribute name='target'>cosine</attribute>
             </item>
           </section>
@@ -689,12 +703,18 @@
           <attribute name='label' translatable='yes'>_Cheat</attribute>
           <section>
             <item>
+              <attribute name='label' translatable='yes'>_List</attribute>
+              <attribute name='action'>app.cheatlist</attribute>
+            </item>
+            <item>
               <attribute name='label' translatable='yes'>_Search</attribute>
               <attribute name='action'>app.cheatsearch</attribute>
             </item>
+          </section>
+          <section>
             <item>
-              <attribute name='label' translatable='yes'>_List</attribute>
-              <attribute name='action'>app.cheatlist</attribute>
+              <attribute name='label' translatable='yes'>_Disable cheats</attribute>
+              <attribute name='action'>app.cheatsdisable</attribute>
             </item>
           </section>
         </submenu>
@@ -743,8 +763,8 @@
           <attribute name='action'>app.setaudiovolume</attribute>
         </item>
         <item>
-          <attribute name='label' translatable='yes'>Set firmware _language</attribute>
-          <attribute name='action'>app.setfirmwarelanguage</attribute>
+          <attribute name='label' translatable='yes'>Firmware _settings…</attribute>
+          <attribute name='action'>app.firmwaresettings</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>_Edit controls</attribute>
@@ -763,6 +783,33 @@
           <attribute name='label' translatable='yes'>_IO regs view</attribute>
           <attribute name='action'>app.ioregs</attribute>
         </item>
+        <item>
+          <attribute name='label' translatable='yes'>_RAM Watch</attribute>
+          <attribute name='action'>app.ramwatch</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>R_AM Search</attribute>
+          <attribute name='action'>app.ramsearch</attribute>
+        </item>
+        <submenu>
+          <attribute name='label' translatable='yes'>_Lua Scripting</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_New Lua Script Window...</attribute>
+              <attribute name='action'>app.addluascript</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_Close All Script Windows</attribute>
+              <attribute name='action'>app.closealluascripts</attribute>
+            </item>
+          </section>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_About Lua Scripting...</attribute>
+              <attribute name='action'>app.aboutluascripting</attribute>
+            </item>
+          </section>
+        </submenu>
         <submenu>
           <attribute name='label' translatable='yes'>View _Layers</attribute>
           <section>
@@ -824,48 +871,48 @@
     <section>
       <item>
         <attribute name='label' translatable='yes'>Display _fps</attribute>
-        <attribute name='action'>app.hud_fps</attribute>
+        <attribute name='action'>app.hud-fps</attribute>
       </item>
       <item>
         <attribute name='label' translatable='yes'>Display _Input</attribute>
-        <attribute name='action'>app.hud_input</attribute>
+        <attribute name='action'>app.hud-input</attribute>
       </item>
       <item>
         <attribute name='label' translatable='yes'>Display _Graphical Input</attribute>
-        <attribute name='action'>app.hud_graphicalinput</attribute>
+        <attribute name='action'>app.hud-graphicalinput</attribute>
       </item>
       <item>
         <attribute name='label' translatable='yes'>Display Frame _Counter</attribute>
-        <attribute name='action'>app.hud_framecounter</attribute>
+        <attribute name='action'>app.hud-framecounter</attribute>
       </item>
       <item>
         <attribute name='label' translatable='yes'>Display _Lag Counter</attribute>
-        <attribute name='action'>app.hud_lagcounter</attribute>
+        <attribute name='action'>app.hud-lagcounter</attribute>
       </item>
       <item>
         <attribute name='label' translatable='yes'>Display _RTC</attribute>
-        <attribute name='action'>app.hud_rtc</attribute>
+        <attribute name='action'>app.hud-rtc</attribute>
       </item>
       <item>
         <attribute name='label' translatable='yes'>Display _Mic</attribute>
-        <attribute name='action'>app.hud_mic</attribute>
+        <attribute name='action'>app.hud-mic</attribute>
       </item>
     </section>
     <section>
       <item>
         <attribute name='label' translatable='yes'>_Editor mode</attribute>
-        <attribute name='action'>app.hud_editor</attribute>
+        <attribute name='action'>app.hud-editor</attribute>
       </item>
       <item>
         <attribute name='label' translatable='yes'>Reset layout</attribute>
-        <attribute name='action'>app.hud_reset_layout</attribute>
+        <attribute name='action'>app.hud-reset-layout</attribute>
       </item>
     </section>
   </menu>
   <menu id='hud_unsupported'>
     <item>
       <attribute name='label' translatable='yes'>HUD support not compiled</attribute>
-      <attribute name='action'>app.hud_unsupported</attribute>
+      <attribute name='action'>app.hud-unsupported</attribute>
     </item>
   </menu>
 </interface>

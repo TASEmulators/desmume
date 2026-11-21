@@ -1,17 +1,17 @@
                         DeSmuME
 
-DeSmuME is written in C++ using the GTK+ and SDL2 libraries.
+DeSmuME is written in C++ using the GTK+ and SDL3 libraries.
 
 * https://gtk.org/
 * https://libsdl.org/
 
-It uses the Meson build system to build the GTK+3 and SDL2 port:
+It uses the Meson build system to build the GTK+3 and SDL3 port:
 
 * https://mesonbuild.com/
 
-... and the autotools build system for the GTK+2 and SDL2 port.
+... and the autotools build system for the CLI port.
 
-to build GTK+2 or SDL2 frontend with autotools, cd to src/frontend/posix, then
+To build the CLI frontend with autotools, cd to src/frontend/posix, then
 
 autoreconf -i (or alternatively: ./autogen.sh)
 ./configure

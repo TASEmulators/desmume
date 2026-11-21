@@ -165,7 +165,10 @@ namespace agg
 
         FT_Vector*  point;
         FT_Vector*  limit;
-        char*       tags;
+        // FreeType declares tags as unsigned char*; nothing here writes to
+        // them, and C++ rejects the implicit conversion. The cast keeps the
+        // file building with -fpermissive-free POSIX toolchains.
+        const char* tags;
 
         int   n;         // index of contour in outline
         int   first;     // index of first point in contour
@@ -186,7 +189,7 @@ namespace agg
             v_control = v_start;
 
             point = outline.points + first;
-            tags  = outline.tags  + first;
+            tags  = (const char *)outline.tags + first;
             tag   = FT_CURVE_TAG(tags[0]);
 
             // A contour cannot start with a cubic control point!

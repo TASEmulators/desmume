@@ -24,6 +24,7 @@
 #include "MMU.h"
 #include "GPU.h"
 #include "NDSSystem.h"
+#include "DPI.h"
 
 #include "resource.h"
 #include "windriver.h"
@@ -45,7 +46,6 @@ oamview_struct	*OAMView = NULL;
 
 HBRUSH bhScyx = NULL;
 HBRUSH bhBack = NULL;
-RECT	rcThumb = {0, 0, 0, 0};
 
 const char dimm[4][4][8] = 
 {
@@ -217,18 +217,54 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
 					win->gpu->SpriteRenderDebug(i, (u16*)(bitmap + i * 256));
 				}
 
-		int width = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][0];
-		int height = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][1];
-		RECT rc = {180 + x, 4 + y, 180 + x + width, 4 + y + height};
-        
-        SetDIBitsToDevice(hdc, 180, 4, 256, 192, 0, 0, 0, 192, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+		// The 96 DPI client is 450 x 325 pixels.  The dialog can grow by
+		// different factors on the two axes, so the positions come from each
+		// axis while the sprite pixels use the smaller (uniform) factor to stay
+		// square.
+		const DPI_ClientScale scale = DPI_GetClientScale(hwnd, 450, 325);
+
+		const int canvasX = (int)(180.0f * scale.x + 0.5f);
+		const int canvasY = (int)(4.0f * scale.y + 0.5f);
+		const int canvasW = (int)(256.0f * scale.uniform + 0.5f);
+		const int canvasH = (int)(192.0f * scale.uniform + 0.5f);
+
+		const int width = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][0];
+		const int height = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][1];
+
+		RECT rc;
+		rc.left = canvasX + (int)((float)x * scale.uniform + 0.5f);
+		rc.top = canvasY + (int)((float)y * scale.uniform + 0.5f);
+		rc.right = rc.left + (int)((float)width * scale.uniform + 0.5f);
+		rc.bottom = rc.top + (int)((float)height * scale.uniform + 0.5f);
+
+		// The debug canvas is 256x192 at 96 DPI, placed to the right of the
+		// info column.  The dialog grows with the monitor DPI, so the canvas,
+		// the selection frame and the thumbnail have to grow with it.
+		SetStretchBltMode(hdc, COLORONCOLOR);
+		StretchDIBits(hdc, canvasX, canvasY, canvasW, canvasH,
+			0, 0, 256, 192, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS, SRCCOPY);
 		
 		u8 max = max_scale[oam->attr1>>14][oam->attr0>>14];
 		u8 tmp_scale = (win->scale > max)?max:win->scale;
-		u32 w2 = width*tmp_scale;
-		u32 h2 = height*tmp_scale; 
-		FillRect(hdc, &rcThumb, bhBack);
-		StretchBlt(hdc, (436-SIZE_THUMB/2)-(w2/2), (200+SIZE_THUMB/2)-(h2/2), w2, h2, hdc, rc.left, rc.top, width, height, SRCCOPY);
+
+		// Keep the thumbnail under the canvas and aligned with its right edge.
+		// The template puts it at y=200, which is three pixels past the bottom
+		// of the 325 pixel dialog at 96 DPI; deriving the position from the
+		// canvas makes it fit at every DPI instead of clipping the sprite.
+		const int thumbSize = (int)(SIZE_THUMB * scale.uniform + 0.5f);
+		const int thumbX = canvasX + canvasW - thumbSize;
+		const int thumbY = canvasY + canvasH + (int)(1.0f * scale.uniform + 0.5f);
+		RECT thumb;
+		thumb.left = thumbX;
+		thumb.top = thumbY;
+		thumb.right = thumbX + thumbSize;
+		thumb.bottom = thumbY + thumbSize;
+
+		const int w2 = (int)((float)(width * tmp_scale) * scale.uniform + 0.5f);
+		const int h2 = (int)((float)(height * tmp_scale) * scale.uniform + 0.5f);
+		FillRect(hdc, &thumb, bhBack);
+		StretchBlt(hdc, thumbX + thumbSize/2 - w2/2, thumbY + thumbSize/2 - h2/2, w2, h2,
+		           hdc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, SRCCOPY);
 
 		if (win->border)
 			FrameRect(hdc, &rc, bhScyx);
@@ -287,7 +323,6 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 
 					  bhScyx = CreateSolidBrush(RGB(255,0,0));
 					  bhBack = CreateSolidBrush(RGB(123,198,255));
-					  SetRect(&rcThumb, 436-SIZE_THUMB, 200, 436, 200+SIZE_THUMB);
 
 					  SendMessage(GetDlgItem(hwnd, IDC_S2X), BM_SETCHECK, true, 0);
 					  SendMessage(GetDlgItem(hwnd, IDC_BORDER), BM_SETCHECK, true, 0);

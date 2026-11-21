@@ -558,7 +558,7 @@ LRESULT CALLBACK ArchiveFileChooser(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM 
 			// populate list
 			for(size_t i = 0; i < files.size(); i++)
 			{
-				int listIndex = SendDlgItemMessage(hDlg, IDC_LIST1, LB_ADDSTRING, (WPARAM) 0, (LONG) (LPTSTR) files[i].name.c_str());
+				int listIndex = SendDlgItemMessage(hDlg, IDC_LIST1, LB_ADDSTRING, (WPARAM) 0, (LPARAM) (LPTSTR) files[i].name.c_str());
 				s_listToItemsMap[listIndex] = files[i].itemIndex;
 			}
 

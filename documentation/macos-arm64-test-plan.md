@@ -1,0 +1,172 @@
+# macOS arm64 实机验证清单（MBP Apple Silicon）
+
+> 目的：在真机上确认 S2 之后 arm64 后端可用、且 §3.7 的块级语义没有退化。
+> 前置状态：x86 与 arm64 两个后端都已在 asmjit master 上（提交 `49e5fe6c` / `da517591`），
+> 两个构建工程刚接线完成（`29f2a3fb`）。
+>
+> **2026-11-20 更新：第 1、2 节已经在这台机器上跑通，并且多了一层更强的检查——
+> macOS 本地差分台（见 §0.2）。§5 之后的整机验收仍然需要 ROM，尚未做。**
+
+## 0. 已经验证到哪一步
+
+### 0.1 构建 + 逐槽位差分（已完成）
+
+| 检查 | 结果 |
+|---|---|
+| `check_xcode_asmjit.py` 接线自检 | `wiring looks complete`（10 个 JIT target、54 个 asmjit 源、逐文件 C++20、PCH 关闭） |
+| AppleSilicon dev+ target Release 构建 | **BUILD SUCCEEDED**（需覆盖 `MACOSX_DEPLOYMENT_TARGET=12.0`，见 §3） |
+| 差分台 `--full --all`（5120 槽 × 8 向量 × 2 标志组） | 81920 次比较：**引擎异常 0、R0–R14 差异 0、CPSR 差异 0**、`instruct_adr` 0 |
+| 周期数差异 | 14755 条，**记录项**（实现定义，ARM ARM 不可裁决，见方案 §3.5） |
+
+首次扫描（修复前）有 6 条 CPSR 差异，已经定位成 2 个真实缺陷并修复，两处都以 ARM 手册条款裁定：
+
+- arm64 后端 Thumb `ASR #0`（= `ASR #32`）的 C 取错位（bit30 而非 bit31）——`DecodeImmShift` /
+  `ASR_C`；
+- 解释器 Thumb `NEG 0x80000000` 丢 V——clang -O3 利用 `(s32)0 - (s32)Rm` 的有符号溢出 UB 把
+  V 折叠掉了，而 `RSB (immediate)` + `AddWithCarry` 规定 V=1。
+
+### 0.2 本地差分台（不需要 ROM，优先用这个）
+
+```bash
+tools/jit_matrix/build_diff_macos.sh
+.build/diff-mac/jit_diff            # 18 个探针 × 8 向量 × 2 标志组
+.build/diff-mac/jit_diff --full --all   # 全量 81920 次比较
+.build/diff-mac/jit_diff --full --slot 64   # 只看某个槽位（两个指令集同名槽位都跑）
+```
+
+它复用 Xcode 构建出来的目标文件（同一批 TU、同一套宏），所以不需要另配一套编译参数；
+Cocoa 前端顺带提供了 core 引用的那几个全局（`execute` / `paused` / `driver`），因此没有桩文件。
+改动 core 之后必须先重跑一次 xcodebuild，脚本只负责打包和链接。
+
+### 0.3 Android/Termux 侧（较早的证据，保留对照）
+
+设备：`192.168.1.4:8022`，Android 16，clang 21.1.8，8 核。
+
+| 检查 | 结果 |
+|---|---|
+| asmjit + 后端在真实 aarch64 上编译 | 45 个 asmjit TU + `a64_dump_new` / `a64_shape_probe` / `a64_exec_probe` 全部通过 |
+| 编码等价（236 个原语样例，capstone 逐条反汇编比对） | **236/236 一致**（2 例为 asmjit 的 dead-branch 消除，已登记） |
+| 生成代码**真的执行**（25 个用例） | **25/25 通过** |
+| 块中途 `ret` 形状 | 通过（早退后的尾巴没被吃掉） |
+
+这批证据只覆盖原语层（`emit_*` 生成的代码字），不经过模拟器的条件执行与周期记账——
+所以上面 §0.1 的差分才是"后端作为模拟器的一部分"的第一次验证。
+
+**一个已知缺口**：`a64_dump_new`（236 例原语语料的 dump 工具）在 macOS 上跑不起来，
+`createFunc()` 里就 SIGBUS，连表头都没输出。`build_a64_termux.sh` 里的编译参数搬过来只差
+`-include sys/types.h`（`arm64_emit.cpp` 自己没 include，正式构建里靠 `types.h` 带进来），
+编得过、跑不过；具体是 `mmap(MAP_JIT)` 还是 asmjit 侧的问题还没查。所以语料比对目前仍然只在
+Android 侧做。对"行为是否正确"来说差分扫描更强，这个缺口不影响结论，只影响"逐字编码"这一层
+在 macOS 上没有本地复现手段。
+
+
+## 1. 构建前自检（30 秒）
+
+```bash
+python3 tools/jit_matrix/check_xcode_asmjit.py
+```
+
+最后一行必须是 `wiring looks complete`。它会检查：括号配平、54 个 asmjit 源都被引用且文件存在、
+每个编 JIT 的 target 都带 `-std=c++20`、每个配置都有 include 根 / `ASMJIT_STATIC` / PCH 关闭。
+
+## 2. 构建
+
+**target 必须选 AppleSilicon 那几个，不能选 Universal。**
+
+| target | 编 JIT 吗 | 说明 |
+|---|---|---|
+| `DeSmuME (macOS App; AppleSilicon dev+ -- Latest Xcode)` | **是**（`arm_jit_arm.cpp`） | 推荐：Release 有优化 + GDB stub + Lua |
+| `DeSmuME (macOS App; AppleSilicon -- Latest Xcode)` | 是 | 最朴素的 arm64 构建 |
+| `DeSmuME (macOS App; Release Stage Final AppleSilicon -- Latest Xcode)` | 是 | 发布用，LTO |
+| `DeSmuME (macOS App; Universal -- Latest Xcode)` | **否** | 两个 slice 会重复定义 `arm_jit_*`，属于遗留缺口；用它测不到 JIT |
+
+```bash
+cd desmume/src/frontend/cocoa
+xcodebuild -project "DeSmuME (Latest).xcodeproj" \
+  -target "DeSmuME (macOS App; AppleSilicon dev+ -- Latest Xcode)" \
+  -configuration Release MACOSX_DEPLOYMENT_TARGET=12.0 build
+```
+
+`MACOSX_DEPLOYMENT_TARGET=12.0` 在 Xcode 26 之前不需要（target 里钉的是 11.5）。
+Xcode 27 起最低支持 12.0，不覆盖就直接报
+`deployment target 'MACOSX_DEPLOYMENT_TARGET' is set to 11.5, but the range of supported
+deployment target versions is 12.0 to ...`。用命令行覆盖，别改 pbxproj——发布部署版本是维护者的决定。
+
+GUI 也可以：打开工程，scheme 选同一个 target，Configuration 选 Release，⌘B
+（但 GUI 里改不了部署目标，所以 Xcode 27 上只能走命令行）。
+
+## 3. 构建失败对照
+
+| 症状 | 原因 | 处理 |
+|---|---|---|
+| `Undefined symbols: asmjit::...` | asmjit 源没进 target | 重跑 `python3 tools/jit_matrix/wire_asmjit_xcode.py --apply` |
+| `'asmjit/core.h' file not found` | include 根没加上 | 同上（会补 `$(SRCROOT)/../../../3rdparty`） |
+| `PCH file was compiled with a different language standard` | 前缀头还在预编译 | 同上（会设 `GCC_PRECOMPILE_PREFIX_HEADER = NO`） |
+| `#error "arm_jit_arm.cpp is the AArch64 host backend only"` | 选到了 Intel / Universal target | 换 AppleSilicon target |
+| `asmjit::Assembler` 重复定义 | 旧 `src/utils/AsmJit` 又被编进去了 | 同上（会把旧源从 Sources 里摘掉） |
+| `deployment target ... 11.5 ... supported ... 12.0` | target 钉的部署目标低于当前 Xcode 下限 | 命令行加 `MACOSX_DEPLOYMENT_TARGET=12.0`（见 §2） |
+| `no member named 'memory_order_relaxed' in 'std::memory_order'` | `types.h` 用枚举类型限定自己的枚举项，C++20 下非法 | **已修**（`0cdd84c6`）；若复现说明在旧分支上 |
+| `use of undeclared identifier 'sys_icache_invalidate'` | `emit_core.cpp` 缺 `<libkern/OSCacheControl.h>` | **已修**（同上） |
+
+
+接线脚本是幂等的，重跑不会重复插入。要整体回退：
+`git checkout -- "desmume/src/frontend/cocoa/DeSmuME (Latest).xcodeproj/project.pbxproj"`。
+
+## 4. 运行设置
+
+1. **引擎**：默认是 Interpreter，必须切到 **Dynamic Recompiler**（Emulation 菜单里的引擎选择）。
+   没切的话测的是解释器，JIT 一行都没跑。
+2. **Block Size**：在设置弹窗里（`MainMenu.xib` 里绑定的是 `selection.maxJITBlockSize`，标签 "Block Size:"），
+   范围 1–100，默认 12。
+3. **确认 JIT 生效**：About 窗口在非 `PUBLIC_RELEASE` 构建里会显示 JIT 状态。
+
+## 5. 整机验收：block size 三档扫描（对应方案 §3.7）
+
+《恶魔城 苍月十字架》：
+
+1. 读档到血条出现（或新游戏到 HUD 出现）；
+2. **开菜单 → 关菜单**（这一步才会触发 HUD 重建）；
+3. block size 分别设 **15 / 16 / 100**，每档重复一次 1–2。
+
+判据（缺任何一个都算失败）：
+
+- 血条外框在，内部**深色底板**在
+- “120” 数字、红色 HP 段、绿色 MP 段都在
+- 伤害数字、对话框边框不缺块
+
+失败特征就是 `2d4919aa` 那次的样子：HUD 内部整块消失，露出背景，外框还在。
+注意：**调回 15 不会自动恢复**，只有再次开关菜单才会重建——所以每次都要重新开关菜单。
+
+## 6. 字节级证据（可选，但这是唯一能"逐字节对比"的一层）
+
+脚本：`tools/hud_probe/castlevania_hudprobe.lua`（从 `__bins/Lua/` 里那份复制来的，已改成读 `HUD_OUT`）。
+
+- 输出目录用环境变量给，从终端直接启动 app 里的可执行文件才带得上环境变量
+  （`open` 不传递环境变量）：
+  ```bash
+  mkdir -p ~/hudlogs
+  HUD_OUT=$HOME/hudlogs /path/to/DeSmuME.app/Contents/MacOS/DeSmuME
+  ```
+- 脚本第 3 帧读 **即时存档 2**：需要把
+  `desmume/src/frontend/windows/__bins/StateSlots/0121 - Castlevania - Dawn of Sorrow (U)(Legacy).ds2`
+  放到 macOS 端的存档目录并确保它是 slot 2；没有就手动读到 HUD 再跑脚本（把 `savestate.load(2)` 那行去掉）
+- 判据：关菜单后对暂存区 `0x02100358..0x02100557` 的 **32 位写入 = 2048 次，覆盖 128 个地址**。
+  其它数字（16 位写入 1952 次等）见 `jit-bug.md` §4.1。
+
+## 7. 性能基线（S4 的门槛要用）
+
+同一台机器、同一天、同一个场景（HUD 打开静止），记三组：
+
+| 组 | 引擎 | block size | 冷启动 JIT 编译耗时 | 平均帧率 |
+|---|---|---|---|---|
+| A | Interpreter | — | — | |
+| B | Dynamic Recompiler | 12（默认） | | |
+| C | Dynamic Recompiler | 100 | | |
+
+## 8. 带回来的东西
+
+- `xcodebuild` 的完整输出（失败时尤其）
+- 三档的截图（HUD 正常/异常）
+- 上表的性能数字
+- 任何崩溃的 backtrace（`Console.app` 里搜 DeSmuME，或终端里跑二进制直接看 stderr）
+- 如果跑了 §6：`HUD_OUT` 目录下的 `hud7_*.log` 和 `stage_*.bin`

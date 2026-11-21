@@ -27,7 +27,7 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <X11/Xlib.h>
 #include <sys/stat.h>
 
@@ -70,6 +70,11 @@
 #ifdef GDB_STUB
 	#include "armcpu.h"
 	#include "gdbstub.h"
+#endif
+
+#ifdef HAVE_LUA
+	#include "tools/luaScriptConsole.h"
+	#include "lua-engine.h"
 #endif
 
 #if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
@@ -203,6 +208,11 @@ static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void *);
 #endif
 static void GraphicsSettingsDialog();
 
+#ifdef HAVE_LUA
+static void AddLuaScript();
+static void CloseAllLuaScripts();
+static void ShowAboutLuaScripting();
+#endif
 
 static const char *ui_description =
 "<ui>"
@@ -406,6 +416,15 @@ static const char *ui_description =
 "      <separator/>"
 "      <menuitem action='ioregs'/>"
 "      <separator/>"
+#ifdef HAVE_LUA
+"      <menu action='LuaScriptingMenu'>"
+"        <menuitem action='addluascript'/>"
+"        <menuitem action='closealluascripts'/>"
+"        <separator/>"
+"        <menuitem action='aboutluascripting'/>"
+"      </menu>"
+"      <separator/>"
+#endif
 "      <menu action='LayersMenu'>"
 "        <menuitem action='layermainbg0'/>"
 "        <menuitem action='layermainbg1'/>"
@@ -487,6 +506,12 @@ static const GtkActionEntry action_entries[] = {
 
     { "ToolsMenu", NULL, "_Tools" },
       { "dumpram",    NULL,         "Dump ram to ...",         NULL,  NULL,   DumpRamDialog },
+#ifdef HAVE_LUA
+      { "LuaScriptingMenu",   NULL, "_Lua Scripting" },
+        { "addluascript",     NULL, "_New Lua Script Window...", NULL, NULL, AddLuaScript },
+        { "closealluascripts",NULL, "_Close All Script Windows", NULL, NULL, CloseAllLuaScripts },
+        { "aboutluascripting",NULL, "_About Lua Scripting...", NULL, NULL, ShowAboutLuaScripting },
+#endif
       { "LayersMenu", NULL, "View _Layers" },
 
     { "HelpMenu", NULL, "_Help" },
@@ -1331,6 +1356,21 @@ static void SaveStateDialog()
     gtk_widget_destroy(pFileSelection);
 }
 
+#ifdef HAVE_LUA
+static void AddLuaScript()
+{
+    lua_script_open_console(GTK_WINDOW(pWindow));
+}
+static void CloseAllLuaScripts()
+{
+    lua_script_close_all();
+}
+static void ShowAboutLuaScripting()
+{
+    lua_script_show_about(GTK_WINDOW(pWindow));
+}
+#endif
+
 static void DumpRamDialog()
 {
     GtkFileFilter *pFilter_ds, *pFilter_any;
@@ -2158,11 +2198,11 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 static int ConvertSDLVolumeToSPU(int sdl_volume)
 {
 	int tmp = sdl_volume * 100;
-	if (tmp % SDL_MIX_MAXVOLUME == 0)
+	if (tmp % SNDSDL_MAX_VOLUME == 0)
 	{
-		return tmp/SDL_MIX_MAXVOLUME;
+		return tmp/SNDSDL_MAX_VOLUME;
 	}
-	return (tmp/SDL_MIX_MAXVOLUME)+1;
+	return (tmp/SNDSDL_MAX_VOLUME)+1;
 }
 
 static void CallbackSetAudioVolume(GtkWidget *hscale, gpointer data)
@@ -3072,17 +3112,40 @@ public:
 	}
 };
 
+static bool sQuitRequested = false;
+
 static void DoQuit()
 {
+    // Both File > Quit and the main window's "destroy" signal end up here;
+    // run the shutdown sequence only once.
+    if (sQuitRequested)
+        return;
+    sQuitRequested = true;
+
     emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
+#ifdef HAVE_LUA
+    // Script consoles are independent toplevel windows, so they do not follow
+    // the main window.  Close them explicitly to stop running scripts before
+    // the emulator and SDL are torn down.
+    lua_script_close_all();
+#endif
     gtk_main_quit();
+}
+
+// "destroy" supplies (GtkWidget *, gpointer).  DoQuit() is also used as a
+// menu callback, so connect a handler with the correct signature here.
+static void OnMainWindowDestroy(GtkWidget * /*widget*/, gpointer /*user_data*/)
+{
+    DoQuit();
 }
 
 
 gboolean EmuLoop(gpointer data)
 {
-    static Uint32 fps_SecStart, next_fps_SecStart, fps_FrameCount, skipped_frames;
-    static unsigned next_frame_time;
+    /* SDL3's SDL_GetTicks() returns Uint64 milliseconds. */
+    static Uint64 fps_SecStart, next_fps_SecStart;
+    static Uint32 fps_FrameCount, skipped_frames;
+    static Uint64 next_frame_time;
     static int frame_mod3;
     unsigned int i;
     gchar Title[50];
@@ -3160,7 +3223,18 @@ gboolean EmuLoop(gpointer data)
         touchpad.click = 0;
     }
 
+#ifdef HAVE_LUA
+    NDS_beginProcessingInput();
+    CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+    NDS_endProcessingInput();
+#endif
+
     desmume_cycle();    /* Emule ! */
+
+#ifdef HAVE_LUA
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+#endif
 
     _updateDTools();
 
@@ -3193,9 +3267,9 @@ gboolean EmuLoop(gpointer data)
                 next_frame_time += (frame_mod3 == 0) ? 16 : 17;
             }
         }
-        unsigned this_tick = SDL_GetTicks();
+        Uint64 this_tick = SDL_GetTicks();
         if (this_tick < next_frame_time) {
-            unsigned timeleft = next_frame_time - this_tick;
+            Uint64 timeleft = next_frame_time - this_tick;
             usleep((timeleft - 1) * 1000);
             while (SDL_GetTicks() < next_frame_time);
             this_tick = SDL_GetTicks();
@@ -3644,7 +3718,7 @@ common_gtk_main( class configured_features *my_config)
     /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
      * Perhaps it needs a "window" to catch events...? */
     SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,"1");
-    if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO|SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER) == -1) {
+    if(!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_JOYSTICK|SDL_INIT_GAMEPAD)) {
         g_printerr("Error trying to initialize SDL: %s\n",
                     SDL_GetError());
         return 1;
@@ -3671,6 +3745,7 @@ common_gtk_main( class configured_features *my_config)
 #ifdef HAVE_LIBAGG
     Desmume_InitOnce();
     Hud.reset();
+    HudLoadLayout();
     osd = new OSDCLASS(-1);
 	
 #ifdef AGG2D_USE_VECTORFONTS
@@ -3749,7 +3824,7 @@ common_gtk_main( class configured_features *my_config)
     gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
     gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
-    g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(DoQuit), NULL);
+    g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(OnMainWindowDestroy), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
 

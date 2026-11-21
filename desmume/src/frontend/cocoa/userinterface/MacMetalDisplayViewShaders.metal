@@ -288,6 +288,18 @@ fragment float4 output_filter_nearest(const DisplayVtx vtx [[stage_in]],
 }
 
 //---------------------------------------
+// Lua overlay: preserve the source alpha so the overlay alpha-blends over the
+// emulated screens instead of painting an opaque (mostly transparent-black) quad.
+// The Lua engine writes the buffer in B,G,R,A byte order (see blend32() in
+// lua-engine.cpp), which matches MTLPixelFormatBGRA8Unorm, so no channel swap
+// is needed here.
+fragment float4 lua_overlay_filter(const DisplayVtx vtx [[stage_in]],
+									const texture2d<float> tex [[texture(0)]])
+{
+	return tex.sample(genSampler, vtx.texCoord);
+}
+
+//---------------------------------------
 // Input Pixel Mapping:  00|01
 //                       02|03
 fragment float4 output_filter_bilinear(const DisplayVtx vtx [[stage_in]],

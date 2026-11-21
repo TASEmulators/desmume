@@ -18,7 +18,12 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
 #include <string>
+#include <vector>
+
 #include "encodings/utf.h"
 #include "xstring.h"
 
@@ -35,11 +40,13 @@ std::string strsub(const std::string& str, int pos, int len) {
 		pos = 0;
 	}
 
-	if (pos+len>=strlen)
-		len=strlen-pos+1;
-	
-	//return str.str().substr(pos,len);
-	return str.substr(pos,len);
+	// Keep the original lenient semantics: a negative or oversized length
+	// means "to the end". Written explicitly so a negative len never turns
+	// into a huge size_t, and (pos+len) cannot overflow int.
+	if (len < 0 || len >= strlen - pos)
+		len = strlen - pos;
+
+	return str.substr(pos, (size_t)len);
 }
 
 std::string strmid(const std::string& str, int pos, int len) { return strsub(str,pos,len); }
@@ -48,8 +55,8 @@ std::string strright(const std::string& str, int len) { return len ? strsub(str,
 std::string toupper(const std::string& str)
 {
 	std::string ret = str;
-	for(u32 i=0;i<str.size();i++)
-		ret[i] = toupper(ret[i]);
+	for(size_t i=0;i<str.size();i++)
+		ret[i] = (char)toupper(static_cast<unsigned char>(ret[i]));
 	return ret;
 }
 
@@ -89,13 +96,19 @@ std::string BytesToString(const void* data, int len)
 {
 	char temp[16];
 	if(len==1) {
-		snprintf(temp, sizeof(temp), "%d",*(const unsigned char*)data);
+		unsigned char value = 0;
+		memcpy(&value, data, sizeof(value));
+		snprintf(temp, sizeof(temp), "%u", (unsigned)value);
 		return temp;
 	} else if(len==2) {
-		snprintf(temp, sizeof(temp), "%d",*(const unsigned short*)data);
+		unsigned short value = 0;
+		memcpy(&value, data, sizeof(value));
+		snprintf(temp, sizeof(temp), "%u", (unsigned)value);
 		return temp;
 	} else if(len==4) {
-		snprintf(temp, sizeof(temp), "%d",*(const unsigned int*)data);
+		unsigned int value = 0;
+		memcpy(&value, data, sizeof(value));
+		snprintf(temp, sizeof(temp), "%u", value);
 		return temp;
 	}
 	
@@ -139,10 +152,18 @@ std::string BytesToString(const void* data, int len)
 	return ret;
 }
 
+static int HexNibble(unsigned char c)
+{
+	if (c >= '0' && c <= '9') return c - '0';
+	if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+	if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+	return -1;
+}
+
 ///returns -1 if this is not a hex string
 int HexStringToBytesLength(const std::string& str)
 {
-	if(str.size()>2 && str[0] == '0' && toupper(str[1]) == 'X')
+	if(str.size()>2 && str[0] == '0' && toupper(static_cast<unsigned char>(str[1])) == 'X')
 		return (int)(str.size() / 2) - 1;
 	else return -1;
 }
@@ -190,23 +211,20 @@ bool StringToBytes(const std::string& str, void* data, int len)
 		}
 		return true;
 	}
-	if(str.size()>2 && str[0] == '0' && toupper(str[1]) == 'X')
+	if(str.size()>2 && str[0] == '0' && toupper(static_cast<unsigned char>(str[1])) == 'X')
 	{
-		// hex
-		int amt = len;
-		int bytesAvailable = (int)(str.size() / 2);
-		if(bytesAvailable < amt)
-			amt = bytesAvailable;
-		const char* cstr = str.c_str()+2;
+		// hex. The "0x" prefix is not part of the payload, so the byte
+		// count is (size-2)/2. Using size/2 here over-counted by one,
+		// reading past the string end and writing past data - the bug
+		// recorded in movie.cpp:installRomChecksum().
+		int bytesAvailable = (int)((str.size() - 2) / 2);
+		int amt = (len < bytesAvailable) ? len : bytesAvailable;
+		const char* cstr = str.c_str() + 2;
 		for(int i=0;i<amt;i++) {
-			char a = toupper(cstr[i*2]);
-			char b = toupper(cstr[i*2+1]);
-			if(a>='A') a=a-'A'+10;
-			else a-='0';
-			if(b>='A') b=b-'A'+10;
-			else b-='0';
-			unsigned char val = ((unsigned char)a<<4)|(unsigned char)b; 
-			((unsigned char*)data)[i] = val;
+			const int hi = HexNibble((unsigned char)cstr[i*2]);
+			const int lo = HexNibble((unsigned char)cstr[i*2+1]);
+			if(hi < 0 || lo < 0) return false;
+			((unsigned char*)data)[i] = (unsigned char)((hi << 4) | lo);
 		}
 		return true;
 	}
@@ -228,8 +246,6 @@ bool StringToBytes(const std::string& str, void* data, int len)
 	return false;
 }
 
-#include <string>
-#include <vector>
 /// \brief convert input string into vector of string tokens
 ///
 /// \note consecutive delimiters will be treated as single delimiter
@@ -275,6 +291,8 @@ std::string stditoa(int n)
 std::string mass_replace(const std::string &source, const std::string &victim, const std::string &replacement)
 {
 	std::string answer = source;
+	if (victim.empty())
+		return answer; // find("") + an empty replacement would never advance
 	std::string::size_type j = 0;
 	while ((j = answer.find(victim, j)) != std::string::npos )
 	{
@@ -286,33 +304,55 @@ std::string mass_replace(const std::string &source, const std::string &victim, c
 
 std::string wcstombs_locale(std::wstring str)
 {
-	#ifdef HOST_WINDOWS
-	int plenty = str.size()*8+1;
-	char *garbage = new char[plenty];
-	WideCharToMultiByte(CP_ACP,0,str.c_str(),str.size(),garbage,plenty,nullptr,nullptr);
-	std::string ret = garbage;
-	delete[] garbage;
+#ifdef HOST_WINDOWS
+	if (str.empty())
+		return std::string();
+	const int needed = WideCharToMultiByte(CP_ACP, 0, str.c_str(), (int)str.size(), NULL, 0, NULL, NULL);
+	if (needed <= 0)
+		return std::string();
+	std::string ret((size_t)needed, '\0');
+	WideCharToMultiByte(CP_ACP, 0, str.c_str(), (int)str.size(), &ret[0], needed, NULL, NULL);
 	return ret;
-	#endif
+#else
 	return wcstombs(str);
+#endif
 }
 
 std::wstring mbstowcs_locale(std::string str)
 {
-	#ifdef HOST_WINDOWS
-	int plenty = str.size()*4+1;
-	wchar_t *wgarbage = new wchar_t[plenty];
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.data(), -1, wgarbage, plenty);
-	std::wstring ret = wgarbage;
-	delete[] wgarbage;
+#ifdef HOST_WINDOWS
+	if (str.empty())
+		return std::wstring();
+	const int needed = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.c_str(), (int)str.size(), NULL, 0);
+	if (needed <= 0)
+		return std::wstring();
+	std::wstring ret((size_t)needed, L'\0');
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.c_str(), (int)str.size(), &ret[0], needed);
 	return ret;
-	#endif
+#else
 	return mbstowcs(str);
+#endif
 }
 
+// UTF-8 <-> std::wstring. std::wstring is UTF-16 on Windows and UTF-32
+// on macOS/Linux, so Windows uses the native Win32 code-page APIs while
+// other platforms keep the libretro-common / direct UTF-32 path below.
 //convert a std::string to std::wstring
 std::wstring mbstowcs(std::string str)
 {
+#ifdef HOST_WINDOWS
+	// Callers pass UTF-8 (movie author/comments, paths), so use CP_UTF8
+	// rather than the process ANSI code page; this also handles surrogate
+	// pairs correctly instead of truncating code points to 16 bits.
+	if (str.empty())
+		return std::wstring();
+	const int needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), NULL, 0);
+	if (needed <= 0)
+		return std::wstring();
+	std::wstring ret((size_t)needed, L'\0');
+	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), &ret[0], needed);
+	return ret;
+#else
 	size_t len = utf8len(str.c_str());
 	u32* tmp32 = new u32[len+1];
 	wchar_t* tmp16 = new wchar_t[len+1];
@@ -328,15 +368,66 @@ std::wstring mbstowcs(std::string str)
 	delete[] tmp16;
 
 	return ret;
+#endif
 }
 
 std::string wcstombs(std::wstring str)
 {
+#ifdef HOST_WINDOWS
+	if (str.empty())
+		return std::string();
+	const int needed = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.size(), NULL, 0, NULL, NULL);
+	if (needed <= 0)
+		return std::string();
+	std::string ret((size_t)needed, '\0');
+	WideCharToMultiByte(CP_UTF8, 0, str.c_str(), (int)str.size(), &ret[0], needed, NULL, NULL);
+	return ret;
+#else
 	size_t len = str.length();
 	char *tmp8 = new char[len*4+1]; //allow space for string to inflate
-	utf16_to_char_string((u16*)str.c_str(),tmp8,len*4+1);
+
+	if (sizeof(wchar_t) == 4)
+	{
+		// macOS/Linux: wchar_t holds UTF-32. Casting it to u16* (the Windows
+		// path below) makes the high half of every code point look like a
+		// NUL, so "author X" becomes just "a". Encode the code points here.
+		char *out = tmp8;
+		for (size_t i = 0; i < len; i++)
+		{
+			const u32 cp = (u32)str[i];
+			if (cp == 0) break;
+			if (cp < 0x80)
+			{
+				*out++ = (char)cp;
+			}
+			else if (cp < 0x800)
+			{
+				*out++ = (char)(0xC0 | (cp >> 6));
+				*out++ = (char)(0x80 | (cp & 0x3F));
+			}
+			else if (cp < 0x10000)
+			{
+				*out++ = (char)(0xE0 | (cp >> 12));
+				*out++ = (char)(0x80 | ((cp >> 6) & 0x3F));
+				*out++ = (char)(0x80 | (cp & 0x3F));
+			}
+			else
+			{
+				*out++ = (char)(0xF0 | (cp >> 18));
+				*out++ = (char)(0x80 | ((cp >> 12) & 0x3F));
+				*out++ = (char)(0x80 | ((cp >> 6) & 0x3F));
+				*out++ = (char)(0x80 | (cp & 0x3F));
+			}
+		}
+		*out = '\0';
+	}
+	else
+	{
+		utf16_to_char_string((u16*)str.c_str(),tmp8,len*4+1);
+	}
 	std::string ret = tmp8;
 	delete[] tmp8;
 	return ret;
+#endif
 }
 

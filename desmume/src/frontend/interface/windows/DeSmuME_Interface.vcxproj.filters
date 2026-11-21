@@ -91,15 +91,6 @@
     <Filter Include="utils\tinyxml">
       <UniqueIdentifier>{6d47beab-6087-48e1-953d-f5da134a023a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="utils\AsmJit">
-      <UniqueIdentifier>{faa7804e-deb3-482f-b348-921cb7dacca7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="utils\AsmJit\core">
-      <UniqueIdentifier>{82c38db3-d06d-44b5-a9a4-be3c002d0db0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="utils\AsmJit\x86">
-      <UniqueIdentifier>{0d620905-0dcf-47a4-bac2-91f307aa9994}</UniqueIdentifier>
-    </Filter>
     <Filter Include="utils\colorspacehandler">
       <UniqueIdentifier>{db5dc512-2b75-4476-8cac-75fd4acfd85f}</UniqueIdentifier>
     </Filter>
@@ -171,19 +162,25 @@
     <ClCompile Include="..\..\..\metaspu\win32\ConfigSoundtouch.cpp">
       <Filter>metaspu\win32</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\metaspu\SoundTouch\3dnow_win.cpp">
-      <Filter>metaspu\SoundTouch</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\metaspu\SoundTouch\AAFilter.cpp">
       <Filter>metaspu\SoundTouch</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\metaspu\SoundTouch\cpu_detect_x86_win.cpp">
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\cpu_detect_x86.cpp">
       <Filter>metaspu\SoundTouch</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\metaspu\SoundTouch\FIFOSampleBuffer.cpp">
       <Filter>metaspu\SoundTouch</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\metaspu\SoundTouch\FIRFilter.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\InterpolateCubic.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\InterpolateLinear.cpp">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\metaspu\SoundTouch\InterpolateShannon.cpp">
       <Filter>metaspu\SoundTouch</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\metaspu\SoundTouch\mmx_optimized.cpp">
@@ -199,9 +196,6 @@
       <Filter>metaspu\SoundTouch</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\metaspu\SoundTouch\TDStretch.cpp">
-      <Filter>metaspu\SoundTouch</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\metaspu\SoundTouch\WavFile.cpp">
       <Filter>metaspu\SoundTouch</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\addons\slot2_piano.cpp">
@@ -300,92 +294,34 @@
     <ClCompile Include="..\..\..\filter\bilinear.cpp">
       <Filter>filter</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\assembler.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\assert.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\buffer.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\compiler.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\compilercontext.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\compilerfunc.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\compileritem.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\context.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\cpuinfo.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\defs.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\func.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\logger.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\memorymanager.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\memorymarker.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\operand.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\stringbuilder.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\stringutil.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\virtualmemory.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\core\zonememory.cpp">
-      <Filter>utils\AsmJit\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86assembler.cpp">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compiler.cpp">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compilercontext.cpp">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compilerfunc.cpp">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86compileritem.cpp">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86cpuinfo.cpp">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86defs.cpp">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86func.cpp">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86operand.cpp">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\AsmJit\x86\x86util.cpp">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\addons\slot1_retail_auto.cpp">
       <Filter>addons</Filter>
@@ -613,9 +549,6 @@
     <ClInclude Include="..\..\..\metaspu\SoundTouch\AAFilter.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\metaspu\SoundTouch\BPMDetect.h">
-      <Filter>metaspu\SoundTouch</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\metaspu\SoundTouch\cpu_detect.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
@@ -623,6 +556,15 @@
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\metaspu\SoundTouch\FIFOSamplePipe.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\InterpolateCubic.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\InterpolateLinear.h">
+      <Filter>metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\InterpolateShannon.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\metaspu\SoundTouch\RateTransposer.h">
@@ -637,7 +579,7 @@
     <ClInclude Include="..\..\..\metaspu\SoundTouch\TDStretch.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\metaspu\SoundTouch\WavFile.h">
+    <ClInclude Include="..\..\..\metaspu\SoundTouch\soundtouch_config.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\utils\datetime.h">
@@ -706,122 +648,44 @@
     <ClInclude Include="..\..\..\utils\tinyxml\tinyxml.h">
       <Filter>utils\tinyxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\asmjit.h">
-      <Filter>utils\AsmJit</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\config.h">
-      <Filter>utils\AsmJit</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core.h">
-      <Filter>utils\AsmJit</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\x86.h">
-      <Filter>utils\AsmJit</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\apibegin.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\apiend.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\assembler.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\assert.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\buffer.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\build.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\compiler.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\compilercontext.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\compilerfunc.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\compileritem.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\context.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\cpuinfo.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\defs.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\func.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\intutil.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\lock.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\logger.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\memorymanager.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\memorymarker.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\operand.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\podvector.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\stringbuilder.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\stringutil.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\virtualmemory.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\core\zonememory.h">
-      <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86assembler.h">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compiler.h">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compilercontext.h">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compilerfunc.h">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86compileritem.h">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86cpuinfo.h">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86defs.h">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86func.h">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86operand.h">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\utils\AsmJit\x86\x86util.h">
-      <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\utils\advanscene.h">
       <Filter>utils</Filter>
@@ -982,8 +846,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\utils\AsmJit\COPYING.txt">
-      <Filter>utils\AsmJit</Filter>
     </None>
     <None Include="..\..\modules\osd\agg\agg2d.inl">
       <Filter>frontend\modules\osd\agg</Filter>

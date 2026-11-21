@@ -24,11 +24,52 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "aviout.h"
 #include "windriver.h"
 #include "winutil.h"
+#include "DarkMode.h"
+
+#ifdef DESMUME_NATIVE_DRAW
+#include "../modules/osd/agg/native_draw.h"
+#endif
+
+// Stage 4 of the OSD migration needs both halves: the GPU recorder target
+// (DESMUME_WGPU_OSD) and the WebGPU overlay presentation path
+// (DESMUME_GPU_HUD_OVERLAY). Without the latter the rendered HUD would have no
+// way to reach the screen.
+#if defined(DESMUME_WGPU_OSD) && defined(DESMUME_GPU_HUD_OVERLAY)
+#define DESMUME_WGPU_HUD_STAGE4 1
+#include <vector>
+
+#include "../modules/osd/wgpu/wgpu_osd_draw.h"
+#endif
+
 
 
 DDRAW ddraw;
 GLDISPLAY gldisplay;
+WGPUDISPLAY wgpudisplay;
 u32 displayMethod;
+u32 displayWGPUBackend = 0;
+int displayGPUFilter = 0; // WGPUPresentUpscaler_Off
+
+// The window the OpenGL display method has presented into, if any.
+//
+// SwapBuffers() is what spends a window: from the first one on, the WGL
+// implementation owns the window's presentation path, and afterwards every
+// flip-model DXGI swapchain (D3D11 and D3D12) as well as every Vulkan swapchain is
+// refused on that HWND -- CreateSwapChainForHwnd() returns E_ACCESSDENIED and
+// wgpu-core turns the failed surface configure into the fatal "Invalid surface"
+// panic from wgpuSurfaceConfigure(). SetPixelFormat() and a current context on
+// their own are harmless, and deleting the context or releasing the DC does not
+// undo it: only a new HWND helps.
+//
+// Written on the display thread (OGL_DoDisplay) and read from there as well as
+// from the menu handler; a stale NULL read can only cost a missing warning, since
+// DoDisplay() re-checks it before it draws a WebGPU frame.
+static volatile HWND _glPresentedHwnd = NULL;
+
+bool DisplayWindowUsedByOpenGL(HWND hwnd)
+{
+	return (hwnd != NULL) && (hwnd == _glPresentedHwnd);
+}
 
 Win32GPUEventHandler* WinGPUEvent = NULL;
 VideoInfo video;
@@ -43,6 +84,20 @@ bool frameAdvance = false;
 
 bool SeparationBorderDrag = true;
 int ScreenGapColor = 0xFFFFFF;
+
+// With no ROM loaded the GPU reset leaves both emulated screens white.  In
+// dark mode the idle display is black instead, like VBA, and the user's
+// chosen screen gap colour is only overridden while the emulator is idle.
+static bool useDarkIdleScreen()
+{
+	return !romloaded && darkMode::enabled();
+}
+
+static u32 effectiveScreenGapColor()
+{
+	return useDarkIdleScreen() ? (u32)darkMode::displayColor() : (u32)ScreenGapColor;
+}
+
 /*const u32 gapColors[16] = {
 Color::Gray,
 Color::Brown,
@@ -286,7 +341,7 @@ static void OGL_DrawTexture(RECT* srcRects, RECT* dstRects)
 		//adjust client rect into scissor rect (0,0 at bottomleft)
 		glScissor(dstRects[2].left, dstRects[2].bottom, dstRects[2].right - dstRects[2].left, dstRects[2].top - dstRects[2].bottom);
 
-		u32 color_rev = (u32)ScreenGapColor;
+		u32 color_rev = effectiveScreenGapColor();
 		int r = (color_rev >> 0) & 0xFF;
 		int g = (color_rev >> 8) & 0xFF;
 		int b = (color_rev >> 16) & 0xFF;
@@ -443,6 +498,7 @@ static void OGL_DoDisplay(NDSColorFormat colorFormat, int videoWidth, int videoH
 	}
 
 	gldisplay.showPage();
+	_glPresentedHwnd = hwnd;
 
 	gldisplay.end();
 }
@@ -554,7 +610,7 @@ static void DD_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight)
 	{
 		//u32 color = gapColors[win_fw_config.fav_colour];
 		//u32 color_rev = (((color & 0xFF) << 16) | (color & 0xFF00) | ((color & 0xFF0000) >> 16));
-		u32 color_rev = (u32)ScreenGapColor;
+		u32 color_rev = effectiveScreenGapColor();
 
 		HDC dc;
 		HBRUSH brush;
@@ -567,6 +623,142 @@ static void DD_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight)
 		DeleteObject((HGDIOBJ)brush);
 		ReleaseDC(MainWindow->getHWnd(), dc);
 	}
+}
+
+#if defined(DESMUME_WGPU_HUD_STAGE4)
+// Stage 4: the HUD is recorded by WGPUOSDDrawTarget and sampled straight from its
+// texture by WGPUPresent, so no CPU buffer is uploaded per frame.
+//
+// The target is created once and reused. Fonts come from fonts_list[], the same
+// table lookupFont() serves, so INI font names and Lua keep working.
+static WGPUOSDDrawTarget *WGPU_HudTarget()
+{
+	static WGPUOSDDrawTarget *target = NULL;
+
+	if (target == NULL)
+	{
+		target = new WGPUOSDDrawTarget(GPU_FRAMEBUFFER_NATIVE_WIDTH,
+		                              GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+	}
+
+	return target;
+}
+
+static bool WGPU_HudBegin(WGPUOSDDrawTarget *target)
+{
+	static bool fontsRegistered = false;
+	static int lastFontIndex = -1;
+
+	if (target == NULL)
+	{
+		return false;
+	}
+
+	if (!fontsRegistered)
+	{
+		// setFonts() must run before the first beginGPU() so the atlas is
+		// built with every font the OSD can select.
+		std::vector<WGPUOSDFont> fonts;
+		fonts.reserve((size_t)font_Nums);
+
+		for (int i = 0; i < font_Nums; i++)
+		{
+			WGPUOSDFont font;
+			font.name = fonts_list[i].name;
+			font.data = fonts_list[i].font;
+			font.size = 0;
+			fonts.push_back(font);
+		}
+
+		target->setFonts(fonts.empty() ? NULL : &fonts[0], (int)fonts.size());
+		fontsRegistered = true;
+	}
+
+	// The menu applies the HUD font to the default target, which is not the one
+	// installed here. Follow the same INI setting and apply it on change.
+	int fontIndex = GetPrivateProfileInt("Display", "HUD Font", font_Nums - 1, IniName);
+
+	if ((fontIndex < 0) || (fontIndex >= font_Nums))
+	{
+		fontIndex = font_Nums - 1;
+	}
+
+	if (fontIndex != lastFontIndex)
+	{
+		target->setFont(fonts_list[fontIndex].name);
+		lastFontIndex = fontIndex;
+	}
+
+	return target->beginGPU(wgpudisplay.instance(), wgpudisplay.device(), wgpudisplay.queue());
+}
+
+static bool WGPU_HudRender(WGPUOSDDrawTarget *target)
+{
+	return (target != NULL) && target->render();
+}
+#endif
+
+static void WGPU_DoDisplay(u32* srcFramebuffer, int videoWidth, int videoHeight,
+                           const WGPUPresentOverlay* overlay)
+{
+	HWND hwnd = MainWindow->getHWnd();
+
+	// Destination rects are stored in screen coordinates; the WebGPU surface
+	// covers the client area, so convert them to client coordinates. The window
+	// size is queried by the platform adapter, not here.
+	RECT dstRects[2] = { MainScreenRect, SubScreenRect };
+	for (int i = 0; i < 2; i++)
+	{
+		ScreenToClient(hwnd, (LPPOINT)&dstRects[i].left);
+		ScreenToClient(hwnd, (LPPOINT)&dstRects[i].right);
+	}
+
+	RECT srcRects[2];
+	const bool isMainGPUFirst = (GPU->GetDisplayInfo().engineID[NDSDisplayID_Main] == GPUEngineID_Main);
+
+	if (video.swap == 0)
+	{
+		srcRects[0] = MainScreenSrcRect;
+		srcRects[1] = SubScreenSrcRect;
+		if (osd) osd->swapScreens = false;
+	}
+	else if (video.swap == 1)
+	{
+		srcRects[0] = SubScreenSrcRect;
+		srcRects[1] = MainScreenSrcRect;
+		if (osd) osd->swapScreens = true;
+	}
+	else if (video.swap == 2)
+	{
+		srcRects[0] = (!isMainGPUFirst) ? SubScreenSrcRect : MainScreenSrcRect;
+		srcRects[1] = (!isMainGPUFirst) ? MainScreenSrcRect : SubScreenSrcRect;
+		if (osd) osd->swapScreens = !isMainGPUFirst;
+	}
+	else if (video.swap == 3)
+	{
+		srcRects[0] = (!isMainGPUFirst) ? MainScreenSrcRect : SubScreenSrcRect;
+		srcRects[1] = (!isMainGPUFirst) ? SubScreenSrcRect : MainScreenSrcRect;
+		if (osd) osd->swapScreens = isMainGPUFirst;
+	}
+
+	if (!wgpudisplay.begin(hwnd, displayWGPUBackend))
+	{
+		// This runs every frame while the setup is broken, so complain only once.
+		// Most likely cause: the pinned backend cannot present into this window
+		// (picking another backend, or Automatic, is the way out).
+		static bool reportedFailure = false;
+		if (!reportedFailure)
+		{
+			reportedFailure = true;
+			INFO("WGPU: could not start the display on backend mask %u; choose another backend or Automatic.\n", displayWGPUBackend);
+		}
+
+		return;
+	}
+
+	wgpudisplay.present(srcFramebuffer, videoWidth, videoHeight,
+	                    srcRects, dstRects, &GapRect, video.rotation,
+	                    effectiveScreenGapColor(), overlay);
 }
 
 void displayThread(void *arg)
@@ -619,8 +811,29 @@ void DoDisplay()
 	video.srcBufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
 
 	const bool isRunningDirectDraw = (displayMethod == DISPMETHOD_DDRAW_HW) || (displayMethod == DISPMETHOD_DDRAW_SW);
+
+	// A window that the OpenGL display method has already presented into cannot
+	// host a WebGPU surface any more, and asking wgpu for one anyway aborts the
+	// process. The menu entry that selects WebGPU refuses and explains why, so this
+	// only catches the case where the method changed between two frames; keep
+	// drawing through the OpenGL path instead of walking into wgpuSurfaceConfigure().
+	const bool windowRejectsWGPU = DisplayWindowUsedByOpenGL(MainWindow->getHWnd());
+	const bool isRunningWGPU = (displayMethod == DISPMETHOD_WGPU) && !windowRejectsWGPU;
+
+	if (windowRejectsWGPU && (displayMethod == DISPMETHOD_WGPU))
+	{
+		static bool didWarnWindowRejectsWGPU = false;
+
+		if (!didWarnWindowRejectsWGPU)
+		{
+			didWarnWindowRejectsWGPU = true;
+			INFO("WGPU: this window was already used by the OpenGL display method; staying on OpenGL.\n");
+		}
+	}
+
 	const bool needsVideoFiltering = (video.currentfilter != video.NONE);
 	const bool needsBacklightApply = (dispInfo.backlightIntensity[NDSDisplayID_Main] < 1.0f) || (dispInfo.backlightIntensity[NDSDisplayID_Touch] < 1.0f);
+	const bool darkIdleScreen = useDarkIdleScreen();
 
 	const bool needsHUDDrawing = (
 		CommonSettings.hud.ShowInputDisplay ||
@@ -636,6 +849,11 @@ void DoDisplay()
 	);
 
 	bool useSecondaryVideoBuffer = false;
+	const WGPUPresentOverlay *overlayPtr = NULL;
+#if defined(DESMUME_GPU_HUD_OVERLAY)
+	WGPUPresentOverlay overlay;
+	memset(&overlay, 0, sizeof(overlay));
+#endif
 
 	if (displayPostponeType && !displayNoPostponeNext && (displayPostponeType < 0 || timeGetTime() < displayPostponeUntil))
 		return;
@@ -645,7 +863,7 @@ void DoDisplay()
 	{
 		video.ResizeBuffers();
 
-		if (!isRunningDirectDraw)
+		if (!isRunningDirectDraw && !isRunningWGPU)
 		{
 			if ( gldisplay.begin(MainWindow->getHWnd()) )
 			{
@@ -657,7 +875,7 @@ void DoDisplay()
 		displayNeedsBufferUpdates = false;
 	}
 
-	if (isRunningDirectDraw || needsVideoFiltering || needsBacklightApply)
+	if (isRunningDirectDraw || isRunningWGPU || needsVideoFiltering || needsBacklightApply || darkIdleScreen)
 	{
 		//we have to do a copy here because we're about to draw the OSD onto it. bummer.
 		WinGPUEvent->VideoFetchLock();
@@ -669,6 +887,19 @@ void DoDisplay()
 
 		WinGPUEvent->VideoFetchUnlock();
 
+		if (darkIdleScreen && video.buffer != NULL)
+		{
+			// GPU::Reset() clears both screens to white and no ROM is running
+			// to draw over them.  Replace the copied frame with the dark idle
+			// colour; the HUD is still composited on top further down.  Going
+			// through the secondary buffer also covers the OpenGL path that
+			// would otherwise read the GPU's white framebuffer directly.
+			const u32 idlePixel = darkMode::displayPixel32();
+			const size_t idlePixCount = (size_t)video.prefilterWidth * (size_t)video.prefilterHeight;
+			for (size_t i = 0; i < idlePixCount; i++)
+				video.buffer[i] = idlePixel;
+		}
+
 		//some games use the backlight for fading effects
 		const size_t pixCount = video.prefilterWidth * video.prefilterHeight / 2;
 		ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer, pixCount, dispInfo.backlightIntensity[NDSDisplayID_Main]);
@@ -676,6 +907,30 @@ void DoDisplay()
 
 		useSecondaryVideoBuffer = true;
 	}
+
+#if defined(DESMUME_WGPU_HUD_STAGE4)
+	// Stage 4: record the HUD with the GPU OSD target instead of rasterizing it
+	// into a CPU buffer. Lua is included: the target records agg.* primitives and
+	// bitmap text, and gui.* pixels are uploaded as the target's fallback layer,
+	// so scripts draw on the WGPU backend too.
+	bool useGpuHud = false;
+	WGPUOSDDrawTarget *hudTarget = NULL;
+
+	if (needsHUDDrawing && isRunningWGPU && !CommonSettings.single_core())
+	{
+		hudTarget = WGPU_HudTarget();
+
+		// WGPU_DoDisplay() calls begin() again; it is idempotent. Calling it
+		// here is what makes the device available before the HUD is recorded.
+		if ( (hudTarget != NULL) &&
+		     wgpudisplay.begin(MainWindow->getHWnd(), displayWGPUBackend) &&
+		     WGPU_HudBegin(hudTarget) )
+		{
+			useGpuHud = true;
+			Agg_setHudTarget(hudTarget);
+		}
+	}
+#endif
 
 	aggDraw.hud->clear();
 
@@ -697,11 +952,92 @@ void DoDisplay()
 		// draw hud
 		DoDisplay_DrawHud();
 
-		// DirectDraw doesn't support alpha blending, so we must scale and overlay the HUD ourselves.
-		if (isRunningDirectDraw)
+#if defined(DESMUME_WGPU_HUD_STAGE4)
+		if (useGpuHud)
 		{
+			useGpuHud = WGPU_HudRender(hudTarget);
+
+			// Restore before any CPU fallback reads aggDraw.hud. If rendering
+			// failed, the default AGG buffer never received this frame's HUD,
+			// so redraw it there instead of compositing a stale frame.
+			Agg_setHudTarget(NULL);
+
+			if (!useGpuHud)
+			{
+				aggDraw.hud->clear();
+				DoDisplay_DrawHud();
+			}
+		}
+#endif
+
+		// DirectDraw has no second blended layer, so the HUD is scaled and
+		// composited on the CPU. The WebGPU path does that on the GPU when
+		// DESMUME_GPU_HUD_OVERLAY is enabled; otherwise, or when the HUD buffer
+		// is unavailable, it uses the same CPU composite.
+		bool cpuHudComposite = isRunningDirectDraw;
+
+		if (isRunningWGPU)
+		{
+#if defined(DESMUME_GPU_HUD_OVERLAY)
+			bool haveGpuHud = false;
+
+#if defined(DESMUME_WGPU_HUD_STAGE4)
+			if (useGpuHud)
+			{
+				const void *view = hudTarget->textureView();
+
+				if (view != NULL)
+				{
+					overlay.textureView = view;
+					overlay.width = hudTarget->targetWidth();
+					overlay.height = hudTarget->targetHeight();
+					overlay.premultiplied = true;
+					overlayPtr = &overlay;
+					haveGpuHud = true;
+				}
+			}
+#endif
+
+			if (!haveGpuHud)
+			{
+				const u8 *hudPixels = (const u8 *)aggDraw.hud->buf().buf();
+				const int hudWidth = (int)aggDraw.hud->buf().width();
+				const int hudHeight = (int)aggDraw.hud->buf().height();
+				const int hudStride = (int)aggDraw.hud->buf().stride_abs();
+
+				if ( (aggDraw.hud != aggDraw.screen) &&
+					 (hudPixels != NULL) && (hudWidth > 0) && (hudHeight > 0) &&
+					 (hudStride >= hudWidth * 4) )
+				{
+					overlay.pixels = (const uint32_t *)hudPixels;
+					overlay.width = hudWidth;
+					overlay.height = hudHeight;
+					overlay.strideBytes = hudStride;
+					overlay.premultiplied = true;
+					overlayPtr = &overlay;
+				}
+			}
+#else
+			cpuHudComposite = true;
+#endif
+		}
+
+		if (cpuHudComposite)
+		{
+#ifdef DESMUME_NATIVE_DRAW
+			// Straight-alpha CPU composite.  This replaces Agg2D::transformImage,
+			// which was the last remaining direct AGG instantiation in the
+			// Windows frontend (it bypassed AggDrawTarget entirely).
+			NativeDraw_CompositeHUD(
+				(u8*)video.buffer, video.prefilterWidth, video.prefilterHeight,
+				video.prefilterWidth * sizeof(u32),
+				(const u8*)aggDraw.hud->buf().buf(),
+				aggDraw.hud->buf().width(), aggDraw.hud->buf().height(),
+				aggDraw.hud->buf().stride_abs());
+#else
 			T_AGG_RGBA target((u8*)video.buffer, video.prefilterWidth, video.prefilterHeight, video.prefilterWidth * sizeof(u32));
 			target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0, 0, video.prefilterWidth, video.prefilterHeight);
+#endif
 		}
 	}
 
@@ -714,12 +1050,22 @@ void DoDisplay()
 	if (isRunningDirectDraw)
 	{
 		gldisplay.kill();
+		wgpudisplay.kill();
 
 		u32* srcFramebuffer = (needsVideoFiltering) ? (u32*)video.filteredbuffer : (u32*)video.buffer;
 		DD_DoDisplay(srcFramebuffer, video.rotatedwidth(), video.rotatedheight());
 	}
+	else if (isRunningWGPU)
+	{
+		gldisplay.kill();
+
+		u32* srcFramebuffer = (needsVideoFiltering) ? (u32*)video.filteredbuffer : (u32*)video.buffer;
+		WGPU_DoDisplay(srcFramebuffer, video.width, video.height, overlayPtr);
+	}
 	else
 	{
+		wgpudisplay.kill();
+
 		u32* srcHUD = (needsHUDDrawing) ? (u32*)aggDraw.hud->buf().buf() : NULL;
 
 		if (useSecondaryVideoBuffer)

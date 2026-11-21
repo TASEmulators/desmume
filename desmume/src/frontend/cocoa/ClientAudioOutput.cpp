@@ -208,7 +208,7 @@ ClientAudioOutput::ClientAudioOutput()
 	_spuInterpolationModeString = "Cosine";
 	_syncModeID = ESynchMode_Synchronous;
 	_syncMethodID = ESynchMethod_N;
-	_spuSyncMethodString = "\"N\" Sync Method";
+	_spuSyncMethodString = "N: Crossfade resampler (low CPU)";
 	_isMuted = false;
 	
 	_mutexEngine = slock_new();
@@ -365,15 +365,15 @@ void ClientAudioOutput::SetSPUSyncModeByID(ESynchMode syncModeID)
 		switch (this->_syncMethodID)
 		{
 			case ESynchMethod_N:
-				this->_spuSyncMethodString = "\"N\" Sync Method";
+				this->_spuSyncMethodString = "N: Crossfade resampler (low CPU)";
 				break;
 				
 			case ESynchMethod_Z:
-				this->_spuSyncMethodString = "\"Z\" Sync Method";
+				this->_spuSyncMethodString = "Z: Micro-resampler (low latency)";
 				break;
 				
 			case ESynchMethod_P:
-				this->_spuSyncMethodString = "\"P\" Sync Method";
+				this->_spuSyncMethodString = "P: Time-stretch (keeps pitch)";
 				break;
 				
 			default:
@@ -407,15 +407,15 @@ void ClientAudioOutput::SetSPUSyncMethodByID(ESynchMethod syncMethodID)
 		switch (syncMethodID)
 		{
 			case ESynchMethod_N:
-				this->_spuSyncMethodString = "\"N\" Sync Method";
+				this->_spuSyncMethodString = "N: Crossfade resampler (low CPU)";
 				break;
 				
 			case ESynchMethod_Z:
-				this->_spuSyncMethodString = "\"Z\" Sync Method";
+				this->_spuSyncMethodString = "Z: Micro-resampler (low latency)";
 				break;
 				
 			case ESynchMethod_P:
-				this->_spuSyncMethodString = "\"P\" Sync Method";
+				this->_spuSyncMethodString = "P: Time-stretch (keeps pitch)";
 				break;
 				
 			default:

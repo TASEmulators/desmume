@@ -607,7 +607,7 @@ void ClientInputHandler::ProcessInputs()
 	}
 }
 
-void ClientInputHandler::ApplyInputs()
+void ClientInputHandler::CommitInputs()
 {
 	NDS_endProcessingInput();
 	

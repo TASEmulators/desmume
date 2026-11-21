@@ -198,10 +198,16 @@
 #define IDD_PATHSETTINGS                366
 #define IDC_ASSOCIATE                   367
 #define IDC_CLOSE_LUA_SCRIPTS           368
+// About command of the Tools > Lua Scripting submenu.  It used to be a button
+// in the Lua Script window, which made the engine details unreachable without
+// opening a script first.
+#define IDC_LUA_ABOUT                   373
 #define IDC_SRAMIMPORTPATHEDIT          369
 #define IDC_BROWSESRAMIMPORT            370
 #define IDC_STATESLOTPATHEDIT           371
 #define IDC_BROWSESTATESLOTS            372
+#define IDC_MOVIEPATHEDIT               374
+#define IDC_BROWSEMOVIES                375
 #define IDC_DES_BOX                     402
 #define IDC_R0                          403
 #define IDC_R1                          404
@@ -999,6 +1005,25 @@
 #define ID_40093                        40093
 #define IDM_SLOT1                       40097
 #define ID_DISPLAYMETHOD_OPENGL         40102
+#define ID_DISPLAYMETHOD_WGPU           40200
+
+// One entry per WebGPU backend, appended to the "WebGPU" submenu at run time from
+// the same list the 3D renderer uses (src/WGPURender.cpp) so both offer exactly
+// the backends this machine can run. Contiguous on purpose: the command handler
+// resolves the whole block with one range check. Entry N carries the mask from
+// WGPURender_GetBackendMask(N); ID_DISPLAYMETHOD_WGPU itself means "automatic".
+#define ID_DISPLAYMETHOD_WGPU_BACKEND_FIRST 40201
+#define ID_DISPLAYMETHOD_WGPU_BACKEND_LAST  40217
+
+// Config -> Display Method -> GPU Filter. "Off" is the one entry the resource
+// holds; the filters themselves are appended at run time from the chain table of
+// src/frontend/shared/wgpu_present.cpp, so the names live in one place and a
+// build without the WGSL simply offers none of them. Entry N of the block
+// carries the WGPUPresentUpscaler value N, and the command handler resolves the
+// whole block with one range check.
+#define ID_DISPLAYMETHOD_GPUFILTER_OFF      40230
+#define ID_DISPLAYMETHOD_GPUFILTER_FIRST    40231
+#define ID_DISPLAYMETHOD_GPUFILTER_LAST     40249
 #define IDM_FILE_IMPORT_DB              40103
 #define IDM_AUTODETECTSAVETYPE_INTERNAL 40104
 #define ID_DISPLAYMETHOD_OPENGL_FILTER  40104
@@ -1152,14 +1177,114 @@
 #define ID_LABEL_TEXTURE_SCALING        64007
 #define ID_LABEL_SHADOW_POLYGONS        64009
 
+// Recording settings dialog and its controls (Media Foundation recorder)
+#define IDD_RECORD_SETTINGS             10016
+
+#define IDC_REC_VIDEO_TITLE             65000
+#define IDC_REC_VIDEO                   65001
+#define IDC_REC_VIDEO_BITRATE           65002
+#define IDC_REC_VIDEO_SPIN              65003
+#define IDC_REC_VIDEO_PRESET            65004
+#define IDC_REC_PROFILE                 65005
+#define IDC_REC_FRAMERATE               65006
+#define IDC_REC_SUMMARY                 65007
+#define IDC_REC_HINT                    65008
+#define IDC_REC_AUDIO_TITLE             65009
+#define IDC_REC_AUDIO                   65010
+#define IDC_REC_AUDIO_BITRATE           65011
+#define IDC_REC_AUDIO_SPIN              65012
+#define IDC_REC_AUDIO_PRESET            65013
+#define IDC_REC_SAMPLE_RATE             65014
+#define IDC_REC_CAPTURE                 65015
+#define IDC_REC_FILTER                  65016
+
+// Commands.  The STOP and RESUME ids are string-table entries only: the menu
+// text is swapped by loading the alternate id, which is how the existing
+// "Record AVI" / "Stop AVI" pair works.
+#define IDM_FILE_RECORDVIDEO            40250
+#define IDM_FILE_STOPVIDEO              40251
+#define IDM_FILE_PAUSERECORDING         40252
+#define IDM_FILE_RESUMERECORDING        40253
+
+// Config > Use Modern UI Font (see UiFont.h).
+#define IDM_USE_MODERN_FONT             40254
+
+// File > DSM Editor... (see dsmeditor.cpp).
+#define IDM_DSM_EDITOR                  40255
+
+// The DSM Editor window, its stylus prompt, and the context menu of its grid.
+// The control ids sit in a range nothing else uses; the command ids below are
+// only ever sent by the editor itself.
+#define IDD_DSM_EDITOR                  6100
+#define IDD_DSM_TOUCH                   6101
+#define DSMEDITOR_MENU                  6102
+
+#define IDC_DSM_LIST                    6110
+#define IDC_DSM_HINT                    6111
+#define IDC_DSM_STATUS                  6112
+#define IDC_DSM_PLAY                    6113
+#define IDC_DSM_PAUSE                   6114
+#define IDC_DSM_STEP                    6115
+#define IDC_DSM_GOTOPLAYHEAD            6116
+#define IDC_DSM_READONLY                6117
+#define IDC_DSM_FOLLOW                  6118
+#define IDC_DSM_PREVMARK                6119
+#define IDC_DSM_NEXTMARK                6120
+#define IDC_DSM_GOTOLABEL               6121
+#define IDC_DSM_FRAMENO                 6122
+#define IDC_DSM_SAVE                    6123
+#define IDC_DSM_TOUCH_X                 6124
+#define IDC_DSM_TOUCH_Y                 6125
+#define IDC_DSM_TOUCH_DOWN              6126
+
+#define CMD_DSM_MARK                    6130
+#define CMD_DSM_INSERT                  6131
+#define CMD_DSM_INSERT_AFTER            6132
+#define CMD_DSM_DELETE                  6133
+#define CMD_DSM_CUT                     6134
+#define CMD_DSM_COPY                    6135
+#define CMD_DSM_PASTE                   6136
+#define CMD_DSM_TOUCH                   6137
+#define CMD_DSM_SAVE                    6138
+#define CMD_DSM_SAVE_AS                 6139
+
+// Movie playback / recording dialogs (VBA-style). Kept in their own block so
+// they cannot collide with the hotkey and Lua ID ranges above.
+#define IDC_MOVIE_ROM                   27001
+#define IDC_YOUR_ROM                    27002
+#define IDC_MOVIE_REFRESH               27003
+#define IDC_EDIT_PAUSEFRAME             27004
+#define IDC_CHECK_PAUSEFRAME            27005
+#define IDC_PLAY_DESCRIPTION            27006
+#define IDC_MCORE                       27007
+#define IDC_MRECORD_DATE                27008
+#define IDC_MREC_POWER                  27009
+#define IDC_MREC_SRAM                   27010
+#define IDC_MREC_SNAPSHOT               27011
+#define IDC_MSYSTEM                     27012
+#define IDC_MFIRMWARE                   27013
+#define IDC_MLANGUAGE                   27014
+#define IDC_MNICKNAME                   27015
+#define IDC_MBIOSEXT                    27016
+#define IDC_MBIOSWI                     27017
+#define IDC_MFIRMEXT                    27018
+#define IDC_MBOOTFW                     27019
+#define IDC_REC_DESCRIPTION             27020
+#define IDC_REC_ROMINFO                 27021
+#define IDC_START_FROM_SAVESTATE        27022
+#define IDC_REC_BIOSEXT                 27023
+#define IDC_REC_BIOSWI                  27024
+#define IDC_REC_FIRMEXT                 27025
+#define IDC_REC_BOOTFW                  27026
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
-#define _APS_NEXT_COMMAND_VALUE         40159
-#define _APS_NEXT_CONTROL_VALUE         1068
+#define _APS_NEXT_COMMAND_VALUE         40255
+#define _APS_NEXT_CONTROL_VALUE         65015
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
