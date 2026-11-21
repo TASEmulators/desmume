@@ -1285,6 +1285,95 @@ ramwatch 的 editor 两处 entry 已全部切过去。
 验证：gdb 中 Open → 呈现 → deferred Reset → 持续帧刷新 → 正常退出，全程无 CRITICAL /
 SIGSEGV / GObject 断言；GTK4 与 GTK3/CLI 均编译通过。
 
+### P4 运行时修复：关闭 IO registers / RAM Search 时 SIGABRT（2026-11-21）
+
+**现象**：关闭 IO registers 与 RAM Search 窗口时，先刷 7 条
+`g_list_model_get_n_items: assertion 'G_IS_LIST_MODEL (list)' failed`，随后
+`gtk_list_item_manager_clear_model: assertion failed: (gtk_rb_tree_get_root (self->items) == NULL)`
+→ `Bail out!` → SIGABRT。关闭 RAM Watch 窗口则完全正常。
+
+**共同点与差异点**：
+
+| 工具 | `GtkDropDown` 数量 | 关闭行为 |
+|---|---:|---|
+| IO registers | 1（ARM9/ARM7 选择） | 崩溃 |
+| RAM Search | 4（Search Type / Comparison / Size / Display） | 崩溃 |
+| RAM Watch | 0（只有菜单按钮和普通按钮） | 正常 |
+
+崩溃与 `GtkColumnView`、行数、模型类型都无关（把行数改成 0 仍崩；RAM Watch 带 watch 条目也正常），
+只跟窗口里有没有 `GtkDropDown` 有关。
+
+**根因**：`gtk_drop_down_new(model, expression)` 的 `model` 是 **`(transfer full)`**，GTK 源码里
+显式 `/* we're consuming the references */ g_clear_object (&model);`。而四个调用点在创建之后又
+`g_object_unref()` 了一次 → 字符串列表被提前释放，GtkDropDown 内部的 `GtkFilterListModel` /
+`GtkSingleSelection` / 弹层 `GtkListView` 全部持有悬空指针。窗口销毁时
+`gtk_list_item_manager_clear_model()` 的第一步是
+`g_list_model_get_n_items (G_LIST_MODEL (self->model))`，拿到已释放对象 → 断言失败 → 返回 0 →
+`remove_items` 一个 tile 都不删 → 末尾 `g_assert (gtk_rb_tree_get_root (self->items) == NULL)` 命中。
+
+**修复**：删除 4 处多余的 `g_object_unref()`（`ioregs.cpp` 1 处、`ramsearch.cpp` 的 `add_dropdown()` 1 处、
+`ramwatch.cpp` 的 watch 编辑器 2 处——**New/Edit Watch 对话框同样会崩，只是用户没点到**）。
+
+⚠️ 别顺手删 `rowmodel.cpp` 里的 `g_object_ref(model)`：`gtk_multi_selection_new()` 也是 `(transfer full)`，
+那里先 ref 再传是正确写法（`gtk_column_view_set_model()` 则是 transfer none）。
+
+**验证**（Arch/WSL，GTK 4.24.1）：
+
+| 测试 | 结果 |
+|---|---|
+| 最小复现：裸 `GtkDropDown` + 字符串列表 + 多余 `g_object_unref()`，关窗 | 稳定复现 7 条 CRITICAL + `clear_model` 断言 + SIGABRT |
+| 同上，去掉 `g_object_unref()` 或改用 `gtk_drop_down_new_from_strings()` | 正常退出 |
+| 真机：gdb 脚本开 IO registers + RAM Search + RAM Watch，跑 120 帧后 `desmume_tools_close_all()` | 修复前：7 CRITICAL + `Bail out!` + SIGABRT；修复后：0 CRITICAL，正常退出 |
+
+#### 复现与回归手法（可复用）
+
+**1. 最小宿主：把崩溃缩到一个控件。** 不碰模拟器核心，只依赖 `gtk4`：
+
+```c
+GtkWidget *win = gtk_window_new();
+GtkStringList *cpus = gtk_string_list_new(NULL);
+gtk_string_list_append(cpus, "ARM9");
+gtk_string_list_append(cpus, "ARM7");
+GtkWidget *dd = gtk_drop_down_new(G_LIST_MODEL(cpus), NULL);  /* transfer full */
+g_object_unref(cpus);                                          /* ← 就这一行是 bug */
+gtk_window_set_child(GTK_WINDOW(win), dd);
+gtk_window_present(GTK_WINDOW(win));
+/* 800 ms 后 gtk_window_close() → 稳定 SIGABRT */
+```
+
+`gcc p.c -o p $(pkg-config --cflags --libs gtk4)`。判定只看三件事：有没有
+`G_IS_LIST_MODEL` 断言、有没有 `clear_model` 断言、退出码是否 -6（SIGABRT）。
+反向验证：去掉 `g_object_unref()`，或改用 `gtk_drop_down_new_from_strings()`，两者都应正常退出。
+
+**2. 把真实工具代码挂进宿主。** `tools/ioregs.cpp` 只依赖 `emulation.h`（纯 GTK 声明）和
+`desmume_tool_window_new()`；写个 stub 提供 `desmume_emu_read_ioreg()` /
+`desmume_tool_window_new()` 就能和 `rowmodel.cpp` 一起单独链接，再加一个 16 ms 的 tick 调
+`update()` 模拟真机帧循环。改一行代码就能重跑，不用起模拟器。
+
+**3. 真机回归：gdb 脚本代替手点菜单。** WSLg 没有 WM，xdotool 点菜单不可靠（且强制
+`GDK_BACKEND=x11` 会引入 `BadDrawable` 假故障），直接调 C 接口最稳：
+
+```gdb
+set pagination off
+set confirm off
+break gtk_window_present
+run
+disable 1                          # 必须 disable，否则 call 内部的 present 会再命中
+call (void)desmume_tools_open(0)   # IO registers
+call (void)desmume_tools_open(2)   # RAM Search
+call (void)desmume_tools_open(1)   # RAM Watch
+break desmume_tools_update
+ignore 2 120                       # 跑 ~120 帧，让窗口真正 map / realize
+continue
+call (void)desmume_tools_close_all()
+call (void)exit(0)
+```
+
+`gdb -q -batch -x drive.gdb ./gtk4/desmume | grep -cE "CRITICAL|assertion|Bail out"`：修复前 7，修复后 0。
+
+⚠️ 两个坑：(a) `call` 之前必须 `disable` 掉 `gtk_window_present` 断点；(b) 不要用 `timeout`
+强杀进程看结果——强杀产生的 teardown 断言是假象，必须走 `close_all()` 的正常销毁路径。
+
 ---
 
 ## 附录 A：迁移顺序速查

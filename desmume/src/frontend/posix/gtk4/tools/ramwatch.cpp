@@ -538,7 +538,9 @@ present_watch_editor(gboolean editing, size_t index)
 	ctx->size_dropdown = gtk_drop_down_new(G_LIST_MODEL(sizes), NULL);
 	gtk_drop_down_set_selected(GTK_DROP_DOWN(ctx->size_dropdown),
 	                           (sizeCode == 'w') ? 1 : (sizeCode == 'd') ? 2 : 0);
-	g_object_unref(sizes);
+	/* gtk_drop_down_new() is (transfer full) and already consumed the
+	 * reference from gtk_string_list_new(); unref'ing it here would free the
+	 * model while the dropdown's popup list view still uses it. */
 	gtk_grid_attach(GTK_GRID(grid), ctx->size_dropdown, 2, 0, 1, 1);
 
 	GtkWidget *typeLabel = gtk_label_new("Display:");
@@ -553,7 +555,7 @@ present_watch_editor(gboolean editing, size_t index)
 	ctx->type_dropdown = gtk_drop_down_new(G_LIST_MODEL(types), NULL);
 	gtk_drop_down_set_selected(GTK_DROP_DOWN(ctx->type_dropdown),
 	                           (typeCode == 'u') ? 1 : (typeCode == 'h') ? 2 : (typeCode == 'f') ? 3 : 0);
-	g_object_unref(types);
+	/* gtk_drop_down_new() is (transfer full); see the size dropdown above. */
 	gtk_grid_attach(GTK_GRID(grid), ctx->type_dropdown, 1, 1, 2, 1);
 
 	GtkWidget *commentLabel = gtk_label_new("Notes:");

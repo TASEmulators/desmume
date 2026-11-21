@@ -126,7 +126,10 @@ Open(void)
 	gtk_widget_set_margin_start(sCpuDropDown, 8);
 	gtk_widget_set_margin_end(sCpuDropDown, 8);
 	gtk_box_append(GTK_BOX(root), sCpuDropDown);
-	g_object_unref(cpus);
+	/* gtk_drop_down_new() is (transfer full): it already consumed the
+	 * reference from gtk_string_list_new().  Unreferencing it again frees the
+	 * string list while the dropdown's popup list view still holds it, so
+	 * closing the window trips gtk_list_item_manager_clear_model() in GTK. */
 
 	BuildRows();
 

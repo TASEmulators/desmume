@@ -838,7 +838,9 @@ add_dropdown(GtkWidget *grid, int row, const char *const *labels, int count)
 	GtkWidget *dropdown = gtk_drop_down_new(G_LIST_MODEL(strings), NULL);
 	gtk_widget_set_hexpand(dropdown, TRUE);
 	gtk_grid_attach(GTK_GRID(grid), dropdown, 1, row, 1, 1);
-	g_object_unref(strings);
+	/* gtk_drop_down_new() is (transfer full) and already consumed the
+	 * reference from gtk_string_list_new(); unref'ing it here would free the
+	 * model while the dropdown's popup list view still uses it. */
 	return dropdown;
 }
 
