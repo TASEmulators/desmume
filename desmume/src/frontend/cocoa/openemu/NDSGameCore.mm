@@ -381,19 +381,12 @@ volatile bool execute = true;
 		_cdp->SetHUDFontPath(hudFontPath);
 		_cdp->SetHUDRenderMipmapped(true);
 		
-		// OpenEmu doesn't provide us with the backing scaling factor, which is used to
-		// adapt ClientDisplayPresenter to HiDPI/Retina displays. But if OpenEmu ever
-		// does provide this information, we can give ClientDisplayPresenter this hint.
-		// For now, just assume that the backing scale is 1.0.
-		double scaleFactor = 1.0;
-		if (scaleFactor != 1.0)
-		{
-			_cdp->SetScaleFactor(scaleFactor);
-		}
-		else
-		{
-			_cdp->LoadHUDFont();
-		}
+		// The client (HiDPI) scale and the HUD glyph sizes now live in
+		// ClientDisplayPresenterProperties: SetScaleFactor() and the no-argument
+		// LoadHUDFont() were removed by the upstream refactor.  OpenEmu has no
+		// backing scale to report, so keep the default 1.0 scalar here.
+		const ClientDisplayPresenterProperties defaultProps = ClientDisplayPresenter::GetDefaultProperties();
+		_cdp->LoadHUDFont(defaultProps.hudGlyphSize, defaultProps.hudGlyphTileSize);
 		
 		static const Color4u8 whiteColor = {0xFF, 0xFF, 0xFF, 0xFF};
 		_cdp->SetOutputFilter(OutputFilterTypeID_NearestNeighbor);
@@ -407,7 +400,8 @@ volatile bool execute = true;
 	else
 	{
 		_cdp->Init();
-		_cdp->LoadHUDFont();
+		const ClientDisplayPresenterProperties defaultProps = ClientDisplayPresenter::GetDefaultProperties();
+		_cdp->LoadHUDFont(defaultProps.hudGlyphSize, defaultProps.hudGlyphTileSize);
 	}
 	
 	if (oldContext != NULL)
@@ -666,10 +660,10 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 		_displayModeStatesApplied = appliedState;
 	}
 	
-	ClientDisplayPresenterProperties newProps;
+	ClientDisplayPresenterProperties newProps = ClientDisplayPresenter::GetDefaultProperties();
 	UpdateDisplayPropertiesFromStates(appliedState, newProps);
-	newProps.clientWidth  = _OEViewSize.width;
-	newProps.clientHeight = _OEViewSize.height;
+	newProps.viewportActualWidth  = _OEViewSize.width;
+	newProps.viewportActualHeight = _OEViewSize.height;
 	
 	_cdp->CommitPresenterProperties(newProps);
 	_cdp->SetupPresenterProperties();
@@ -1633,20 +1627,24 @@ void UpdateDisplayPropertiesFromStates(uint64_t displayModeStates, ClientDisplay
 	// The display rect should be at 1x normal scaling, but could include prescaling for
 	// older OpenEmu versions, so we need to account for both cases here.
 	ClientDisplayPresenterProperties propsCopy = _cdp->GetPresenterProperties();
-	const double displayRectWidthScaled  = (_canRespondToViewResize) ? _displayRect.size.width  * propsCopy.viewScale : _displayRect.size.width;
-	const double displayRectHeightScaled = (_canRespondToViewResize) ? _displayRect.size.height * propsCopy.viewScale : _displayRect.size.height;
+	// The old single viewScale is now split into the screen scalar and the
+	// client (HiDPI) scalar; their product is the effective view scale.
+	const double viewScale = propsCopy.screenScale * propsCopy.clientScale;
+	const double displayRectWidthScaled  = (_canRespondToViewResize) ? _displayRect.size.width  * viewScale : _displayRect.size.width;
+	const double displayRectHeightScaled = (_canRespondToViewResize) ? _displayRect.size.height * viewScale : _displayRect.size.height;
 	
 	// We also need to center the touch point within the view, since OpenEmu has a hard time
 	// (due to view behavior bugs) sizing the view to the drawable rect. More than likely,
 	// there will be some kind of extraneous area around the drawable area, and so we need
 	// to compensate for that here.
-	aPoint.x = aPoint.x - (int)( ((((double)_OEViewSize.width  - displayRectWidthScaled)  / 2.0) / propsCopy.viewScale) + 0.0005 );
-	aPoint.y = aPoint.y + (int)( ((((double)_OEViewSize.height - displayRectHeightScaled) / 2.0) / propsCopy.viewScale) + 0.0005 );
+	aPoint.x = aPoint.x - (int)( ((((double)_OEViewSize.width  - displayRectWidthScaled)  / 2.0) / viewScale) + 0.0005 );
+	aPoint.y = aPoint.y + (int)( ((((double)_OEViewSize.height - displayRectHeightScaled) / 2.0) / viewScale) + 0.0005 );
 	
 	uint8_t x = 0;
 	uint8_t y = 0;
+	// GetNDSPoint() now reads the logical viewport size from props instead of
+	// taking it as separate arguments.
 	ClientDisplayViewInterface::GetNDSPoint(propsCopy,
-											_displayRect.size.width, _displayRect.size.height,
 											aPoint.x, aPoint.y,
 											_isInitialTouchPress, x, y, _isTouchPressInMajorDisplay);
 	_isInitialTouchPress = false;

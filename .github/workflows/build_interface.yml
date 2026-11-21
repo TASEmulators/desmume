@@ -6,14 +6,14 @@ on:
 
 jobs:
   build_linux:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: Build Linux
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: sudo apt update && sudo apt install meson libsdl2-dev libpcap-dev
+        run: sudo apt update && sudo apt install meson libsdl3-dev libpcap-dev
 
       - name: Build - Meson
         run: |
@@ -30,14 +30,14 @@ jobs:
           path: desmume/src/frontend/interface/build/libdesmume.so
 
   build_macos:
-    runs-on: macos-15
+    runs-on: macos-latest
     name: Build MacOS
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install MacOS build deps
-        run: brew install coreutils sdl2 meson
+        run: brew install coreutils sdl3 meson
 
       - name: Build - Meson
         run: |
@@ -60,7 +60,7 @@ jobs:
           path: desmume/src/frontend/interface/build/libdesmume.dylib
 
   build_windows:
-    runs-on: windows-2022
+    runs-on: windows-latest
     name: Build Windows
     strategy:
       fail-fast: false

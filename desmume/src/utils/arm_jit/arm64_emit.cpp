@@ -16,6 +16,19 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// AArch64 primitive layer.
+//
+// Every function here used to hand-encode its instruction words (`output_w32`
+// with a magic constant and the operand fields shifted into place). They are
+// now emitted through asmjit, with the instruction selection kept *byte for
+// byte* identical to the old encoder: this step is a migration, not a rewrite,
+// so it must be possible to show that a block compiles to the same instructions
+// as before. tools/jit_matrix/check_a64.py enforces that.
+//
+// Register numbering follows the backend convention: `R0..R15` are the ARM
+// register indices the handlers pass around, `X0_REG..` are host registers.
+// Argument order follows the encodings, so (rs1 = Rn, rs2 = Rm, rt = Rd).
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +38,12 @@ typedef uint32_t u_int;
 #include <sys/mman.h>
 #endif
 
+// R0..R11 name the fixed host scratch registers this backend allocates by
+// hand (tmp=R2, tmp2=R3, imm=R4, ...; see arm_jit_arm.cpp). They must stay
+// physical: asmjit's register allocator is not usable here because the block
+// frame is managed by hand and helper calls use raw blr. The two measured
+// reasons, plus the ArmRegCache pool that works around them, are documented in
+// arm_jit_arm.cpp ("Why this does *not* use asmjit virtual registers").
 #define R11 11
 #define R10 10
 #define FP 11
@@ -57,7 +76,7 @@ typedef uint32_t u_int;
 #define X12_REG     12
 #define X13_REG     13
 #define X14_REG     14
-#define X15_REG     15 
+#define X15_REG     15
 #define X16_REG     16
 #define X17_REG     17
 #if (defined(_WIN32) || defined(__APPLE__) || defined(__ANDROID__))
@@ -84,368 +103,453 @@ typedef uint32_t u_int;
 #define WZR 31
 #define XZR WZR
 
-struct s_bytes;
-typedef struct s_bytes t_bytes;
+#include <map>
+#include <vector>
+
+#include <asmjit/a64.h>
+
+// The encoder used to be a linked list of raw byte chunks (`struct s_bytes`);
+// asmjit now owns it. Keeping the name `t_bytes` means the ~570 call sites in
+// arm_jit_arm.cpp (`emit_add(g_out, ...)`) did not have to change.
+typedef asmjit::a64::Compiler t_bytes;
+
+// Register operand helpers: the backend works in register *numbers* everywhere.
+static inline asmjit::a64::Gp gw(int n) { return asmjit::a64::w(n); }
+static inline asmjit::a64::Gp gx(int n) { return asmjit::a64::x(n); }
+static inline asmjit::a64::Mem gmem(int base) { return asmjit::a64::ptr(gx(base)); }
 
 typedef unsigned int (*JittedFunc)();
 
-static void output_w32(t_bytes *bytes, unsigned int word);
 uint64_t genlabel();
 
-static u_int genimm(u_int imm,u_int *encoded)
-{
-  if(imm==0) {*encoded=0;return 1;}
-  int i=32;
-  while(i>0)
-  {
-    if(imm<256) {
-      *encoded=((i&30)<<7)|imm;
-      return 1;
-    }
-    imm=(imm>>2)|(imm<<30);i-=2;
-  }
-  return 0;
-}
+#include "emit_core.cpp"
 
+//---------------------------------------------------------------------------
+// Forward declarations
+//
+// The primitives are mutually recursive (a shift helper calls emit_andimm,
+// which calls emit_movimm...). The old encoder leaned on the same thing; the
+// declarations are kept in one place instead of being scattered mid-file.
+//---------------------------------------------------------------------------
 
-// This function returns true if the argument is a non-empty
-// sequence of ones starting at the least significant bit with the remainder
-// zero.
+static void emit_movz(t_bytes *out, u_int imm, u_int rt);
+static void emit_movz_lsl16(t_bytes *out, u_int imm, u_int rt);
+static void emit_movz64(t_bytes *out, u_int imm, u_int rt);
+static void emit_movn(t_bytes *out, u_int imm, u_int rt);
+static void emit_movn_lsl16(t_bytes *out, u_int imm, u_int rt);
+static void emit_movk(t_bytes *out, u_int imm, u_int rt);
+static void emit_movk_lslnum(t_bytes *out, u_int imm, u_int rt, int lsl);
+static void emit_movk_lslnum64(t_bytes *out, u_int imm, u_int rt, int lsl);
+static void emit_mov(t_bytes *out, int rs, int rt);
+static void emit_movimm(t_bytes *out, uintptr_t imm, u_int rt);
+static void emit_ptr(t_bytes *out, uintptr_t ptr, u_int rt);
+static void emit_zeroreg(t_bytes *out, int rt);
+
+static void emit_add(t_bytes *out, int rs1, int rs2, int rt);
+static void emit_adds(t_bytes *out, int rs1, int rs2, int rt);
+static void emit_add64(t_bytes *out, int rs1, int rs2, int rt);
+static void emit_sub(t_bytes *out, int rs1, int rs2, int rt);
+static void emit_subs(t_bytes *out, int rs1, int rs2, int rt);
+static void emit_and(t_bytes *out, u_int rs1, u_int rs2, u_int rt);
+static void emit_or(t_bytes *out, u_int rs1, u_int rs2, u_int rt);
+static void emit_or64(t_bytes *out, u_int rs1, u_int rs2, u_int rt);
+static void emit_xor(t_bytes *out, u_int rs1, u_int rs2, u_int rt);
+static void emit_ands(t_bytes *out, u_int rs1, u_int rs2, u_int rt);
+static void emit_test(t_bytes *out, int rs, int rt);
+static void emit_cmp(t_bytes *out, int rs, int rt);
+static void emit_lsl(t_bytes *out, int reg, int n);
+static void emit_lsr(t_bytes *out, int reg, int n);
+static void emit_asr(t_bytes *out, int reg, int n);
+static void emit_ror(t_bytes *out, int reg, int n);
+
+static void emit_lsl_reg(t_bytes *out, int reg, int nreg);
+static void emit_lsr_reg(t_bytes *out, int reg, int nreg);
+static void emit_asr_reg(t_bytes *out, int reg, int nreg);
+static void emit_ror_reg(t_bytes *out, int reg, int nreg);
+static void emit_lsl_reg_quick(t_bytes *out, int reg, int nreg);
+static void emit_lsrs_reg(t_bytes *out, int reg, int nreg);
+static void emit_asrs_reg(t_bytes *out, int reg, int nreg);
+static void emit_rors_reg(t_bytes *out, int reg, int nreg);
+static void emit_lsls_reg(t_bytes *out, int reg, int nreg);
+static void emit_lsls(t_bytes *out, int reg, int n);
+static void emit_lsrs(t_bytes *out, int reg, int n);
+static void emit_asrs(t_bytes *out, int reg, int n);
+static void emit_rors(t_bytes *out, int reg, int n);
+
+static void emit_andimm(t_bytes *out, int rs, int imm, int rt);
+static void emit_andsimm(t_bytes *out, int rs, int imm, int rt);
+static void emit_orimm(t_bytes *out, int rs, int imm, int rt);
+static void emit_cmpimm(t_bytes *out, int rs, int imm);
+static void emit_testimm(t_bytes *out, int rs, int imm);
+static void emit_setc(t_bytes *out, int reg);
+static void emit_setnz(t_bytes *out, int reg);
+static void get_carry_flag(t_bytes *out, int reg);
+static void set_carry_flag(t_bytes *out);
+static void clear_carry_flag(t_bytes *out);
+
+//---------------------------------------------------------------------------
+// Immediates
+//---------------------------------------------------------------------------
+
+// Returns true when `imm` can be encoded as the immediate of a logical
+// instruction for a register of `regsize` bits, with `encoded` set to N:immr:imms.
+// Still needed: it decides *which* form emit_movimm and emit_andsimm pick, and
+// that choice has to stay identical to keep the generated blocks identical.
 static uint32_t is_mask(uint64_t value) {
-  return value && ((value + 1) & value) == 0;
+	return value && ((value + 1) & value) == 0;
 }
 
-// This function returns true if the argument contains a
-// non-empty sequence of ones with the remainder zero.
 static uint32_t is_shifted_mask(uint64_t Value) {
-  return Value && is_mask((Value - 1) | Value);
+	return Value && is_mask((Value - 1) | Value);
 }
 
 uint32_t count_leading_zeros(uint64_t value)
 {
 #ifdef _MSC_VER
-  uint32_t leading_zero_low = 0;
-  uint32_t leading_zero_high = 0;
-  if(!_BitScanReverse(&leading_zero_low, (uint32_t)value))
-    leading_zero_low = 32;
-  else
-    leading_zero_low = 31 - leading_zero_low;
+	// _BitScanReverse takes `unsigned long*`, which is 32-bit on every MSVC
+	// target but a distinct type from uint32_t. Passing a uint32_t* here is
+	// rejected with C2664 whenever this file is built by MSVC (Windows on ARM);
+	// Apple and Android take the __builtin_clzll path and never noticed.
+	unsigned long leading_zero_low = 0;
+	unsigned long leading_zero_high = 0;
+	if(!_BitScanReverse(&leading_zero_low, (uint32_t)value))
+		leading_zero_low = 32;
+	else
+		leading_zero_low = 31 - leading_zero_low;
 
-  if(!_BitScanReverse(&leading_zero_high, (uint32_t)(value>>32)))
-    leading_zero_high = 32;
-  else
-    leading_zero_high = 31 - leading_zero_high;
+	if(!_BitScanReverse(&leading_zero_high, (uint32_t)(value>>32)))
+		leading_zero_high = 32;
+	else
+		leading_zero_high = 31 - leading_zero_high;
 
-  if(leading_zero_high == 32)
-    return leading_zero_low + leading_zero_high;
-  else
-    return leading_zero_high;
+	if(leading_zero_high == 32)
+		return (uint32_t)(leading_zero_low + leading_zero_high);
+	else
+		return (uint32_t)leading_zero_high;
 #else /* ARM64 */
-  return __builtin_clzll(value);
+	return __builtin_clzll(value);
 #endif
 }
-
-static void emit_cmp(t_bytes *out, int rs,int rt);
 
 uint32_t count_trailing_zeros(uint64_t value)
 {
 #ifdef _MSC_VER
-  uint32_t trailing_zero_low = 0;
-  uint32_t trailing_zero_high = 0;
-  if(!_BitScanForward(&trailing_zero_low, (uint32_t)value))
-    trailing_zero_low = 32;
+	unsigned long trailing_zero_low = 0;
+	unsigned long trailing_zero_high = 0;
+	if(!_BitScanForward(&trailing_zero_low, (uint32_t)value))
+		trailing_zero_low = 32;
 
-  if(!_BitScanForward(&trailing_zero_high, (uint32_t)(value>>32)))
-    trailing_zero_high = 32;
+	if(!_BitScanForward(&trailing_zero_high, (uint32_t)(value>>32)))
+		trailing_zero_high = 32;
 
-  if(trailing_zero_low == 32)
-    return trailing_zero_low + trailing_zero_high;
-  else
-    return trailing_zero_low;
+	if(trailing_zero_low == 32)
+		return (uint32_t)(trailing_zero_low + trailing_zero_high);
+	else
+		return (uint32_t)trailing_zero_low;
 #else /* ARM64 */
-  return __builtin_ctzll(value);
+	return __builtin_ctzll(value);
 #endif
 }
 
-// Determine if an immediate value can be encoded
-// as the immediate operand of a logical instruction for the given register
-// size. If so, return 1 with "encoding" set to the encoded value in
-// the form N:immr:imms.
 static uint32_t genimm2(uint64_t imm, uint32_t regsize, uint32_t * encoded) {
-  // First, determine the element size.
-  uint32_t size = regsize;
-  do {
-    size /= 2;
-    uint64_t mask = (1ULL << size) - 1;
+	// First, determine the element size.
+	uint32_t size = regsize;
+	do {
+		size /= 2;
+		uint64_t mask = (1ULL << size) - 1;
 
-    if ((imm & mask) != ((imm >> size) & mask)) {
-      size *= 2;
-      break;
-    }
-  } while (size > 2);
+		if ((imm & mask) != ((imm >> size) & mask)) {
+			size *= 2;
+			break;
+		}
+	} while (size > 2);
 
-  // Second, determine the rotation to make the element be: 0^m 1^n.
-  uint32_t trailing_one, trailing_zero;
-  uint64_t mask = ((uint64_t)-1LL) >> (64 - size);
-  imm &= mask;
+	// Second, determine the rotation to make the element be: 0^m 1^n.
+	uint32_t trailing_one, trailing_zero;
+	uint64_t mask = ((uint64_t)-1LL) >> (64 - size);
+	imm &= mask;
 
-  if (is_shifted_mask(imm)) {
-    trailing_zero = count_trailing_zeros(imm);
-    assert(trailing_zero < 64);
-    trailing_one = count_trailing_zeros(~(imm >> trailing_zero));
-  } else {
-    imm |= ~mask;
-    if (!is_shifted_mask(~imm))
-      return 0;
-  
-    uint32_t leading_one = count_leading_zeros(~imm);
-    trailing_zero = 64 - leading_one;
-    trailing_one = leading_one + count_trailing_zeros(~imm) - (64 - size);
-  }
+	if (is_shifted_mask(imm)) {
+		trailing_zero = count_trailing_zeros(imm);
+		assert(trailing_zero < 64);
+		trailing_one = count_trailing_zeros(~(imm >> trailing_zero));
+	} else {
+		imm |= ~mask;
+		if (!is_shifted_mask(~imm))
+			return 0;
 
-  // Encode in immr the number of RORs it would take to get *from* 0^m 1^n
-  // to our target value, where trailing_zero is the number of RORs to go the opposite
-  // direction.
-  assert(size > trailing_zero);
-  uint32_t immr = (size - trailing_zero) & (size - 1);
+		uint32_t leading_one = count_leading_zeros(~imm);
+		trailing_zero = 64 - leading_one;
+		trailing_one = leading_one + count_trailing_zeros(~imm) - (64 - size);
+	}
 
-  // If size has a 1 in the n'th bit, create a value that has zeroes in
-  // bits [0, n] and ones above that.
-  uint64_t Nimms = ~(size-1) << 1;
+	// Encode in immr the number of RORs it would take to get *from* 0^m 1^n
+	// to our target value, where trailing_zero is the number of RORs to go the opposite
+	// direction.
+	assert(size > trailing_zero);
+	uint32_t immr = (size - trailing_zero) & (size - 1);
 
-  // Or the trailing_one value into the low bits, which must be below the Nth bit
-  // bit mentioned above.
-  Nimms |= (trailing_one-1);
+	// If size has a 1 in the n'th bit, create a value that has zeroes in
+	// bits [0, n] and ones above that.
+	uint64_t Nimms = ~(size-1) << 1;
 
-  // Extract the seventh bit and toggle it to create the N field.
-  uint32_t N = ((Nimms >> 6) & 1) ^ 1;
+	// Or the trailing_one value into the low bits, which must be below the Nth bit
+	// bit mentioned above.
+	Nimms |= (trailing_one-1);
 
-  *encoded = (N << 12) | (immr << 6) | (Nimms & 0x3f);
-  return 1;
+	// Extract the seventh bit and toggle it to create the N field.
+	uint32_t N = ((Nimms >> 6) & 1) ^ 1;
+
+	*encoded = (N << 12) | (immr << 6) | (Nimms & 0x3f);
+	return 1;
 }
 
-static void emit_branch_label(t_bytes *out, uint64_t id, int cond);
-static void emit_test(t_bytes *out, int rs, int rt);
-static void emit_cmpimm(t_bytes *out, int reg, int val);
-static void set_carry_flag(t_bytes *out);
-static void clear_carry_flag(t_bytes *out);
-static void emit_andimm(t_bytes *out,int rs,int imm,int rt);
-static void emit_label(t_bytes *bytes, uint64_t id);
-static void get_carry_flag(t_bytes *out, int reg);
+//---------------------------------------------------------------------------
+// Register moves and shifts
+//---------------------------------------------------------------------------
 
-static void emit_lsls_reg(t_bytes *out, int reg, int nreg);
-static void emit_lsrs_reg(t_bytes *out, int reg, int nreg);
-static void emit_asrs_reg(t_bytes *out, int reg, int nreg);
-static void emit_rors_reg(t_bytes *out, int reg, int nreg);
-static void emit_rrxs_reg(t_bytes *out, int reg, int nreg);
-static void emit_rrx_reg(t_bytes *out, int reg, int nreg);
-static void emit_ror_reg(t_bytes *out, int reg, int nreg);
+static void emit_movz(t_bytes *out, u_int imm, u_int rt) {
+	// The old encoder OR'd the whole value into the instruction word, so anything
+	// wider than 16 bits spilled into the shift field. Callers rely on it:
+	// emit_andsimm passes a 17-bit value and expects movz ..., lsl #16.
+	ASMJIT_ASSUME_OK(out->movz(gw(rt), asmjit::Imm(imm & 0xffff), asmjit::Imm(((imm >> 16) & 3) * 16)));
+}
 
-static void emit_andimm(t_bytes *out,int rs,int imm,int rt);
+static void emit_movz_lsl16(t_bytes *out, u_int imm, u_int rt) {
+	ASMJIT_ASSUME_OK(out->movz(gw(rt), asmjit::Imm(imm), asmjit::Imm(16)));
+}
 
-static void emit_lsr_reg(t_bytes *out, int reg, int nreg);
-static void emit_testimm(t_bytes *out, int rs,int imm);
+static void emit_movz64(t_bytes *out, u_int imm, u_int rt) {
+	ASMJIT_ASSUME_OK(out->movz(gx(rt), asmjit::Imm(imm)));
+}
 
-static void output_w32_FROM_PC(t_bytes *bytes, unsigned int word);
-static void emit_movimm(t_bytes *out, uintptr_t imm,u_int rt);
-static void emit_movimm2pad(t_bytes *out, u_int imm,u_int rt);
-static void emit_addnop(t_bytes *out, u_int r);
+static void emit_movn(t_bytes *out, u_int imm, u_int rt) {
+	ASMJIT_ASSUME_OK(out->movn(gw(rt), asmjit::Imm(imm & 0xffff), asmjit::Imm(((imm >> 16) & 3) * 16)));
+}
 
-static void emit_setc(t_bytes *out, int reg);
-static void emit_or(t_bytes *out, u_int rs1,u_int rs2,u_int rt);
+static void emit_movn_lsl16(t_bytes *out, u_int imm, u_int rt) {
+	ASMJIT_ASSUME_OK(out->movn(gw(rt), asmjit::Imm(imm), asmjit::Imm(16)));
+}
 
-static void output_w32(t_bytes *bytes, unsigned int word);
+static void emit_movk(t_bytes *out, u_int imm, u_int rt) {
+	ASMJIT_ASSUME_OK(out->movk(gw(rt), asmjit::Imm(imm & 0xffff), asmjit::Imm(((imm >> 16) & 3) * 16)));
+}
 
-static void output_w32_full(t_bytes *bytes, unsigned int word, int type, int label_id, int cond);
+static void emit_movk_lsl16(t_bytes *out, u_int imm, u_int rt) {
+	ASMJIT_ASSUME_OK(out->movk(gw(rt), asmjit::Imm(imm), asmjit::Imm(16)));
+}
 
-static void emit_lsr_reg_quick(t_bytes *out, int reg, int nreg);
+static void emit_movk_lslnum(t_bytes *out, u_int imm, u_int rt, int lsl) {
+	ASMJIT_ASSUME_OK(out->movk(gw(rt), asmjit::Imm(imm), asmjit::Imm(lsl)));
+}
 
-static void emit_mul(t_bytes *out, u_int rs1,u_int rs2);
+static void emit_movk_lslnum64(t_bytes *out, u_int imm, u_int rt, int lsl) {
+	ASMJIT_ASSUME_OK(out->movk(gx(rt), asmjit::Imm(imm), asmjit::Imm(lsl)));
+}
 
+static void emit_zeroreg(t_bytes *out, int rt) {
+	ASMJIT_ASSUME_OK(out->movz(gw(rt), asmjit::Imm(0)));
+}
 
-static void emit_setnz(t_bytes *out, int reg);
-static void emit_setz(t_bytes *out, int reg);
-static void emit_movimm(t_bytes *out, uintptr_t imm,u_int rt);
-static void emit_mov(t_bytes *out, int rs,int rt);
-static void emit_jmpreg(t_bytes *out, u_int r);
+// Builds a 64-bit address in `rt`. Deliberately keeps the movz + movk chain the
+// hand-written version produced instead of using `mov(reg, imm)`, whose form
+// selection differs (it would happily emit a single movn/movz).
+static void emit_ptr(t_bytes *out, uintptr_t ptr, u_int rt) {
+	emit_movz64(out, ptr&0xffff,rt);
+	if ((ptr>>16)&0xffff) emit_movk_lslnum64(out, (ptr>>16)&0xffff,rt, 16);
+	if ((ptr>>32)&0xffff) emit_movk_lslnum64(out, (ptr>>32)&0xffff,rt, 32);
+	if ((ptr>>48)&0xffff) emit_movk_lslnum64(out, (ptr>>48)&0xffff,rt, 48);
+}
 
-static void emit_brk(t_bytes *out);
+// asmjit's validator rejects WZR as the first source of a logical instruction,
+// even though `orr wD, wzr, #imm` is the canonical way to materialise a bitmask
+// immediate (it is what `mov wD, #imm` assembles to). Emit that one word
+// directly; see documentation/asmjit-jit-migration-plan.md, known issues.
+static void emit_orr_imm_wzr(t_bytes *out, int rt, u_int armval) {
+	uint32_t word = 0x32000000u | (armval << 10) | (31u << 5) | (uint32_t)rt;
+	ASMJIT_ASSUME_OK(out->embed(&word, 4));
+}
+
+// Materialises a 32-bit value in `rt`. The branch order matters: it is what the
+// handlers have always produced, and a "better" choice would change the block.
+static void emit_movimm(t_bytes *out, uintptr_t imm, u_int rt) {
+	uint32_t armval=0;
+	if(imm<65536) {
+		emit_movz(out, imm,rt);
+	}else if((~imm)<65536) {
+		emit_movn(out, ~imm,rt);
+	}else if((imm&0xffff)==0) {
+		emit_movz_lsl16(out, (imm>>16)&0xffff,rt);
+	}else if(((~imm)&0xffff)==0) {
+		emit_movn_lsl16(out, (~imm>>16)&0xffff,rt);
+	}else if(genimm2((uint64_t)imm,32,&armval)) {
+		emit_orr_imm_wzr(out, rt, armval);
+	}else{
+		emit_movz_lsl16(out, (imm>>16)&0xffff,rt);
+		emit_movk(out, imm&0xffff,rt);
+	}
+}
+
+static void emit_mov(t_bytes *out, int rs, int rt) {
+	ASMJIT_ASSUME_OK(out->mov(gw(rt), gw(rs)));
+}
+
+static void emit_mov64(t_bytes *out, int rs, int rt) {
+	ASMJIT_ASSUME_OK(out->mov(gx(rt), gx(rs)));
+}
+
+static void emit_movs(t_bytes *out, int rs, int rt) {
+	// Historical quirk: the old instruction constant already carried Rn = wzr, so
+	// `rs` was OR'd into a field that was already full and never reached it. This
+	// has always been "mov w<rt>, w0", whatever `rs` was. No handler uses it
+	// today; kept byte-identical so the migration stays a no-op.
+	(void)rs;
+	uint32_t word = 0x2A0003E0u | (uint32_t)rt;
+	ASMJIT_ASSUME_OK(out->embed(&word, 4));
+	ASMJIT_ASSUME_OK(out->cmp(gw(rt), gw(rt)));
+}
 
 static void emit_lsl(t_bytes *out, int reg, int n) {
-		emit_movimm(out, n, SHIFT_REG);
-    output_w32(out, 0x1AC02000|SHIFT_REG<<16|reg<<5|reg);
+	emit_movimm(out, n, SHIFT_REG);
+	ASMJIT_ASSUME_OK(out->lsl(gw(reg), gw(reg), gw(SHIFT_REG)));
 }
 
 static void emit_lsr(t_bytes *out, int reg, int n) {
 	if (n < 32) {
-		output_w32(out, 0x53000000|n<<16|0x1f<<10|reg<<5|reg);
+		ASMJIT_ASSUME_OK(out->lsr(gw(reg), gw(reg), asmjit::Imm(n)));
 	}
 	else {
 		emit_movimm(out, n, SHIFT_REG);
-		output_w32(out, 0x1ac02400|SHIFT_REG<<16|reg<<5|reg);
+		ASMJIT_ASSUME_OK(out->lsr(gw(reg), gw(reg), gw(SHIFT_REG)));
 	}
 }
 
 static void emit_lsr64(t_bytes *out, int reg, int n) {
 	if (n < 32) {
-		output_w32(out, 0xD340FC00|n<<16|reg<<5|reg);
+		ASMJIT_ASSUME_OK(out->lsr(gx(reg), gx(reg), asmjit::Imm(n)));
 	}
 	else {
 		emit_movimm(out, n, SHIFT_REG);
-		output_w32(out, 0x9AC02400|SHIFT_REG<<16|reg<<5|reg);
+		ASMJIT_ASSUME_OK(out->lsr(gx(reg), gx(reg), gx(SHIFT_REG)));
 	}
 }
 
-static void emit_asr(t_bytes *out, int reg, int num)
-{
-  if (num < 32) {
-    output_w32(out, 0x13000000|num<<16|0x1f<<10|reg<<5|reg);
-  }
-  else {
-    emit_movimm(out, num, SHIFT_REG);
-	  output_w32(out, 0x1ac02800|SHIFT_REG<<16|reg<<5|reg);
-  }
+static void emit_asr(t_bytes *out, int reg, int num) {
+	if (num < 32) {
+		ASMJIT_ASSUME_OK(out->asr(gw(reg), gw(reg), asmjit::Imm(num)));
+	}
+	else {
+		emit_movimm(out, num, SHIFT_REG);
+		ASMJIT_ASSUME_OK(out->asr(gw(reg), gw(reg), gw(SHIFT_REG)));
+	}
 }
 
-static void emit_asr64(t_bytes *out, int reg, int num)
-{
-  if (num < 32) {
-	output_w32(out, 0x9340FC00|num<<16|reg<<5|reg);
-  }
-  else {
-	emit_movimm(out, num, SHIFT_REG);
-	  output_w32(out, 0x9AC02800|SHIFT_REG<<16|reg<<5|reg);
-  }
+static void emit_asr64(t_bytes *out, int reg, int num) {
+	if (num < 32) {
+		ASMJIT_ASSUME_OK(out->asr(gx(reg), gx(reg), asmjit::Imm(num)));
+	}
+	else {
+		emit_movimm(out, num, SHIFT_REG);
+		ASMJIT_ASSUME_OK(out->asr(gx(reg), gx(reg), gx(SHIFT_REG)));
+	}
 }
-
-static void emit_asr_reg(t_bytes *out, int reg, int nreg) {
-
-    uint64_t done=genlabel();
-	uint64_t setb=genlabel();
-	emit_andimm(out, nreg, 0xff, nreg);
-
-    emit_cmpimm(out, nreg, 0);
-	emit_branch_label(out, done, 0); // eq 0
-	emit_cmpimm(out, nreg, 32);
-	emit_branch_label(out, setb, 10); // greater than or equal to 32
-    
-
-    output_w32(out, 0x1ac02800|nreg<<16|reg<<5|reg); // do shift
-	
-	emit_branch_label(out, done, 0xE);
-	
-	emit_label(out, setb);
-	emit_movimm(out, 1<<31, X22_REG);
-	emit_test(out, reg, X22_REG); // test BIT31(reg 22) of original reg 20
-	emit_setnz(out, reg);
-	emit_movimm(out, 0xFFFFFFFF, X22_REG);
-	emit_mul(out, reg, X22_REG);
-
-    emit_label(out, done);
-}
-
 
 static void emit_ror(t_bytes *out, int reg, int n) {
 	if (n < 32) {
-		output_w32(out, 0x13800000|reg<<16|n<<10|reg<<5|reg);
+		ASMJIT_ASSUME_OK(out->ror(gw(reg), gw(reg), asmjit::Imm(n)));
 	}
 	else {
 		emit_movimm(out, n, SHIFT_REG);
 		emit_ror_reg(out, reg, SHIFT_REG);
 	}
 }
-static void emit_rrx(t_bytes *out, int reg, int n) {
-	emit_setc(out, 13);
-	output_w32(out, 0x530101AD); // lsl w13, w13, #31
-	emit_andimm(out, reg, 1, X5_REG);
-
-	emit_movimm(out, n, SHIFT_REG);
-	emit_ror_reg(out, reg, SHIFT_REG);
-	emit_andimm(out, reg, 0x7fffffff, reg);
-	emit_or(out, reg, 13, reg);
-}
-static void emit_lsl_reg(t_bytes *out, int reg, int nreg) {
-    uint64_t setb=genlabel();
-    uint64_t done=genlabel();
-	
-	emit_andimm(out, nreg, 0xff, nreg);
-
-    emit_cmpimm(out, nreg, 32);
-    emit_branch_label(out, setb, 10); // greater than or equal to 32
-
-    output_w32(out, 0x1ac02000|nreg<<16|reg<<5|reg); // do shift
-    emit_branch_label(out, done, 0xE);
-    
-    emit_label(out, setb);
-    emit_movimm(out, 0, reg);
-
-    emit_label(out, done);
-}
 
 static void emit_lsl_reg_quick(t_bytes *out, int reg, int nreg) {
-  output_w32(out, 0x1ac02000|nreg<<16|reg<<5|reg);
+	ASMJIT_ASSUME_OK(out->lsl(gw(reg), gw(reg), gw(nreg)));
 }
 
 static void emit_lsr_reg_quick(t_bytes *out, int reg, int nreg) {
-  output_w32(out, 0x1ac02400|nreg<<16|reg<<5|reg);
+	ASMJIT_ASSUME_OK(out->lsr(gw(reg), gw(reg), gw(nreg)));
 }
 
-static void emit_lsr_reg(t_bytes *out, int reg, int nreg)
-{
-    uint64_t setb=genlabel();
-    uint64_t done=genlabel();
-	
+static void emit_lsl_reg(t_bytes *out, int reg, int nreg) {
+	uint64_t setb=genlabel();
+	uint64_t done=genlabel();
+
 	emit_andimm(out, nreg, 0xff, nreg);
 
-    emit_cmpimm(out, nreg, 32);
-    emit_branch_label(out, setb, 10); // greater than or equal to 32
+	emit_cmpimm(out, nreg, 32);
+	emit_branch_label(out, setb, 10); // greater than or equal to 32
 
-    output_w32(out, 0x1ac02400|nreg<<16|reg<<5|reg); // do shift
-    emit_branch_label(out, done, 0xE);
-    
-    emit_label(out, setb);
-    emit_movimm(out, 0, reg);
+	ASMJIT_ASSUME_OK(out->lsl(gw(reg), gw(reg), gw(nreg)));
+	emit_branch_label(out, done, 0xE);
 
-    emit_label(out, done);
+	emit_label(out, setb);
+	emit_movimm(out, 0, reg);
+
+	emit_label(out, done);
 }
 
-static void emit_andsimm(t_bytes *out,int rs,int imm,int rt);
+static void emit_lsr_reg(t_bytes *out, int reg, int nreg) {
+	uint64_t setb=genlabel();
+	uint64_t done=genlabel();
+
+	emit_andimm(out, nreg, 0xff, nreg);
+
+	emit_cmpimm(out, nreg, 32);
+	emit_branch_label(out, setb, 10); // greater than or equal to 32
+
+	ASMJIT_ASSUME_OK(out->lsr(gw(reg), gw(reg), gw(nreg)));
+	emit_branch_label(out, done, 0xE);
+
+	emit_label(out, setb);
+	emit_movimm(out, 0, reg);
+
+	emit_label(out, done);
+}
+
+static void emit_asr_reg(t_bytes *out, int reg, int nreg) {
+	uint64_t done=genlabel();
+	uint64_t setb=genlabel();
+	emit_andimm(out, nreg, 0xff, nreg);
+
+	emit_cmpimm(out, nreg, 0);
+	emit_branch_label(out, done, 0); // eq 0
+	emit_cmpimm(out, nreg, 32);
+	emit_branch_label(out, setb, 10); // greater than or equal to 32
+
+	ASMJIT_ASSUME_OK(out->asr(gw(reg), gw(reg), gw(nreg)));
+
+	emit_branch_label(out, done, 0xE);
+
+	emit_label(out, setb);
+	emit_movimm(out, 1<<31, X22_REG);
+	emit_test(out, reg, X22_REG); // test BIT31(reg 22) of original reg 20
+	emit_setnz(out, reg);
+	emit_movimm(out, 0xFFFFFFFF, X22_REG);
+	ASMJIT_ASSUME_OK(out->mul(gw(reg), gw(reg), gw(X22_REG)));
+
+	emit_label(out, done);
+}
+
 static void emit_ror_reg(t_bytes *out, int reg, int nreg) {
+	uint64_t done=genlabel();
 
-    uint64_t done=genlabel();
-	
 	emit_andimm(out, nreg, 0xff, nreg);
 
-    emit_cmpimm(out, nreg, 0);
-    emit_branch_label(out, done, 0); // 0
-    emit_andsimm(out, nreg, 0x1F, nreg);
-    emit_branch_label(out, done, 0); // 0
+	emit_cmpimm(out, nreg, 0);
+	emit_branch_label(out, done, 0); // 0
+	emit_andsimm(out, nreg, 0x1F, nreg);
+	emit_branch_label(out, done, 0); // 0
 
-    output_w32(out, 0x1AC02C00|reg|reg<<5|nreg<<16); // do shift
+	ASMJIT_ASSUME_OK(out->ror(gw(reg), gw(reg), gw(nreg)));
 
-    emit_label(out, done);
+	emit_label(out, done);
 }
 
-static void emit_lsls(t_bytes *out, int reg, int n) {
-		emit_movimm(out, n, SHIFT_REG);
-    emit_lsls_reg(out, reg, SHIFT_REG);
-}
-static void emit_lsrs(t_bytes *out, int reg, int n) {
-		emit_movimm(out, n, SHIFT_REG);
-    emit_lsrs_reg(out, reg, SHIFT_REG);
-}
-static void emit_asrs(t_bytes *out, int reg, int n) {
-		emit_movimm(out, n, SHIFT_REG);
-    emit_asrs_reg(out, reg, SHIFT_REG);
-}
-static void emit_rors(t_bytes *out, int reg, int n) {
-		emit_movimm(out, n, SHIFT_REG);
-    emit_rors_reg(out, reg, SHIFT_REG);
-}
-static void emit_rrxs(t_bytes *out, int reg, int n) {
-	
+static void emit_rrx(t_bytes *out, int reg, int n) {
 	emit_setc(out, 13);
-	output_w32(out, 0x530101AD); // lsl w13, w13, #31
+	ASMJIT_ASSUME_OK(out->lsl(gw(13), gw(13), asmjit::Imm(31))); // lsl w13, w13, #31
 	emit_andimm(out, reg, 1, X5_REG);
 
 	emit_movimm(out, n, SHIFT_REG);
@@ -453,894 +557,815 @@ static void emit_rrxs(t_bytes *out, int reg, int n) {
 	emit_andimm(out, reg, 0x7fffffff, reg);
 	emit_or(out, reg, 13, reg);
 }
+
+static void emit_lsls(t_bytes *out, int reg, int n) {
+	emit_movimm(out, n, SHIFT_REG);
+	emit_lsls_reg(out, reg, SHIFT_REG);
+}
+
+static void emit_lsrs(t_bytes *out, int reg, int n) {
+	emit_movimm(out, n, SHIFT_REG);
+	emit_lsrs_reg(out, reg, SHIFT_REG);
+}
+
+static void emit_asrs(t_bytes *out, int reg, int n) {
+	emit_movimm(out, n, SHIFT_REG);
+	emit_asrs_reg(out, reg, SHIFT_REG);
+}
+
+static void emit_rors(t_bytes *out, int reg, int n) {
+	emit_movimm(out, n, SHIFT_REG);
+	emit_rors_reg(out, reg, SHIFT_REG);
+}
+
+static void emit_rrxs(t_bytes *out, int reg, int n) {
+	emit_setc(out, 13);
+	ASMJIT_ASSUME_OK(out->lsl(gw(13), gw(13), asmjit::Imm(31)));
+	emit_andimm(out, reg, 1, X5_REG);
+
+	emit_movimm(out, n, SHIFT_REG);
+	emit_ror_reg(out, reg, SHIFT_REG);
+	emit_andimm(out, reg, 0x7fffffff, reg);
+	emit_or(out, reg, 13, reg);
+}
+
+//---------------------------------------------------------------------------
+// Shifting with flags
+//
+// These keep the hand-written version's structure exactly, including the
+// register choices (x18..x22 are used as scratch, x20 holds the pre-shift
+// value). Reworking them belongs to the register-cache step, where the changes
+// can be measured; here the only goal is "same instructions".
+//---------------------------------------------------------------------------
+
 static void emit_lsls_reg(t_bytes *out, int reg, int nreg) {
+	uint64_t nonzero=genlabel();
+	uint64_t done=genlabel();
+	uint64_t eq32=genlabel();
+	uint64_t gt32=genlabel();
 
-
-    uint64_t nonzero=genlabel();
-    uint64_t done=genlabel();
-    uint64_t eq32=genlabel();
-    uint64_t gt32=genlabel();
-	
 	emit_andimm(out, nreg, 0xff, nreg);
 
-    emit_cmpimm(out, nreg, 0);
-    emit_branch_label(out, nonzero, 0x1);
+	emit_cmpimm(out, nreg, 0);
+	emit_branch_label(out, nonzero, 0x1);
 
-    /* eq 0 */
+	/* eq 0 */
 
 	get_carry_flag(out, 5);
-    emit_branch_label(out, done, 0xE);
+	emit_branch_label(out, done, 0xE);
 
-    /* end eq 0 */
+	/* end eq 0 */
 
-    emit_label(out, nonzero);
-	
+	emit_label(out, nonzero);
+
 	emit_mov(out, nreg, X19_REG);
-    emit_mov(out, reg, X20_REG);
-
-   /* non zero */
-    emit_cmpimm(out, nreg, 32);
-    emit_branch_label(out, eq32, 0x0); // nreg == 32
-    emit_branch_label(out, gt32, 12); // gt 32
-
-    // get last shifted bit
-    emit_movimm(out, 32, X18_REG);
-    output_w32(out, 0x4B000000 | (X19_REG << 16) | (X18_REG << 5) | X18_REG);
-
-    // perform shifft
-    output_w32(out, 0x1AC02000|nreg<<16|reg<<5|reg);
-
-    //emit_test(out, 20, X18_REG);
-    emit_movimm(out, 1, X22_REG);
-    emit_lsl_reg_quick(out, X22_REG, X18_REG);
-    emit_test(out, X20_REG, X22_REG);
-
-    emit_setnz(out, X5_REG);
-    emit_branch_label(out, done, 0xE);
-
-    /* end non zero */
-
-    emit_label(out, eq32);
-
-    /* equal 32 */
-
-    emit_movimm(out, 1, X22_REG);
-    emit_test(out, X20_REG, X22_REG); // test BIT0(reg 22) of original reg 20
-
-    emit_setnz(out, X5_REG);
-	emit_movimm(out, 0, reg);
-    emit_branch_label(out, done, 0xE);
-
-    /* end equal 32 */
-
-    emit_label(out, gt32);
-
-    /* gt 32 */
-
-    emit_movimm(out, 0, reg);
-    emit_movimm(out, 0, X5_REG);
-
-     /* end gt 32 */
-
-    emit_label(out, done);
-    emit_cmpimm(out, reg, 0);
-}
-static void emit_lsrs_reg(t_bytes *out, int reg, int nreg) {
-
-    uint64_t nonzero=genlabel();
-    uint64_t done=genlabel();
-    uint64_t eq32=genlabel();
-    uint64_t gt32=genlabel();
-	
-	emit_andimm(out, nreg, 0xff, nreg);
-
-    emit_cmpimm(out, nreg, 0);
-    emit_branch_label(out, nonzero, 0x1);
-
-    /* eq 0 */
-
-    get_carry_flag(out, X5_REG);
-    emit_branch_label(out, done, 0xE);
-
-    /* end eq 0 */
-
-    emit_label(out, nonzero);
-	
-	//emit_andimm(out, nreg, 0xff, nreg);
-	emit_mov(out, nreg, X19_REG);
-    emit_mov(out, reg, X20_REG);
-
-   /* non zero */
-    emit_cmpimm(out, nreg, 32);
-    emit_branch_label(out, eq32, 0x0); // nreg == 32
-    emit_branch_label(out, gt32, 12); // gt 32
-
-	// get last shifted bit
-    emit_movimm(out, 1, X18_REG);
-    output_w32(out, 0x4B000000 | (X18_REG << 16) | (X19_REG << 5) | X18_REG);
-
-    // perform shifft
-    output_w32(out, 0x1AC02400|nreg<<16|reg<<5|reg);
-
-    emit_movimm(out, 1, X22_REG);
-    emit_lsl_reg_quick(out, X22_REG, X18_REG);
-    emit_test(out, X20_REG, X22_REG);
-
-    emit_setnz(out, X5_REG);
-    emit_branch_label(out, done, 0xE);
-
-    /* end non zero */
-
-    emit_label(out, eq32);
-
-    /* equal 32 */
-
-    emit_movimm(out, 1<<31, X22_REG);
-    emit_test(out, X20_REG, X22_REG); // test BIT31(reg 22) of original reg 20
-
-    emit_setnz(out, X5_REG);
-	emit_movimm(out, 0, reg);
-	
-    emit_branch_label(out, done, 0xE);
-
-    /* end equal 32 */
-
-    emit_label(out, gt32);
-
-    /* gt 32 */
-
-    emit_movimm(out, 0, reg);
-	emit_movimm(out, 0, X5_REG);
-    // fall into clrb
-
-     /* end gt 32 */
-
-    emit_label(out, done);
-
-    emit_cmpimm(out, reg, 0);
-}
-static void emit_asrs_reg(t_bytes *out, int reg, int nreg) {
-
-    uint64_t nonzero=genlabel();
-    uint64_t done=genlabel();
-    uint64_t gteq32=genlabel();
-
-	emit_andimm(out, nreg, 0xff, nreg);
-	
-	emit_cmpimm(out, nreg, 0);
-    emit_branch_label(out, nonzero, 0x1);
-
-    /* eq 0 */
-
-    get_carry_flag(out, X5_REG);
-    emit_branch_label(out, done, 0xE);
-
-    /* end eq 0 */
-
-    emit_label(out, nonzero);
-	
-	emit_mov(out, nreg, X19_REG);
-    emit_mov(out, reg, X20_REG);
+	emit_mov(out, reg, X20_REG);
 
 	/* non zero */
-    emit_cmpimm(out, nreg, 32);
-    emit_branch_label(out, gteq32, 10); // gteq 32
+	emit_cmpimm(out, nreg, 32);
+	emit_branch_label(out, eq32, 0x0); // nreg == 32
+	emit_branch_label(out, gt32, 12); // gt 32
 
 	// get last shifted bit
-    emit_movimm(out, 1, X18_REG);
-    output_w32(out, 0x4B000000 | (X18_REG << 16) | (X19_REG << 5) | X18_REG);
+	emit_movimm(out, 32, X18_REG);
+	ASMJIT_ASSUME_OK(out->sub(gw(X18_REG), gw(X18_REG), gw(X19_REG)));
 
-    // perform shifft
-    output_w32(out, 0x1AC02800|nreg<<16|reg<<5|reg);
+	// perform shifft
+	ASMJIT_ASSUME_OK(out->lsl(gw(reg), gw(reg), gw(nreg)));
 
-    emit_movimm(out, 1, X22_REG);
-    emit_lsl_reg_quick(out, X22_REG, X18_REG);
-    emit_test(out, X20_REG, X22_REG);
-
-    emit_setnz(out, X5_REG);
-    emit_branch_label(out, done, 0xE);
-
-    /* end non zero */
-
-    emit_label(out, gteq32);
-
-    /* equal 32 */
-
-    // perform shifft
-    output_w32(out, 0x1AC02800|nreg<<16|reg<<5|reg);
-
-    emit_movimm(out, 1<<31, X22_REG);
-    emit_test(out, X20_REG, X22_REG); // test BIT31(reg 22) of original reg 20
-
-    emit_setnz(out, X5_REG);
-	
-	emit_mov(out, X5_REG, reg);
-	emit_movimm(out, 0xFFFFFFFF, X22_REG);
-	emit_mul(out, reg, X22_REG);
-
-    emit_label(out, done);
-
-    emit_cmpimm(out, reg, 0);
-}
-static void emit_rors_reg(t_bytes *out, int reg, int nreg) {
-
-    uint64_t nonzero=genlabel();
-    uint64_t done=genlabel();
-    uint64_t and0=genlabel();
-
-    emit_mov(out, reg, X20_REG);
-	
-	emit_andimm(out, nreg, 0xff, nreg);
-
-    emit_cmpimm(out, nreg, 0);
-    emit_branch_label(out, nonzero, 0x1);
-
-	get_carry_flag(out, 5);
-    emit_branch_label(out, done, 0xE);
-
-    /* eq 0 */
-
-    /* end eq 0 */
-
-    emit_label(out, nonzero);
-
-   /* non zero */
-    emit_andimm(out, nreg, 0x1F, nreg);
-	emit_mov(out, nreg, X19_REG);
-    emit_cmpimm(out, X19_REG, 0);
-    emit_branch_label(out, and0, 0x0); // eq 0
-
-	// get last shifted bit
-    emit_movimm(out, 1, X18_REG);
-    //output_w32(out, 0x4B120272); // sub w18, w19, w18
-    output_w32(out, 0x4B000000 | (X18_REG << 16) | (X19_REG << 5) | X18_REG);
-
-    // perform shifft
-    output_w32(out, 0x1AC02C00|nreg<<16|reg<<5|reg);
-
-    //emit_test(out, 20, X18_REG);
-    emit_movimm(out, 1, X22_REG);
-    emit_lsl_reg_quick(out, X22_REG, X18_REG);
-    emit_test(out, X20_REG, X22_REG);
-
-    emit_setnz(out, X5_REG);
-    emit_branch_label(out, done, 0xE);
-
-    /* end non zero */
-
-    emit_label(out, and0);
-
-    /* equal 32 */
-
-    // perform shifft
-    emit_mov(out, X20_REG, reg);
-
-    emit_movimm(out, 1<<31, X22_REG);
-    emit_test(out, X20_REG, X22_REG); // test BIT31(reg 22) of original reg 20
+	emit_movimm(out, 1, X22_REG);
+	emit_lsl_reg_quick(out, X22_REG, X18_REG);
+	emit_test(out, X20_REG, X22_REG);
 
 	emit_setnz(out, X5_REG);
-    emit_branch_label(out, done, 0xE);
+	emit_branch_label(out, done, 0xE);
 
-    emit_label(out, done);
-    emit_cmpimm(out, reg, 0);
+	/* end non zero */
+
+	emit_label(out, eq32);
+
+	/* equal 32 */
+
+	emit_movimm(out, 1, X22_REG);
+	emit_test(out, X20_REG, X22_REG); // test BIT0(reg 22) of original reg 20
+
+	emit_setnz(out, X5_REG);
+	emit_movimm(out, 0, reg);
+	emit_branch_label(out, done, 0xE);
+
+	/* end equal 32 */
+
+	emit_label(out, gt32);
+
+	/* gt 32 */
+
+	emit_movimm(out, 0, reg);
+	emit_movimm(out, 0, X5_REG);
+
+	/* end gt 32 */
+
+	emit_label(out, done);
+	emit_cmpimm(out, reg, 0);
 }
+
+static void emit_lsrs_reg(t_bytes *out, int reg, int nreg) {
+	uint64_t nonzero=genlabel();
+	uint64_t done=genlabel();
+	uint64_t eq32=genlabel();
+	uint64_t gt32=genlabel();
+
+	emit_andimm(out, nreg, 0xff, nreg);
+
+	emit_cmpimm(out, nreg, 0);
+	emit_branch_label(out, nonzero, 0x1);
+
+	/* eq 0 */
+
+	get_carry_flag(out, X5_REG);
+	emit_branch_label(out, done, 0xE);
+
+	/* end eq 0 */
+
+	emit_label(out, nonzero);
+
+	emit_mov(out, nreg, X19_REG);
+	emit_mov(out, reg, X20_REG);
+
+	/* non zero */
+	emit_cmpimm(out, nreg, 32);
+	emit_branch_label(out, eq32, 0x0); // nreg == 32
+	emit_branch_label(out, gt32, 12); // gt 32
+
+	// get last shifted bit
+	emit_movimm(out, 1, X18_REG);
+	ASMJIT_ASSUME_OK(out->sub(gw(X18_REG), gw(X19_REG), gw(X18_REG)));
+
+	// perform shifft
+	ASMJIT_ASSUME_OK(out->lsr(gw(reg), gw(reg), gw(nreg)));
+
+	emit_movimm(out, 1, X22_REG);
+	emit_lsl_reg_quick(out, X22_REG, X18_REG);
+	emit_test(out, X20_REG, X22_REG);
+
+	emit_setnz(out, X5_REG);
+	emit_branch_label(out, done, 0xE);
+
+	/* end non zero */
+
+	emit_label(out, eq32);
+
+	/* equal 32 */
+
+	emit_movimm(out, 1<<31, X22_REG);
+	emit_test(out, X20_REG, X22_REG); // test BIT31(reg 22) of original reg 20
+
+	emit_setnz(out, X5_REG);
+	emit_movimm(out, 0, reg);
+
+	emit_branch_label(out, done, 0xE);
+
+	/* end equal 32 */
+
+	emit_label(out, gt32);
+
+	/* gt 32 */
+
+	emit_movimm(out, 0, reg);
+	emit_movimm(out, 0, X5_REG);
+	// fall into clrb
+
+	/* end gt 32 */
+
+	emit_label(out, done);
+
+	emit_cmpimm(out, reg, 0);
+}
+
+static void emit_asrs_reg(t_bytes *out, int reg, int nreg) {
+	uint64_t nonzero=genlabel();
+	uint64_t done=genlabel();
+	uint64_t gteq32=genlabel();
+
+	emit_andimm(out, nreg, 0xff, nreg);
+
+	emit_cmpimm(out, nreg, 0);
+	emit_branch_label(out, nonzero, 0x1);
+
+	/* eq 0 */
+
+	get_carry_flag(out, X5_REG);
+	emit_branch_label(out, done, 0xE);
+
+	/* end eq 0 */
+
+	emit_label(out, nonzero);
+
+	emit_mov(out, nreg, X19_REG);
+	emit_mov(out, reg, X20_REG);
+
+	/* non zero */
+	emit_cmpimm(out, nreg, 32);
+	emit_branch_label(out, gteq32, 10); // gteq 32
+
+	// get last shifted bit
+	emit_movimm(out, 1, X18_REG);
+	ASMJIT_ASSUME_OK(out->sub(gw(X18_REG), gw(X19_REG), gw(X18_REG)));
+
+	// perform shifft
+	ASMJIT_ASSUME_OK(out->asr(gw(reg), gw(reg), gw(nreg)));
+
+	emit_movimm(out, 1, X22_REG);
+	emit_lsl_reg_quick(out, X22_REG, X18_REG);
+	emit_test(out, X20_REG, X22_REG);
+
+	emit_setnz(out, X5_REG);
+	emit_branch_label(out, done, 0xE);
+
+	/* end non zero */
+
+	emit_label(out, gteq32);
+
+	/* equal 32 */
+
+	// perform shifft
+	ASMJIT_ASSUME_OK(out->asr(gw(reg), gw(reg), gw(nreg)));
+
+	emit_movimm(out, 1<<31, X22_REG);
+	emit_test(out, X20_REG, X22_REG); // test BIT31(reg 22) of original reg 20
+
+	emit_setnz(out, X5_REG);
+
+	emit_mov(out, X5_REG, reg);
+	emit_movimm(out, 0xFFFFFFFF, X22_REG);
+	ASMJIT_ASSUME_OK(out->mul(gw(reg), gw(reg), gw(X22_REG)));
+
+	emit_label(out, done);
+
+	emit_cmpimm(out, reg, 0);
+}
+
+static void emit_rors_reg(t_bytes *out, int reg, int nreg) {
+	uint64_t nonzero=genlabel();
+	uint64_t done=genlabel();
+	uint64_t and0=genlabel();
+
+	emit_mov(out, reg, X20_REG);
+
+	emit_andimm(out, nreg, 0xff, nreg);
+
+	emit_cmpimm(out, nreg, 0);
+	emit_branch_label(out, nonzero, 0x1);
+
+	get_carry_flag(out, 5);
+	emit_branch_label(out, done, 0xE);
+
+	/* eq 0 */
+
+	/* end eq 0 */
+
+	emit_label(out, nonzero);
+
+	/* non zero */
+	emit_andimm(out, nreg, 0x1F, nreg);
+	emit_mov(out, nreg, X19_REG);
+	emit_cmpimm(out, X19_REG, 0);
+	emit_branch_label(out, and0, 0x0); // eq 0
+
+	// get last shifted bit
+	emit_movimm(out, 1, X18_REG);
+	ASMJIT_ASSUME_OK(out->sub(gw(X18_REG), gw(X19_REG), gw(X18_REG)));
+
+	// perform shifft
+	ASMJIT_ASSUME_OK(out->ror(gw(reg), gw(reg), gw(nreg)));
+
+	emit_movimm(out, 1, X22_REG);
+	emit_lsl_reg_quick(out, X22_REG, X18_REG);
+	emit_test(out, X20_REG, X22_REG);
+
+	emit_setnz(out, X5_REG);
+	emit_branch_label(out, done, 0xE);
+
+	/* end non zero */
+
+	emit_label(out, and0);
+
+	/* equal 32 */
+
+	// perform shifft
+	emit_mov(out, X20_REG, reg);
+
+	emit_movimm(out, 1<<31, X22_REG);
+	emit_test(out, X20_REG, X22_REG); // test BIT31(reg 22) of original reg 20
+
+	emit_setnz(out, X5_REG);
+	emit_branch_label(out, done, 0xE);
+
+	emit_label(out, done);
+	emit_cmpimm(out, reg, 0);
+}
+
 static void emit_rrxs_reg(t_bytes *out, int reg, int nreg) {
 	emit_rors_reg(out, reg, nreg);
 }
 
-static void emit_mov(t_bytes *out, int rs,int rt)
-{
-  output_w32(out, 0x2a000000|rs<<16|WZR<<5|rt);
+//---------------------------------------------------------------------------
+// Data processing
+//---------------------------------------------------------------------------
+
+static void emit_add(t_bytes *out, int rs1, int rs2, int rt) {
+	ASMJIT_ASSUME_OK(out->add(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_mov64(t_bytes *out, int rs,int rt)
-{
-  output_w32(out, 0xaa000000|rs<<16|WZR<<5|rt);
+static void emit_adds(t_bytes *out, int rs1, int rs2, int rt) {
+	ASMJIT_ASSUME_OK(out->adds(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_add(t_bytes *out, int rs1,int rs2,int rt)
-{
-  output_w32(out, 0x0b000000|rs2<<16|rs1<<5|rt);
+static void emit_add64(t_bytes *out, int rs1, int rs2, int rt) {
+	ASMJIT_ASSUME_OK(out->add(gx(rt), gx(rs1), gx(rs2)));
 }
 
-static void emit_adds(t_bytes *out, int rs1,int rs2,int rt)
-{
-  output_w32(out, 0x2b000000|rs2<<16|rs1<<5|rt);
+static void emit_adc(t_bytes *out, int rs1, int rs2, int rt) {
+	ASMJIT_ASSUME_OK(out->adc(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_add64(t_bytes *out, int rs1,int rs2,int rt)
-{
-  output_w32(out, 0x8b000000|rs2<<16|rs1<<5|rt);
+static void emit_adcs(t_bytes *out, int rs1, int rs2, int rt) {
+	ASMJIT_ASSUME_OK(out->adcs(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_adc(t_bytes *out, int rs1,int rs2,int rt)
-{
-  output_w32(out, 0x1a000000|rs2<<16|rs1<<5|rt);
+static void emit_sub(t_bytes *out, int rs1, int rs2, int rt) {
+	ASMJIT_ASSUME_OK(out->sub(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_adcs(t_bytes *out, int rs1,int rs2,int rt)
-{
-  output_w32(out, 0x3a000000|rs2<<16|rs1<<5|rt);
+static void emit_subs(t_bytes *out, int rs1, int rs2, int rt) {
+	ASMJIT_ASSUME_OK(out->subs(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_sub(t_bytes *out, int rs1,int rs2,int rt)
-{
-  output_w32(out, 0x4b000000|rs2<<16|rs1<<5|rt);
+static void emit_sbc(t_bytes *out, int rs1, int rs2, int rt) {
+	ASMJIT_ASSUME_OK(out->sbc(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_subs(t_bytes *out, int rs1,int rs2,int rt)
-{
-  output_w32(out, 0x6b000000|rs2<<16|rs1<<5|rt);
+static void emit_sbcs(t_bytes *out, int rs1, int rs2, int rt) {
+	ASMJIT_ASSUME_OK(out->sbcs(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_sbc(t_bytes *out, int rs1,int rs2,int rt)
-{
-  output_w32(out, 0x5a000000|rs2<<16|rs1<<5|rt);
+static void emit_neg(t_bytes *out, int rs, int rt) {
+	ASMJIT_ASSUME_OK(out->neg(gw(rt), gw(rs)));
 }
 
-static void emit_sbcs(t_bytes *out, int rs1,int rs2,int rt)
-{
-  output_w32(out, 0x7a000000|rs2<<16|rs1<<5|rt);
+static void emit_negs(t_bytes *out, int rs, int rt) {
+	ASMJIT_ASSUME_OK(out->negs(gw(rt), gw(rs)));
 }
 
-static void emit_neg(t_bytes *out, int rs, int rt)
-{
-  output_w32(out, 0x4b000000|rs<<16|WZR<<5|rt);
-}
-
-static void emit_negs(t_bytes *out, int rs, int rt)
-{
-  output_w32(out, 0x6b000000|rs<<16|WZR<<5|rt);
-}
-
-static void emit_mvns(t_bytes *out, int rs,int rt)
-{
-	output_w32(out, 0x2A2003E0|rs<<16|WZR<<5|rt);
+static void emit_mvns(t_bytes *out, int rs, int rt) {
+	ASMJIT_ASSUME_OK(out->mvn(gw(rt), gw(rs)));
 	emit_cmpimm(out, rt, 0);
 }
 
-static void emit_zeroreg(t_bytes *out, int rt)
-{
-  output_w32(out, 0x52800000|rt);
-}
-static void emit_movn(t_bytes *out, u_int imm,u_int rt)
-{
-  output_w32(out, 0x12800000|imm<<5|rt);
-}
-
-static void emit_movimms(t_bytes *out, u_int imm,u_int rt)
-{
+static void emit_movimms(t_bytes *out, u_int imm, u_int rt) {
 	emit_movimm(out, imm, rt);
-  emit_cmpimm(out, rt, 0);
+	emit_cmpimm(out, rt, 0);
 }
 
-static void emit_movz(t_bytes *out, u_int imm,u_int rt)
-{
-  output_w32(out, 0x52800000|imm<<5|rt);
-}
-static void emit_movn_lsl16(t_bytes *out, u_int imm,u_int rt)
-{
-  output_w32(out, 0x12a00000|imm<<5|rt);
-}
-static void emit_movz_lsl16(t_bytes *out, u_int imm,u_int rt)
-{
-  output_w32(out, 0x52a00000|imm<<5|rt);
-}
-static void emit_movk(t_bytes *out, u_int imm,u_int rt)
-{
-  output_w32(out, 0x72800000|imm<<5|rt);
-}
-static void emit_movk_lsl16(t_bytes *out, u_int imm,u_int rt)
-{
-  output_w32(out, 0x72a00000|imm<<5|rt);
-}
-
-static void emit_movs(t_bytes *out, int rs,int rt) {
-  output_w32(out, 0x2A0003E0|rs<<5|rt);
-  emit_cmp(out, rt, rt);
-}
-
-static void emit_mov_cond(t_bytes *out, int rs,int rt, int cond)
-{
-  uint64_t setb=genlabel();
+static void emit_mov_cond(t_bytes *out, int rs, int rt, int cond) {
+	uint64_t setb=genlabel();
 	uint64_t done=genlabel();
 
-  emit_branch_label(out, setb, cond);
-  emit_branch_label(out, done, 0xE);
-  emit_label(out, setb);
-  emit_mov(out, rs, rt);
-  emit_label(out, done);
+	emit_branch_label(out, setb, cond);
+	emit_branch_label(out, done, 0xE);
+	emit_label(out, setb);
+	emit_mov(out, rs, rt);
+	emit_label(out, done);
 }
 
-static void emit_movk_lslnum(t_bytes *out, u_int imm,u_int rt, int lsl)
-{
-  uint32_t lsl_bit;
-
-  switch (lsl) {
-    case 16:
-      lsl_bit = 0x200000;
-      break;
-    case 32:
-      lsl_bit = 0x400000;
-      break;
-    case 48:
-      lsl_bit = 0x600000;
-      break;
-    default:
-      lsl_bit = 0;
-      break;
-  }
-
-  output_w32(out, 0x72800000|imm<<5|rt|lsl_bit);
+static void emit_test(t_bytes *out, int rs, int rt) {
+	ASMJIT_ASSUME_OK(out->tst(gw(rs), gw(rt)));
 }
 
-static void emit_movk_lslnum64(t_bytes *out, u_int imm,u_int rt, int lsl)
-{
-  uint32_t lsl_bit;
-
-  switch (lsl) {
-    case 16:
-      lsl_bit = 0x200000;
-      break;
-    case 32:
-      lsl_bit = 0x400000;
-      break;
-    case 48:
-      lsl_bit = 0x600000;
-      break;
-    default:
-      lsl_bit = 0;
-      break;
-  }
-
-  output_w32(out, 0x80000000|0x72800000|imm<<5|rt|lsl_bit);
+static void emit_not(t_bytes *out, int rs, int rt) {
+	ASMJIT_ASSUME_OK(out->mvn(gw(rt), gw(rs)));
 }
 
-static void emit_movz64(t_bytes *out, u_int imm,u_int rt)
-{
-  output_w32(out, 0x80000000|0x52800000|imm<<5|rt);
+static void emit_and(t_bytes *out, u_int rs1, u_int rs2, u_int rt) {
+	ASMJIT_ASSUME_OK(out->and_(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_ptr(t_bytes *out, uintptr_t ptr, u_int rt) {
-  emit_movz64(out, ptr&0xffff,rt);
-  if ((ptr>>16)&0xffff) emit_movk_lslnum64(out, (ptr>>16)&0xffff,rt, 16);
-  if ((ptr>>32)&0xffff) emit_movk_lslnum64(out, (ptr>>32)&0xffff,rt, 32);
-  if ((ptr>>48)&0xffff) emit_movk_lslnum64(out, (ptr>>48)&0xffff,rt, 48);
+static void emit_or(t_bytes *out, u_int rs1, u_int rs2, u_int rt) {
+	ASMJIT_ASSUME_OK(out->orr(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_movimm(t_bytes *out, uintptr_t imm,u_int rt)
-{
-  uint32_t armval=0;
-  if(imm<65536) {
-    emit_movz(out, imm,rt);
-  }else if((~imm)<65536) {
-    emit_movn(out, ~imm,rt);
-  }else if((imm&0xffff)==0) {
-    emit_movz_lsl16(out, (imm>>16)&0xffff,rt);
-  }else if(((~imm)&0xffff)==0) {
-    emit_movn_lsl16(out, (~imm>>16)&0xffff,rt);
-  }else if(genimm2((uint64_t)imm,32,&armval)) {
-    output_w32(out, 0x32000000|armval<<10|WZR<<5|rt);
-  }else{
-    emit_movz_lsl16(out, (imm>>16)&0xffff,rt);
-    emit_movk(out, imm&0xffff,rt);
-  }
+static void emit_or64(t_bytes *out, u_int rs1, u_int rs2, u_int rt) {
+	ASMJIT_ASSUME_OK(out->orr(gx(rt), gx(rs1), gx(rs2)));
 }
 
-static void emit_test(t_bytes *out, int rs, int rt)
-{
-  output_w32(out, 0x6a000000|rt<<16|rs<<5|WZR);
+static void emit_or_and_set_flags(t_bytes *out, int rs1, int rs2, int rt) {
+	ASMJIT_ASSUME_OK(out->orr(gw(rt), gw(rs1), gw(rs2)));
+	emit_cmpimm(out, rt, 0);
 }
 
-static void emit_not(t_bytes *out, int rs,int rt)
-{
-  output_w32(out, 0x2a200000|rs<<16|WZR<<5|rt);
+static void emit_xor(t_bytes *out, u_int rs1, u_int rs2, u_int rt) {
+	ASMJIT_ASSUME_OK(out->eor(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_and(t_bytes *out, u_int rs1,u_int rs2,u_int rt)
-{
-  output_w32(out, 0x0a000000|rs2<<16|rs1<<5|rt);
+static void emit_ands(t_bytes *out, u_int rs1, u_int rs2, u_int rt) {
+	ASMJIT_ASSUME_OK(out->ands(gw(rt), gw(rs1), gw(rs2)));
 }
 
-static void emit_or(t_bytes *out, u_int rs1,u_int rs2,u_int rt)
-{
-  output_w32(out, 0x2a000000|rs2<<16|rs1<<5|rt);
+static void emit_ors(t_bytes *out, u_int rs1, u_int rs2, u_int rt) {
+	emit_or_and_set_flags(out, rs1, rs2, rt);
 }
 
-static void emit_or64(t_bytes *out, u_int rs1,u_int rs2,u_int rt)
-{
-  output_w32(out, 0xAA000000|rs2<<16|rs1<<5|rt);
+static void emit_xors(t_bytes *out, u_int rs1, u_int rs2, u_int rt) {
+	ASMJIT_ASSUME_OK(out->eor(gw(rt), gw(rs1), gw(rs2)));
+	emit_cmpimm(out, rt, 0);
 }
 
-static void emit_or_and_set_flags(t_bytes *out, int rs1,int rs2,int rt)
-{
-  output_w32(out, 0x2A000000|rs2<<16|rs1<<5|rt);
-  emit_cmpimm(out, rt, 0);
+static void emit_cmp(t_bytes *out, int rs, int rt) {
+	ASMJIT_ASSUME_OK(out->cmp(gw(rs), gw(rt)));
 }
 
-static void emit_xor(t_bytes *out, u_int rs1,u_int rs2,u_int rt)
-{
-  output_w32(out, 0x4a000000|rs2<<16|rs1<<5|rt);
+static void emit_cmpx64(t_bytes *out, int rs) {
+	ASMJIT_ASSUME_OK(out->cmp(gx(rs), asmjit::Imm(0)));
 }
 
-static void emit_ands(t_bytes *out, u_int rs1,u_int rs2,u_int rt)
-{
-  output_w32(out, 0x6a000000|rs2<<16|rs1<<5|rt);
+static void emit_clz(t_bytes *out, int rs, int rt) {
+	ASMJIT_ASSUME_OK(out->clz(gw(rt), gw(rs)));
 }
 
-static void emit_ors(t_bytes *out, u_int rs1,u_int rs2,u_int rt)
-{
- emit_or_and_set_flags(out, rs1,rs2,rt);
-}
-static void emit_xors(t_bytes *out, u_int rs1,u_int rs2,u_int rt)
-{
-  output_w32(out, 0x4a000000|rs2<<16|rs1<<5|rt);
-  emit_cmpimm(out, rt, 0);
+static void emit_teq(t_bytes *out, int rs, int rt) {
+	ASMJIT_ASSUME_OK(out->eor(gw(16), gw(rs), gw(rt)));
+	emit_cmpimm(out, X16_REG, 0);
 }
 
-static void emit_addimm64(t_bytes *out, u_int rs,int imm,u_int rt)
-{
-  emit_movimm(out, imm, 16);
-  emit_add64(out, rs, 16, rt);
+//---------------------------------------------------------------------------
+// Add / compare with immediate
+//---------------------------------------------------------------------------
+
+static void emit_addimm64(t_bytes *out, u_int rs, int imm, u_int rt) {
+	emit_movimm(out, imm, 16);
+	emit_add64(out, rs, 16, rt);
 }
 
-
-static void emit_addimm(t_bytes *out, u_int rs,int imm,u_int rt)
-{
-  if(imm!=0) {
-    //assert(imm>-16777216&&imm<16777216);
-    if(imm<0&&imm>-4096) {
-      output_w32(out, 0x51000000|((-imm)&0xfff)<<10|rs<<5|rt);
-    }else if(imm>0&&imm<4096) {
-      output_w32(out, 0x11000000|(imm&0xfff)<<10|rs<<5|rt);
-    }else if(imm<0) {
-      output_w32(out, 0x51400000|(((-imm)>>12)&0xfff)<<10|rs<<5|rt);
-      if((-imm&0xfff)!=0) {
-        output_w32(out, 0x51000000|((-imm)&0xfff)<<10|rt<<5|rt);
-      }
-    }else {
-      output_w32(out, 0x11400000|((imm>>12)&0xfff)<<10|rs<<5|rt);
-      if((imm&0xfff)!=0) {
-        output_w32(out, 0x11000000|(imm&0xfff)<<10|rt<<5|rt);
-      }
-    }
-  }
-  else if(rs!=rt) emit_mov(out, rs,rt);
+static void emit_addimm(t_bytes *out, u_int rs, int imm, u_int rt) {
+	if(imm!=0) {
+		if(imm<0&&imm>-4096) {
+			ASMJIT_ASSUME_OK(out->sub(gw(rt), gw(rs), asmjit::Imm((-imm)&0xfff)));
+		}else if(imm>0&&imm<4096) {
+			ASMJIT_ASSUME_OK(out->add(gw(rt), gw(rs), asmjit::Imm(imm&0xfff)));
+		}else if(imm<0) {
+			ASMJIT_ASSUME_OK(out->sub(gw(rt), gw(rs), asmjit::Imm(((-imm)>>12&0xfff)<<12)));
+			if((-imm&0xfff)!=0) {
+				ASMJIT_ASSUME_OK(out->sub(gw(rt), gw(rt), asmjit::Imm((-imm)&0xfff)));
+			}
+		}else {
+			ASMJIT_ASSUME_OK(out->add(gw(rt), gw(rs), asmjit::Imm(((imm>>12)&0xfff)<<12)));
+			if((imm&0xfff)!=0) {
+				ASMJIT_ASSUME_OK(out->add(gw(rt), gw(rt), asmjit::Imm(imm&0xfff)));
+			}
+		}
+	}
+	else if(rs!=rt) emit_mov(out, rs,rt);
 }
 
-static void emit_addsimm(t_bytes *out, u_int rs,int imm,u_int rt)
-{
-  emit_movimm(out, imm, X16_REG);
-  emit_adds(out, rs, X16_REG, rt);
+static void emit_addsimm(t_bytes *out, u_int rs, int imm, u_int rt) {
+	emit_movimm(out, imm, X16_REG);
+	emit_adds(out, rs, X16_REG, rt);
 }
 
-static void emit_cmp(t_bytes *out, int rs,int rt)
-{
-  output_w32(out, 0x6b000000|rt<<16|rs<<5|WZR);
+static void emit_subimm(t_bytes *out, int reg, int val, int rt) {
+	emit_movimm(out, val, X10_REG);
+	emit_sub(out, reg, X10_REG, rt);
+}
+
+static void emit_subsimm(t_bytes *out, int reg, int val, int rt) {
+	emit_movimm(out, val, X10_REG);
+	emit_subs(out, reg, X10_REG, rt);
+}
+
+static void emit_cmpimm(t_bytes *out, int rs, int imm) {
+	if (imm == 0) {
+		ASMJIT_ASSUME_OK(out->cmp(gw(rs), asmjit::Imm(0)));
+	}
+	else {
+		emit_movimm(out, imm, X16_REG);
+		emit_cmp(out, rs, X16_REG);
+	}
+}
+
+static void emit_testimm(t_bytes *out, int rs, int imm) {
+	ASMJIT_ASSUME_OK(out->tst(gw(rs), asmjit::Imm(imm)));
+}
+
+static void emit_testimm64(t_bytes *out, int rs, int64_t imm) {
+	ASMJIT_ASSUME_OK(out->tst(gx(rs), asmjit::Imm((uint64_t)imm)));
+}
+
+static void emit_orimm(t_bytes *out, int rs, int imm, int rt) {
+	if(imm==0) {
+		if(rs!=rt) emit_mov(out, rs,rt);
+	}else{
+		// The bitmask-immediate form right here has always been disabled: the
+		// hand-written encoder got it wrong, so it was forced down the
+		// load-then-orr path. Re-enabling it is a behavioural change and belongs
+		// with the register-cache work, not with the migration.
+		emit_movimm(out, imm,X9_REG);
+		ASMJIT_ASSUME_OK(out->orr(gw(rt), gw(rs), gw(X9_REG)));
+	}
+}
+
+static void emit_xorimm(t_bytes *out, int reg, int val, int rt) {
+	emit_movimm(out, val, X10_REG);
+	emit_xor(out, reg, X10_REG, rt);
+}
+
+static void emit_andimm(t_bytes *out, int rs, int imm, int rt) {
+	if(imm==0) {
+		emit_zeroreg(out, rt);
+	}else{
+		// See emit_orimm: the bitmask-immediate form stays disabled on purpose.
+		emit_movimm(out, imm,X10_REG);
+		ASMJIT_ASSUME_OK(out->and_(gw(rt), gw(rs), gw(X10_REG)));
+	}
+}
+
+static void emit_andsimm(t_bytes *out, int rs, int imm, int rt) {
+	u_int armval;
+	if(imm==0) {
+		emit_zeroreg(out, rt);
+		emit_cmp(out, rt, rt);
+	}else if(genimm2((uint64_t)imm,32,&armval)) {
+		ASMJIT_ASSUME_OK(out->ands(gw(rt), gw(rs), asmjit::Imm(imm)));
+	}else{
+		emit_movz(out, imm,X10_REG);
+		ASMJIT_ASSUME_OK(out->ands(gw(rt), gw(rs), gw(X10_REG)));
+	}
+}
+
+//---------------------------------------------------------------------------
+// Multiplication and multiply-accumulate
+//---------------------------------------------------------------------------
+
+static void emit_mul(t_bytes *out, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->mul(gw(rs1), gw(rs1), gw(rs2)));
+}
+
+static void emit_muls(t_bytes *out, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->mul(gw(rs1), gw(rs1), gw(rs2)));
+	emit_cmpimm(out, rs1, 0);
+}
+
+static void emit_mla(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->madd(gw(hi), gw(rs1), gw(rs2), gw(lo)));
+}
+
+static void emit_mlas(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->madd(gw(hi), gw(rs1), gw(rs2), gw(lo)));
+	emit_cmpimm(out, hi, 0);
 }
 
 static void emit_smulbb(t_bytes *out, u_int rs1, u_int rs2) {
-  output_w32(out, 0x93403C00 | (rs1 << 5) | X17_REG); // SBFX x17, x0, #0, #16
-  output_w32(out, 0x93403C00 | (rs2 << 5) | X18_REG); // SBFX x18, x0, #0, #16
-
-  // mul
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(X17_REG<<5)|rs1);
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X17_REG), gx(rs1), asmjit::Imm(0), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs2), asmjit::Imm(0), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(rs1), gw(X17_REG), gw(X18_REG)));
 }
 
 static void emit_smulbt(t_bytes *out, u_int rs1, u_int rs2) {
-  output_w32(out, 0x93403C00 | (rs1 << 5) | X17_REG); // SBFX x17, x0, #0, #16
-  output_w32(out, 0x93507C00 | (rs2 << 5) | X18_REG); // SBFX x18, x0, #16, #16
-
-  // mul
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(X17_REG<<5)|rs1);
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X17_REG), gx(rs1), asmjit::Imm(0), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs2), asmjit::Imm(16), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(rs1), gw(X17_REG), gw(X18_REG)));
 }
 
 static void emit_smultb(t_bytes *out, u_int rs1, u_int rs2) {
-  output_w32(out, 0x93507C00 | (rs1 << 5) | X17_REG); //SBFX x17, rs1, #16, #16
-  output_w32(out, 0x93403C00 | (rs2 << 5) | X18_REG); // SBFX x18, x0, #0, #16
-
-  // mul
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(X17_REG<<5)|rs1);
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X17_REG), gx(rs1), asmjit::Imm(16), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs2), asmjit::Imm(0), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(rs1), gw(X17_REG), gw(X18_REG)));
 }
 
 static void emit_smultt(t_bytes *out, u_int rs1, u_int rs2) {
-  output_w32(out, 0x93507C00 | (rs1 << 5) | X17_REG); // SBFX x17, rs1, #16, #16
-  output_w32(out, 0x93507C00 | (rs2 << 5) | X18_REG); // SBFX x18, rs2, #16, #16
-
-  // mul
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(X17_REG<<5)|rs1);
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X17_REG), gx(rs1), asmjit::Imm(16), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs2), asmjit::Imm(16), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(rs1), gw(X17_REG), gw(X18_REG)));
 }
-
 
 static void emit_smulwt(t_bytes *out, u_int rs1, u_int rs2) {
-  output_w32(out, 0x93507C00 | (rs1 << 5) | X18_REG); // SBFX x18, x0, #16, #16
-
-  // mul
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(rs2<<5)|rs1);
-  emit_asr64(out, rs1, 16);
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs1), asmjit::Imm(16), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(rs1), gw(rs2), gw(X18_REG)));
+	emit_asr64(out, rs1, 16);
 }
+
 static void emit_smulwb(t_bytes *out, u_int rs1, u_int rs2) {
-  output_w32(out, 0x93403C00 | (rs1 << 5) | X18_REG); // SBFX x18, x0, #0, #16
-
-  // mul
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(rs2<<5)|rs1);
-  
-  emit_asr64(out, rs1, 16);
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs1), asmjit::Imm(0), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(rs1), gw(rs2), gw(X18_REG)));
+	emit_asr64(out, rs1, 16);
 }
 
-static void emit_smlawb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x93403C00 | (rs1 << 5) | X18_REG); // SBFX x18, x0, #0, #16
-
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(rs2<<5)|14);
-  emit_asr64(out, X14_REG, 16);
-  emit_adds(out, X14_REG, lo, hi); // sets carry flag - need to use in SET_Q
-}
-static void emit_smlawt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x93403C00 | (rs1 << 5) | X18_REG); // SBFX x18, x0, #0, #16
-
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(rs2<<5)|14);
-  emit_asr64(out, X14_REG, 16);
-  emit_adds(out, X14_REG, lo, hi); // sets carry flag - need to use in SET_Q
+static void emit_smlawb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs1), asmjit::Imm(0), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(14), gw(rs2), gw(X18_REG)));
+	emit_asr64(out, X14_REG, 16);
+	emit_adds(out, X14_REG, lo, hi); // sets carry flag - need to use in SET_Q
 }
 
-static void emit_smlabb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x93403C00 | (rs1 << 5) | X17_REG); // SBFX x17, x0, #0, #16 
-  output_w32(out, 0x93403C00 | (rs2 << 5) | X18_REG); // SBFX x18, x0, #0, #16
-
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(X17_REG<<5)|hi);
-  emit_adds(out, hi, lo, hi); // sets carry flag - need to use in SET_Q
-}
-static void emit_smlabt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x93403C00 | (rs1 << 5) | X17_REG); // SBFX x17, x0, #0, #16
-  output_w32(out, 0x93507C00 | (rs2 << 5) | X18_REG); // SBFX x18, x0, #16, #16
-
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(X17_REG<<5)|hi);
-  emit_adds(out, hi, lo, hi); // sets carry flag - need to use in SET_Q
-}
-static void emit_smlatb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x93507C00 | (rs1 << 5) | X17_REG); // SBFX x17, x0, #16, #16
-  output_w32(out, 0x93403C00 | (rs2 << 5) | X18_REG); // sbfx x18, x0, #0, #16
-
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(X17_REG<<5)|hi);
-  emit_adds(out, hi, lo, hi); // sets carry flag - need to use in SET_Q
-}
-static void emit_smlatt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x93507C00 | (rs1 << 5) | X17_REG); // SBFX x17, rs1, #16, #16
-  output_w32(out, 0x93507C00 | (rs2 << 5) | X18_REG); // SBFX x18, rs2, #16, #16
-
-  output_w32(out, 0x9B207C00|(X18_REG<<16)|(X17_REG<<5)|hi);
-  emit_adds(out, hi, lo, hi); // sets carry flag - need to use in SET_Q
+static void emit_smlawt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs1), asmjit::Imm(0), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(14), gw(rs2), gw(X18_REG)));
+	emit_asr64(out, X14_REG, 16);
+	emit_adds(out, X14_REG, lo, hi); // sets carry flag - need to use in SET_Q
 }
 
-static void emit_smlalbb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  emit_mov(out, hi, X17_REG);   
-  output_w32(out, 0xB3607C00 | (lo << 5) | X17_REG); // BFI x17, xhi, #32, #32
-
-  output_w32(out, 0x93403C00 | (rs1 << 5) | X19_REG); //SBFX x19, rs1, #0, #16
-  output_w32(out, 0x93403C00 | (rs2 << 5) | X20_REG); //SBFX x20, rs2, #0, #16
-
-  output_w32(out, 0x9B200000 | (X20_REG << 16) | (X19_REG << 5) | (X17_REG << 10) | X17_REG); // SMADDL x17, w#, w#, x17
-  
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-  emit_mov(out, X17_REG, hi);
-}
-static void emit_smlalbt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  emit_mov(out, hi, X17_REG); 
-      
-  output_w32(out, 0xB3607C00 | (lo << 5) | X17_REG); // BFI x17, xhi, #32, #32
-
-  output_w32(out, 0x93403C00 | (rs1 << 5) | X19_REG); //SBFX x19, rs1, #0, #16
-  output_w32(out, 0x93507C00 | (rs2 << 5) | X20_REG); //SBFX x20, rs2, #16, #16
-
-  output_w32(out, 0x9B200000 | (X20_REG << 16) | (X19_REG << 5) | (X17_REG << 10) | X17_REG); // SMADDL x17, w#, w#, x17
-
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-
-  emit_mov(out, X17_REG, hi);
-}
-static void emit_smlaltb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  emit_mov(out, hi, X17_REG);     
-  output_w32(out, 0xB3607C00 | (lo << 5) | X17_REG); // BFI x17, xhi, #32, #32
-
-  output_w32(out, 0x93507C00 | (rs1 << 5) | X19_REG); //sbfx x19, rs1, #16, #16
-  output_w32(out, 0x93403C00 | (rs2 << 5) | X20_REG); //sbfx x20, rs2, #0, #16
-
-  output_w32(out, 0x9B200000 | (X20_REG << 16) | (X19_REG << 5) | (X17_REG << 10) | X17_REG); // SMADDL x17, w#, w#, x17
-  
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-
-  emit_mov(out, X17_REG, hi);
-}
-static void emit_smlaltt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  emit_mov(out, hi, X17_REG); 
- 
-  output_w32(out, 0xB3607C00 | (lo << 5) | X17_REG); // BFI x17, xhi, #32, #32
-
-  output_w32(out, 0x93507C00 | (rs1 << 5) | X19_REG); //sbfx x19, rs1, #16, #16
-  output_w32(out, 0x93507C00 | (rs2 << 5) | X20_REG); //sbfx x20, rs2, #16, #16
-
-  output_w32(out, 0x9B200000 | (X20_REG << 16) | (X19_REG << 5) | (X17_REG << 10) | X17_REG); // SMADDL x17, w#, w#, x17
-  
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-  emit_mov(out, X17_REG, hi);
+static void emit_smlabb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X17_REG), gx(rs1), asmjit::Imm(0), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs2), asmjit::Imm(0), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(hi), gw(X17_REG), gw(X18_REG)));
+	emit_adds(out, hi, lo, hi); // sets carry flag - need to use in SET_Q
 }
 
-static void emit_mul(t_bytes *out, u_int rs1,u_int rs2)
-{
-  output_w32(out, 0x1B007C00|(rs2<<16)|(rs1<<5)|rs1);
-}
-static void emit_muls(t_bytes *out, u_int rs1,u_int rs2)
-{
-  output_w32(out, 0x1B007C00|(rs2<<16)|(rs1<<5)|rs1);
-  emit_cmpimm(out, rs1, 0);
+static void emit_smlabt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X17_REG), gx(rs1), asmjit::Imm(0), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs2), asmjit::Imm(16), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(hi), gw(X17_REG), gw(X18_REG)));
+	emit_adds(out, hi, lo, hi);
 }
 
-static void emit_mla(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x1B000000|(lo<<10)|(rs2<<16)|(rs1<<5)|hi);
-}
-static void emit_mlas(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x1B000000|(lo<<10)|(rs2<<16)|(rs1<<5)|hi);
-  emit_cmpimm(out, hi, 0);
-}
-static void emit_cmpx64(t_bytes *out, int rs) {
-  output_w32(out, 0xF100001F|rs<<5);
-}
-static void emit_umull(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x9BA07C00 | (rs2 << 16) | (rs1 << 5) | X17_REG); // UMADDL x17, w#, w#, XZR
-  
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-  emit_mov(out, X17_REG, hi);
-}
-static void emit_umulls(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x9BA07C00 | (rs2 << 16) | (rs1 << 5) | X17_REG); // UMADDL x17, w#, w#, XZR
-  emit_cmpx64(out, X17_REG);
-
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-  emit_mov(out, X17_REG, hi);
-}
-static void emit_umlal(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  emit_mov(out, hi, X17_REG); 
- 
-  output_w32(out, 0xB3607C00 | (lo << 5) | X17_REG); // BFI x17, xhi, #32, #32
-
-  output_w32(out, 0x9B200000 | (rs2 << 16) | (rs1 << 5) | (X17_REG << 10) | X17_REG); // UMADDL x17, w#, w#, x17
-
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-  emit_mov(out, X17_REG, hi);
-}
-static void emit_umlals(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  emit_mov(out, hi, X17_REG); 
-
-  output_w32(out, 0xB3607C00 | (lo << 5) | X17_REG); // BFI x17, xhi, #32, #32
-
-  output_w32(out, 0x9B200000 | (rs2 << 16) | (rs1 << 5) | (X17_REG << 10) | X17_REG); // UMADDL x17, w#, w#, x17
-  emit_cmpx64(out, X17_REG);
-  
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-  emit_mov(out, X17_REG, hi);
-}
-static void emit_smull(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x9B207C00 | (rs2 << 16) | (rs1 << 5) | X17_REG); // SMADDL x17, w#, w#, XZR
-
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-  emit_mov(out, X17_REG, hi);
-}
-static void emit_smulls(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  output_w32(out, 0x9B207C00 | (rs2 << 16) | (rs1 << 5) | X17_REG); // SMADDL x17, w#, w#, XZR
-  emit_cmpx64(out, X17_REG);
-
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-  emit_mov(out, X17_REG, hi);
+static void emit_smlatb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X17_REG), gx(rs1), asmjit::Imm(16), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs2), asmjit::Imm(0), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(hi), gw(X17_REG), gw(X18_REG)));
+	emit_adds(out, hi, lo, hi);
 }
 
-static void emit_smlal(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  emit_mov(out, hi, X17_REG); 
- 
-  output_w32(out, 0xB3607C00 | (lo << 5) | X17_REG); // BFI x17, xhi, #32, #32
-
-  output_w32(out, 0x9B200000 | (rs2 << 16) | (rs1 << 5) | (X17_REG << 10) | X17_REG); // SMADDL x17, w#, w#, x17
-
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-  emit_mov(out, X17_REG, hi);
-}
-static void emit_smlals(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2)
-{
-  emit_mov(out, hi, X17_REG); 
-     
-  output_w32(out, 0xB3607C00 | (lo << 5) | X17_REG); // BFI x17, xhi, #32, #32
-
-  output_w32(out, 0x9B200000 | (rs2 << 16) | (rs1 << 5) | (X17_REG << 10) | X17_REG); // SMADDL x17, w#, w#, x17
-  emit_cmpx64(out, X17_REG);
-
-  output_w32(out, 0xD360FC00 | (X17_REG << 5) | lo); // lsr lo, x17, #32
-  emit_mov(out, X17_REG, hi); 
+static void emit_smlatt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X17_REG), gx(rs1), asmjit::Imm(16), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs2), asmjit::Imm(16), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smull(gx(hi), gw(X17_REG), gw(X18_REG)));
+	emit_adds(out, hi, lo, hi);
 }
 
-static void emit_clz(t_bytes *out, int rs,int rt)
-{
-  output_w32(out,0x5AC01000|rs<<5|rt);
+// The long multiplies reassemble the 64-bit accumulator from the hi/lo pair,
+// multiply-accumulate, then split it again. The sequence (and the scratch
+// registers it uses) is exactly the hand-written one.
+static void emit_smlal_pair(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2,
+                            int rs1_shift, int rs2_shift) {
+	emit_mov(out, hi, X17_REG);
+	ASMJIT_ASSUME_OK(out->bfi(gx(X17_REG), gx(lo), asmjit::Imm(32), asmjit::Imm(32)));
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X19_REG), gx(rs1), asmjit::Imm(rs1_shift), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X20_REG), gx(rs2), asmjit::Imm(rs2_shift), asmjit::Imm(16)));
+	ASMJIT_ASSUME_OK(out->smaddl(gx(X17_REG), gw(X19_REG), gw(X20_REG), gx(X17_REG)));
+	ASMJIT_ASSUME_OK(out->lsr(gx(lo), gx(X17_REG), asmjit::Imm(32)));
+	emit_mov(out, X17_REG, hi);
 }
 
-static void emit_teq(t_bytes *out, int rs, int rt)
-{
-  output_w32(out, 0x4A000000|16|rs<<5|rt<<16);
-  emit_cmpimm(out, X16_REG, 0);
+static void emit_smlalbb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	emit_smlal_pair(out, hi, lo, rs1, rs2, 0, 0);
+}
+static void emit_smlalbt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	emit_smlal_pair(out, hi, lo, rs1, rs2, 0, 16);
+}
+static void emit_smlaltb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	emit_smlal_pair(out, hi, lo, rs1, rs2, 16, 0);
+}
+static void emit_smlaltt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	emit_smlal_pair(out, hi, lo, rs1, rs2, 16, 16);
 }
 
-static u_int gencondjmp(intptr_t offset)
-{
-  return (offset>>2)&0x7ffff;
+static void emit_umull(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->umull(gx(X17_REG), gw(rs1), gw(rs2)));
+	ASMJIT_ASSUME_OK(out->lsr(gx(lo), gx(X17_REG), asmjit::Imm(32)));
+	emit_mov(out, X17_REG, hi);
 }
 
-#define MOD_JUMP(ptr, cond, lbl_bytes, jmp_bytes) *(ptr) = 0x54000000|gencondjmp(lbl_bytes - jmp_bytes)<<5|(cond);
-#include "emit_core.cpp"
-
-static void myfunc(const char *str) {
-	puts(str);
+static void emit_umulls(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->umull(gx(X17_REG), gw(rs1), gw(rs2)));
+	emit_cmpx64(out, X17_REG);
+	ASMJIT_ASSUME_OK(out->lsr(gx(lo), gx(X17_REG), asmjit::Imm(32)));
+	emit_mov(out, X17_REG, hi);
 }
+
+// UMADDL shares the shape with SMADDL; only the instruction differs.
+static void emit_umlal_common(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2, int with_flags) {
+	emit_mov(out, hi, X17_REG);
+	ASMJIT_ASSUME_OK(out->bfi(gx(X17_REG), gx(lo), asmjit::Imm(32), asmjit::Imm(32)));
+	ASMJIT_ASSUME_OK(out->smaddl(gx(X17_REG), gw(rs1), gw(rs2), gx(X17_REG)));
+	if (with_flags) emit_cmpx64(out, X17_REG);
+	ASMJIT_ASSUME_OK(out->lsr(gx(lo), gx(X17_REG), asmjit::Imm(32)));
+	emit_mov(out, X17_REG, hi);
+}
+
+static void emit_umlal(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	emit_umlal_common(out, hi, lo, rs1, rs2, 0);
+}
+
+static void emit_umlals(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	emit_umlal_common(out, hi, lo, rs1, rs2, 1);
+}
+
+static void emit_smull(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->smull(gx(X17_REG), gw(rs1), gw(rs2)));
+	ASMJIT_ASSUME_OK(out->lsr(gx(lo), gx(X17_REG), asmjit::Imm(32)));
+	emit_mov(out, X17_REG, hi);
+}
+
+static void emit_smulls(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	ASMJIT_ASSUME_OK(out->smull(gx(X17_REG), gw(rs1), gw(rs2)));
+	emit_cmpx64(out, X17_REG);
+	ASMJIT_ASSUME_OK(out->lsr(gx(lo), gx(X17_REG), asmjit::Imm(32)));
+	emit_mov(out, X17_REG, hi);
+}
+
+static void emit_smlal_common(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2, int with_flags) {
+	emit_mov(out, hi, X17_REG);
+	ASMJIT_ASSUME_OK(out->bfi(gx(X17_REG), gx(lo), asmjit::Imm(32), asmjit::Imm(32)));
+	ASMJIT_ASSUME_OK(out->smaddl(gx(X17_REG), gw(rs1), gw(rs2), gx(X17_REG)));
+	if (with_flags) emit_cmpx64(out, X17_REG);
+	ASMJIT_ASSUME_OK(out->lsr(gx(lo), gx(X17_REG), asmjit::Imm(32)));
+	emit_mov(out, X17_REG, hi);
+}
+
+static void emit_smlal(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	emit_smlal_common(out, hi, lo, rs1, rs2, 0);
+}
+
+static void emit_smlals(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
+	emit_smlal_common(out, hi, lo, rs1, rs2, 1);
+}
+
+//---------------------------------------------------------------------------
+// Loads and stores
+//---------------------------------------------------------------------------
 
 static void emit_ldr(t_bytes *out, int rs, int rt) {
-	output_w32(out, 0xB9400000|rs<<5|rt);
+	ASMJIT_ASSUME_OK(out->ldr(gw(rt), gmem(rs)));
+}
+
+// Field access through a block-resident base pointer.
+//
+// `off` is always an offsetof() value, i.e. a compile-time constant at every
+// call site, and it fits the scaled 12-bit immediate that LD/ST allow -- the
+// armcpu_t fields this back end touches all live in the first kilobyte. The
+// callers fall back to materialising the address when that ever stops being
+// true, so an out-of-range offset cannot silently encode a wrong address.
+static void emit_ldr_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->ldr(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_str_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->str(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_ldrb_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->ldrb(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_strb_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->strb(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_ldrh_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->ldrh(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_strh_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->strh(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_ldrsh_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->ldrsh(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+static void emit_ldrsb_off(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->ldrsb(gw(rt), asmjit::a64::ptr(gx(base), off)));
+}
+
+// Address of a field of the object `base` points at, in a 64-bit register.
+static void emit_add_off64(t_bytes *out, int rt, int base, int off) {
+	ASMJIT_ASSUME_OK(out->add(gx(rt), gx(base), asmjit::Imm(off)));
 }
 
 static void emit_ldr64(t_bytes *out, int rs, int rt) {
-	output_w32(out, 0xF9400000|rs<<5|rt);
+	ASMJIT_ASSUME_OK(out->ldr(gx(rt), gmem(rs)));
 }
 
 static void emit_str(t_bytes *out, int rs, int rt) {
-	output_w32(out, 0xB9000000|rs<<5|rt);
+	ASMJIT_ASSUME_OK(out->str(gw(rt), gmem(rs)));
 }
 
 static void emit_str64(t_bytes *out, int rs, int rt) {
-	output_w32(out, 0x40000000|0xB9000000|rs<<5|rt);
-}
-
-static void emit_str_cond(t_bytes *out, int rs, int rt, int cond) {
-  uint64_t setb=genlabel();
-	uint64_t done=genlabel();
-
-		emit_branch_label(out, setb, cond);
-		emit_branch_label(out, done, 0xE);
-		
-    emit_label(out, setb);
-    emit_str(out, rs, rt);
-
-		emit_label(out, done);
+	ASMJIT_ASSUME_OK(out->str(gx(rt), gmem(rs)));
 }
 
 static void emit_ldrb(t_bytes *out, int rs, int rt) {
-	output_w32(out, 0x39400000|rs<<5|rt); // LDRB	R0, [R0]
+	ASMJIT_ASSUME_OK(out->ldrb(gw(rt), gmem(rs)));
 }
 
 static void emit_ldrsb(t_bytes *out, int rs, int rt) {
-	output_w32(out, 0x39C00000|rs<<5|rt); // LDRSB	R0, [R0]
+	ASMJIT_ASSUME_OK(out->ldrsb(gw(rt), gmem(rs)));
 }
 
 static void emit_strb(t_bytes *out, int rs, int rt) {
-	output_w32(out, 0x39000000|rs<<5|rt);
+	ASMJIT_ASSUME_OK(out->strb(gw(rt), gmem(rs)));
 }
 
 static void emit_ldrsw(t_bytes *out, int rs, int rt) {
-	output_w32(out, 0x79C00000|rs<<5|rt); // LDRSB	R0, [R0]
+	ASMJIT_ASSUME_OK(out->ldrsh(gw(rt), gmem(rs)));
 }
 
 static void emit_ldrs(t_bytes *out, int rs, int rt) {
@@ -1348,11 +1373,24 @@ static void emit_ldrs(t_bytes *out, int rs, int rt) {
 }
 
 static void emit_ldrw(t_bytes *out, int rs, int rt) {
-	output_w32(out, 0x79400000|rs<<5|rt); // LDRB	R0, [R0]
+	ASMJIT_ASSUME_OK(out->ldrh(gw(rt), gmem(rs)));
 }
 
 static void emit_strw(t_bytes *out, int rs, int rt) {
-	output_w32(out, 0x79000000|rs<<5|rt);
+	ASMJIT_ASSUME_OK(out->strh(gw(rt), gmem(rs)));
+}
+
+static void emit_str_cond(t_bytes *out, int rs, int rt, int cond) {
+	uint64_t setb=genlabel();
+	uint64_t done=genlabel();
+
+	emit_branch_label(out, setb, cond);
+	emit_branch_label(out, done, 0xE);
+
+	emit_label(out, setb);
+	emit_str(out, rs, rt);
+
+	emit_label(out, done);
 }
 
 static void emit_str_ptr_cond(t_bytes *out, uintptr_t ptr, int reg, int cond) {
@@ -1361,13 +1399,13 @@ static void emit_str_ptr_cond(t_bytes *out, uintptr_t ptr, int reg, int cond) {
 }
 
 static void emit_write_ptr32(t_bytes *out, uintptr_t ptr, u_int val) {
-  emit_ptr(out, (uintptr_t)ptr, X2_REG);
+	emit_ptr(out, (uintptr_t)ptr, X2_REG);
 	emit_movimm(out, val, X4_REG);
 	emit_str(out, X2_REG, X4_REG);
 }
 
 static void emit_write_ptr(t_bytes *out, uintptr_t ptr, uintptr_t val) {
-  emit_ptr(out, ptr, X2_REG);
+	emit_ptr(out, ptr, X2_REG);
 	emit_ptr(out, val, X4_REG);
 	emit_str64(out, X2_REG, X4_REG);
 }
@@ -1376,13 +1414,16 @@ static void emit_write_ptr32_regptrTO_immFROM(t_bytes *out, int regptr, int val)
 	emit_movimm(out, (uintptr_t)val, X10_REG);
 	emit_str(out, regptr, X10_REG);
 }
+
 static void emit_write_ptr32_regptrTO_regFROM(t_bytes *out, int regptr, int reg) { /* reg contains ptr */
 	emit_str(out, regptr, reg);
 }
+
 static void emit_write_ptr32_regptrTO_regptrFROM(t_bytes *out, int regptrto, int regptrfrom) { /* reg contains ptr */
 	emit_ldr(out, regptrfrom, regptrfrom);
 	emit_str(out, regptrto, regptrfrom);
 }
+
 static void emit_read_ptr32_regptrFROM_regTO(t_bytes *out, int regptr, int regout) {
 	emit_ldr(out, regptr, regout);
 }
@@ -1396,6 +1437,7 @@ static void emit_writeBYTE_ptr32_regptrTO_immFROM(t_bytes *out, int regptr, int 
 	emit_movimm(out, (uintptr_t)val, X9_REG);
 	emit_strb(out, regptr, X9_REG);
 }
+
 static void emit_writeBYTE_ptr32_regptrTO_regFROM(t_bytes *out, int regptr, int reg) { /* reg contains ptr */
 	emit_strb(out, regptr, reg);
 }
@@ -1404,6 +1446,7 @@ static void emit_writeBYTE_ptr32_regptrTO_regptrFROM(t_bytes *out, int regptrto,
 	emit_ldrb(out, regptrfrom, regptrfrom);
 	emit_strb(out, regptrto, regptrfrom);
 }
+
 static void emit_readBYTE_ptr32_regptrFROM_regTO(t_bytes *out, int regptr, int regout) {
 	emit_ldrb(out, regptr, regout);
 }
@@ -1412,13 +1455,16 @@ static void emit_writeWORD_ptr32_regptrTO_immFROM(t_bytes *out, int regptr, int 
 	emit_movimm(out, (uintptr_t)val, X9_REG);
 	emit_strw(out, regptr, X9_REG);
 }
+
 static void emit_writeWORD_ptr32_regptrTO_regFROM(t_bytes *out, int regptr, int reg) { /* reg contains ptr */
 	emit_strw(out, regptr, reg);
 }
+
 static void emit_writeWORD_ptr32_regptrTO_regptrFROM(t_bytes *out, int regptrto, int regptrfrom) { /* reg contains ptr */
 	emit_ldrw(out, regptrfrom, regptrfrom);
 	emit_strw(out, regptrto, regptrfrom);
 }
+
 static void emit_readWORD_ptr32_regptrFROM_regTO(t_bytes *out, int regptr, int regout) {
 	emit_ldrw(out, regptr, regout);
 }
@@ -1428,11 +1474,13 @@ static void emit_add_ptr32_regptrTO_regFROM(t_bytes *out, int regptr, int reg) {
 	emit_add(out, X10_REG, reg, X10_REG);
 	emit_str(out, regptr, X10_REG);
 }
+
 static void emit_adds_ptr32_regptrTO_regFROM(t_bytes *out, int regptr, int reg) { /* reg contains ptr */
 	emit_ldr(out, regptr, X10_REG);
 	emit_adds(out, X10_REG, reg, X10_REG);
 	emit_str(out, regptr, X10_REG);
 }
+
 static void emit_add_ptr32_regptrTO_immFROM(t_bytes *out, int regptr, int val) { /* reg contains ptr */
 	emit_movimm(out, (uintptr_t)val, X9_REG);
 	emit_ldr(out, regptr, X10_REG);
@@ -1452,17 +1500,20 @@ static void emit_sub_ptr32_regptrTO_regFROM(t_bytes *out, int regptr, int reg) {
 	emit_sub(out, X10_REG, reg, X10_REG);
 	emit_str(out, regptr, X10_REG);
 }
+
 static void emit_subs_ptr32_regptrTO_regFROM(t_bytes *out, int regptr, int reg) { /* reg contains ptr */
 	emit_ldr(out, regptr, X10_REG);
 	emit_subs(out, X10_REG, reg, X10_REG);
 	emit_str(out, regptr, X10_REG);
 }
+
 static void emit_sub_ptr32_regptrTO_immFROM(t_bytes *out, int regptr, int val) { /* reg contains ptr */
 	emit_movimm(out, (uintptr_t)val, X9_REG);
 	emit_ldr(out, regptr, X10_REG);
 	emit_sub(out, X10_REG, X9_REG, X10_REG);
 	emit_str(out, regptr, X10_REG);
 }
+
 static void emit_subs_ptr32_regptrTO_immFROM(t_bytes *out, int regptr, int val) { /* reg contains ptr */
 	emit_movimm(out, (uintptr_t)val, X9_REG);
 	emit_ldr(out, regptr, X10_REG);
@@ -1506,86 +1557,6 @@ static void emit_ror_ptr32_regptr_reg(t_bytes *out, int regptr, int regimm) {
 	emit_str(out, regptr, X10_REG);
 }
 
-static void emit_cmpimm(t_bytes *out, int rs,int imm)
-{
-  if (imm == 0) {
-    output_w32(out, 0x7100001F|rs<<5); // cmp w#, #0
-  }
-  else { 
-    emit_movimm(out, imm, X16_REG);
-    emit_cmp(out, rs, X16_REG);
-  }
-}
-
-static void emit_testimm(t_bytes *out, int rs,int imm)
-{
-  u_int armval, ret;
-  ret=genimm2(imm,32,&armval);
-  output_w32(out, 0x72000000|armval<<10|rs<<5|WZR);
-}
-
-static void emit_testimm64(t_bytes * out, int rs,int64_t imm)
-{
-  u_int armval, ret;
-  ret=genimm2(imm,64,&armval);
-  output_w32(out, 0xf2000000|armval<<10|rs<<5|WZR);
-}
-
-static void emit_orimm(t_bytes *out, int rs,int imm,int rt)
-{
-  u_int armval;
-  if(imm==0) {
-    if(rs!=rt) emit_mov(out, rs,rt);
-  }else if(false && genimm2(imm,32,&armval)) {
-    output_w32(out, 0x32000000|armval<<10|rs<<5|rt);
-  }else{
-    emit_movimm(out, imm,X9_REG);
-    output_w32(out, 0x2a000000|X9_REG<<16|rs<<5|rt);
-  }
-}
-
-static void emit_xorimm(t_bytes *out, int reg, int val, int rt) {
-		emit_movimm(out, val, X10_REG);
-		emit_xor(out, reg, X10_REG, rt);
-}
-
-static void emit_andimm(t_bytes *out,int rs,int imm,int rt)
-{
-  u_int armval;
-  if(imm==0) {
-    emit_zeroreg(out, rt);
-  }else if(false && genimm2((uint64_t)imm,32,&armval)) {
-    output_w32(out, 0x12000000|armval<<10|rs<<5|rt);
-  }else{
-    emit_movimm(out, imm,X10_REG);
-    output_w32(out, 0x0a000000|X10_REG<<16|rs<<5|rt);
-  }
-}
-
-static void emit_andsimm(t_bytes *out,int rs,int imm,int rt)
-{
-  u_int armval;
-  if(imm==0) {
-    emit_zeroreg(out, rt);
-    emit_cmp(out, rt, rt);
-  }else if(genimm2((uint64_t)imm,32,&armval)) {
-    output_w32(out, 0x72000000|armval<<10|rs<<5|rt);
-  }else{
-    emit_movz(out, imm,X10_REG);
-    output_w32(out, 0x6a000000|X10_REG<<16|rs<<5|rt);
-  }
-}
-
-static void emit_subimm(t_bytes *out, int reg, int val, int rt) {
-	emit_movimm(out, val, X10_REG);
-	emit_sub(out, reg, X10_REG, rt);
-}
-
-static void emit_subsimm(t_bytes *out, int reg, int val, int rt) {
-	emit_movimm(out, val, X10_REG);
-	emit_subs(out, reg, X10_REG, rt);
-}
-
 static void emit_and_ptr32_regptr(t_bytes *out, int regptr, int bits) {
 	emit_ldr(out, regptr, X13_REG);
 	emit_andimm(out, X13_REG, bits, X13_REG);
@@ -1603,6 +1574,7 @@ static void emit_or_ptr8_regptr_reg(t_bytes *out, int regptr, int reg) {
 	emit_or(out, X13_REG, reg, X13_REG);
 	emit_strb(out, regptr, X13_REG);
 }
+
 static void emit_or_ptr8_regptr_imm(t_bytes *out, int regptr, int imm) {
 	emit_ldrb(out, regptr, X13_REG);
 	emit_orimm(out, X13_REG, imm, X13_REG);
@@ -1621,58 +1593,59 @@ static void emit_and_ptr32_regptr_reg(t_bytes *out, int regptr, int reg) {
 	emit_str(out, regptr, X13_REG);
 }
 
-#define Z 0
-#define NE 1
-#define CS 2
-#define CC 3 
-#define SS 4
-#define O 6
+//---------------------------------------------------------------------------
+// Condition codes into registers
+//---------------------------------------------------------------------------
 
 static void emit_setc(t_bytes *out, int reg) {
-  output_w32(out, 0x1A9F37E0|reg);
+	ASMJIT_ASSUME_OK(out->cset(gw(reg), asmjit::arm::CondCode::kCS));
 }
 
 static void emit_sets(t_bytes *out, int reg) {
-  output_w32(out, 0x1A9F57E0|reg);
+	ASMJIT_ASSUME_OK(out->cset(gw(reg), asmjit::arm::CondCode::kMI));
 }
 
 static void emit_setz(t_bytes *out, int reg) {
-  output_w32(out, 0x1A9F17E0|reg);
+	ASMJIT_ASSUME_OK(out->cset(gw(reg), asmjit::arm::CondCode::kEQ));
 }
 
 static void emit_setnz(t_bytes *out, int reg) {
-  output_w32(out, 0x1A9F07E0|reg);
+	ASMJIT_ASSUME_OK(out->cset(gw(reg), asmjit::arm::CondCode::kNE));
 }
 
 static void emit_setnc(t_bytes *out, int reg) {
-  output_w32(out, 0x1A9F27E0|reg);
+	ASMJIT_ASSUME_OK(out->cset(gw(reg), asmjit::arm::CondCode::kCC));
 }
+
 static void emit_seto(t_bytes *out, int reg) {
-  output_w32(out, 0x1A9F77E0|reg);
+	ASMJIT_ASSUME_OK(out->cset(gw(reg), asmjit::arm::CondCode::kVS));
 }
 
 static void emit_write_ptr32_reg_byte(t_bytes *out, uintptr_t ptr, int reg) {
 	emit_movimm(out, (uintptr_t)ptr, X8_REG);
-
 	emit_strb(out, X8_REG, reg);
 }
 
+//---------------------------------------------------------------------------
+// Address computation
+//---------------------------------------------------------------------------
+
 static void emit_lea_reg_reg(t_bytes *out, int reg1, int reg, int scale, int outreg) {
-	if (scale == 2)      emit_lsl(out, reg, 1);  // MOV r10, r10, LSL #1 (multiple by 2)
-	else if (scale == 4) emit_lsl(out, reg, 2);  // MOV r10, r10, LSL #2 (multiple by 4)
-	else if (scale == 8) emit_lsl(out, reg, 3);  // MOV r10, r10, LSL #3 (multiple by 8)
-	
+	if (scale == 2)      emit_lsl(out, reg, 1); // MOV r10, r10, LSL #1 (multiple by 2)
+	else if (scale == 4) emit_lsl(out, reg, 2); // MOV r10, r10, LSL #2 (multiple by 4)
+	else if (scale == 8) emit_lsl(out, reg, 3); // MOV r10, r10, LSL #3 (multiple by 8)
+
 	emit_add(out, reg, reg1, X10_REG);
-	emit_mov(out,  X10_REG,outreg );
+	emit_mov(out, X10_REG, outreg);
 }
 
 static void emit_lea_ptr_reg(t_bytes *out, int ptr, int reg, int scale, int outreg) {
 	emit_movimm(out, ptr, X10_REG);
-	
-	if (scale == 2)      emit_lsl(out, reg, 1);  // MOV r10, r10, LSL #1 (multiple by 2)
-	else if (scale == 4) emit_lsl(out, reg, 2);  // MOV r10, r10, LSL #2 (multiple by 4)
-	else if (scale == 8) emit_lsl(out, reg, 3);  // MOV r10, r10, LSL #3 (multiple by 8)	
-	
+
+	if (scale == 2)      emit_lsl(out, reg, 1);
+	else if (scale == 4) emit_lsl(out, reg, 2);
+	else if (scale == 8) emit_lsl(out, reg, 3);
+
 	emit_add(out, reg, X10_REG, X10_REG);
 	emit_mov(out, X10_REG, outreg);
 }
@@ -1680,43 +1653,54 @@ static void emit_lea_ptr_reg(t_bytes *out, int ptr, int reg, int scale, int outr
 static void emit_lea_ptr_val(t_bytes *out, int ptr, int val, int scale, int outreg) {
 	emit_movimm(out, ptr, X10_REG);
 	emit_movimm(out, val, X9_REG);
-	
-	if (scale == 2)      emit_lsl(out, X9_REG, 2);  // MOV r10, r10, LSL #1 (multiple by 2)
-	else if (scale == 4) emit_lsl(out, X9_REG, 4);  // MOV r10, r10, LSL #2 (multiple by 4)
-	else if (scale == 8) emit_lsl(out, X9_REG, 8);  // MOV r10, r10, LSL #3 (multiple by 8)
-	
+
+	// The shift amounts here are 2/4/8 rather than 1/2/3, so this scales by
+	// 4/16/256. Left untouched: it is existing behaviour and changing it is a
+	// semantic change, not a migration step.
+	if (scale == 2)      emit_lsl(out, X9_REG, 2);
+	else if (scale == 4) emit_lsl(out, X9_REG, 4);
+	else if (scale == 8) emit_lsl(out, X9_REG, 8);
+
 	emit_add(out, X9_REG, X10_REG, X10_REG);
 
 	emit_mov(out, outreg, X10_REG);
 }
 
-static void clear_carry_flag(t_bytes *out) {
-  output_w32(out, 0xD53B4200 | X19_REG); /* mrs x19, nzcv */
-  output_w32(out, 0x9262FA00 | (X19_REG << 5) | X19_REG); // bic x19, x19, #(1<<29)
-  output_w32(out, 0xD51B4200 | X19_REG); // msr    nzcv, x19
-}
-
-static void set_carry_flag(t_bytes *out) {
-  output_w32(out, 0xD53B4200 | X19_REG); /* mrs x19, nzcv */
-  output_w32(out, 0xB2630200 | (X19_REG << 5) | X19_REG); // orr x19, x19, #(1<<29)
-  output_w32(out, 0xD51B4200 | X19_REG); // msr    nzcv, x19
-}
+//---------------------------------------------------------------------------
+// NZCV helpers
+//---------------------------------------------------------------------------
 
 static void get_flags(int reg, int v);
 
-static void get_carry_flag(t_bytes *out, int reg) {
-  get_flags(reg, VALUE_NO_CACHE);
-  output_w32(out, 0x121B0000|reg|reg<<5); // and w0, w0, #(1<<5)
-  output_w32(out, 0x53057C00|reg|reg<<5); // lsr w0, w0, #5
+static void clear_carry_flag(t_bytes *out) {
+	ASMJIT_ASSUME_OK(out->mrs(gx(X19_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV)));
+	ASMJIT_ASSUME_OK(out->bic(gx(X19_REG), gx(X19_REG), asmjit::Imm(1u << 29)));
+	ASMJIT_ASSUME_OK(out->msr(asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV), gx(X19_REG)));
 }
 
+static void set_carry_flag(t_bytes *out) {
+	ASMJIT_ASSUME_OK(out->mrs(gx(X19_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV)));
+	ASMJIT_ASSUME_OK(out->orr(gx(X19_REG), gx(X19_REG), asmjit::Imm(1u << 29)));
+	ASMJIT_ASSUME_OK(out->msr(asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV), gx(X19_REG)));
+}
+
+static void get_carry_flag(t_bytes *out, int reg) {
+	get_flags(reg, VALUE_NO_CACHE);
+	ASMJIT_ASSUME_OK(out->and_(gw(reg), gw(reg), asmjit::Imm(1 << 5)));
+	ASMJIT_ASSUME_OK(out->lsr(gw(reg), gw(reg), asmjit::Imm(5)));
+}
+
+//---------------------------------------------------------------------------
+// Pointers held in globals
+//---------------------------------------------------------------------------
+
 static void emit_read_ptr32_reg(t_bytes *out, uintptr_t ptr, int rs) {
-	emit_ptr(out, (uintptr_t)ptr, X10_REG);	
+	emit_ptr(out, (uintptr_t)ptr, X10_REG);
 	emit_ldr(out, X10_REG, rs);
 }
 
 static void emit_read_ptr64_reg(t_bytes *out, uintptr_t ptr, int rs) {
-	emit_ptr(out, (uintptr_t)ptr, X10_REG);	
+	emit_ptr(out, (uintptr_t)ptr, X10_REG);
 	emit_ldr64(out, X10_REG, rs);
 }
 
@@ -1724,7 +1708,6 @@ static void emit_read_ptr32_reg_byte(t_bytes *out, uintptr_t ptr, int rs) {
 	emit_ptr(out, (uintptr_t)ptr, X8_REG);
 	emit_ldrb(out, X8_REG, rs);
 }
-
 
 static void emit_var_copy32(t_bytes *out, uintptr_t from, uintptr_t to) {
 	emit_ptr(out, (uintptr_t)from, X7_REG);
@@ -1779,109 +1762,187 @@ static void emit_inc_reg(t_bytes *out, uintptr_t ptr, int reg) {
 }
 
 static void emit_brk(t_bytes *out) {
-  output_w32(out, 0xD4200000);
+	ASMJIT_ASSUME_OK(out->brk(asmjit::Imm(0)));
 }
 
+//---------------------------------------------------------------------------
+// Function prolog, epilog and helper calls
+//
+// The frame is still managed by hand (save/restore below), not by asmjit's PEI:
+// the block returns bb_total_cycles and the handlers rely on the exact register
+// set that save() preserves. With an empty FuncFrame PEI emits nothing of its
+// own, so the two do not fight.
+//---------------------------------------------------------------------------
+
 static void save(t_bytes *out) {
-  output_w32(out, 0xA9BF53F3);   // stp x19, x20, [sp, #-16]!
-  output_w32(out, 0xA9BF5BF5);   // stp x21, x22, [sp, #-16]!
-  output_w32(out, 0xA9BF63F7);   // stp x23, x24, [sp, #-16]!
+	ASMJIT_ASSUME_OK(out->stp(gx(19), gx(20), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	ASMJIT_ASSUME_OK(out->stp(gx(21), gx(22), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	ASMJIT_ASSUME_OK(out->stp(gx(23), gx(24), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	// x25/x26 hold the block-resident base pointers (see JIT_CPU_BASE_REG in
+	// arm_jit_arm.cpp), so they must survive the return to the caller. Pushed
+	// as a pair because that is one instruction.
+	ASMJIT_ASSUME_OK(out->stp(gx(25), gx(26), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
 }
 
 static void restore(t_bytes *out) {
-  output_w32(out, 0xA8C163F7);   // ldp x23, x24, [sp], #16
-  output_w32(out, 0xA8C15BF5);   // ldp x21, x22, [sp], #16
-  output_w32(out, 0xA8C153F3);   // ldp x19, x20, [sp], #16
+	ASMJIT_ASSUME_OK(out->ldp(gx(25), gx(26), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	ASMJIT_ASSUME_OK(out->ldp(gx(23), gx(24), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	ASMJIT_ASSUME_OK(out->ldp(gx(21), gx(22), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	ASMJIT_ASSUME_OK(out->ldp(gx(19), gx(20), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
 }
 
 static void emit_startfunc(t_bytes *out) {
-  output_w32(out, 0xA9BF77FE); // stp lr, fp, [SP, #-16]!
-  save(out);
+	ASMJIT_ASSUME_OK(out->stp(gx(30), gx(29), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	save(out);
 }
 
 static void emit_endfunc(t_bytes *out) {
-  restore(out);
+	restore(out);
 
-	output_w32(out, 0xA8C177FE); // ldp lr, fp, [sp], #16
-  output_w32(out, 0xD65F03C0); // ret
+	ASMJIT_ASSUME_OK(out->ldp(gx(30), gx(29), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	ASMJIT_ASSUME_OK(out->ret(gx(30)));
 }
 
 static void save_call(t_bytes *out) {
-  output_w32(out, 0xA9BF0BE1);   // stp x1, x2, [sp, #-16]!
-  output_w32(out, 0xA9BF13E3);   // stp x3, x4, [sp, #-16]!
-  output_w32(out, 0xA9BF1BE5);   // stp x5, x6, [sp, #-16]!
-  output_w32(out, 0xA9BF23E7);   // stp x7, x8, [sp, #-16]!
-  output_w32(out, 0xA9BF2BE9);   // stp x9, x10, [sp, #-16]!
-  output_w32(out, 0xA9BF33EB);   // stp x11, x12, [sp, #-16]!
-  
-  #if (defined(_WIN32) || defined(__APPLE__) || defined(__ANDROID__))
-  output_w32(out, 0xF81F0FF7);   // str x23, [sp, #-16]!
-  #endif
+	ASMJIT_ASSUME_OK(out->stp(gx(1), gx(2), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	ASMJIT_ASSUME_OK(out->stp(gx(3), gx(4), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	ASMJIT_ASSUME_OK(out->stp(gx(5), gx(6), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	ASMJIT_ASSUME_OK(out->stp(gx(7), gx(8), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	ASMJIT_ASSUME_OK(out->stp(gx(9), gx(10), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	ASMJIT_ASSUME_OK(out->stp(gx(11), gx(12), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+
+	#if (defined(_WIN32) || defined(__APPLE__) || defined(__ANDROID__))
+	ASMJIT_ASSUME_OK(out->str(gx(23), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	#endif
 }
 
 static void restore_call(t_bytes *out) {
-  #if (defined(_WIN32) || defined(__APPLE__) || defined(__ANDROID__))
-  output_w32(out, 0xF84107F7);   // ldr x23, [sp], #16
-  #endif
+	#if (defined(_WIN32) || defined(__APPLE__) || defined(__ANDROID__))
+	ASMJIT_ASSUME_OK(out->ldr(gx(23), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	#endif
 
-  output_w32(out, 0xA8C133EB);   // ldp x11, x12, [sp], #16
-  output_w32(out, 0xA8C12BE9);   // ldp x9, x10, [sp], #16
-  output_w32(out, 0xA8C123E7);   // ldp x7, x8, [sp], #16
-  output_w32(out, 0xA8C11BE5);   // ldp x5, x6, [sp], #16
-  output_w32(out, 0xA8C113E3);   // ldp x3, x4, [sp], #16
-  output_w32(out, 0xA8C10BE1);   // ldp x1, x2, [sp], #16
+	ASMJIT_ASSUME_OK(out->ldp(gx(11), gx(12), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	ASMJIT_ASSUME_OK(out->ldp(gx(9), gx(10), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	ASMJIT_ASSUME_OK(out->ldp(gx(7), gx(8), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	ASMJIT_ASSUME_OK(out->ldp(gx(5), gx(6), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	ASMJIT_ASSUME_OK(out->ldp(gx(3), gx(4), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	ASMJIT_ASSUME_OK(out->ldp(gx(1), gx(2), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
 }
 
 static void callR3(t_bytes *out) {
-  save_call(out);
-	output_w32(out, 0xD63F0060); // blr x3
-  restore_call(out);
+	save_call(out);
+	ASMJIT_ASSUME_OK(out->blr(gx(3)));
+	restore_call(out);
 }
+
 static void callR9(t_bytes *out) {
-  save_call(out);
-	output_w32(out, 0xD63F0120); // blr x9
-  restore_call(out);
+	save_call(out);
+	ASMJIT_ASSUME_OK(out->blr(gx(9)));
+	restore_call(out);
 }
+
 static void callR7(t_bytes *out) {
-  save_call(out);
-	output_w32(out, 0xD63F00E0); // blr x7
-  restore_call(out);
+	save_call(out);
+	ASMJIT_ASSUME_OK(out->blr(gx(7)));
+	restore_call(out);
 }
+
 static void callR6(t_bytes *out) {
-  save_call(out);
-	output_w32(out, 0xD63F00C0); // blr x6
-  restore_call(out);
+	save_call(out);
+	ASMJIT_ASSUME_OK(out->blr(gx(6)));
+	restore_call(out);
 }
+
 static void callR8(t_bytes *out) {
-  save_call(out);
-	output_w32(out, 0xD63F0100); // blr x8
-  restore_call(out);
+	save_call(out);
+	ASMJIT_ASSUME_OK(out->blr(gx(8)));
+	restore_call(out);
+}
+
+// Lightweight helper call for the LDR/STR macros, which are the hottest path in
+// the backend (they cover the bulk of the 174 memory handlers). `callR3` above
+// saves x1..x12 + x23 on every call (15 instructions with the blr and restore),
+// because generic call sites such as S_DST_R15 and OP_MSR keep live values in
+// those registers across the call. The LDR/STR handlers do not: their arguments
+// live in x0/x1 and the only value consumed after the call is the cycle count
+// returned in x0 -- every other register is either dead or recomputed with a
+// cpu_ptr(..., ADDRESS) before use.
+//
+// What *does* have to survive is the emulated-register cache. Its three slots
+// are x12/x15/x21: x21 is AAPCS64 callee-saved (like x19..x28 and the pinned
+// x23/x24/x25/x26), so the C helper preserves it for free; x12/x15 are caller-
+// saved and must be saved here, otherwise a dirty value cached by a preceding
+// instruction in the block is lost when the helper clobbers them. x11 is not
+// saved because its CACHED_PTR() address is dead at both call sites.
+//
+// Net: 2 (stp/ldp) + 1 (blr) = 3 instructions instead of 15.
+static void save_mem_call(t_bytes *out) {
+	ASMJIT_ASSUME_OK(out->stp(gx(12), gx(15), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+}
+
+static void restore_mem_call(t_bytes *out) {
+	ASMJIT_ASSUME_OK(out->ldp(gx(12), gx(15), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+}
+
+static void call_mem(t_bytes *out) {
+	save_mem_call(out);
+	ASMJIT_ASSUME_OK(out->blr(gx(3)));
+	restore_mem_call(out);
+}
+
+// Same lightweight call, for the few hot sites whose helper pointer lives in a
+// different register: call_ldm_stm() parks it in x7 (its four arguments occupy
+// x0..x3). The live-register argument is identical to call_mem -- only the two
+// volatile cache slots x12/x15 can carry state across the call.
+static void call_mem_r7(t_bytes *out) {
+	save_mem_call(out);
+	ASMJIT_ASSUME_OK(out->blr(gx(7)));
+	restore_mem_call(out);
+}
+
+// LDRD/STRD keep the effective address in x2 across the helper call so they can
+// write it back to Rn when the W bit is set (arm_jit_arm.cpp:2446/2452). x2 is
+// otherwise caller-saved, so add it to the two cache slots. 2 stp + blr + 2 ldp
+// = 5 instructions, still 10 fewer than callR3's 15.
+static void call_mem_r2(t_bytes *out) {
+	ASMJIT_ASSUME_OK(out->stp(gx(2), gx(12), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	ASMJIT_ASSUME_OK(out->str(gx(15), asmjit::a64::ptr_pre(asmjit::a64::sp, -16)));
+	ASMJIT_ASSUME_OK(out->blr(gx(3)));
+	ASMJIT_ASSUME_OK(out->ldr(gx(15), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
+	ASMJIT_ASSUME_OK(out->ldp(gx(2), gx(12), asmjit::a64::ptr_post(asmjit::a64::sp, 16)));
 }
 
 //-----------------------------------------------------------------------------
 //   Shifting macros
+//
+// Expanded inside arm_jit_arm.cpp, so they work on `g_out` and on that file's
+// register macros (x/y/rcf...). Rewritten against asmjit for the same reason as
+// the primitives above.
 //-----------------------------------------------------------------------------
 #define SET_NZCV(sign) { \
 	JIT_COMMENT("SET_NZCV"); \
-	output_w32(g_out, 0xD53B4200 | X1_REG); /* mrs x1, nzcv */ \
-	flags_ptr(y_reg, VALUE); \
-	output_w32(g_out, 0xD358FC00 | (X1_REG << 5) | X1_REG); /* lsr x1, x1, #0x18 */\
-	output_w32(g_out, 0x927C0C00 | (X1_REG << 5) | X1_REG); /* and x1, x1, #0xf0 */ \
-	output_w32(g_out, 0x92400D00 | (X9_REG << 5) | X9_REG); /* and x9, x9, #0xf */ \
-	emit_or64(g_out, X1_REG, y_reg, X1_REG); \
-	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(flags_ptr(X0_REG, ADDRESS)), X1_REG); \
+	ASMJIT_ASSUME_OK(g_out->mrs(gx(X1_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV))); \
+	flags_ptr(y_reg, VALUE_NO_CACHE); \
+	ASMJIT_ASSUME_OK(g_out->lsr(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x18))); \
+	/* After the shift, x1[7:4] is host N/Z/C/V and x1[3:0] is zero. Replace the
+	 * old `and x1,#0xf0 / and x9,#0xf / orr` with one bitfield insert: CPSR's
+	 * low nibble is the mode, which must survive a flag update verbatim. */ \
+	ASMJIT_ASSUME_OK(g_out->bfxil(gw(X1_REG), gw(y_reg), asmjit::Imm(0), asmjit::Imm(4))); \
+	emit_strb_off(g_out, X1_REG, JIT_CPU_BASE_REG, RC_FLAGS_OFF); \
 }
 
 #define SET_NZC { \
 	JIT_COMMENT("SET_NZC"); \
-	output_w32(g_out, 0xD53B4200 | X1_REG); /* mrs x1, nzcv */ \
-	flags_ptr(y_reg, VALUE); \
-	output_w32(g_out, 0xD358FC00 | (X1_REG << 5) | X1_REG); /* lsr x1, x1, #0x18 */\
-	output_w32(g_out, 0x927A0400 | (X1_REG << 5) | X1_REG); /* and x1, x1, #0xc0 */ \
-	if (cf_change) {  output_w32(g_out, 0xAA000000 | (X5_REG << 16) | (X5_REG << 10) | (X1_REG << 5) | X1_REG); /* orr x1, x1, x5, lsl #5  - x5 == rcf */ }   \
-  output_w32(g_out, (cf_change ? 0x92401100 : 0x92401500) | (X9_REG << 5) | X9_REG); \
-	emit_or64(g_out, X1_REG, y_reg, X1_REG); \
-	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(flags_ptr(X0_REG, ADDRESS)), X1_REG); \
+	ASMJIT_ASSUME_OK(g_out->mrs(gx(X1_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV))); \
+	flags_ptr(y_reg, VALUE_NO_CACHE); \
+	ASMJIT_ASSUME_OK(g_out->lsr(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x18))); \
+	ASMJIT_ASSUME_OK(g_out->and_(gx(X1_REG), gx(X1_REG), asmjit::Imm(0xc0))); \
+	if (cf_change) { ASMJIT_ASSUME_OK(g_out->orr(gx(X1_REG), gx(X1_REG), gx(X5_REG), asmjit::Imm(5))); /* x5 == rcf, already <<5 */ } \
+	/* `and x9,#0x1f/0x3f` + `orr` collapse into one bitfield insert. cf_change
+	 * keeps only the 5-bit mode (C comes from rcf); otherwise the 6 low bits
+	 * (mode + old C) survive. */ \
+	ASMJIT_ASSUME_OK(g_out->bfxil(gw(X1_REG), gw(y_reg), asmjit::Imm(0), asmjit::Imm(cf_change ? 5 : 6))); \
+	emit_strb_off(g_out, X1_REG, JIT_CPU_BASE_REG, RC_FLAGS_OFF); \
 }
 
 #define SET_NZC_SHIFTS_ZERO(cf) { \
@@ -1899,51 +1960,54 @@ static void callR8(t_bytes *out) {
 }
 
 #define SET_NZ(clear_cv) { \
-	output_w32(g_out, 0xD53B4200 | X1_REG); /* mrs x1, nzcv */ \
-	flags_ptr(y_reg, VALUE); \
-	output_w32(g_out, 0xD358FC00 | (X1_REG << 5) | X1_REG); /* lsr x1, x1, #0x18 */ \
-	output_w32(g_out, 0x927A0400 | (X1_REG << 5) | X1_REG); /* and x1, x1, #0xc0 */ \
-  output_w32(g_out, (clear_cv ? 0x92400D00 : 0x92401500) | (X9_REG << 5) | X9_REG); \
-	emit_or64(g_out, X1_REG, y_reg, X1_REG); \
-	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(flags_ptr(X0_REG, ADDRESS)), X1_REG); \
+	ASMJIT_ASSUME_OK(g_out->mrs(gx(X1_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV))); \
+	flags_ptr(y_reg, VALUE_NO_CACHE); \
+	ASMJIT_ASSUME_OK(g_out->lsr(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x18))); \
+	ASMJIT_ASSUME_OK(g_out->and_(gx(X1_REG), gx(X1_REG), asmjit::Imm(0xc0))); \
+	ASMJIT_ASSUME_OK(g_out->bfxil(gw(X1_REG), gw(y_reg), asmjit::Imm(0), asmjit::Imm(clear_cv ? 4 : 6))); \
+	emit_strb_off(g_out, X1_REG, JIT_CPU_BASE_REG, RC_FLAGS_OFF); \
 }
 
 #define SET_N { \
-	output_w32(g_out, 0xD53B4200 | X1_REG); /* mrs x1, nzcv */ \
-	flags_ptr(y_reg, VALUE); \
-	output_w32(g_out, 0xD358FC00 | (X1_REG << 5) | X1_REG); /* lsr x1, x1, #0x18 */\
-	output_w32(g_out, 0x92790000 | (X1_REG << 5) | X1_REG); /* and x1, x1, #0x80 */ \
-	output_w32(g_out, 0x92401900 | (X9_REG << 5) | X9_REG); /* and x9, x9, #0x7f */ \
-	emit_or64(g_out, R1, y_reg, R1); \
-	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(flags_ptr(X0_REG, ADDRESS)), X1_REG); \
+	ASMJIT_ASSUME_OK(g_out->mrs(gx(X1_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV))); \
+	flags_ptr(y_reg, VALUE_NO_CACHE); \
+	ASMJIT_ASSUME_OK(g_out->lsr(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x18))); \
+	ASMJIT_ASSUME_OK(g_out->and_(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x80))); \
+	ASMJIT_ASSUME_OK(g_out->bfxil(gw(X1_REG), gw(y_reg), asmjit::Imm(0), asmjit::Imm(7))); \
+	emit_strb_off(g_out, X1_REG, JIT_CPU_BASE_REG, RC_FLAGS_OFF); \
 }
 
 #define SET_Z { \
-	output_w32(g_out, 0xD53B4200 | X1_REG);/* mrs x1, nzcv */ \
-	flags_ptr(y_reg, VALUE); \
-	output_w32(g_out, 0xD358FC21); /* lsr x1, x1, #0x18 */\
-	output_w32(g_out, 0xD358FC00 | (X1_REG << 5) | X1_REG); /* and x1, x1, #0x40 */  \
+	ASMJIT_ASSUME_OK(g_out->mrs(gx(X1_REG), asmjit::Imm(asmjit::a64::Predicate::SysReg::kNZCV))); \
+	flags_ptr(y_reg, VALUE_NO_CACHE); \
+	ASMJIT_ASSUME_OK(g_out->lsr(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x18))); \
+	ASMJIT_ASSUME_OK(g_out->and_(gx(X1_REG), gx(X1_REG), asmjit::Imm(0x40))); \
 	emit_andimm(g_out, X9_REG, 0xbf, X9_REG); /* and sb, sb, #0xbf */ \
 	emit_or64(g_out, X1_REG, y_reg, X1_REG); \
-	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(flags_ptr(X0_REG, ADDRESS)), X1_REG); \
+	emit_strb_off(g_out, X1_REG, JIT_CPU_BASE_REG, RC_FLAGS_OFF); \
 }
 
 #define SET_Q { \
-  flags_ptr(y_reg, VALUE); \
+	flags_ptr(y_reg, VALUE); \
 	emit_seto(g_out, y_reg); \
 	emit_lsl(g_out, y_reg, 3); \
 	emit_or_ptr32_regptr_reg(g_out, CACHED_PTR(flags_ptr(X1_REG, ADDRESS)), y_reg); \
 }
 
+// x86 uses `bt flags_ptr, 5` (+ `cmc` for SBC) to load the emulated carry into
+// the host CF in one instruction. AArch64 has no memory-bit-to-NZCV instruction,
+// but there is a branchless equivalent: isolate CPSR.C and `cmp` it against the
+// same mask. `cmp x, #0x20` sets host C exactly when bit 5 was set, which is the
+// polarity both `adcs` and `sbcs` want -- unlike x86's `sbb`, AArch64 `sbc`
+// consumes C as "no borrow", the same convention ARM uses. That is also why the
+// `invert` parameter was already a no-op in the old arm64 macro.
+//
+// The old body spent `ands` + a taken/not-taken branch + `mrs`/`bic|orr`/`msr`
+// (3 + 3 instructions) on this, with a branch per ADC/SBC/RSC. Keep the
+// `flags_ptr(..., VALUE)` access so the implicit "last field address in x11"
+// contract stays intact for the handlers that store through it.
 #define GET_CARRY(invert) { \
-	flags_ptr(X2_REG, VALUE); \
-	uint64_t setb=genlabel(); \
-	uint64_t done=genlabel(); \
-		output_w32(g_out, 0x721B0040 | (X2_REG << 5)); /* ands w2, w2, #0x20 */ \
-		emit_branch_label(g_out, setb, 0x1); \
-		clear_carry_flag(g_out); \
-		emit_branch_label(g_out, done, 0xE); \
-		emit_label(g_out, setb); \
-		set_carry_flag(g_out); \
-		emit_label(g_out, done); \
+	flags_ptr(X2_REG, VALUE_NO_CACHE); \
+	ASMJIT_ASSUME_OK(g_out->and_(gw(X2_REG), gw(X2_REG), asmjit::Imm(0x20))); \
+	ASMJIT_ASSUME_OK(g_out->cmp(gw(X2_REG), asmjit::Imm(0x20))); \
 }

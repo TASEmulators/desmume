@@ -1,22 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 ///
 /// FIR low-pass (anti-alias) filter with filter coefficient design routine and
-/// MMX optimization. 
-/// 
-/// Anti-alias filter is used to prevent folding of high frequencies when 
+/// MMX optimization.
+///
+/// Anti-alias filter is used to prevent folding of high frequencies when
 /// transposing the sample rate with interpolation.
 ///
 /// Author        : Copyright (c) Olli Parviainen
 /// Author e-mail : oparviai 'at' iki.fi
 /// SoundTouch WWW: http://www.surina.net/soundtouch
 ///
-////////////////////////////////////////////////////////////////////////////////
-//
-// Last changed  : $Date: 2006/02/05 16:44:06 $
-// File revision : $Revision: 1.9 $
-//
-// $Id: AAFilter.cpp,v 1.9 2006/02/05 16:44:06 Olli Exp $
-//
 ////////////////////////////////////////////////////////////////////////////////
 //
 // License :
@@ -49,8 +42,31 @@
 
 using namespace soundtouch;
 
-#define PI        3.141592655357989
+#define PI       3.14159265358979323846
 #define TWOPI    (2 * PI)
+
+// define this to save AA filter coefficients to a file
+// #define _DEBUG_SAVE_AAFILTER_COEFFICIENTS   1
+
+#ifdef _DEBUG_SAVE_AAFILTER_COEFFICIENTS
+    #include <stdio.h>
+
+    static void _DEBUG_SAVE_AAFIR_COEFFS(SAMPLETYPE *coeffs, int len)
+    {
+        FILE *fptr = fopen("aa_filter_coeffs.txt", "wt");
+        if (fptr == nullptr) return;
+
+        for (int i = 0; i < len; i ++)
+        {
+            double temp = coeffs[i];
+            fprintf(fptr, "%lf\n", temp);
+        }
+        fclose(fptr);
+    }
+
+#else
+    #define _DEBUG_SAVE_AAFIR_COEFFS(x, y)
+#endif
 
 /*****************************************************************************
  *
@@ -58,13 +74,12 @@ using namespace soundtouch;
  *
  *****************************************************************************/
 
-AAFilter::AAFilter(const uint length)
+AAFilter::AAFilter(uint len)
 {
     pFIR = FIRFilter::newInstance();
     cutoffFreq = 0.5;
-    setLength(length);
+    setLength(len);
 }
-
 
 
 AAFilter::~AAFilter()
@@ -73,25 +88,22 @@ AAFilter::~AAFilter()
 }
 
 
-
 // Sets new anti-alias filter cut-off edge frequency, scaled to
 // sampling frequency (nyquist frequency = 0.5).
 // The filter will cut frequencies higher than the given frequency.
-void AAFilter::setCutoffFreq(const double newCutoffFreq)
+void AAFilter::setCutoffFreq(double newCutoffFreq)
 {
     cutoffFreq = newCutoffFreq;
     calculateCoeffs();
 }
 
 
-
 // Sets number of FIR filter taps
-void AAFilter::setLength(const uint newLength)
+void AAFilter::setLength(uint newLength)
 {
     length = newLength;
     calculateCoeffs();
 }
-
 
 
 // Calculates coefficients for a low-pass FIR filter using Hamming window
@@ -99,12 +111,12 @@ void AAFilter::calculateCoeffs()
 {
     uint i;
     double cntTemp, temp, tempCoeff,h, w;
-    double fc2, wc;
+    double wc;
     double scaleCoeff, sum;
     double *work;
     SAMPLETYPE *coeffs;
 
-    assert(length > 0);
+    assert(length >= 2);
     assert(length % 4 == 0);
     assert(cutoffFreq >= 0);
     assert(cutoffFreq <= 0.5);
@@ -112,21 +124,20 @@ void AAFilter::calculateCoeffs()
     work = new double[length];
     coeffs = new SAMPLETYPE[length];
 
-    fc2 = 2.0 * cutoffFreq; 
-    wc = PI * fc2;
+    wc = 2.0 * PI * cutoffFreq;
     tempCoeff = TWOPI / (double)length;
 
     sum = 0;
-    for (i = 0; i < length; i ++) 
+    for (i = 0; i < length; i ++)
     {
         cntTemp = (double)i - (double)(length / 2);
 
         temp = cntTemp * wc;
-        if (temp != 0) 
+        if (temp != 0)
         {
-            h = fc2 * sin(temp) / temp;                     // sinc function
-        } 
-        else 
+            h = sin(temp) / temp;                     // sinc function
+        }
+        else
         {
             h = 1.0;
         }
@@ -135,7 +146,7 @@ void AAFilter::calculateCoeffs()
         temp = w * h;
         work[i] = temp;
 
-        // calc net sum of coefficients 
+        // calc net sum of coefficients
         sum += temp;
     }
 
@@ -151,10 +162,10 @@ void AAFilter::calculateCoeffs()
     // divided by 16384
     scaleCoeff = 16384.0f / sum;
 
-    for (i = 0; i < length; i ++) 
+    for (i = 0; i < length; i ++)
     {
-        // scale & round to nearest integer
         temp = work[i] * scaleCoeff;
+        // scale & round to nearest integer
         temp += (temp >= 0) ? 0.5 : -0.5;
         // ensure no overfloods
         assert(temp >= -32768 && temp <= 32767);
@@ -164,17 +175,44 @@ void AAFilter::calculateCoeffs()
     // Set coefficients. Use divide factor 14 => divide result by 2^14 = 16384
     pFIR->setCoefficients(coeffs, length, 14);
 
+    _DEBUG_SAVE_AAFIR_COEFFS(coeffs, length);
+
     delete[] work;
     delete[] coeffs;
 }
 
 
-// Applies the filter to the given sequence of samples. 
-// Note : The amount of outputted samples is by value of 'filter length' 
+// Applies the filter to the given sequence of samples.
+// Note : The amount of outputted samples is by value of 'filter length'
 // smaller than the amount of input samples.
 uint AAFilter::evaluate(SAMPLETYPE *dest, const SAMPLETYPE *src, uint numSamples, uint numChannels) const
 {
     return pFIR->evaluate(dest, src, numSamples, numChannels);
+}
+
+
+/// Applies the filter to the given src & dest pipes, so that processed amount of
+/// samples get removed from src, and produced amount added to dest
+/// Note : The amount of outputted samples is by value of 'filter length'
+/// smaller than the amount of input samples.
+uint AAFilter::evaluate(FIFOSampleBuffer &dest, FIFOSampleBuffer &src) const
+{
+    SAMPLETYPE *pdest;
+    const SAMPLETYPE *psrc;
+    uint numSrcSamples;
+    uint result;
+    int numChannels = src.getChannels();
+
+    assert(numChannels == dest.getChannels());
+
+    numSrcSamples = src.numSamples();
+    psrc = src.ptrBegin();
+    pdest = dest.ptrEnd(numSrcSamples);
+    result = pFIR->evaluate(pdest, psrc, numSrcSamples, numChannels);
+    src.receiveSamples(result);
+    dest.putSamples(result);
+
+    return result;
 }
 
 

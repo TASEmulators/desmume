@@ -64,7 +64,8 @@ enum RendererID
 	RENDERID_OPENGL_LEGACY  = 1001,
 	RENDERID_OPENGL_3_2     = 1002,
 	RENDERID_OPENGL_ES      = 1003,
-	RENDERID_METAL          = 2000
+	RENDERID_METAL          = 2000,
+	RENDERID_WGPU           = 3000
 };
 
 enum Render3DErrorCode

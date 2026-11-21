@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.desmume.DeSmuME.GTK4</id>
+  <name>DeSmuME (GTK4)</name>
+  <summary>Nintendo DS emulator</summary>
+  <project_license>GPL-2.0-or-later</project_license>
+  <metadata_license>CC0-1.0</metadata_license>
+  <developer><name>DeSmuME Team</name></developer>
+  <update_contact>linkmauve_AT_linkmauve.fr</update_contact>
+  <launchable type="desktop-id">org.desmume.DeSmuME.GTK4.desktop</launchable>
+
+  <url type="homepage">https://desmume.org</url>
+  <url type="bugtracker">https://github.com/TASVideos/desmume/issues</url>
+
+  <description>
+    <p>
+      DeSmuME is a Nintendo DS emulator that runs homebrew demos and commercial
+      games. This entry launches the GTK4 frontend, which uses a modern GTK
+      interface with hardware-accelerated rendering and GPU image filters.
+    </p>
+  </description>
+
+  <provides>
+    <binary>desmume</binary>
+  </provides>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://linkmauve.fr/files/desmume-pok%C3%A9mon.png</image>
+      <caption>DeSmuME running a Nintendo DS game</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="2.7.10" date="2026-11-21"/>
+  </releases>
+
+  <content_rating type="oars-1.1"/>
+</component>

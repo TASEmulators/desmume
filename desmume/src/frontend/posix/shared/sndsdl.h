@@ -22,6 +22,11 @@
 #include "SPU.h"
 #define SNDCORE_SDL 2
 
+/* SDL3 has no SDL_MIX_MAXVOLUME.  The engine and the GTK
+   volume slider still use this 0..128 range; sndsdl.cpp converts it to a
+   float gain for SDL_SetAudioStreamGain(). */
+#define SNDSDL_MAX_VOLUME 128
+
 extern SoundInterface_struct SNDSDL;
 extern int audio_volume;
 int SNDSDLGetAudioVolume();

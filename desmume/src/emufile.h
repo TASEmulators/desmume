@@ -202,7 +202,7 @@ public:
 
 		va_end(argptr);
 		va_start(argptr, format);
-		vsprintf(tempbuf,format,argptr);
+		vsnprintf(tempbuf, (size_t)amt + 1, format, argptr);
 		
 		fwrite(tempbuf,amt);
 		delete[] tempbuf;

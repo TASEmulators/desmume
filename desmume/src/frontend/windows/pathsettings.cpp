@@ -26,6 +26,7 @@
 #include "main.h"
 #include "path.h"
 #include "pathsettings.h"
+#include "ImageWrite.h"
 #include "utils/xstring.h"
 
 extern bool autoLoadLua;
@@ -113,6 +114,7 @@ void WritePathSettings()
 	WritePrivateProfileStringW(LSECTION, STATESLOTKEY, mbstowcs((std::string)path.pathToStateSlots).c_str(), IniNameW);
 	WritePrivateProfileStringW(LSECTION, SCREENSHOTKEY, mbstowcs((std::string)path.pathToScreenshots).c_str(), IniNameW);
 	WritePrivateProfileStringW(LSECTION, AVIKEY, mbstowcs((std::string)path.pathToAviFiles).c_str(), IniNameW);
+	WritePrivateProfileStringW(LSECTION, MOVIEKEY, mbstowcs((std::string)path.pathToMovies).c_str(), IniNameW);
 	WritePrivateProfileStringW(LSECTION, CHEATKEY, mbstowcs((std::string)path.pathToCheats).c_str(), IniNameW);
 	WritePrivateProfileInt(SECTION, R4FORMATKEY, path.r4Format, IniName);
 	WritePrivateProfileStringW(LSECTION, SOUNDKEY, mbstowcs((std::string)path.pathToSounds).c_str(), IniNameW);
@@ -120,6 +122,7 @@ void WritePathSettings()
 	WritePrivateProfileStringW(LSECTION, LUAKEY, mbstowcs((std::string)path.pathToLua).c_str(), IniNameW);
 
 	WritePrivateProfileInt(SECTION, DEFAULTFORMATKEY, path.currentimageformat, IniName);
+	WritePrivateProfileString(SECTION, SCREENSHOTEXTKEY, path.imageextension(), IniName);
 	WritePrivateProfileString(SECTION, FORMATKEY, path.screenshotFormat, IniName);
 
 	WritePrivateProfileInt(SECTION, LASTVISITKEY, path.savelastromvisit, IniName);
@@ -179,6 +182,7 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 	SetDlgItemTextW(hDlg, IDC_STATESLOTPATHEDIT, mbstowcs(path.pathToStateSlots).c_str());
 	SetDlgItemTextW(hDlg, IDC_SCREENSHOTPATHEDIT, mbstowcs(path.pathToScreenshots).c_str());
 	SetDlgItemTextW(hDlg, IDC_AVIPATHEDIT, mbstowcs(path.pathToAviFiles).c_str());
+	SetDlgItemTextW(hDlg, IDC_MOVIEPATHEDIT, mbstowcs(path.pathToMovies).c_str());
 	SetDlgItemTextW(hDlg, IDC_CHEATPATHEDIT, mbstowcs(path.pathToCheats).c_str());
 	SetDlgItemTextW(hDlg, IDC_LUAPATHEDIT, mbstowcs(path.pathToLua).c_str());
 
@@ -205,6 +209,23 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 		"%S\t\tSecond: Two Digit\r\n";
 	GetClientRect(hwnd, &ti.rect);
 	SendMessage(toolTip, TTM_ADDTOOL, NULL, (LPARAM)&ti);
+
+	// PNG/BMP here are the default and the fallback when WIC is unavailable.
+	// The full list of formats WIC can write is offered by "Save Screenshot As".
+	if (imageWriteAvailable())
+	{
+		TOOLINFO ti2;
+		ZeroMemory(&ti2, sizeof(ti2));
+		ti2.cbSize   = sizeof(ti2);
+		ti2.hwnd     = hDlg;
+		ti2.hinst    = hAppInst;
+		ti2.uFlags   = TTF_SUBCLASS | TTF_IDISHWND;
+		ti2.uId      = (UINT_PTR)GetDlgItem(hDlg, IDC_SAVEAS);
+		ti2.lpszText = "PNG/BMP are the default and the fallback formats. "
+		               "Other formats are offered by WIC in File > Save Screenshot As.";
+		GetClientRect(GetDlgItem(hDlg, IDC_SAVEAS), &ti2.rect);
+		SendMessage(toolTip, TTM_ADDTOOL, NULL, (LPARAM)&ti2);
+	}
 
 	return TRUE;
 }
@@ -294,6 +315,12 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 					SetDlgItemTextW(hDlg, IDC_AVIPATHEDIT, mbstowcs((std::string)path.pathToAviFiles).c_str());
 			}
 			break;
+		case IDC_BROWSEMOVIES:
+			{
+				if(BrowseForPath(path.pathToMovies))
+					SetDlgItemTextW(hDlg, IDC_MOVIEPATHEDIT, mbstowcs((std::string)path.pathToMovies).c_str());
+			}
+			break;
 		case IDC_BROWSECHEATS:
 			{
 				if(BrowseForPath(path.pathToCheats))
@@ -324,10 +351,12 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 		case IDC_PNG:
 				CheckRadioButton(hDlg, IDC_PNG, IDC_BMP, IDC_PNG);
 				path.currentimageformat = path.PNG;
+				path.setimageextension(".png");
 			break;
 		case IDC_BMP:
 				CheckRadioButton(hDlg, IDC_PNG, IDC_BMP, IDC_BMP);
 				path.currentimageformat = path.BMP;
+				path.setimageextension(".bmp");
 			break;
 		case IDC_USELASTVISIT:
 			{
@@ -367,6 +396,7 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 			GetDlgItemTextW(hDlg, IDC_STATESLOTPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToStateSlots,wcstombs((std::wstring)wtmp).c_str()); 
 			GetDlgItemTextW(hDlg, IDC_SCREENSHOTPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToScreenshots,wcstombs((std::wstring)wtmp).c_str()); 
 			GetDlgItemTextW(hDlg, IDC_AVIPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToAviFiles,wcstombs((std::wstring)wtmp).c_str()); 
+			GetDlgItemTextW(hDlg, IDC_MOVIEPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToMovies,wcstombs((std::wstring)wtmp).c_str());
 			GetDlgItemTextW(hDlg, IDC_CHEATPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToCheats,wcstombs((std::wstring)wtmp).c_str()); 
 			GetDlgItemTextW(hDlg, IDC_LUAPATHEDIT, wtmp, MAX_PATH); strcpy(path.pathToLua,wcstombs((std::wstring)wtmp).c_str()); 
 			DoAssociations();

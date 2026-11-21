@@ -35,29 +35,58 @@ BEGIN
     LTEXT           "Static",IDC_FILE_QVIEW,7,303,359,15,NOT WS_GROUP
 END
 
-IDD_REPLAYINP DIALOGEX 0, 0, 300, 141
+IDD_REPLAYINP DIALOGEX 0, 0, 330, 258
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Play Movie"
-FONT 8, "MS Shell Dlg", 0, 0, 0x0
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",1,187,118,50,14
-    GROUPBOX        "",65497,3,0,293,57
-    RTEXT           "File:",65498,7,14,24,10,SS_CENTERIMAGE | NOT WS_GROUP
-    PUSHBUTTON      "Cancel",2,246,118,50,14
-    CONTROL         "Open &Read-Only",IDC_CHECK_READONLY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,33,69,10
-    PUSHBUTTON      "Browse...",ID_BROWSE,224,12,50,14
-    EDITTEXT        PM_FILENAME,35,12,184,14,ES_AUTOHSCROLL
-    LTEXT           "Length:",IDC_STATIC,38,70,25,8
-    LTEXT           "Static",IDC_MLENGTH,68,70,60,8
-    LTEXT           "Frames:",IDC_STATIC,37,81,26,8
-    LTEXT           "Static",IDC_MFRAMES,68,81,60,8
-    LTEXT           "Rerecord Count:",IDC_STATIC,10,91,53,8
-    LTEXT           "Static",IDC_MRERECORDCOUNT,68,92,60,8
-    LTEXT           "ROM Used:",IDC_STATIC,24,102,38,8
-    LTEXT           "Static",IDC_MROM,67,103,100,8
+    LTEXT           "Movie file:",IDC_STATIC,7,5,42,8
+    CONTROL         "Open read-only",IDC_CHECK_READONLY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,190,5,72,10
+    EDITTEXT        PM_FILENAME,7,16,250,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "Refresh(&R)",IDC_MOVIE_REFRESH,265,4,58,14
+    PUSHBUTTON      "Browse(&B)...",ID_BROWSE,265,20,58,14
+    LTEXT           "Movie ROM: ...",IDC_MOVIE_ROM,7,34,316,9
+    LTEXT           "Your ROM: ...",IDC_YOUR_ROM,7,45,316,9
+    LTEXT           "Author:",IDC_STATIC,7,59,68,8,SS_RIGHT
+    EDITTEXT        IDC_EDIT_AUTHOR,78,57,245,13,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "Comment:",IDC_STATIC,7,75,68,8,SS_RIGHT
+    EDITTEXT        IDC_PLAY_DESCRIPTION,78,73,245,13,ES_AUTOHSCROLL
+    LTEXT           "Recorded:",IDC_STATIC,7,93,68,8,SS_RIGHT
+    LTEXT           "Unknown",IDC_MRECORD_DATE,78,93,120,8
+    LTEXT           "Core version:",IDC_STATIC,7,105,68,8,SS_RIGHT
+    LTEXT           "",IDC_MCORE,78,105,170,8
+    LTEXT           "Length:",IDC_STATIC,7,117,68,8,SS_RIGHT
+    LTEXT           "",IDC_MLENGTH,78,117,70,8
+    LTEXT           "Frames:",IDC_STATIC,7,129,68,8,SS_RIGHT
+    LTEXT           "",IDC_MFRAMES,78,129,70,8
+    LTEXT           "Rerecord count:",IDC_STATIC,7,141,68,8,SS_RIGHT
+    LTEXT           "",IDC_MRERECORDCOUNT,78,141,70,8
+    CONTROL         "Pause at frame:",IDC_CHECK_PAUSEFRAME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,190,129,72,10
+    EDITTEXT        IDC_EDIT_PAUSEFRAME,264,127,45,13,ES_AUTOHSCROLL | ES_NUMBER
+    GROUPBOX        "Recording options",IDC_STATIC,7,155,100,66
+    RADIOBUTTON     "From power on",IDC_MREC_POWER,17,168,80,10,WS_DISABLED | WS_GROUP
+    RADIOBUTTON     "From reset/SRAM",IDC_MREC_SRAM,17,181,80,10,WS_DISABLED
+    RADIOBUTTON     "From snapshot",IDC_MREC_SNAPSHOT,17,194,80,10,WS_DISABLED
+    GROUPBOX        "Console / firmware",IDC_STATIC,111,155,110,66
+    LTEXT           "System:",IDC_STATIC,114,168,48,8,SS_RIGHT
+    LTEXT           "Nintendo DS",IDC_MSYSTEM,165,168,56,8
+    LTEXT           "Firmware:",IDC_STATIC,114,180,48,8,SS_RIGHT
+    LTEXT           "",IDC_MFIRMWARE,165,180,56,8
+    LTEXT           "Language:",IDC_STATIC,114,192,48,8,SS_RIGHT
+    LTEXT           "",IDC_MLANGUAGE,165,192,56,8
+    LTEXT           "Nickname:",IDC_STATIC,114,204,48,8,SS_RIGHT
+    LTEXT           "",IDC_MNICKNAME,165,204,56,8
+    GROUPBOX        "BIOS settings",IDC_STATIC,225,155,98,66
+    CONTROL         "External BIOS",IDC_MBIOSEXT,"Button",BS_AUTOCHECKBOX | WS_DISABLED,229,168,94,10
+    CONTROL         "SWI from BIOS",IDC_MBIOSWI,"Button",BS_AUTOCHECKBOX | WS_DISABLED,229,181,94,10
+    CONTROL         "External firmware",IDC_MFIRMEXT,"Button",BS_AUTOCHECKBOX | WS_DISABLED,229,194,94,10
+    CONTROL         "Boot from firmware",IDC_MBOOTFW,"Button",BS_AUTOCHECKBOX | WS_DISABLED,229,207,94,10
+    LTEXT           "Press OK to start playback.\nNote: this will erase or overwrite the game's SRAM,\nand may change other emulator settings.",IDC_STATIC,7,226,185,26
+    DEFPUSHBUTTON   "OK",IDOK,196,238,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,255,238,50,14
 END
 
-IDD_PATHSETTINGS DIALOGEX 0, 0, 252, 325
+IDD_PATHSETTINGS DIALOGEX 0, 0, 252, 353
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 CAPTION "Path Settings"
 FONT 8, "Ms Shell Dlg 2", 0, 0, 0x0
@@ -67,7 +96,7 @@ BEGIN
     PUSHBUTTON      "...",IDC_BROWSEROMS,230,11,13,14
     CONTROL         "Automatically use last visited folder",IDC_USELASTVISIT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,27,129,10
-    CONTROL         "Associate nds Files",IDC_ASSOCIATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,132,27,80,10
+    CONTROL         "Associate nds Files",IDC_ASSOCIATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,136,27,76,10
     GROUPBOX        "SaveRam",IDC_STATIC,0,42,248,44
     LTEXT           "Auto save",IDC_STATIC,5,54,35,14
     EDITTEXT        IDC_SAVERAMPATHEDIT,42,51,184,14,ES_AUTOHSCROLL
@@ -92,19 +121,58 @@ BEGIN
     GROUPBOX        "AviFiles",IDC_STATIC,0,181,247,28
     EDITTEXT        IDC_AVIPATHEDIT,5,189,221,14,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSEAVI,229,189,13,14
-    GROUPBOX        "Cheats",IDC_STATIC,0,212,247,50
-    EDITTEXT        IDC_CHEATPATHEDIT,5,221,221,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BROWSECHEATS,229,221,13,14
-    LTEXT           "R4 cheats database file name",IDC_STATIC,56,238,100,17
-    CONTROL         "CHEAT.DAT",IDC_R4TYPE1,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,160,238,54,10
-    CONTROL         "USRCHEAT.DAT",IDC_R4TYPE2,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,160,250,67,10
-    GROUPBOX        "Lua",IDC_STATIC,0,265,247,38
-    EDITTEXT        IDC_LUAPATHEDIT,5,275,221,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BROWSELUA,229,275,13,14
-    CONTROL         "Auto-load Lua scripts with ROM",IDC_AUTOLOADLUA,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,291,219,8
-    PUSHBUTTON      "Defaults",IDC_PATHDEFAULTS,3,306,50,14
-    DEFPUSHBUTTON   "OK",IDOK,148,306,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,198,306,50,14
+    GROUPBOX        "Movies",IDC_STATIC,0,211,247,28
+    EDITTEXT        IDC_MOVIEPATHEDIT,5,219,221,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BROWSEMOVIES,229,219,13,14
+    GROUPBOX        "Cheats",IDC_STATIC,0,241,247,50
+    EDITTEXT        IDC_CHEATPATHEDIT,5,250,221,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BROWSECHEATS,229,250,13,14
+    LTEXT           "R4 cheats database file name",IDC_STATIC,56,267,100,17
+    CONTROL         "CHEAT.DAT",IDC_R4TYPE1,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,160,267,54,10
+    CONTROL         "USRCHEAT.DAT",IDC_R4TYPE2,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,160,279,67,10
+    GROUPBOX        "Lua",IDC_STATIC,0,294,247,38
+    EDITTEXT        IDC_LUAPATHEDIT,5,304,221,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BROWSELUA,229,304,13,14
+    CONTROL         "Auto-load Lua scripts with ROM",IDC_AUTOLOADLUA,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,320,219,8
+    PUSHBUTTON      "Defaults",IDC_PATHDEFAULTS,3,335,50,14
+    DEFPUSHBUTTON   "OK",IDOK,148,335,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,198,335,50,14
+END
+
+IDD_RECORD_SETTINGS DIALOGEX 0, 0, 240, 338
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Recording Settings"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Video",IDC_REC_VIDEO_TITLE,7,6,226,8
+    LTEXT           "&Encoder:",IDC_STATIC,7,21,78,8
+    CONTROL         "",IDC_REC_VIDEO,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,7,32,226,72
+    LTEXT           "&Bitrate (kbps):",IDC_STATIC,7,110,78,8
+    EDITTEXT        IDC_REC_VIDEO_BITRATE,88,108,70,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_REC_VIDEO_SPIN,"msctls_updown32",UDS_AUTOBUDDY | UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_NOTHOUSANDS,148,108,10,14
+    COMBOBOX        IDC_REC_VIDEO_PRESET,163,108,70,90,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "&Profile:",IDC_STATIC,7,128,78,8
+    COMBOBOX        IDC_REC_PROFILE,163,126,70,90,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "&Frame skip:",IDC_STATIC,7,146,78,8
+    COMBOBOX        IDC_REC_FRAMERATE,163,144,70,90,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "&Picture:",IDC_STATIC,7,164,78,8
+    COMBOBOX        IDC_REC_CAPTURE,88,162,145,116,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Fi&lter:",IDC_STATIC,7,182,78,8
+    COMBOBOX        IDC_REC_FILTER,88,180,145,180,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "",IDC_REC_SUMMARY,7,200,226,10
+    LTEXT           "",IDC_REC_HINT,7,212,226,18
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDHORZ,7,234,226,1
+    LTEXT           "Audio",IDC_REC_AUDIO_TITLE,7,242,226,8
+    LTEXT           "E&ncoder:",IDC_STATIC,7,257,78,8
+    COMBOBOX        IDC_REC_AUDIO,88,255,145,80,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "B&itrate (kbps):",IDC_STATIC,7,275,78,8
+    EDITTEXT        IDC_REC_AUDIO_BITRATE,88,273,70,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_REC_AUDIO_SPIN,"msctls_updown32",UDS_AUTOBUDDY | UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_NOTHOUSANDS,148,273,10,14
+    COMBOBOX        IDC_REC_AUDIO_PRESET,163,273,70,90,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Sample rate:",IDC_STATIC,7,293,78,8
+    LTEXT           "",IDC_REC_SAMPLE_RATE,88,291,70,8
+    DEFPUSHBUTTON   "Start Recording",IDOK,114,316,60,14
+    PUSHBUTTON      "Cancel",IDCANCEL,178,316,55,14
 END
 
 IDD_ARCHIVEFILECHOOSER DIALOGEX 0, 0, 182, 113
@@ -141,7 +209,7 @@ BEGIN
     LTEXT           "Fixes text bugs in some games.(e.g. Etrian Odyssey)",ID_LABEL_TXTHACK1,12,77,171,8
     LTEXT           "May need to be toggled on/off per scene.",ID_LABEL_TXTHACK2,12,86,167,8
     CONTROL         "Enable TXT Hack",IDC_TXTHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,67,73,10
-    GROUPBOX        "OpenGL Options",IDC_STATIC,7,131,315,116
+    GROUPBOX        "OpenGL / WebGPU Options",IDC_STATIC,7,131,315,116
     GROUPBOX        "General Options",IDC_STATIC,198,7,124,120
     LTEXT           "GPU Scaling Factor",IDC_STATIC,203,20,64,8
     CONTROL         "Deposterize Textures",IDC_TEX_DEPOSTERIZE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,203,79,79,10
@@ -363,7 +431,7 @@ BEGIN
     LTEXT           "",IDC_TMP,327,198,40,8
     EDITTEXT        IDC_AUTO_UPDATE_SECS,340,3,12,12,ES_AUTOHSCROLL | ES_READONLY | WS_DISABLED
     CONTROL         "",IDC_AUTO_UPDATE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS | WS_DISABLED,352,2,11,14
-    LTEXT           "frames",IDC_STATIC,364,5,16,8
+    LTEXT           "frames",IDC_STATIC,364,5,24,8
     PUSHBUTTON      "&Refresh",IDC_REFRESH,162,170,50,14,BS_ICON
     EDITTEXT        IDC_SETPNUM,5,170,34,14,ES_UPPERCASE | ES_AUTOHSCROLL | ES_NUMBER | WS_GROUP
     PUSHBUTTON      "&Step",IDC_STEP,41,170,24,14
@@ -459,7 +527,7 @@ BEGIN
     LTEXT           "",IDC_TMP,327,198,40,8
     EDITTEXT        IDC_AUTO_UPDATE_SECS,340,3,12,12,ES_AUTOHSCROLL | ES_READONLY | WS_DISABLED
     CONTROL         "",IDC_AUTO_UPDATE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS | WS_DISABLED,352,2,11,14
-    LTEXT           "frames",IDC_STATIC,364,5,16,8
+    LTEXT           "frames",IDC_STATIC,364,5,24,8
     PUSHBUTTON      "&Refresh",IDC_REFRESH,162,170,50,14,BS_ICON
     CONTROL         "Autoupd asm",IDC_AUTOUPDATE_ASM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,172,57,10
     PUSHBUTTON      "&Cont",IDC_CONTINUE,67,170,24,14
@@ -730,7 +798,7 @@ BEGIN
     CONTROL         "&Auto-update",IDC_AUTO_UPDATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,66,54,14
     EDITTEXT        IDC_AUTO_UPDATE_SECS,68,67,12,14,ES_AUTOHSCROLL | ES_READONLY | WS_DISABLED
     CONTROL         "",IDC_AUTO_UPDATE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS | WS_DISABLED,80,67,11,14
-    LTEXT           "frames",IDC_STATIC,92,70,16,8
+    LTEXT           "frames",IDC_STATIC,92,70,24,8
 END
 
 IDD_MAP DIALOGEX 0, 0, 485, 320
@@ -757,7 +825,7 @@ BEGIN
     CONTROL         "&Auto-update",IDC_AUTO_UPDATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,102,54,14
     EDITTEXT        IDC_AUTO_UPDATE_SECS,59,103,12,14,ES_AUTOHSCROLL | ES_READONLY | WS_DISABLED
     CONTROL         "",IDC_AUTO_UPDATE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS | WS_DISABLED,71,103,11,14
-    LTEXT           "frames",IDC_STATIC,83,106,16,8
+    LTEXT           "frames",IDC_STATIC,83,106,24,8
     LTEXT           "Visible :",IDC_STATIC,4,50,38,8
     LTEXT           "CHAR",IDC_CHAR,47,63,85,8
 END
@@ -841,7 +909,7 @@ BEGIN
     CONTROL         "&Auto-update",IDC_AUTO_UPDATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,154,54,14
     EDITTEXT        IDC_AUTO_UPDATE_SECS,68,155,12,14,ES_AUTOHSCROLL | ES_READONLY | WS_DISABLED
     CONTROL         "",IDC_AUTO_UPDATE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS | WS_DISABLED,80,155,11,14
-    LTEXT           "frames",IDC_STATIC,92,158,16,8
+    LTEXT           "frames",IDC_STATIC,92,158,24,8
 END
 
 IDD_MEM_VIEW DIALOGEX 0, 0, 614, 239
@@ -947,7 +1015,7 @@ BEGIN
     CONTROL         "&Auto-update",IDC_AUTO_UPDATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,161,54,14
     EDITTEXT        IDC_AUTO_UPDATE_SECS,59,162,12,14,ES_AUTOHSCROLL | ES_READONLY | WS_DISABLED
     CONTROL         "",IDC_AUTO_UPDATE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS | WS_DISABLED,71,161,11,14
-    LTEXT           "frames",IDC_STATIC,83,163,16,8
+    LTEXT           "frames",IDC_STATIC,83,163,24,8
     GROUPBOX        "Scale by",IDC_STATIC,159,140,40,53
     CONTROL         "2x",IDC_S2X,"Button",BS_AUTORADIOBUTTON | WS_GROUP,165,150,21,10
     CONTROL         "4x",IDC_S4X,"Button",BS_AUTORADIOBUTTON,165,160,21,10
@@ -969,7 +1037,7 @@ BEGIN
     CONTROL         "&Auto-update",IDC_AUTO_UPDATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,150,54,14
     EDITTEXT        IDC_AUTO_UPDATE_SECS,68,151,12,14,ES_AUTOHSCROLL | ES_READONLY | WS_DISABLED
     CONTROL         "",IDC_AUTO_UPDATE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS | WS_DISABLED,80,151,11,14
-    LTEXT           "frames",IDC_STATIC,92,154,16,8
+    LTEXT           "frames",IDC_STATIC,92,154,24,8
 END
 
 IDD_PROMPT DIALOG 0, 0, 186, 68
@@ -1044,28 +1112,38 @@ BEGIN
     PUSHBUTTON      "Separator",IDC_C_WATCH_SEPARATE,225,136,36,14
 END
 
-IDD_RECORDMOVIE DIALOGEX 0, 0, 301, 118
+IDD_RECORDMOVIE DIALOGEX 0, 0, 330, 236
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Record movie"
+CAPTION "Record Movie"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,177,99,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,231,99,50,14
-    GROUPBOX        "",65501,11,2,269,64
-    LTEXT           "File:",IDC_STATIC,31,15,14,8
-    EDITTEXT        IDC_EDIT_FILENAME,49,13,189,12,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BUTTON_BROWSEFILE,249,13,18,14
-    LTEXT           "Author:",IDC_STATIC,21,31,25,8
-    EDITTEXT        IDC_EDIT_AUTHOR,49,29,189,14,ES_AUTOHSCROLL
-    LTEXT           "Date:",IDC_STATIC,28,49,18,8
-    CONTROL         "",IDC_DTP_DATE,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_LONGDATEFORMAT | WS_TABSTOP,49,47,123,12
-    CONTROL         "",IDC_DTP_TIME,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_UPDOWN | WS_TABSTOP | 0x8,176,47,62,12
-    GROUPBOX        "",IDC_STATIC,11,66,269,29
-    LTEXT           "SRAM:",IDC_STATIC,19,78,25,8
-    EDITTEXT        IDC_EDIT_SRAMFILENAME,48,76,189,12,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_BUTTON_BROWSESRAM,248,76,18,14
-    CONTROL         "Start from SRAM",IDC_START_FROM_SRAM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,101,73,10
-    CONTROL         "Start from power on",IDC_START_FROM_POWER_ON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,85,101,81,10
+    LTEXT           "Movie file:",IDC_STATIC,7,5,42,8
+    EDITTEXT        IDC_EDIT_FILENAME,7,16,250,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse(&B)...",IDC_BUTTON_BROWSEFILE,265,15,58,14
+    LTEXT           "Author:",IDC_STATIC,7,36,48,8,SS_RIGHT
+    EDITTEXT        IDC_EDIT_AUTHOR,58,34,265,13,ES_AUTOHSCROLL
+    LTEXT           "Comment:",IDC_STATIC,7,53,48,8,SS_RIGHT
+    EDITTEXT        IDC_REC_DESCRIPTION,58,51,265,13,ES_AUTOHSCROLL
+    LTEXT           "Start RTC:",IDC_STATIC,7,70,48,8,SS_RIGHT
+    CONTROL         "",IDC_DTP_DATE,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_LONGDATEFORMAT | WS_TABSTOP,58,68,116,13
+    CONTROL         "",IDC_DTP_TIME,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_UPDOWN | WS_TABSTOP | 0x8,178,68,62,13
+    LTEXT           "Your ROM: ...",IDC_REC_ROMINFO,7,87,316,9
+    GROUPBOX        "Recording options",IDC_STATIC,7,100,150,76
+    CONTROL         "From power on (cold boot)",IDC_START_FROM_POWER_ON,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,17,113,132,10
+    CONTROL         "From reset / SRAM",IDC_START_FROM_SRAM,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,17,126,132,10
+    CONTROL         "From current state (snapshot)",IDC_START_FROM_SAVESTATE,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,17,139,134,10
+    LTEXT           "SRAM:",IDC_STATIC,17,157,32,8,SS_RIGHT
+    EDITTEXT        IDC_EDIT_SRAMFILENAME,52,155,76,13,ES_AUTOHSCROLL | WS_DISABLED
+    PUSHBUTTON      "...",IDC_BUTTON_BROWSESRAM,132,155,20,13,WS_DISABLED
+    GROUPBOX        "Emulation settings (read-only)",IDC_STATIC,163,100,160,76
+    CONTROL         "External BIOS",IDC_REC_BIOSEXT,"Button",BS_AUTOCHECKBOX | WS_DISABLED,173,113,144,10
+    CONTROL         "SWI from BIOS",IDC_REC_BIOSWI,"Button",BS_AUTOCHECKBOX | WS_DISABLED,173,126,144,10
+    CONTROL         "External firmware",IDC_REC_FIRMEXT,"Button",BS_AUTOCHECKBOX | WS_DISABLED,173,139,144,10
+    CONTROL         "Boot from firmware",IDC_REC_BOOTFW,"Button",BS_AUTOCHECKBOX | WS_DISABLED,173,152,144,10
+    LTEXT           "Set these in Config > Emulation.",IDC_STATIC,173,165,144,8
+    LTEXT           "OK starts recording. The movie stores the current emulation settings.",IDC_STATIC,7,182,316,10
+    DEFPUSHBUTTON   "OK",IDOK,196,214,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,255,214,50,14
 END
 
 IDD_REPLAY_METADATA DIALOGEX 0, 0, 325, 250
@@ -1075,6 +1153,45 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "Close",IDCANCEL,268,229,50,14
     CONTROL         "",1130,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,311,214
+END
+
+// The movie timeline editor.  Modeless, thick-framed and without
+// DS_MODALFRAME on purpose: DS_MODALFRAME would draw the fixed dialog border
+// around a window the user is supposed to resize, and it also gives the
+// caption no icon at all (see the note at the top of dsmeditor.cpp).
+IDD_DSM_EDITOR DIALOGEX 0, 0, 460, 274
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN
+CAPTION "DSM Editor"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Play",IDC_DSM_PLAY,6,5,30,13
+    PUSHBUTTON      "Pause",IDC_DSM_PAUSE,38,5,34,13
+    PUSHBUTTON      "Step",IDC_DSM_STEP,74,5,30,13
+    PUSHBUTTON      "Locate",IDC_DSM_GOTOPLAYHEAD,106,5,44,13
+    PUSHBUTTON      "Save",IDC_DSM_SAVE,154,5,32,13
+    CONTROL         "Read-only",IDC_DSM_READONLY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,192,7,46,9
+    CONTROL         "Follow",IDC_DSM_FOLLOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,242,7,38,9
+    PUSHBUTTON      "Prev mark",IDC_DSM_PREVMARK,286,5,40,13
+    PUSHBUTTON      "Next mark",IDC_DSM_NEXTMARK,328,5,40,13
+    LTEXT           "Frame:",IDC_DSM_GOTOLABEL,372,7,24,8
+    EDITTEXT        IDC_DSM_FRAMENO,398,5,44,13,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_DSM_LIST,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_OWNERDATA | WS_BORDER | WS_TABSTOP,6,21,448,214,WS_EX_CLIENTEDGE
+    LTEXT           "",IDC_DSM_HINT,6,239,448,19
+    LTEXT           "",IDC_DSM_STATUS,6,261,448,8
+END
+
+IDD_DSM_TOUCH DIALOGEX 0, 0, 176, 84
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Stylus Position"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "X (0-255):",IDC_STATIC,10,12,38,8
+    EDITTEXT        IDC_DSM_TOUCH_X,50,10,40,13,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Y (0-191):",IDC_STATIC,10,29,38,8
+    EDITTEXT        IDC_DSM_TOUCH_Y,50,27,40,13,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Stylus down on this frame",IDC_DSM_TOUCH_DOWN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,46,120,9
+    DEFPUSHBUTTON   "OK",IDOK,64,64,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,118,64,50,14
 END
 
 IDD_SOUNDSETTINGS DIALOGEX 0, 0, 387, 172
@@ -1088,9 +1205,9 @@ BEGIN
     CONTROL         "Synchronous (sometimes needed for streams)",IDC_SYNCHMODE_SYNCH,
                     "Button",BS_AUTORADIOBUTTON,21,28,158,10
     GROUPBOX        "Synchronizer Method",IDC_GROUP_SYNCHMETHOD,13,90,173,70
-    CONTROL         "Synch Method ""N""",IDC_SYNCHMETHOD_N,"Button",BS_AUTORADIOBUTTON | WS_GROUP,19,101,76,10
-    CONTROL         "Synch Method ""Z""",IDC_SYNCHMETHOD_Z,"Button",BS_AUTORADIOBUTTON,19,114,75,10
-    CONTROL         "Synch Method ""P""",IDC_SYNCHMETHOD_P,"Button",BS_AUTORADIOBUTTON,19,126,75,10
+    CONTROL         "N: Crossfade resampler (low CPU)",IDC_SYNCHMETHOD_N,"Button",BS_AUTORADIOBUTTON | WS_GROUP,19,101,160,10
+    CONTROL         "Z: Micro-resampler (low latency)",IDC_SYNCHMETHOD_Z,"Button",BS_AUTORADIOBUTTON,19,114,160,10
+    CONTROL         "P: Time-stretch (keeps pitch)",IDC_SYNCHMETHOD_P,"Button",BS_AUTORADIOBUTTON,19,126,160,10
     COMBOBOX        IDC_SOUNDCORECB,237,10,132,33,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_SOUNDBUFFERET,237,26,42,13
     COMBOBOX        IDC_SPU_INTERPOLATION_CB,237,44,131,33,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
@@ -1312,10 +1429,10 @@ BEGIN
     CONTROL         "Edit",IDC_MINI_TILE,"MiniTileViewBox",0x0,22,116,56,52,WS_EX_CLIENTEDGE
     LTEXT           "Tile num : 0",IDC_TILENUM,23,170,100,8
     PUSHBUTTON      "&Close",IDC_FERMER,198,164,50,14
-    CONTROL         "&Auto-update",IDC_AUTO_UPDATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,349,165,54,14
-    EDITTEXT        IDC_AUTO_UPDATE_SECS,404,165,12,14,ES_AUTOHSCROLL | ES_READONLY | WS_DISABLED
-    CONTROL         "",IDC_AUTO_UPDATE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS | WS_DISABLED,416,164,11,14
-    LTEXT           "frames",IDC_STATIC,428,167,16,8
+    CONTROL         "&Auto-update",IDC_AUTO_UPDATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,341,165,54,14
+    EDITTEXT        IDC_AUTO_UPDATE_SECS,396,165,12,14,ES_AUTOHSCROLL | ES_READONLY | WS_DISABLED
+    CONTROL         "",IDC_AUTO_UPDATE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS | WS_DISABLED,408,164,11,14
+    LTEXT           "frames",IDC_STATIC,420,167,24,8
 END
 
 IDD_WIFISETTINGS DIALOGEX 0, 0, 331, 114
@@ -1655,13 +1772,19 @@ BEGIN
         MENUITEM "Save Screenshot &As...",      IDM_PRINTSCREEN
         MENUITEM "&Quick Screenshot",           IDM_QUICK_PRINTSCREEN
         MENUITEM SEPARATOR
-        MENUITEM "Record WAV",                  IDM_FILE_RECORDWAV
-        MENUITEM "Record User SPU WAV",         IDM_FILE_RECORDUSERSPUWAV
-        MENUITEM "Record AVI",                  IDM_FILE_RECORDAVI
+        MENUITEM "Record Video...",             IDM_FILE_RECORDVIDEO
+        MENUITEM "Pause Recording",             IDM_FILE_PAUSERECORDING
+        POPUP "Legacy Recording"
+        BEGIN
+            MENUITEM "Record AVI",              IDM_FILE_RECORDAVI
+            MENUITEM "Record WAV",              IDM_FILE_RECORDWAV
+            MENUITEM "Record User SPU WAV",     IDM_FILE_RECORDUSERSPUWAV
+        END
         MENUITEM SEPARATOR
         MENUITEM "&Play Movie...",              IDM_PLAY_MOVIE
         MENUITEM "&Record Movie...",            IDM_RECORD_MOVIE
         MENUITEM "&Stop Movie",                 IDM_STOPMOVIE
+        MENUITEM "&DSM Editor...",              IDM_DSM_EDITOR
         MENUITEM SEPARATOR
         MENUITEM "&Reset",                      IDM_RESET
         MENUITEM "Close ROM",                   IDM_CLOSEROM
@@ -1814,6 +1937,7 @@ BEGIN
         MENUITEM "&Hotkey Config",              IDM_HOTKEY_CONFIG
         MENUITEM "&Wifi Settings",              IDM_WIFISETTINGS
         MENUITEM "&Path Settings",              IDM_PATHSETTINGS
+        MENUITEM "Use &Modern UI Font",         IDM_USE_MODERN_FONT
         MENUITEM "Background Pause",            IDC_BACKGROUNDPAUSE
         MENUITEM "Background Input",            IDC_BACKGROUNDINPUT
         POPUP "Display &Method"
@@ -1822,7 +1946,23 @@ BEGIN
             MENUITEM "DirectDraw &SW",              ID_DISPLAYMETHOD_DIRECTDRAWSW
             MENUITEM SEPARATOR
             MENUITEM "&OpenGL",                     ID_DISPLAYMETHOD_OPENGL
-            MENUITEM "&Filter",                     ID_DISPLAYMETHOD_FILTER
+            // "Automatic" is the only WebGPU entry that lives in the resource: the
+            // per-backend ones are appended at run time, because which backends
+            // this machine can run is only known then. See
+            // BuildDisplayMethodBackendMenu() in main.cpp.
+            POPUP "&WebGPU"
+            BEGIN
+                MENUITEM "&Automatic",              ID_DISPLAYMETHOD_WGPU
+            END
+            MENUITEM "&Bilinear Filter",            ID_DISPLAYMETHOD_FILTER
+            // "Off" is the only GPU filter entry that lives in the resource:
+            // the chains come from the table in src/frontend/shared/
+            // wgpu_present.cpp and are appended at run time, see
+            // BuildDisplayMethodGpuFilterMenu() in main.cpp.
+            POPUP "GPU F&ilter"
+            BEGIN
+                MENUITEM "&Off",                        ID_DISPLAYMETHOD_GPUFILTER_OFF
+            END
             MENUITEM SEPARATOR
             MENUITEM "&VSync",                      ID_DISPLAYMETHOD_VSYNC
         END
@@ -1877,6 +2017,7 @@ BEGIN
         BEGIN
             MENUITEM "New Lua Script Window...",    IDC_NEW_LUA_SCRIPT
             MENUITEM "Close All Script Windows",    IDC_CLOSE_LUA_SCRIPTS
+            MENUITEM "About Lua Scripting...",      IDC_LUA_ABOUT
         END
     END
     POPUP "&Help"
@@ -1888,6 +2029,30 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&Submit a bug report",        IDM_SUBMITBUGREPORT
         MENUITEM "&About",                      IDM_ABOUT
+    END
+END
+
+// The DSM Editor's grid menu.  It is a one-popup menu so TrackPopupMenu() can
+// take GetSubMenu(...,0) without a detour; the editor enables and greys the
+// items itself before showing it.
+DSMEDITOR_MENU MENU
+BEGIN
+    POPUP "Edit"
+    BEGIN
+        MENUITEM "&Mark / Unmark\tM",           CMD_DSM_MARK
+        MENUITEM SEPARATOR
+        MENUITEM "Insert Frame &Before\tIns",   CMD_DSM_INSERT
+        MENUITEM "Insert Frame &After",         CMD_DSM_INSERT_AFTER
+        MENUITEM "&Delete Frames\tDel",         CMD_DSM_DELETE
+        MENUITEM SEPARATOR
+        MENUITEM "Cu&t\tCtrl+X",                CMD_DSM_CUT
+        MENUITEM "&Copy\tCtrl+C",               CMD_DSM_COPY
+        MENUITEM "&Paste\tCtrl+V",              CMD_DSM_PASTE
+        MENUITEM SEPARATOR
+        MENUITEM "Set Stylus &Position...",     CMD_DSM_TOUCH
+        MENUITEM SEPARATOR
+        MENUITEM "&Save Movie",                 CMD_DSM_SAVE
+        MENUITEM "Save Movie &As...",           CMD_DSM_SAVE_AS
     END
 END
 
@@ -1953,7 +2118,7 @@ BEGIN
     IDD_PATHSETTINGS, DIALOG
     BEGIN
         RIGHTMARGIN, 248
-        BOTTOMMARGIN, 284
+        BOTTOMMARGIN, 349
     END
 
     IDD_3DSETTINGS, DIALOG
@@ -1999,7 +2164,7 @@ BEGIN
 
     IDD_RECORDMOVIE, DIALOG
     BEGIN
-        BOTTOMMARGIN, 107
+        BOTTOMMARGIN, 226
     END
 
     IDD_SOUNDSETTINGS, DIALOG
@@ -2215,6 +2380,10 @@ BEGIN
     IDM_FILE_STOPAVI        "Stop AVI"
     IDM_FILE_STOPWAV        "Stop WAV"
     IDM_FILE_RECORDAVI      "Record AVI"
+    IDM_FILE_RECORDVIDEO    "Record Video..."
+    IDM_FILE_STOPVIDEO      "Stop Video Recording"
+    IDM_FILE_PAUSERECORDING "Pause Recording"
+    IDM_FILE_RESUMERECORDING "Resume Recording"
 END
 
 STRINGTABLE
@@ -2339,6 +2508,45 @@ BEGIN
     ID_LABEL_HK75           "Toggle Sub BG 3 Layer"
     ID_LABEL_HK76           "Toggle Sub OBJ Layer"
 END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// GPU filters: the WGSL of the libretro upscaler chains
+//
+// Verbatim from https://github.com/libretro/glsl-shaders, through the WebGPU
+// ports in ../shared/upscalers/libretro, which both frontends share. One
+// resource per pass rather than one string literal per pass, so the files stay
+// the shaders they came from and can be diffed against upstream.
+//
+// Nothing here is read at startup: a pass is fetched only when the filter it
+// belongs to is selected, and only that chain is compiled (see
+// src/frontend/shared/wgpu_present.cpp).
+//
+/////////////////////////////////////////////////////////////////////////////
+
+XBRZ_FREESCALE_WGSL         RCDATA  "../shared/upscalers/libretro/XbrzFreescale.wgsl"
+LANCZOS3_WGSL               RCDATA  "../shared/upscalers/libretro/Lanczos3.wgsl"
+BICUBIC_WGSL                RCDATA  "../shared/upscalers/libretro/Bicubic.wgsl"
+XBR_LV2_WGSL                RCDATA  "../shared/upscalers/libretro/XbrLv2.wgsl"
+XBR_LV2_NOBLEND_WGSL        RCDATA  "../shared/upscalers/libretro/XbrLv2NoBlend.wgsl"
+XBR_LV3_WGSL                RCDATA  "../shared/upscalers/libretro/XbrLv3.wgsl"
+XBR_LV3_PASS0_WGSL          RCDATA  "../shared/upscalers/libretro/XbrLv3Multipass0.wgsl"
+XBR_LV3_PASS1_WGSL          RCDATA  "../shared/upscalers/libretro/XbrLv3Multipass1.wgsl"
+SUPER_XBR_PASS0_WGSL        RCDATA  "../shared/upscalers/libretro/SuperXbrPass0.wgsl"
+SUPER_XBR_PASS1_WGSL        RCDATA  "../shared/upscalers/libretro/SuperXbrPass1.wgsl"
+SUPER_XBR_JINC2_WGSL        RCDATA  "../shared/upscalers/libretro/SuperXbrJinc2.wgsl"
+SCALEFX_PASS0_WGSL          RCDATA  "../shared/upscalers/libretro/ScaleFxPass0.wgsl"
+SCALEFX_PASS1_WGSL          RCDATA  "../shared/upscalers/libretro/ScaleFxPass1.wgsl"
+SCALEFX_PASS2_WGSL          RCDATA  "../shared/upscalers/libretro/ScaleFxPass2.wgsl"
+SCALEFX_PASS3_WGSL          RCDATA  "../shared/upscalers/libretro/ScaleFxPass3.wgsl"
+SCALEFX_PASS4_WGSL          RCDATA  "../shared/upscalers/libretro/ScaleFxPass4.wgsl"
+XBR_2X_PASS0_WGSL           RCDATA  "../shared/upscalers/libretro/Xbr2xPass0.wgsl"
+XBR_2X_PASS1_WGSL           RCDATA  "../shared/upscalers/libretro/Xbr2xPass1.wgsl"
+XBR_MLV4_PASS1_WGSL         RCDATA  "../shared/upscalers/libretro/XbrMlv4Pass1.wgsl"
+XBR_MLV4_PASS2_WGSL         RCDATA  "../shared/upscalers/libretro/XbrMlv4Pass2.wgsl"
+XBR_MLV4_PASS3_WGSL         RCDATA  "../shared/upscalers/libretro/XbrMlv4Pass3.wgsl"
+XBR_MLV4_PASS4_WGSL         RCDATA  "../shared/upscalers/libretro/XbrMlv4Pass4.wgsl"
+PT_SKYWALKER541_WGSL        RCDATA  "../shared/upscalers/libretro/PT_SkyWalker541.wgsl"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

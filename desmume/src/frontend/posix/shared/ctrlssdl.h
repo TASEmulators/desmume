@@ -25,7 +25,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include "MMU.h"
 
 #include "types.h"
@@ -69,6 +69,9 @@ extern const char *key_names[NB_KEYS];
 extern u32 keyboard_cfg[NB_KEYS];
 /* Current joypad configuration */
 extern u32 joypad_cfg[NB_KEYS];
+/* Per-button autofire ("turbo"), indexed like keyboard_cfg/joypad_cfg.
+   A non-zero entry makes that DS button auto-fire while it is held. */
+extern u8 turbo_cfg[NB_KEYS];
 
 #ifndef GTK_UI
 struct mouse_status
@@ -129,5 +132,23 @@ process_joystick_device_events();
 
 int get_joystick_number_by_id(SDL_JoystickID id);
 int get_number_of_joysticks();
+
+/* Raw state of an opened joystick, used by the POSIX Lua frontend for
+ * controller.get().  The index is the same device index the SDL frontend
+ * uses (0..MAX_JOYSTICKS-1), matching the joystickID argument on Windows. */
+#define JOYSTICK_MAX_BUTTONS 33
+#define JOYSTICK_MAX_AXES 6
+struct joystick_raw_state
+{
+  bool hasHat;
+  int hat;              /* SDL_HAT_* bitmask, -1 when the pad has no hat */
+  int buttonCount;
+  bool buttons[JOYSTICK_MAX_BUTTONS];
+  int axisCount;
+  double axes[JOYSTICK_MAX_AXES]; /* x, y, z, r, u, v scaled to -1..1 */
+};
+
+/* Returns false when no pad is open at that index. */
+bool get_joystick_raw_state(unsigned int index, struct joystick_raw_state* out);
 
 #endif /* CTRLSSDL_H */

@@ -19,6 +19,10 @@
 #include "types.h"
 
 #ifdef HAVE_JIT
+// A Universal build registers both backends in one Sources phase. On an x86
+// slice this TU must compile as empty; the old #error made the Universal
+// target unbuildable even though the slice never executes this code.
+#if defined(__aarch64__)
 
 #define PTR_STORE_REG 11
 
@@ -29,6 +33,7 @@
 #include "armcpu.h"
 #include "instructions.h"
 #include "instruction_attributes.h"
+#include "jit_dma_event.h"
 #include "MMU.h"
 #include "MMU_timing.h"
 #include "arm_jit.h"
@@ -41,11 +46,32 @@ static const char *disassemble(u32 opcode);
 #define VALUE 			1
 #define VALUE_NO_CACHE	2
 
-#ifdef __aarch64__
+// AArch64 is the only remaining host backend for this file. The 32-bit ARM
+// encoder (arm_emit.cpp) was removed: it had no test coverage, and 18 of its
+// primitives had zero references from this file, so it was already dead weight.
+
 #include "arm64_emit.cpp"
-#else
-#include "arm_emit.cpp"
-#endif
+
+// Register that caches the address of mmu_dma_event_pending for the whole block,
+// so the DMA event check after a store costs one load instead of reloading the
+// pointer. It has to survive helper calls, so it must be callee-saved, and the
+// back end must not use it as scratch.
+//
+// x24 is callee-saved (AAPCS64) and has no other use here; save() in
+// emit_startfunc already pushes x23/x24.
+#define JIT_DMA_FLAG_REG X24_REG
+
+// Host register holding &ARMPROC for the whole block. Every CPU field access
+// used to rebuild that address with movz/movk; with the base resident it is
+// one `add` (or no instruction at all, when the field is reachable with a
+// scaled offset). Callee-saved and unused elsewhere, and save()/restore()
+// push it, so it survives helper calls and the return to the caller.
+#define JIT_CPU_BASE_REG X25_REG
+
+// Same trick for the cycle counters. x26 is already pushed by save()/restore()
+// (as the pair to x25), so this costs one load in the prologue.
+#define JIT_COUNTERS_REG X26_REG
+
 t_bytes *g_out = NULL;
 
 #ifdef __APPLE__
@@ -132,50 +158,132 @@ static int bb_opcodesize;
 static int bb_adr;
 static bool bb_thumb;
 static GpVar bb_cpu;
-static GpVar bb_cycles;
-static GpVar bb_total_cycles;
+// The two cycle counters are one object on purpose: a single block-resident
+// base register (JIT_COUNTERS_REG) then addresses both, which removes an
+// address materialisation per touch -- and they are touched several times
+// per emulated instruction.
+struct BbCounters
+{
+	u32 cycles;        // cycles of the instruction just emitted
+	u32 total_cycles;  // accumulated over the block, returned in w0
+};
+static BbCounters bb_counters;
+#define bb_cycles       bb_counters.cycles
+#define bb_total_cycles bb_counters.total_cycles
+
+#define BB_CYCLES_FIELD (int)offsetof(BbCounters, cycles)
+#define BB_TOTAL_FIELD  (int)offsetof(BbCounters, total_cycles)
 static u32 bb_constant_cycles;
+// true once the DMA event flag pointer has been materialised in JIT_DMA_FLAG_REG
+static bool bb_dma_flag_ptr_ready;
 
 #define cpu (&ARMPROC)
 
 static void save();
 static void restore();
 
+// Address of a CPU field, built from the block-resident base pointer.
+//
+// The old code materialised the full 64-bit address with movz/movk on every
+// single access -- two to four instructions to reach a field sitting a few
+// dozen bytes off a pointer the block already knows. The base is loaded once
+// per block (JIT_CPU_BASE_REG), so the address is one `add` and a value load
+// can address the field directly. Every armcpu_t field this back end touches
+// is inside the 12-bit immediate range; the fallback keeps the old
+// materialisation for anything larger instead of encoding a wrong address.
+static int inline cpu_field_addr(int o, int r) {
+	if (o >= 0 && o < 4096) {
+		emit_add_off64(g_out, r, JIT_CPU_BASE_REG, o);
+	} else {
+		emit_ptr(g_out, (uintptr_t)(&ARMPROC) + o, r);
+	}
+	return r;
+}
+
+// VALUE keeps the address in PTR_STORE_REG as well: CACHED_PTR() expands to
+// that register, and a handful of handlers store through it after a load.
 static int inline cpu_get_ptr(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldr(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldr_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldr(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
 static int inline cpu_get_ptrB(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldrb(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldrb_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v == VALUE_NO_CACHE) {
+		// Only the value is wanted. The flag macros use this to avoid the
+		// `add x11, x25, #off` they would otherwise pay just to feed
+		// CACHED_PTR() a second time.
+		emit_ldrb_off(g_out, r, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldrb(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
 
 static int inline cpu_get_ptrW(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldrw(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldrh_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldrw(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
 static int inline cpu_get_ptrS(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldrs(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldr_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldrs(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
 static int inline cpu_get_ptrSB(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldrsb(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldrsb_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldrsb(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
 
 static int inline cpu_get_ptrSW(void *start, int o, int r, int v) {
-	emit_ptr(g_out, (uintptr_t)((uintptr_t)(&ARMPROC)+o), v == VALUE ? PTR_STORE_REG : r);
-	if (v) emit_ldrsw(g_out, v == VALUE ? PTR_STORE_REG : r, r);
+	if (v == VALUE) {
+		emit_ldrsh_off(g_out, r, JIT_CPU_BASE_REG, o);
+		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
+	} else if (v) {
+		cpu_field_addr(o, r);
+		emit_ldrsw(g_out, r, r);
+	} else {
+		cpu_field_addr(o, r);
+	}
 	return r;
 }
 
@@ -224,6 +332,262 @@ static int inline get_ptrSW(void *start, int o, int r, int v) {
 	return r;
 }
 
+// Cycle-counter access through the resident base. These replace
+// emit_read_ptr32_reg/emit_write_ptr32_reg/emit_inc_ptr* on &bb_cycles and
+// &bb_total_cycles, which each rebuilt the address with movz/movk.
+static inline void emit_ld_counters(int field, int rt) {
+	ASMJIT_ASSUME_OK(g_out->ldr(gw(rt), asmjit::a64::ptr(gx(JIT_COUNTERS_REG), field)));
+}
+
+static inline void emit_st_counters(int field, int rt) {
+	ASMJIT_ASSUME_OK(g_out->str(gw(rt), asmjit::a64::ptr(gx(JIT_COUNTERS_REG), field)));
+}
+
+static inline void emit_st_counters_zero(int field) {
+	ASMJIT_ASSUME_OK(g_out->str(asmjit::a64::wzr, asmjit::a64::ptr(gx(JIT_COUNTERS_REG), field)));
+}
+
+// counters[field] += add
+static inline void emit_add_counters_imm(int field, int add) {
+	emit_ld_counters(field, X10_REG);
+	if (add > 0)
+		ASMJIT_ASSUME_OK(g_out->add(gw(X10_REG), gw(X10_REG), asmjit::Imm(add)));
+	else if (add < 0)
+		ASMJIT_ASSUME_OK(g_out->sub(gw(X10_REG), gw(X10_REG), asmjit::Imm(-add)));
+	emit_st_counters(field, X10_REG);
+}
+
+// counters[dst] += counters[src]
+static inline void emit_add_counters(int dstField, int srcField) {
+	emit_ld_counters(dstField, X10_REG);
+	emit_ld_counters(srcField, X9_REG);
+	ASMJIT_ASSUME_OK(g_out->add(gw(X10_REG), gw(X10_REG), gw(X9_REG)));
+	emit_st_counters(dstField, X10_REG);
+}
+
+//-----------------------------------------------------------------------------
+//   Block-scoped emulated-register cache
+//-----------------------------------------------------------------------------
+//
+// An ALU handler used to be: load Rn out of armcpu_t.R[], compute, store Rd
+// back. Inside a block most of those stores are dead -- the next instruction
+// re-reads the same register -- so the pair is pure overhead that only exists
+// because the value has nowhere to live between instructions.
+//
+// Why this does *not* use asmjit virtual registers
+// -----------------------------------------------
+// The migration plan (§2.5) sketched `cc.new_gp32()`. Two things measured on
+// this backend rule it out:
+//
+//   * the block's prologue/epilogue is hand-written (save()/restore() pushes
+//     eight registers onto sp with stp/ldp). asmjit's PEI has no idea that
+//     happened, so as soon as a virtual register forces a save or a spill it
+//     inserts its own `sub sp, sp, #N` and its own restore fragments around
+//     ours. A dump of exactly that shape came out with an `ldp x19, x20, [sp],
+//     #16` that has no matching store -- two frame models, one stack pointer.
+//   * RA does not split a live range around the raw `blr` that callR3()
+//     emits. save_call()/restore_call() is hand-written, so a value RA parks in
+//     a caller-saved register is silently destroyed by the helper call.
+//
+// So the cache owns real host registers and does its own write-back. It costs
+// nothing in the prologue because the pool is caller-saved and rule 2 below
+// guarantees no entry ever has to survive a call.
+
+// Host registers the cache owns. Chosen by elimination: X12_REG, X15_REG and
+// X21_REG are the only registers that appear nowhere but in their own #define,
+// so the cache cannot collide with the hand-written scratch set (R0..R11,
+// x16/x17/x19/x20/x22 for immediates and shifts, x23/x24/x25/x26 pinned).
+// All three are caller-saved, which is why save()/restore() stay untouched --
+// the frozen encoder dump (tools/jit_matrix/a64_golden.txt) depends on that.
+static const int kArmRegCacheHost[3] = { X12_REG, X15_REG, X21_REG };
+#define ARM_RC_SLOTS 3
+
+// Rule 1: R15 never enters the cache. PC belongs to sync_r15(), and a cached PC
+// would be stale the moment a block-final instruction rewrote it -- so every
+// access to it goes straight to memory (evict(15) is a no-op by construction,
+// since nothing ever allocates it).
+static inline int reg_off(int n) {
+	return (int)offsetof(armcpu_t, R) + 4 * n;
+}
+
+struct ArmRegCache
+{
+	int reg[ARM_RC_SLOTS];   // emulated register held by this slot, -1 = free
+	u32 dirty;               // bit i: slot i holds a value memory does not have
+	u32 touched;             // bit i: slot i is in use by the handler being emitted
+
+	void reset()
+	{
+		for (int i = 0; i < ARM_RC_SLOTS; i++)
+			reg[i] = -1;
+		dirty = touched = 0;
+	}
+
+	// One emulated instruction may hold at most ARM_RC_SLOTS-1 registers at
+	// once, otherwise acquiring the destination could evict a source the
+	// handler is still holding -- see need().
+	void begin_insn()
+	{
+		touched = 0;
+	}
+
+	int find(int n) const
+	{
+		for (int i = 0; i < ARM_RC_SLOTS; i++)
+			if (reg[i] == n)
+				return i;
+		return -1;
+	}
+
+	// Gives up slot `n`: the value goes to memory if it is dirty, and the slot
+	// is free afterwards. Used both for eviction and by every access path that
+	// still goes through memory (rule 4).
+	void evict(int n)
+	{
+		const int i = find(n);
+		if (i < 0)
+			return;
+		if (dirty & (1u << i))
+			emit_str_off(g_out, kArmRegCacheHost[i], JIT_CPU_BASE_REG, reg_off(n));
+		reg[i] = -1;
+		dirty &= ~(1u << i);
+		touched &= ~(1u << i);
+	}
+
+	// Gives up slot `n` without writing it back: the caller knows a helper is
+	// about to overwrite armcpu_t.R[n] directly (LDM/LDRD destinations), so the
+	// pending value is dead and storing it would just be overwritten.
+	void discard(int n)
+	{
+		const int i = find(n);
+		if (i < 0)
+			return;
+		reg[i] = -1;
+		dirty &= ~(1u << i);
+		touched &= ~(1u << i);
+	}
+
+	void write_back(int i)
+	{
+		if (reg[i] >= 0 && (dirty & (1u << i)))
+			emit_str_off(g_out, kArmRegCacheHost[i], JIT_CPU_BASE_REG, reg_off(reg[i]));
+	}
+
+	void invalidate()
+	{
+		for (int i = 0; i < ARM_RC_SLOTS; i++)
+			reg[i] = -1;
+		dirty = touched = 0;
+	}
+
+	// Rule 3: memory is the only truth after this.
+	void flush()
+	{
+		for (int i = 0; i < ARM_RC_SLOTS; i++)
+			write_back(i);
+		invalidate();
+	}
+
+	bool any_dirty() const { return dirty != 0; }
+
+	// Returns the host register holding R[n], loading it first if `load`.
+	// `mark` says the caller is going to overwrite it, so the slot becomes dirty
+	// without paying for the load. A destination that is fully overwritten is
+	// the common case (`add r0, r1, r2`), which is why the two are separate
+	// entry points.
+	int need(int n, bool load, bool mark)
+	{
+		int i = find(n);
+		if (i < 0)
+		{
+			for (int k = 0; k < ARM_RC_SLOTS && i < 0; k++)
+				if (reg[k] < 0)
+					i = k;
+			for (int k = 0; k < ARM_RC_SLOTS && i < 0; k++)
+				if (!(touched & (1u << k)))
+					i = k;
+			if (i < 0)
+			{
+				// Every slot belongs to the instruction being emitted. Taking one
+				// would invalidate a register the caller is already holding, so
+				// this is a handler bug, not a runtime condition.
+				ASMJIT_ASSERT(false);
+				return kArmRegCacheHost[0];
+			}
+			if (reg[i] >= 0)
+				evict(reg[i]);
+			reg[i] = n;
+
+			// Only a miss loads. On a hit the slot already holds the newest
+			// value -- which may not be in memory yet -- so reloading here would
+			// throw the pending result away. (It did: `ANDS r0,r0,#0; EOR r0,r0,#0`
+			// came out as `R0 = R0`.)
+			if (load)
+				emit_ldr_off(g_out, kArmRegCacheHost[i], JIT_CPU_BASE_REG, reg_off(n));
+		}
+
+		if (mark)
+			dirty |= 1u << i;
+		touched |= 1u << i;
+		return kArmRegCacheHost[i];
+	}
+
+	int read(int n)       { return need(n, true, false); }
+	int read_write(int n) { return need(n, true, true); }
+	int write(int n)      { return need(n, false, true); }
+
+	// Loads R[n] into a host register the caller picked, without claiming a slot.
+	// When a slot already holds the newest value this is a copy from it: no
+	// memory traffic, and -- unlike read(), whose slot the caller keeps -- no
+	// write-back of a pending store either. Otherwise it is the same `ldr` the
+	// memory path would have emitted.
+	//
+	// This is what the multiply handlers need. Their operands have to end up in
+	// fixed scratch registers (MUL_Mxx_END rewrites its source in place with
+	// asr/xor, so it cannot be handed a cache slot), but reading them through
+	// memory would turn every value the cache already owns back into a
+	// store+load pair.
+	void read_into(int n, int host)
+	{
+		const int i = find(n);
+		if (i >= 0)
+			emit_mov(g_out, kArmRegCacheHost[i], host);
+		else
+			emit_ldr_off(g_out, host, JIT_CPU_BASE_REG, reg_off(n));
+	}
+};
+
+static ArmRegCache g_regs;
+
+// Cache-aware operand access for handlers that keep using fixed scratch
+// registers (the multiply family: its cycle tail rewrites the multiplicand in
+// place). `rc_read` is expression-shaped so it can stand in for
+// reg_pos_ptr(..., VALUE) inside a handler's argument list; `rc_store` writes a
+// host register into an emulated one and leaves the write-back to the eviction
+// rules.
+#define rc_read(n, host)  (g_regs.read_into((n), (host)), (host))
+#define rc_store(n, host) \
+	do { const int rc_dst_ = g_regs.write(n); emit_mov(g_out, (host), rc_dst_); } while (0)
+
+// Thumb operands sit in 3-bit fields at bit 0/3/6/8 (the "special" forms carry
+// the fourth bit in bit 7), so the same entry points need bit-offset spellings.
+// They expand inside the handlers, where `i` is in scope, exactly like
+// reg_pos_thumb() -- which is what they replace.
+#define _T3(bit)             ((int)(((i)>>(bit))&0x7))
+#define rc_t_read(bit, host) (g_regs.read_into(_T3(bit), (host)), (host))
+#define rc_t_write(bit)      (g_regs.write(_T3(bit)))
+#define rc_t_rw(bit)         (g_regs.read_write(_T3(bit)))
+
+// The "special" Thumb forms (ADD/MOV/CMP/BX/BLX with the high register file)
+// carry the fourth bit outside the 3-bit field -- H1 at bit 7, H2 at bit 6 --
+// so those handlers ask for the register by number instead of by field.
+#define rc_read_at(n, host)  (g_regs.read_into((int)(n), (host)), (host))
+
+// A destination that is written by a helper through `u32* dstreg`: the slot has
+// to go, but there is nothing to write back -- the load overwrites it anyway.
+#define reg_pos_thumb_dst(x, reg) \
+	(g_regs.discard(_T3(x)), cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*_T3(x), reg, ADDRESS))
+
 #define cpu_dword_ptr(z, o, r, v) cpu_get_ptr(&z, o, r, v)
 #define cpu_byte_ptr(z, o, r, v) cpu_get_ptrB(&z, o, r, v)
 #define cpu_word_ptr(z, o, r, v) cpu_get_ptrW(&z, o, r, v)
@@ -244,16 +608,27 @@ static int inline get_ptrSW(void *start, int o, int r, int v) {
 #define cpu_ptr(x, reg, v)			cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, x), reg, v)
 #define cpu_ptr_byte(x, y, reg, v)	cpu_byte_ptr(bb_cpu, offsetof(armcpu_t, x) + y, reg, v)
 #define flags_ptr(reg, v)			cpu_ptr_byte(CPSR.val, 3, reg, v)
-#define reg_ptr(x, reg, v)			cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*(x), reg, v)
-#define reg_pos_ptr(x, reg, v)		cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v)
-#define reg_pos_ptrL(x, reg, v)		cpu_word_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v)
-#define reg_pos_ptrH(x, reg, v)		cpu_word_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)) + 2, reg, v)
-#define reg_pos_ptrB(x, reg, v)		cpu_byte_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v)
-#define reg_pos_ptrSL(x, reg, v)		cpu_words_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v)
-#define reg_pos_ptrSH(x, reg, v)		cpu_words_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)) + 2, reg, v)
-#define reg_pos_ptrSB(x, reg, v)		cpu_bytes_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v)
-#define reg_pos_thumb(x, reg, v)	cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7), reg, v)
-#define reg_pos_thumbB(x, reg, v)	cpu_byte_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7), reg, v)
+// Direct base+displacement address of the byte the flag macros merge into.
+// Using it instead of CACHED_PTR() removes the `add x11, x25, #off` that the
+// old `flags_ptr(..., ADDRESS)` needed, without depending on x11's implicit
+// "last VALUE address" state. offsets: CPSR at 80, .val byte 3 => N/Z/C/V.
+#define RC_FLAGS_OFF				(offsetof(armcpu_t, CPSR) + 3)
+// Rule 4: every access to R[] through memory evicts the register first. A
+// handler that has not been migrated to the cache still reads and writes
+// armcpu_t.R[] directly, and it would otherwise read the value from before the
+// last cached write -- or overwrite a value the cache still believes it owns.
+// `evict` writes back only when the slot is dirty, so for a migrated handler
+// this costs nothing at all.
+#define reg_ptr(x, reg, v)			(g_regs.evict(x), cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*(x), reg, v))
+#define reg_pos_ptr(x, reg, v)		(g_regs.evict(REG_POS(i,(x))), cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v))
+#define reg_pos_ptrL(x, reg, v)		(g_regs.evict(REG_POS(i,(x))), cpu_word_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v))
+#define reg_pos_ptrH(x, reg, v)		(g_regs.evict(REG_POS(i,(x))), cpu_word_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)) + 2, reg, v))
+#define reg_pos_ptrB(x, reg, v)		(g_regs.evict(REG_POS(i,(x))), cpu_byte_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v))
+#define reg_pos_ptrSL(x, reg, v)	(g_regs.evict(REG_POS(i,(x))), cpu_words_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v))
+#define reg_pos_ptrSH(x, reg, v)	(g_regs.evict(REG_POS(i,(x))), cpu_words_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)) + 2, reg, v))
+#define reg_pos_ptrSB(x, reg, v)	(g_regs.evict(REG_POS(i,(x))), cpu_bytes_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)), reg, v))
+#define reg_pos_thumb(x, reg, v)	(g_regs.evict((i>>(x))&0x7), cpu_dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7), reg, v))
+#define reg_pos_thumbB(x, reg, v)	(g_regs.evict((i>>(x))&0x7), cpu_byte_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7), reg, v))
 #define cp15_ptr(x, reg, v)			dword_ptr(bb_cp15, offsetof(armcp15_t, x), reg, v)
 #define cp15_ptr_off(x, y, reg, v)	dword_ptr(bb_cp15, offsetof(armcp15_t, x) + y, reg, v)
 #define mmu_ptr(x, reg, v)			dword_ptr(bb_mmu, offsetof(MMU_struct, x), reg, v)
@@ -469,6 +844,7 @@ static GpVar bb_profiler_entry;
 
 #define S_DST_R15 { \
 	JIT_COMMENT("S_DST_R15"); \
+	g_regs.flush(); \
 	cpu_ptr(next_instruction, R3, VALUE);\
 	cpu_ptr(SPSR.val, R9, VALUE);\
 	emit_mov(g_out, R9, R10); \
@@ -486,11 +862,22 @@ static GpVar bb_profiler_entry;
 }
 
 // ============================================================================================= IMM
+// The shift/register forms read Rm -- and, for the register-shift forms, Rs --
+// through the register cache instead of reg_pos_ptr(). The operand still ends
+// up in the fixed scratch register the handler expects, but a value the cache
+// already owns is copied out of its slot instead of being evicted to memory and
+// immediately reloaded. That is the whole point of `add r2,#4 ; ldr r0,[r1,r2]`:
+// the LDR's Rm is the result of the preceding instruction, so the memory path
+// used to store R2 and load it straight back.
+//
+// The load is a dword even where the old code used reg_pos_ptrB (the
+// register-shift amount). emit_lsl_reg()/lsr/asr/ror mask the amount with 0xff
+// or 0x1f before using it, so the upper bytes are dead.
 #define LSL_IMM \
 	bool rhs_is_imm = false; \
 	static unsigned int rhs_var;\
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if(imm2) emit_lsl(g_out, rhs_reg, imm2); \
 	u32 rhs_first = cpu->R[REG_POS(i,0)] << imm2;\
 	emit_movimm(g_out, imm2, imm_reg);
@@ -500,7 +887,7 @@ static GpVar bb_profiler_entry;
 	u8 cf_change = 0; \
 	static unsigned int rhs_var;\
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if (imm2)  \
 	{ \
 		cf_change = 1; \
@@ -514,7 +901,7 @@ static GpVar bb_profiler_entry;
 	u32 imm2 = ((i>>7)&0x1F); \
 	if(imm2) \
 	{ \
-		reg_pos_ptr(0, rhs_reg, VALUE); \
+		rc_read(REG_POS(i,0), rhs_reg); \
 		emit_lsr(g_out, rhs, imm2); \
 	} \
 	else \
@@ -527,7 +914,7 @@ static GpVar bb_profiler_entry;
 	u8 cf_change = 1; \
 	static unsigned int rhs_var; \
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if (!imm2) \
 	{ \
 		emit_testimm(g_out, rhs_reg,  (1 << 31)); \
@@ -544,7 +931,7 @@ static GpVar bb_profiler_entry;
 	bool rhs_is_imm = false; \
 	static unsigned int rhs_var;\
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if(!imm2) imm2 = 31; \
 	emit_asr(g_out, rhs_reg, imm2); \
 	u32 rhs_first = (s32)cpu->R[REG_POS(i,0)] >> imm2; \
@@ -555,7 +942,7 @@ static GpVar bb_profiler_entry;
 	u8 cf_change = 1; \
 	static unsigned int rhs_var; \
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if (!imm2) imm2 = 31; \
 	emit_asrs(g_out, rhs_reg, imm2); \
 	emit_movimm(g_out, imm2, imm_reg); \
@@ -564,7 +951,7 @@ static GpVar bb_profiler_entry;
 	bool rhs_is_imm = false; \
 	u32 imm2 = ((i>>7)&0x1F); \
 	static unsigned int rhs_var; \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if (!imm2) \
 	{ \
 		GET_CARRY(0) \
@@ -580,7 +967,7 @@ static GpVar bb_profiler_entry;
 	u8 cf_change = 1; \
 	static unsigned int rhs_var; \
 	u32 imm2 = ((i>>7)&0x1F); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	if (!imm2) \
 	{ \
 		GET_CARRY(0) \
@@ -593,7 +980,7 @@ static GpVar bb_profiler_entry;
 #define REG_OFF \
 	bool rhs_is_imm = false; \
 	static unsigned int rhs_var; \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	u32 rhs_first = cpu->R[REG_POS(i,0)];
 
 #define IMM_VAL \
@@ -634,16 +1021,16 @@ static GpVar bb_profiler_entry;
 #define LSX_REG(name, x86inst, sign) \
 	bool rhs_is_imm = false; \
 	static unsigned int rhs_var; \
-	reg_pos_ptrB(8, imm_reg, VALUE); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,8), imm_reg); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	x86inst(g_out, rhs_reg, imm_reg);
 
 #define S_LSX_REG(name, x86inst, sign) \
 	bool rhs_is_imm = false; \
 	u8 cf_change = 1; \
 	GET_CARRY(0); \
-	reg_pos_ptr(8, imm_reg, VALUE); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,8), imm_reg); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	x86inst(g_out, rhs_reg, imm_reg); \
 
 #define LSL_REG LSX_REG(LSL_REG, emit_lsl_reg, 0)
@@ -656,8 +1043,8 @@ static GpVar bb_profiler_entry;
 #define ROR_REG \
 	bool rhs_is_imm = false; \
 	static unsigned int rhs_var; \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
-	reg_pos_ptrB(8, imm_reg, VALUE); \
+	rc_read(REG_POS(i,0), rhs_reg); \
+	rc_read(REG_POS(i,8), imm_reg); \
 	emit_ror_reg(g_out, rhs_reg, imm_reg);
 
 #define S_ROR_REG \
@@ -665,8 +1052,8 @@ static GpVar bb_profiler_entry;
 	bool cf_change = 1; \
 	static unsigned int rhs_var; \
 	GET_CARRY(0); \
-	reg_pos_ptr(8, imm_reg, VALUE); \
-	reg_pos_ptr(0, rhs_reg, VALUE); \
+	rc_read(REG_POS(i,8), imm_reg); \
+	rc_read(REG_POS(i,0), rhs_reg); \
 	emit_rors_reg(g_out, rhs_reg, imm_reg); \
 
 //==================================================================== common funcs
@@ -689,8 +1076,67 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 //-----------------------------------------------------------------------------
 //   OPs
 //-----------------------------------------------------------------------------
+// The `rhs_is_imm` branch is the register-cache path, and it exists only for
+// the IMM_VAL families (S4 batch 1). It is a runtime test on a value that is
+// fixed per handler, so the shift families -- whose `arg` still reads Rn
+// through memory -- keep the old body verbatim and are unaffected. Rule 4 in
+// the cache makes the two coexist: the shift path evicts what it touches.
+//
+// R15 is excluded on purpose (rule 1): a handler that writes the PC keeps the
+// old body, which stores through CACHED_PTR and then runs S_DST_R15.
+#define OP_RC_ARITHMETIC(x86inst) \
+	const int rc_rd = REG_POS(i,12); \
+	const int rc_rn = REG_POS(i,16); \
+	int rc_hd, rc_hn; \
+	if(rc_rd == rc_rn) \
+		rc_hn = rc_hd = g_regs.read_write(rc_rd); \
+	else \
+	{ \
+		rc_hn = g_regs.read(rc_rn); \
+		rc_hd = g_regs.write(rc_rd); \
+	} \
+	x86inst(g_out, rc_hn, rhs, rc_hd);
+
+// S4 family 2 pilot: the shift `arg` macros leave the shifted operand in the
+// physical `rhs` register (R6). Rn/Rd and now Rm/Rs all go through the
+// register cache; read_into() copies from a slot on a hit and only touches
+// memory on a miss. R15 stays on the memory path (rule 1). Kept separate from
+// OP_ARITHMETIC so the other shift handlers are unaffected until this pilot
+// passes the differential sweep.
+#define OP_ARITHMETIC_SHIFT_RC(arg, x86inst, symmetric, flags) \
+	arg; \
+	if(REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		OP_RC_ARITHMETIC(x86inst) \
+		if(flags) \
+			SET_NZCV(!symmetric); \
+		return 1; \
+	} \
+	/* Rn or Rd is PC (rule 1): keep the shifted operand in `rhs` and load \
+	   Rn from memory into a scratch register. This preserves `Rd = Rn op rhs` \
+	   instead of the original macro's symmetric shortcut (which assumed `rhs` \
+	   still held the un-shifted Rm). */ \
+	reg_pos_ptr(16, lhs, VALUE); \
+	x86inst(g_out, lhs, rhs, lhs); \
+	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), lhs); \
+	if(REG_POS(i,12)==15) \
+	{ \
+		reg_ptr(15, tmp_reg, VALUE); \
+		emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), tmp_reg); \
+		emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
+	} \
+	return 1; \
+	/* trailing continuation keeps the macro body well-formed */ \
+
 #define OP_ARITHMETIC(arg, x86inst, symmetric, flags) \
 	arg; \
+	if(rhs_is_imm && REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		OP_RC_ARITHMETIC(x86inst) \
+		if(flags) \
+			SET_NZCV(!symmetric); \
+		return 1; \
+	} \
 	if(REG_POS(i,12) == REG_POS(i,16)) \
 	{ \
 		reg_pos_ptr(12, R1, VALUE);\
@@ -713,7 +1159,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 		if(REG_POS(i,12)==15) \
 		{ \
 			S_DST_R15; \
-			emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+			emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 			return 1; \
 		} \
 		SET_NZCV(!symmetric); \
@@ -724,13 +1170,64 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 		{ \
 			reg_ptr(15, tmp_reg, VALUE); \
 			emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), tmp_reg); \
-			emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+			emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 		} \
 	} \
 	return 1;
 
+// Family 2, reverse-arithmetic shift (RSB/RSC): `rhs` holds the shifted Rm,
+// so the reverse form is `Rd = rhs - Rn`. Same cache rules as the forward
+// macro; R15 stays on the memory path.
+#define OP_ARITHMETIC_R_SHIFT_RC(arg, x86inst, flags) \
+	arg; \
+	if(REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		const int rc_rd = REG_POS(i,12); \
+		const int rc_rn = REG_POS(i,16); \
+		int rc_hd, rc_hn; \
+		if(rc_rd == rc_rn) \
+			rc_hn = rc_hd = g_regs.read_write(rc_rd); \
+		else \
+		{ \
+			rc_hn = g_regs.read(rc_rn); \
+			rc_hd = g_regs.write(rc_rd); \
+		} \
+		x86inst(g_out, rhs, rc_hn, rc_hd); \
+		if(flags) \
+			SET_NZCV(1); \
+		return 1; \
+	} \
+	reg_pos_ptr(16, lhs, VALUE); \
+	x86inst(g_out, rhs, lhs, lhs); \
+	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), lhs); \
+	if(REG_POS(i,12)==15) \
+	{ \
+		reg_ptr(15, tmp_reg, VALUE); \
+		emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), tmp_reg); \
+		emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
+	} \
+	return 1; \
+	/* trailing continuation keeps the macro body well-formed */ \
+
 #define OP_ARITHMETIC_R(arg, x86inst, flags) \
 	arg; \
+	if(rhs_is_imm && REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		const int rc_rd = REG_POS(i,12); \
+		const int rc_rn = REG_POS(i,16); \
+		int rc_hd, rc_hn; \
+		if(rc_rd == rc_rn) \
+			rc_hn = rc_hd = g_regs.read_write(rc_rd); \
+		else \
+		{ \
+			rc_hn = g_regs.read(rc_rn); \
+			rc_hd = g_regs.write(rc_rd); \
+		} \
+		x86inst(g_out, rhs, rc_hn, rc_hd); \
+		if(flags) \
+			SET_NZCV(1); \
+		return 1; \
+	} \
 	emit_mov(g_out, rhs, lhs); \
 	x86inst(g_out, lhs, reg_pos_ptr(16, R1, VALUE), lhs); \
 	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), lhs); \
@@ -739,7 +1236,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 		if(REG_POS(i,12)==15) \
 		{ \
 			S_DST_R15; \
-			emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+			emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 			return 1; \
 		} \
 		SET_NZCV(1); \
@@ -749,13 +1246,42 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 		if(REG_POS(i,12)==15) \
 		{ \
 			emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), lhs); \
-			emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+			emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 		} \
 	} \
 	return 1;
 
+// Family 2, logical-S shift pilot: same cache path as OP_ARITHMETIC_SHIFT_RC
+// but keeps SET_NZC (V preserved, carry from the shifter/rcf) and the
+// S_DST_R15 path used when the destination is the PC.
+#define OP_ARITHMETIC_S_SHIFT_RC(arg, x86inst, symmetric) \
+	arg; \
+	if(REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		OP_RC_ARITHMETIC(x86inst) \
+		SET_NZC; \
+		return 1; \
+	} \
+	reg_pos_ptr(16, lhs, VALUE); \
+	x86inst(g_out, lhs, rhs, lhs); \
+	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), lhs); \
+	if(REG_POS(i,12)==15) \
+	{ \
+		S_DST_R15; \
+		emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
+	} \
+	SET_NZC; \
+	return 1; \
+	/* trailing continuation keeps the macro body well-formed */ \
+
 #define OP_ARITHMETIC_S(arg, x86inst, symmetric) \
 	arg; \
+	if(rhs_is_imm && REG_POS(i,12) != 15 && REG_POS(i,16) != 15) \
+	{ \
+		OP_RC_ARITHMETIC(x86inst) \
+		SET_NZC; \
+		return 1; \
+	} \
 	if(REG_POS(i,12) == REG_POS(i,16)) \
 	{ \
 		reg_pos_ptr(12, R1, VALUE); \
@@ -776,219 +1302,225 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 	if(REG_POS(i,12)==15) \
 	{ \
 		S_DST_R15; \
-		emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+		emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 		return 1; \
 	} \
 	SET_NZC; \
 	return 1;
 
-static int OP_AND_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_and, 1, 0); }
-static int OP_AND_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_and, 1, 0); }
-static int OP_AND_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_and, 1, 0); }
-static int OP_AND_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_and, 1, 0); }
-static int OP_AND_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_and, 1, 0); }
-static int OP_AND_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_and, 1, 0); }
-static int OP_AND_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_and, 1, 0); }
-static int OP_AND_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_and, 1, 0); }
+static int OP_AND_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_and, 1, 0); }
+static int OP_AND_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_and, 1, 0); }
+static int OP_AND_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_and, 1, 0); }
+static int OP_AND_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_and, 1, 0); }
+static int OP_AND_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_and, 1, 0); }
+static int OP_AND_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_and, 1, 0); }
+static int OP_AND_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_and, 1, 0); }
+static int OP_AND_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_and, 1, 0); }
 static int OP_AND_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_and, 1, 0); }
 
-static int OP_EOR_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_xor, 1, 0); }
-static int OP_EOR_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_xor, 1, 0); }
-static int OP_EOR_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_xor, 1, 0); }
-static int OP_EOR_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_xor, 1, 0); }
-static int OP_EOR_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_xor, 1, 0); }
-static int OP_EOR_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_xor, 1, 0); }
-static int OP_EOR_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_xor, 1, 0); }
-static int OP_EOR_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_xor, 1, 0); }
+static int OP_EOR_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_xor, 1, 0); }
+static int OP_EOR_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_xor, 1, 0); }
+static int OP_EOR_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_xor, 1, 0); }
+static int OP_EOR_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_xor, 1, 0); }
+static int OP_EOR_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_xor, 1, 0); }
+static int OP_EOR_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_xor, 1, 0); }
+static int OP_EOR_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_xor, 1, 0); }
+static int OP_EOR_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_xor, 1, 0); }
 static int OP_EOR_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_xor, 1, 0); }
 
-static int OP_ORR_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_or, 1, 0); }
-static int OP_ORR_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_or, 1, 0); }
-static int OP_ORR_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_or, 1, 0); }
-static int OP_ORR_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_or, 1, 0); }
-static int OP_ORR_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_or, 1, 0); }
-static int OP_ORR_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_or, 1, 0); }
-static int OP_ORR_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_or, 1, 0); }
-static int OP_ORR_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_or, 1, 0); }
+static int OP_ORR_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_or, 1, 0); }
+static int OP_ORR_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_or, 1, 0); }
+static int OP_ORR_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_or, 1, 0); }
+static int OP_ORR_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_or, 1, 0); }
+static int OP_ORR_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_or, 1, 0); }
+static int OP_ORR_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_or, 1, 0); }
+static int OP_ORR_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_or, 1, 0); }
+static int OP_ORR_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_or, 1, 0); }
 static int OP_ORR_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_or, 1, 0); }
 
-static int OP_ADD_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_add, 1, 0); }
-static int OP_ADD_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_add, 1, 0); }
-static int OP_ADD_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_add, 1, 0); }
-static int OP_ADD_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_add, 1, 0); }
-static int OP_ADD_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_add, 1, 0); }
-static int OP_ADD_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_add, 1, 0); }
-static int OP_ADD_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_add, 1, 0); }
-static int OP_ADD_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_add, 1, 0); }
+static int OP_ADD_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_add, 1, 0); }
+static int OP_ADD_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_add, 1, 0); }
+static int OP_ADD_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_add, 1, 0); }
+static int OP_ADD_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_add, 1, 0); }
+static int OP_ADD_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_add, 1, 0); }
+static int OP_ADD_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_add, 1, 0); }
+static int OP_ADD_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_add, 1, 0); }
+static int OP_ADD_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_add, 1, 0); }
 static int OP_ADD_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_add, 1, 0); }
 
-static int OP_SUB_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_sub, 0, 0); }
-static int OP_SUB_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_sub, 0, 0); }
-static int OP_SUB_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_sub, 0, 0); }
-static int OP_SUB_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_sub, 0, 0); }
-static int OP_SUB_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_sub, 0, 0); }
-static int OP_SUB_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_sub, 0, 0); }
-static int OP_SUB_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_sub, 0, 0); }
-static int OP_SUB_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_sub, 0, 0); }
+static int OP_SUB_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_sub, 0, 0); }
+static int OP_SUB_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_sub, 0, 0); }
+static int OP_SUB_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_sub, 0, 0); }
+static int OP_SUB_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_sub, 0, 0); }
+static int OP_SUB_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_sub, 0, 0); }
+static int OP_SUB_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_sub, 0, 0); }
+static int OP_SUB_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_sub, 0, 0); }
+static int OP_SUB_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_sub, 0, 0); }
 static int OP_SUB_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_sub, 0, 0); }
 
-static int OP_RSB_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM, emit_sub, 0); }
-static int OP_RSB_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG, emit_sub, 0); }
-static int OP_RSB_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM, emit_sub, 0); }
-static int OP_RSB_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG, emit_sub, 0); }
-static int OP_RSB_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM, emit_sub, 0); }
-static int OP_RSB_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG, emit_sub, 0); }
-static int OP_RSB_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM, emit_sub, 0); }
-static int OP_RSB_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG, emit_sub, 0); }
+static int OP_RSB_LSL_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_IMM, emit_sub, 0); }
+static int OP_RSB_LSL_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_REG, emit_sub, 0); }
+static int OP_RSB_LSR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_IMM, emit_sub, 0); }
+static int OP_RSB_LSR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_REG, emit_sub, 0); }
+static int OP_RSB_ASR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_IMM, emit_sub, 0); }
+static int OP_RSB_ASR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_REG, emit_sub, 0); }
+static int OP_RSB_ROR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_IMM, emit_sub, 0); }
+static int OP_RSB_ROR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_REG, emit_sub, 0); }
 static int OP_RSB_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL, emit_sub, 0); }
 
 // ================================ S instructions
-static int OP_AND_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSL_IMM, emit_ands, 1); }
-static int OP_AND_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S(S_LSL_REG, emit_ands, 1); }
-static int OP_AND_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSR_IMM, emit_ands, 1); }
-static int OP_AND_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S(S_LSR_REG, emit_ands, 1); }
-static int OP_AND_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ASR_IMM, emit_ands, 1); }
-static int OP_AND_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S(S_ASR_REG, emit_ands, 1); }
-static int OP_AND_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ROR_IMM, emit_ands, 1); }
-static int OP_AND_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S(S_ROR_REG, emit_ands, 1); }
+static int OP_AND_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_IMM, emit_ands, 1); }
+static int OP_AND_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_REG, emit_ands, 1); }
+static int OP_AND_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_IMM, emit_ands, 1); }
+static int OP_AND_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_REG, emit_ands, 1); }
+static int OP_AND_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_IMM, emit_ands, 1); }
+static int OP_AND_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_REG, emit_ands, 1); }
+static int OP_AND_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_IMM, emit_ands, 1); }
+static int OP_AND_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_REG, emit_ands, 1); }
 static int OP_AND_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_S(S_IMM_VAL, emit_ands, 1); }
 
-static int OP_EOR_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSL_IMM, emit_xors, 1); }
-static int OP_EOR_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S(S_LSL_REG, emit_xors, 1); }
-static int OP_EOR_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSR_IMM, emit_xors, 1); }
-static int OP_EOR_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S(S_LSR_REG, emit_xors, 1); }
-static int OP_EOR_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ASR_IMM, emit_xors, 1); }
-static int OP_EOR_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S(S_ASR_REG, emit_xors, 1); }
-static int OP_EOR_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ROR_IMM, emit_xors, 1); }
-static int OP_EOR_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S(S_ROR_REG, emit_xors, 1); }
+static int OP_EOR_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_IMM, emit_xors, 1); }
+static int OP_EOR_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_REG, emit_xors, 1); }
+static int OP_EOR_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_IMM, emit_xors, 1); }
+static int OP_EOR_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_REG, emit_xors, 1); }
+static int OP_EOR_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_IMM, emit_xors, 1); }
+static int OP_EOR_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_REG, emit_xors, 1); }
+static int OP_EOR_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_IMM, emit_xors, 1); }
+static int OP_EOR_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_REG, emit_xors, 1); }
 static int OP_EOR_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_S(S_IMM_VAL, emit_xors, 1); }
 
-static int OP_ORR_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSL_IMM, emit_ors, 1); }
-static int OP_ORR_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S(S_LSL_REG, emit_ors, 1); }
-static int OP_ORR_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSR_IMM, emit_ors, 1); }
-static int OP_ORR_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S(S_LSR_REG, emit_ors, 1); }
-static int OP_ORR_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ASR_IMM, emit_ors, 1); }
-static int OP_ORR_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S(S_ASR_REG, emit_ors, 1); }
-static int OP_ORR_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ROR_IMM, emit_ors, 1); }
-static int OP_ORR_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S(S_ROR_REG, emit_ors, 1); }
+static int OP_ORR_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_IMM, emit_ors, 1); }
+static int OP_ORR_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_REG, emit_ors, 1); }
+static int OP_ORR_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_IMM, emit_ors, 1); }
+static int OP_ORR_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_REG, emit_ors, 1); }
+static int OP_ORR_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_IMM, emit_ors, 1); }
+static int OP_ORR_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_REG, emit_ors, 1); }
+static int OP_ORR_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_IMM, emit_ors, 1); }
+static int OP_ORR_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_REG, emit_ors, 1); }
 static int OP_ORR_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_S(S_IMM_VAL, emit_ors, 1); }
 
-static int OP_ADD_S_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_adds, 1, 1); }
-static int OP_ADD_S_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_adds, 1, 1); }
-static int OP_ADD_S_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_adds, 1, 1); }
-static int OP_ADD_S_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_adds, 1, 1); }
-static int OP_ADD_S_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_adds, 1, 1); }
-static int OP_ADD_S_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_adds, 1, 1); }
-static int OP_ADD_S_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_adds, 1, 1); }
-static int OP_ADD_S_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_adds, 1, 1); }
+static int OP_ADD_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_adds, 1, 1); }
+static int OP_ADD_S_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_adds, 1, 1); }
+static int OP_ADD_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_adds, 1, 1); }
+static int OP_ADD_S_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_adds, 1, 1); }
+static int OP_ADD_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_adds, 1, 1); }
+static int OP_ADD_S_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_adds, 1, 1); }
+static int OP_ADD_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_adds, 1, 1); }
+static int OP_ADD_S_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_adds, 1, 1); }
 static int OP_ADD_S_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_adds, 1, 1); }
 
-static int OP_SUB_S_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM, emit_subs, 0, 1); }
-static int OP_SUB_S_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG, emit_subs, 0, 1); }
-static int OP_SUB_S_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM, emit_subs, 0, 1); }
-static int OP_SUB_S_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG, emit_subs, 0, 1); }
-static int OP_SUB_S_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM, emit_subs, 0, 1); }
-static int OP_SUB_S_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG, emit_subs, 0, 1); }
-static int OP_SUB_S_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, emit_subs, 0, 1); }
-static int OP_SUB_S_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, emit_subs, 0, 1); }
+static int OP_SUB_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM, emit_subs, 0, 1); }
+static int OP_SUB_S_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG, emit_subs, 0, 1); }
+static int OP_SUB_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM, emit_subs, 0, 1); }
+static int OP_SUB_S_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG, emit_subs, 0, 1); }
+static int OP_SUB_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM, emit_subs, 0, 1); }
+static int OP_SUB_S_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG, emit_subs, 0, 1); }
+static int OP_SUB_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM, emit_subs, 0, 1); }
+static int OP_SUB_S_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG, emit_subs, 0, 1); }
 static int OP_SUB_S_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, emit_subs, 0, 1); }
 
-static int OP_RSB_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM, emit_subs, 1); }
-static int OP_RSB_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG, emit_subs, 1); }
-static int OP_RSB_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM, emit_subs, 1); }
-static int OP_RSB_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG, emit_subs, 1); }
-static int OP_RSB_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM, emit_subs, 1); }
-static int OP_RSB_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG, emit_subs, 1); }
-static int OP_RSB_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM, emit_subs, 1); }
-static int OP_RSB_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG, emit_subs, 1); }
+static int OP_RSB_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_IMM, emit_subs, 1); }
+static int OP_RSB_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_REG, emit_subs, 1); }
+static int OP_RSB_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_IMM, emit_subs, 1); }
+static int OP_RSB_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_REG, emit_subs, 1); }
+static int OP_RSB_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_IMM, emit_subs, 1); }
+static int OP_RSB_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_REG, emit_subs, 1); }
+static int OP_RSB_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_IMM, emit_subs, 1); }
+static int OP_RSB_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_REG, emit_subs, 1); }
 static int OP_RSB_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL, emit_subs, 1); }
 
-static int OP_ADC_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
-static int OP_ADC_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM; GET_CARRY(0), emit_adcs, 1, 0); }
+static int OP_ADC_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG; GET_CARRY(0), emit_adcs, 1, 0); }
 static int OP_ADC_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL; GET_CARRY(0), emit_adcs, 1, 0); }
 
-static int OP_ADC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
-static int OP_ADC_S_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM; GET_CARRY(0), emit_adcs, 1, 1); }
+static int OP_ADC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG; GET_CARRY(0), emit_adcs, 1, 1); }
 static int OP_ADC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL; GET_CARRY(0), emit_adcs, 1, 1); }
 
-static int OP_SBC_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
-static int OP_SBC_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM; GET_CARRY(1), emit_sbc, 0, 0); }
+static int OP_SBC_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG; GET_CARRY(1), emit_sbc, 0, 0); }
 static int OP_SBC_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL; GET_CARRY(1), emit_sbc, 0, 0); }
 
-static int OP_SBC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
-static int OP_SBC_S_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM; GET_CARRY(1), emit_sbcs, 0, 1); }
+static int OP_SBC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG; GET_CARRY(1), emit_sbcs, 0, 1); }
 static int OP_SBC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL; GET_CARRY(1), emit_sbcs, 0, 1); }
 
-static int OP_RSC_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM; GET_CARRY(1), emit_sbc, 0); }
-static int OP_RSC_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_LSL_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_IMM; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_LSL_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_REG; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_LSR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_IMM; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_LSR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_REG; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_ASR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_IMM; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_ASR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_REG; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_ROR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_IMM; GET_CARRY(1), emit_sbc, 0); }
+static int OP_RSC_ROR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_REG; GET_CARRY(1), emit_sbc, 0); }
 static int OP_RSC_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL; GET_CARRY(1), emit_sbc, 0); }
 
-static int OP_RSC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM; GET_CARRY(1), emit_sbcs, 1); }
-static int OP_RSC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_IMM; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSL_REG; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_IMM; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(LSR_REG; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_IMM; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ASR_REG; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_IMM; GET_CARRY(1), emit_sbcs, 1); }
+static int OP_RSC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R_SHIFT_RC(ROR_REG; GET_CARRY(1), emit_sbcs, 1); }
 static int OP_RSC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL; GET_CARRY(1), emit_sbcs, 1); }
 
-static int OP_BIC_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_LSR_IMM(const u32 i) { OP_ARITHMETIC(LSR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_LSR_REG(const u32 i) { OP_ARITHMETIC(LSR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_ASR_IMM(const u32 i) { OP_ARITHMETIC(ASR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_ASR_REG(const u32 i) { OP_ARITHMETIC(ASR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
-static int OP_BIC_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_LSL_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_LSL_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSL_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_LSR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_LSR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(LSR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_ASR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_ASR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ASR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_ROR_IMM(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
+static int OP_BIC_ROR_REG(const u32 i) { OP_ARITHMETIC_SHIFT_RC(ROR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_and, 1, 0); }
 static int OP_BIC_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL; rhs_var = ~rhs_var; emit_movimm(g_out, rhs_var, rhs_reg);,  emit_and, 1, 0); }
 
-static int OP_BIC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSL_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S(S_LSL_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S(S_LSR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ASR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S(S_ASR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S(S_ROR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
-static int OP_BIC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S(S_ROR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSL_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_LSR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ASR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_IMM; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
+static int OP_BIC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_S_SHIFT_RC(S_ROR_REG; emit_not(g_out, rhs_reg, rhs_reg), emit_ands, 1); }
 static int OP_BIC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_S(S_IMM_VAL; rhs_var = ~rhs_var; emit_movimm(g_out, rhs_var, rhs_reg);,  emit_ands, 1); }
 
 //-----------------------------------------------------------------------------
 //   TST
 //-----------------------------------------------------------------------------
+// TST/TEQ/CMP/CMN have no destination, so the cache path is one line: read Rn
+// from wherever it lives and compare. The old form also materialised the field
+// address into CACHED_PTR on the way, which nothing here stores through.
 #define OP_TST_(arg) \
 	arg; \
-  emit_test(g_out, reg_pos_ptr(16, R1, VALUE), rhs_reg); \
+	if(REG_POS(i,16) != 15) \
+		emit_test(g_out, g_regs.read(REG_POS(i,16)), rhs_reg); \
+	else \
+		emit_test(g_out, reg_pos_ptr(16, R1, VALUE), rhs_reg); \
 	SET_NZC; \
 	return 1;
 
@@ -1007,7 +1539,10 @@ static int OP_TST_IMM_VAL(const u32 i) { OP_TST_(S_IMM_VAL); }
 //-----------------------------------------------------------------------------
 #define OP_TEQ_(arg) \
 	arg; \
-	emit_teq(g_out, reg_pos_ptr(16, R1, VALUE), rhs_reg); \
+	if(REG_POS(i,16) != 15) \
+		emit_teq(g_out, g_regs.read(REG_POS(i,16)), rhs_reg); \
+	else \
+		emit_teq(g_out, reg_pos_ptr(16, R1, VALUE), rhs_reg); \
 	SET_NZC; \
 	return 1;
 
@@ -1026,7 +1561,10 @@ static int OP_TEQ_IMM_VAL(const u32 i) { OP_TEQ_(S_IMM_VAL); }
 //-----------------------------------------------------------------------------
 #define OP_CMP(arg) \
 	arg; \
-	emit_cmp(g_out, reg_pos_ptr(16, R1, VALUE), rhs); \
+	if(REG_POS(i,16) != 15) \
+		emit_cmp(g_out, g_regs.read(REG_POS(i,16)), rhs); \
+	else \
+		emit_cmp(g_out, reg_pos_ptr(16, R1, VALUE), rhs); \
 	SET_NZCV(1); \
 	return 1;
 
@@ -1049,11 +1587,16 @@ static int OP_CMP_IMM_VAL(const u32 i) { OP_CMP(IMM_VAL); }
 	u32 rhs_imm = *(u32*)&rhs_var; \
 	int sign = rhs_is_imm && (rhs_imm != -rhs_imm); \
 	if(sign) \
-		emit_cmpimm(g_out, reg_pos_ptr(16, R1, VALUE), -rhs_imm); \
+		emit_cmpimm(g_out, rhs_is_imm ? g_regs.read(REG_POS(i,16)) : reg_pos_ptr(16, R1, VALUE), -rhs_imm); \
 	else \
 	{ \
-		reg_pos_ptr(16, lhs, VALUE);\
-		emit_adds(g_out, lhs, rhs, lhs); \
+		if(REG_POS(i,16) != 15) \
+			emit_adds(g_out, g_regs.read(REG_POS(i,16)), rhs, rhs_reg); \
+		else \
+		{ \
+			reg_pos_ptr(16, lhs, VALUE);\
+			emit_adds(g_out, lhs, rhs, lhs); \
+		} \
 	} \
 	SET_NZCV(sign); \
 	return 1;
@@ -1074,6 +1617,11 @@ static int OP_CMN_IMM_VAL(const u32 i) { OP_CMN(IMM_VAL); }
 //-----------------------------------------------------------------------------
 #define OP_MOV(arg) \
 	arg; \
+	if(REG_POS(i,12) != 15) \
+	{ \
+		emit_mov(g_out, rhs, g_regs.write(REG_POS(i,12))); \
+		return 1; \
+	} \
 	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), rhs);\
 	if(REG_POS(i,12)==15) \
 	{ \
@@ -1094,11 +1642,19 @@ static int OP_MOV_IMM_VAL(const u32 i) { OP_MOV(IMM_VAL); }
 
 #define OP_MOV_S(arg) \
 	arg; \
+	if(REG_POS(i,12) != 15) \
+	{ \
+		int mh = g_regs.write(REG_POS(i,12)); \
+		emit_mov(g_out, rhs, mh); \
+		emit_cmpimm(g_out, mh, 0); \
+		SET_NZC; \
+		return 1; \
+	} \
 	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), rhs);\
 	if(REG_POS(i,12)==15) \
 	{ \
 		S_DST_R15; \
-		emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2); \
+		emit_add_counters_imm(BB_TOTAL_FIELD, 2); \
 		return 1; \
 	} \
 	if(!rhs_is_imm) \
@@ -1144,11 +1700,86 @@ static int OP_MVN_S_IMM_VAL(const u32 i) { OP_MOV_S(S_IMM_VAL; rhs_var = ~rhs_va
 //-----------------------------------------------------------------------------
 //   QADD / QDADD / QSUB / QDSUB
 //-----------------------------------------------------------------------------
-// TODO
-static int OP_QADD(const u32 i) { printf("JIT: unimplemented OP_QADD\n"); return 0; }
-static int OP_QSUB(const u32 i) { printf("JIT: unimplemented OP_QSUB\n"); return 0; }
-static int OP_QDADD(const u32 i) { printf("JIT: unimplemented OP_QDADD\n"); return 0; }
-static int OP_QDSUB(const u32 i) { printf("JIT: unimplemented OP_QDSUB\n"); return 0; }
+// Saturating add/subtract (ARMv5TE) -- ARM DDI 0403E, "QADD/QSUB/QDADD/QDSUB,
+// Operation". The trap here is the operand naming, not the arithmetic: these
+// use the syntax `op{cond} {Rd}, Rm, Rn`, so Rm (bits 3-0) is the *first*
+// source and Rn (bits 19-16) the *second* -- the opposite print order from the
+// data-processing group's `Rd, Rn, Rm`. Concretely, `QDADD r0, r1, r2` doubles
+// R2, not R1:
+//
+//     QADD  Rd = SAT(Rm + Rn)         QSUB  Rd = SAT(Rm - Rn)
+//     QDADD Rd = SAT(Rm + SAT(2*Rn))  QDSUB Rd = SAT(Rm - SAT(2*Rn))
+//
+// arm_instructions.cpp implements exactly this shape; it is correct, and
+// tools/jit_matrix/a64_block_probe.cpp checks both sides against the
+// pseudocode rather than against each other.
+//
+// Saturation is `Rd = 0x80000000 - BIT31(res)` on signed overflow, which is
+// 0x7FFFFFFF for a positive result and 0x80000000 for a negative one, plus
+// CPSR.Q -- sticky, so it is ORed in. The select is three XOR/AND pairs
+// instead of a branch, keeping the block branch-free.
+static void emit_qsat(int dst, int ovf)
+{
+	// `dst` holds the raw result; `ovf` already holds the overflow as 0/1 and is
+	// preserved. R0/R2/R3 are the only scratch registers touched, so `dst` may
+	// be any cache slot or scratch register.
+	emit_mov(g_out, dst, R0);
+	emit_lsr(g_out, R0, 31);            // BIT31(res)
+	emit_movimm(g_out, 0x80000000u, R2);
+	emit_sub(g_out, R2, R0, R2);        // R2 = 0x80000000 - BIT31(res)
+	emit_zeroreg(g_out, R0);
+	emit_sub(g_out, R0, ovf, R0);       // R0 = ovf ? 0xFFFFFFFF : 0
+	emit_xor(g_out, dst, R2, R3);
+	emit_and(g_out, R3, R0, R3);
+	emit_xor(g_out, dst, R3, dst);
+}
+
+// dbl: Rn (bits 19-16, the second operand) is doubled and saturates on its own
+// before the add/sub, as in OP_QDADD/OP_QDSUB in the interpreter.
+static int op_qop(const u32 i, bool sub, bool dbl)
+{
+	const u32 rn = REG_POS(i, 16);      // the operand that doubles
+	const u32 rm = REG_POS(i, 0);       // the other one
+	const u32 rd = REG_POS(i, 12);
+
+	rc_read(rn, lhs);
+	rc_read(rm, rhs);
+
+	if (dbl)
+	{
+		emit_adds(g_out, lhs, lhs, lhs);
+		emit_seto(g_out, R5);
+		SET_Q;
+		emit_qsat(lhs, R5);
+	}
+
+	// R15 must not enter the cache, so the PC form computes into a scratch
+	// register and writes it out by hand (masking to the word address, as the
+	// interpreter does).
+	int t = (rd == 15) ? R1 : g_regs.write((int)rd);
+	if (sub)
+		emit_subs(g_out, rhs, lhs, t);
+	else
+		emit_adds(g_out, lhs, rhs, t);
+
+	emit_seto(g_out, R5);
+	SET_Q;
+	emit_qsat(t, R5);
+
+	if (rd == 15)
+	{
+		emit_write_ptr32_regptrTO_regFROM(g_out, reg_ptr(15, R1, ADDRESS), t);
+		emit_andimm(g_out, t, 0xFFFFFFFC, t);
+		emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), t);
+	}
+
+	return 1;
+}
+
+static int OP_QADD(const u32 i)  { return op_qop(i, 0, 0); }
+static int OP_QSUB(const u32 i)  { return op_qop(i, 1, 0); }
+static int OP_QDADD(const u32 i) { return op_qop(i, 0, 1); }
+static int OP_QDSUB(const u32 i) { return op_qop(i, 1, 1); }
 
 //-----------------------------------------------------------------------------
 //   MUL
@@ -1168,35 +1799,42 @@ static void MUL_Mxx_END(int reg, bool sign, int cycles)
 	emit_sub(g_out, R0, tmp, tmp);
 	emit_lsr(g_out, tmp, 3);
 	emit_addimm(g_out, tmp, cycles+1, tmp);
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, tmp);
+	emit_st_counters(BB_CYCLES_FIELD, tmp);
 }
 
+// S4 family 5 (multiply): operands come from the register cache, results go
+// back into it.
+//
+// The shapes differ in how many emulated registers are live at once, and the
+// pool only holds three:
+//
+//   * MUL/SMULxy/SMULWy -- Rm, Rs in, Rd out. Three, so both directions are
+//     cache-aware (this is the same pattern family 1 uses).
+//   * MLA/SMLAxy/SMLAWy -- plus the Rn that emit_mla accumulates into: four,
+//     which does not fit. The accumulator is read with rc_read into the fixed
+//     scratch register emit_mla wants, which costs no slot and still avoids the
+//     memory round-trip when a preceding instruction left the value cached.
+//   * UMULL/SMULL/SMLAL (and the S variants) -- two destination halves, and
+//     SMLAL reads both halves back as the accumulator. Never more than two slots
+//     are needed, because the sources live in fixed scratch registers.
+//
+// `rc_store` rather than a plain store is the actual point of the migration: a
+// following ALU/shift handler then reads Rd from the slot instead of paying
+// store+load, and a following non-migrated handler pays one eviction store --
+// which is what reg_ptr()/reg_pos_ptr() do anyway.
 #define OP_MUL_(op, width, sign, accum, flags) \
-	reg_pos_ptr(0, lhs, VALUE); \
-	reg_pos_ptr(8, rhs, VALUE); \
+	rc_read(REG_POS(i,0), lhs); \
+	rc_read(REG_POS(i,8), rhs); \
 	op; \
-	if(width && accum) \
+	if(width) \
 	{ \
-		if(flags) \
-		{ \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
-		} \
-		else \
-		{ \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
-		} \
-	} \
-	else if(width) \
-	{ \
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
+		rc_store(REG_POS(i,12), R0); \
+		rc_store(REG_POS(i,16), R1); \
 	} \
 	else \
 	{ \
-		if (accum) { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), hi); } \
-		else { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), lhs); } \
+		if (accum) { rc_store(REG_POS(i,16), hi); } \
+		else { rc_store(REG_POS(i,16), lhs); } \
 	} \
 	if (flags) { SET_NZ(0); } \
 	MUL_Mxx_END(rhs, sign, 1+width+accum); \
@@ -1205,47 +1843,37 @@ static void MUL_Mxx_END(int reg, bool sign, int cycles)
 #define hi R2
 
 static int OP_MUL(const u32 i) { OP_MUL_(emit_mul(g_out, lhs,rhs), 0, 1, 0, 0); }
-static int OP_MLA(const u32 i) { OP_MUL_(emit_mla(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), 0, 1, 1, 0); }
+static int OP_MLA(const u32 i) { OP_MUL_(emit_mla(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), 0, 1, 1, 0); }
 static int OP_UMULL(const u32 i) { OP_MUL_(emit_umull(g_out, R0, R1,lhs,rhs), 1, 0, 0, 0); }
-static int OP_UMLAL(const u32 i) { OP_MUL_(emit_umlal(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), 1, 0, 1, 0); }
+static int OP_UMLAL(const u32 i) { OP_MUL_(emit_umlal(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), 1, 0, 1, 0); }
 static int OP_SMULL(const u32 i) { OP_MUL_(emit_smull(g_out, R0, R1,lhs,rhs), 1, 1, 0, 0); }
-static int OP_SMLAL(const u32 i) { OP_MUL_(emit_smlal(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), 1, 1, 1, 0); }
+static int OP_SMLAL(const u32 i) { OP_MUL_(emit_smlal(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), 1, 1, 1, 0); }
 
 static int OP_MUL_S(const u32 i) { OP_MUL_(emit_muls(g_out, lhs,rhs), 0, 1, 0, 1); }
-static int OP_MLA_S(const u32 i) { OP_MUL_(emit_mlas(g_out, hi,reg_pos_ptr(12, R1, VALUE),lhs,rhs), 0, 1, 1, 1); }
+static int OP_MLA_S(const u32 i) { OP_MUL_(emit_mlas(g_out, hi,rc_read(REG_POS(i,12), R1),lhs,rhs), 0, 1, 1, 1); }
 static int OP_UMULL_S(const u32 i) { OP_MUL_(emit_umulls(g_out, R0, R1, lhs,rhs), 1, 0, 0, 1); }
-static int OP_UMLAL_S(const u32 i) { OP_MUL_(emit_umlals(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), 1, 0, 1, 1); }
+static int OP_UMLAL_S(const u32 i) { OP_MUL_(emit_umlals(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), 1, 0, 1, 1); }
 static int OP_SMULL_S(const u32 i) { OP_MUL_(emit_smulls(g_out, R0, R1,lhs,rhs), 1, 1, 0, 1); }
-static int OP_SMLAL_S(const u32 i) { OP_MUL_(emit_smlals(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), 1, 1, 1, 1); }
+static int OP_SMLAL_S(const u32 i) { OP_MUL_(emit_smlals(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), 1, 1, 1, 1); }
 
 #undef hi
 
+// Same as OP_MUL_ but for the signed halfword forms, whose flag side effect is
+// the sticky Q bit instead of NZ. The cycle tail differs too, so this stays a
+// separate macro.
 #define OP_MULxy_(op, x, y, width, accum, flags) \
-	reg_pos_ptr(0, lhs, VALUE); \
-	reg_pos_ptr(8, rhs, VALUE); \
+	rc_read(REG_POS(i,0), lhs); \
+	rc_read(REG_POS(i,8), rhs); \
 	op; \
-	if(width && accum) \
+	if(width) \
 	{ \
-		if(flags) \
-		{ \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
-		} \
-		else \
-		{ \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
-		} \
-	} \
-	else if(width) \
-	{ \
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R3, ADDRESS), R0); \
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), R1); \
+		rc_store(REG_POS(i,12), R0); \
+		rc_store(REG_POS(i,16), R1); \
 	} \
 	else \
 	{ \
-		if (accum) { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), hi); } \
-		else { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), lhs); } \
+		if (accum) { rc_store(REG_POS(i,16), hi); } \
+		else { rc_store(REG_POS(i,16), lhs); } \
 	} \
 	if (flags) { SET_Q; } \
 	return 1;\
@@ -1265,19 +1893,19 @@ static int OP_SMUL_T_T(const u32 i) { OP_MULxy_(emit_smultt(g_out, lhs, rhs), H,
 //   SMLA
 //-----------------------------------------------------------------------------
 static int OP_SMLA_B_B(const u32 i) { 	
-	OP_MULxy_(emit_smlabb(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), L, L, 0, 1, 1); 
+	OP_MULxy_(emit_smlabb(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), L, L, 0, 1, 1); 
 }
-static int OP_SMLA_B_T(const u32 i) { OP_MULxy_(emit_smlabt(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), L, H, 0, 1, 1); }
-static int OP_SMLA_T_B(const u32 i) { OP_MULxy_(emit_smlatb(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), H, L, 0, 1, 1); }
-static int OP_SMLA_T_T(const u32 i) { OP_MULxy_(emit_smlatt(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), H, H, 0, 1, 1); }
+static int OP_SMLA_B_T(const u32 i) { OP_MULxy_(emit_smlabt(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), L, H, 0, 1, 1); }
+static int OP_SMLA_T_B(const u32 i) { OP_MULxy_(emit_smlatb(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), H, L, 0, 1, 1); }
+static int OP_SMLA_T_T(const u32 i) { OP_MULxy_(emit_smlatt(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), H, H, 0, 1, 1); }
 
 //-----------------------------------------------------------------------------
 //   SMLAL
 //-----------------------------------------------------------------------------
-static int OP_SMLAL_B_B(const u32 i) { OP_MULxy_(emit_smlalbb(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), L, L, 1, 1, 1); }
-static int OP_SMLAL_B_T(const u32 i) { OP_MULxy_(emit_smlalbt(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), L, H, 1, 1, 1); }
-static int OP_SMLAL_T_B(const u32 i) { OP_MULxy_(emit_smlaltb(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), H, L, 1, 1, 1); }
-static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(emit_smlaltt(g_out, reg_pos_ptr(12, R0, VALUE), reg_pos_ptr(16, R1, VALUE),lhs,rhs), H, H, 1, 1, 1); }
+static int OP_SMLAL_B_B(const u32 i) { OP_MULxy_(emit_smlalbb(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), L, L, 1, 1, 1); }
+static int OP_SMLAL_B_T(const u32 i) { OP_MULxy_(emit_smlalbt(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), L, H, 1, 1, 1); }
+static int OP_SMLAL_T_B(const u32 i) { OP_MULxy_(emit_smlaltb(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), H, L, 1, 1, 1); }
+static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(emit_smlaltt(g_out, rc_read(REG_POS(i,12), R0), rc_read(REG_POS(i,16), R1),lhs,rhs), H, H, 1, 1, 1); }
 
 #undef hi
 
@@ -1286,11 +1914,11 @@ static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(emit_smlaltt(g_out, reg_pos_ptr
 //-----------------------------------------------------------------------------
 
 #define OP_SMxxW_(op, x, accum, flags) \
-	reg_pos_ptr(8, lhs, VALUE);\
-	reg_pos_ptr(0, rhs, VALUE); \
+	rc_read(REG_POS(i,8), lhs);\
+	rc_read(REG_POS(i,0), rhs); \
 	op; \
-	if (accum) { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), hi); } \
-	else { emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), lhs); } \
+	if (accum) { rc_store(REG_POS(i,16), hi); } \
+	else { rc_store(REG_POS(i,16), lhs); } \
 	if (flags) { SET_Q; } \
 	return 1;
 
@@ -1298,8 +1926,8 @@ static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(emit_smlaltt(g_out, reg_pos_ptr
 
 static int OP_SMULW_B(const u32 i) { OP_SMxxW_(emit_smulwb(g_out, lhs, rhs), L, 0, 0); }
 static int OP_SMULW_T(const u32 i) { OP_SMxxW_(emit_smulwt(g_out, lhs, rhs), H, 0, 0); }
-static int OP_SMLAW_B(const u32 i) { OP_SMxxW_(emit_smlawb(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), L, 1, 1); }
-static int OP_SMLAW_T(const u32 i) { OP_SMxxW_(emit_smlawt(g_out, hi,reg_pos_ptr(12, R0, VALUE),lhs,rhs), H, 1, 1); }
+static int OP_SMLAW_B(const u32 i) { OP_SMxxW_(emit_smlawb(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), L, 1, 1); }
+static int OP_SMLAW_T(const u32 i) { OP_SMxxW_(emit_smlawt(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), H, 1, 1); }
 
 
 #undef hi
@@ -1307,10 +1935,13 @@ static int OP_SMLAW_T(const u32 i) { OP_SMxxW_(emit_smlawt(g_out, hi,reg_pos_ptr
 //-----------------------------------------------------------------------------
 //   MRS / MSR
 //-----------------------------------------------------------------------------
+// MRS is not block-final: whatever follows in the block reads PSW through Rd
+// (`mrs r0,cpsr; tst r0,#0x80` is the usual interrupt-guard shape), so the
+// result goes into the cache slot instead of to memory.
 static int OP_MRS_CPSR(const u32 i)
 {
 	cpu_ptr(CPSR, x_reg, VALUE);
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), x_reg);
+	rc_store(REG_POS(i,12), x_reg);
 	
 	return 1;
 }
@@ -1318,10 +1949,18 @@ static int OP_MRS_CPSR(const u32 i)
 static int OP_MRS_SPSR(const u32 i)
 {
 	cpu_ptr(SPSR, x_reg, VALUE);
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), x_reg);
+	rc_store(REG_POS(i,12), x_reg);
 	
 	return 1;
 }
+
+// MSR's source register through the cache: a preceding instruction may have
+// left Rs in a slot, and reg_pos_ptr() would pay a store + load for it.
+#define REG_OFF_CACHED \
+	bool rhs_is_imm = false; \
+	static unsigned int rhs_var; \
+	rc_read(REG_POS(i,0), rhs_reg); \
+	u32 rhs_first = cpu->R[REG_POS(i,0)];
 
 #define OP_MSR_(reg, args, sw) \
 	args; \
@@ -1341,6 +1980,7 @@ static int OP_MRS_SPSR(const u32 i)
 					emit_andimm(g_out, mode, 0x1F, mode); \
 					emit_ptr(g_out, (uintptr_t)&ARMPROC, R0); \
 					emit_mov(g_out, mode, R1);\
+					g_regs.flush(); \
 					emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3); \
 					callR3(g_out); \
 				} \
@@ -1405,6 +2045,7 @@ static int OP_MRS_SPSR(const u32 i)
 		emit_andimm(g_out, mode, 0x1F, mode); \
 		emit_ptr(g_out, (uintptr_t)&ARMPROC, R0); \
 		emit_mov(g_out, mode, R1);\
+		g_regs.flush(); \
 		emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3); \
 		callR3(g_out); \
 	} \
@@ -1429,8 +2070,14 @@ static int OP_MRS_SPSR(const u32 i)
 #define xPSR R4
 #define xPSR_mem R3	
 
-static int OP_MSR_CPSR(const u32 i) { OP_MSR_(CPSR, REG_OFF, 1); }
-static int OP_MSR_SPSR(const u32 i) { OP_MSR_(SPSR, REG_OFF, 0); }
+// The two `g_regs.flush()` calls inside OP_MSR_ are not about MSR itself: they
+// are the price of armcpu_switchMode(). It banks the *current* R13/R14/SPSR
+// (and swaps R8-R12 in FIQ) by reading them out of armcpu_t, so a dirty cache
+// slot would hand it the pre-instruction value and then write the old bank's
+// register into the new one at the tail flush. Memory has to be current before
+// the call, not after.
+static int OP_MSR_CPSR(const u32 i) { OP_MSR_(CPSR, REG_OFF_CACHED, 1); }
+static int OP_MSR_SPSR(const u32 i) { OP_MSR_(SPSR, REG_OFF_CACHED, 0); }
 static int OP_MSR_CPSR_IMM_VAL(const u32 i) { OP_MSR_(CPSR, IMM_VAL, 1); }
 static int OP_MSR_SPSR_IMM_VAL(const u32 i) { OP_MSR_(SPSR, IMM_VAL, 0); }
 
@@ -1522,8 +2169,21 @@ static const OpLDR LDRSB_tab[2][5]  = { T(OP_LDRSB) };
 static u32 add(u32 lhst, u32 rhst) { return lhst + rhst; }
 static u32 sub(u32 lhst, u32 rhst) { return lhst - rhst; }
 
+// Write-back of the address an LDR/STR just computed. For a load the helper
+// also writes R[Rd] through &armcpu_t.R[Rd], so when Rn == Rd the store has to
+// happen *before* the call: a deferred one would land on top of the loaded
+// value at the tail flush. Everywhere else the store is deferred like any other
+// destination write.
+#define LDR_WB(vreg) \
+	do { \
+		if (REG_POS(i,16) == REG_POS(i,12)) \
+			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), vreg); \
+		else \
+			rc_store(REG_POS(i,16), vreg); \
+	} while(0)
+
 #define OP_LDR_(mem_op, arg, sign_op, writeback) \
-	reg_pos_ptr(16, adr, VALUE); \
+	rc_read(REG_POS(i,16), adr); \
 	reg_pos_ptr(12, dst, ADDRESS); \
 	arg; \
 	if(!rhs_is_imm || *(u32*)&rhs_var) \
@@ -1533,21 +2193,21 @@ static u32 sub(u32 lhst, u32 rhst) { return lhst - rhst; }
 		else if(writeback < 0) \
 		{ \
 			emit_##sign_op(g_out, adr, rhs_reg, adr); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), adr); \
+			LDR_WB(adr); \
 		} \
 		else if(writeback > 0) \
 		{ \
 			emit_mov(g_out, adr, tmp_reg); \
 			emit_##sign_op(g_out, tmp_reg, rhs_reg, tmp_reg); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), tmp_reg); \
+			LDR_WB(tmp_reg); \
 		} \
 	} \
 	u32 adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
 	emit_mov64(g_out,adr, R0); \
 	emit_mov64(g_out, dst, R1); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,0)], R3); \
-	callR3(g_out); \
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0); \
+	call_mem(g_out); \
+	emit_st_counters(BB_CYCLES_FIELD, R0); \
 	if(REG_POS(i,12)==15) \
 	{ \
 		reg_ptr(15, tmp_reg, VALUE); \
@@ -1716,8 +2376,8 @@ static const OpSTR STRB_tab[2][3]  = { T(OP_STRB) };
 #undef T
 
 #define OP_STR_(mem_op, arg, sign_op, writeback) \
-	reg_pos_ptr(12, data, VALUE); \
-	reg_pos_ptr(16, R8, VALUE); \
+	rc_read(REG_POS(i,12), data); \
+	rc_read(REG_POS(i,16), R8); \
 	arg; \
 	emit_mov(g_out, R8, adr); \
 	if(!rhs_is_imm || *(u32*)&rhs_var) \
@@ -1727,19 +2387,19 @@ static const OpSTR STRB_tab[2][3]  = { T(OP_STRB) };
 		else if(writeback < 0) \
 		{ \
 			emit_##sign_op(g_out, adr, rhs_reg, adr); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), adr); \
+			rc_store(REG_POS(i,16), adr); \
 		} \
 		else if(writeback > 0) \
 		{ \
 			emit_mov(g_out, adr, tmp_reg); \
 			emit_##sign_op(g_out, tmp_reg, rhs_reg, tmp_reg); \
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R3, ADDRESS), tmp_reg); \
+			rc_store(REG_POS(i,16), tmp_reg); \
 		} \
 	} \
 	u32 adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,1)], R3); \
-	callR3(g_out); \
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0); \
+	call_mem(g_out); \
+	emit_st_counters(BB_CYCLES_FIELD, R0); \
 	return 1;
 	
 #define data R1
@@ -1882,8 +2542,23 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 		return 0; // TODO: exception
 	}
 	
-	reg_pos_ptr(16, Rd, VALUE);
+	rc_read(REG_POS(i,16), Rd);
 	emit_mov(g_out, Rd, addr);
+
+	// op_ldrd_tab / op_strd_tab walk cpu->R[Rd_num] (and Rd_num+1 for the even
+	// forms) by index, so the pair has to be settled before the call: a store
+	// needs the current value in memory, a load is about to overwrite whatever
+	// the slot is still holding.
+	if (BIT5(i))
+	{
+		g_regs.evict(Rd_num);
+		g_regs.evict(Rd_num + 1);
+	}
+	else
+	{
+		g_regs.discard(Rd_num);
+		g_regs.discard(Rd_num + 1);
+	}
 
 	// I bit - immediate or register
 	if (BIT22(i))
@@ -1893,8 +2568,11 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 	}
 	else
 	{
+		// Rm through the cache, like the plain LDR/STR register-offset forms:
+		// the address adjustment below only needs the value, and the eviction in
+		// reg_pos_ptr() would store the dirty slot and load it straight back.
 		#define idx R3
-		reg_pos_ptr(0, idx, VALUE);
+		rc_read(REG_POS(i,0), idx);
 		BIT23(i)?emit_add_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_ptr(16, R1, ADDRESS)), idx):emit_sub_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_ptr(16, R1, ADDRESS)), idx);
 		#undef idx
 	}
@@ -1903,11 +2581,11 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 	emit_mov(g_out,addr, R0);
 	// Add function
 	emit_ptr(g_out, (uintptr_t)(BIT5(i) ? op_strd_tab[PROCNUM][Rd_num] : op_ldrd_tab[PROCNUM][Rd_num]), R3);
-	// Call function
-	callR3(g_out);
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+	// Call function: addr (x2) is live for the optional writeback below.
+	call_mem_r2(g_out);
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 
-	emit_MMU_aluMemCycles(3, &bb_cycles, 0);	
+	emit_MMU_aluMemCycles(3, &bb_cycles, 0);
 
 	#undef addr
 	#undef Rd
@@ -1935,8 +2613,23 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		return 0; // TODO: exception
 	}
 	
-	reg_pos_ptr(16, Rd, VALUE);
+	rc_read(REG_POS(i,16), Rd);
 	emit_mov(g_out, Rd, addr);
+
+	// op_ldrd_tab / op_strd_tab walk cpu->R[Rd_num] (and Rd_num+1 for the even
+	// forms) by index, so the pair has to be settled before the call: a store
+	// needs the current value in memory, a load is about to overwrite whatever
+	// the slot is still holding.
+	if (BIT5(i))
+	{
+		g_regs.evict(Rd_num);
+		g_regs.evict(Rd_num + 1);
+	}
+	else
+	{
+		g_regs.discard(Rd_num);
+		g_regs.discard(Rd_num + 1);
+	}
 
 	// I bit - immediate or register
 	if (BIT22(i))
@@ -1945,7 +2638,9 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		BIT23(i)?emit_add(g_out, addr, rhs, addr):emit_sub(g_out, addr, rhs, addr);
 	}
 	else {
-		reg_pos_ptr(0, R1, VALUE);
+		// Rm through the cache (see the post-index form above). Rd/Rn still go
+		// through memory: the pair write-back below has to land in armcpu_t.
+		rc_read(REG_POS(i,0), R1);
 		BIT23(i)?emit_add(g_out, addr, R1, addr):emit_sub(g_out, addr, R1, addr);
 	}
 
@@ -1955,10 +2650,10 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		emit_mov(g_out,addr, R0);
 		// Add function
 		emit_ptr(g_out, (uintptr_t)op_strd_tab[PROCNUM][Rd_num], R3);
-		// Call function
-		callR3(g_out);
+		// Call function: addr (x2) is live for the optional writeback below.
+		call_mem_r2(g_out);
 		// Return
-		emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+		emit_st_counters(BB_CYCLES_FIELD, R0);
 		
 		if (BIT21(i)) // W bit - writeback
 			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), addr);
@@ -1973,10 +2668,10 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		emit_mov(g_out,addr, R0);
 		// Add function
 		emit_ptr(g_out, (uintptr_t)op_ldrd_tab[PROCNUM][Rd_num], R3);
-		// Call function
-		callR3(g_out);
+		// Call function: addr (x2) is live for the optional writeback below.
+		call_mem_r2(g_out);
 		// Return
-		emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);			
+		emit_st_counters(BB_CYCLES_FIELD, R0);			
 
 		emit_MMU_aluMemCycles(3, &bb_cycles, 0);
 	}
@@ -2017,13 +2712,17 @@ static int op_swp_(const u32 i, int b)
 	#define Rd R4
 	#define Rs R5
 	
-	reg_pos_ptr(16, addr, VALUE);
+	// The base is a plain read: the helper takes the address by value, so a
+	// cached value can be copied out of its slot instead of being written back
+	// and reloaded. Rd stays on the memory path -- op_swp() writes through
+	// `u32* Rd`. Copy the base first: the Rd eviction below may be the same
+	// register, and it would otherwise turn the copy into a memory round trip.
+	rc_read(REG_POS(i,16), addr);
 	reg_pos_ptr(12, Rd, ADDRESS);
 	
-	if(b)
-		reg_pos_ptrB(0, Rs, VALUE);
-	else
-		reg_pos_ptr(0, Rs, VALUE);
+	// Rs is a plain source; SWPB's helper truncates to a byte itself, so the
+	// dword in the slot is just as good as the byte the memory path loaded.
+	rc_read(REG_POS(i,0), Rs);
 	
 	emit_mov(g_out, addr, R0);
 	emit_mov64(g_out, Rd, R1);
@@ -2032,12 +2731,10 @@ static int op_swp_(const u32 i, int b)
 	// Add function
 	//emit_movimm(g_out, (uintptr_t)op_swp_tab[b][PROCNUM], R3);
 	emit_ptr(g_out, (uintptr_t)op_swp_tab[b][PROCNUM], R3);
-	// Call function
-	callR3(g_out);
-	//emit_mov(g_out, PC, LR);
-	//emit_jmpreg(g_out, R3);
+	// Call function: only the cycle count in R0 is live afterwards.
+	call_mem(g_out);
 	// Return
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 
 	emit_MMU_aluMemCycles(4, &bb_cycles, 0);
 	
@@ -2226,13 +2923,13 @@ static void call_ldm_stm(int reg, u32 bitmask, bool store, int dir)
 		emit_movimm(g_out, (uintptr_t)get_reg_list(bitmask, dir), R1);
 		emit_movimm(g_out, (uintptr_t)(get_reg_list(bitmask, dir) >> 32), R2);
 		
-		// Add function
-		emit_ptr(g_out, (uintptr_t)op_ldm_stm_tab[PROCNUM][store][dir>0], R7);
-		
-		// Call function
-		callR7(g_out);
-		
-		emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+	// Add function
+	emit_ptr(g_out, (uintptr_t)op_ldm_stm_tab[PROCNUM][store][dir>0], R7);
+	
+	// Call function: args are consumed by the helper, only cycles (R0) is live.
+	call_mem_r7(g_out);
+	
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 
 	}
 	else
@@ -2250,9 +2947,36 @@ static int op_ldm_stm(u32 i, bool store, int dir, bool before, bool writeback)
 	u32 bitmask = i & 0xFFFF;
 	u32 pop = popregcount(bitmask);	
 	
-	reg_pos_ptr(16, adr, VALUE);
+	rc_read(REG_POS(i,16), adr);
 	if(before)
 		emit_addimm(g_out, adr, 4*dir, adr);
+
+	// OP_LDM_STM walks cpu->R[] through a register-number list, i.e. it reads
+	// armcpu_t directly. Every register in the mask therefore has to be settled
+	// before the call: a store needs the current value in memory (this is what
+	// `add r4,r4,#1 ; stmia r0,{r4,r5}` gets wrong otherwise), and a load is
+	// about to overwrite whatever a slot still holds.
+	for (u32 r = 0; r < 16; r++)
+		if (bitmask & (1u << r))
+			store ? g_regs.evict((int)r) : g_regs.discard((int)r);
+
+	// Base in the list, with registers above it: ARM leaves the write-back value
+	// unspecified, and the interpreter takes the running address. It has to be
+	// computed *before* the call -- the address lives in x4, and call_mem_r7
+	// only preserves x12/x15, so the old post-call form stored whatever the
+	// helper had left in x4. Parking it in the cache slot instead also makes it
+	// win over the value the load just wrote into R[Rn], which is what the
+	// interpreter does (it assigns R[Rn] last).
+	if(writeback && !store && (i & (1 << REG_POS(i,16))))
+	{
+		u32 bitlist = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
+		if(i & bitlist)
+		{
+			JIT_COMMENT("--- writeback (base in list)");
+			emit_addimm(g_out, adr, 4*dir*(pop-before), tmp_reg);
+			rc_store(REG_POS(i,16), tmp_reg);
+		}
+	}
 
 	call_ldm_stm(adr, bitmask, store, dir);
 
@@ -2261,26 +2985,12 @@ static int op_ldm_stm(u32 i, bool store, int dir, bool before, bool writeback)
 		op_bx(reg_ptr(15, R6, VALUE), 0, PROCNUM == ARMCPU_ARM9);
 	}
 
-	if(writeback)
+	if(writeback && (store || !(i & (1 << REG_POS(i,16)))))
 	{
-		
-		if(store || !(i & (1 << REG_POS(i,16))))
-		{
-			JIT_COMMENT("--- writeback");
-			reg_pos_ptr(16, R3, VALUE);
-			emit_addimm(g_out, R3, 4*dir*pop, R3);
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), R3);
-		}
-		else 
-		{
-			u32 bitlist = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
-			if(i & bitlist)
-			{
-				JIT_COMMENT("--- writeback");
-				emit_addimm(g_out, adr, 4*dir*(pop-before), adr);
-				emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), adr);
-			}
-		}
+		JIT_COMMENT("--- writeback");
+		reg_pos_ptr(16, R3, VALUE);
+		emit_addimm(g_out, R3, 4*dir*pop, R3);
+		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), R3);
 	}
 
 	emit_MMU_aluMemCycles(store ? 1 : 2, &bb_cycles, pop);
@@ -2329,6 +3039,9 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	{  
 		emit_ptr(g_out, (uintptr_t)&ARMPROC, R0);
 		emit_movimm(g_out, SYS, R1);
+		// The temporary SYS switch banks R13/R14 through memory (see the note
+		// on OP_MSR_), and `adr` is already in a host register.
+		g_regs.flush();
 		emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3);
 		callR3(g_out);
 		emit_mov(g_out, R0, oldmode);
@@ -2340,6 +3053,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	{	
 		emit_ptr(g_out, (uintptr_t)&ARMPROC, R0);
 		emit_mov(g_out, oldmode, R1);
+		g_regs.flush();
 		emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3);
 		callR3(g_out);		
 	}
@@ -2397,6 +3111,9 @@ static int OP_STMDB2_W(const u32 i) { return op_ldm_stm2(i, 1, -1, 1, 1); }
 #define SIGNEXTEND_11(i) (((s32)i<<21)>>21)
 #define SIGNEXTEND_24(i) (((s32)i<<8)>>8)
 
+// B/BL have nothing to cache: the only register they write is LR, and the block
+// ends here, so its final value has to reach armcpu_t either way (reg_ptr()
+// evicts a stale entry first, the tail flush has nothing left to do).
 static int op_b(u32 i, bool bl)
 {
 	u32 dst = bb_r15 + (SIGNEXTEND_24(i) << 2);
@@ -2452,19 +3169,25 @@ static int op_bx(/*Mem */int srcreg, bool blx, bool test_thumb)
 	return 1;
 }
 
-static int OP_BX(const u32 i) { return op_bx(reg_pos_ptr(0, R1, VALUE), 0, 1); }
-static int OP_BLX_REG(const u32 i) { return op_bx(reg_pos_ptr(0, R1, VALUE), 1, 1); }
+// `bx`/`blx` are block-final (BRANCH_ALWAYS), so the target and the LR the BLX
+// form stores go straight to armcpu_t -- the tail flush would buy nothing. The
+// source register is a different story: `mov r0,r1; bx r0` is common enough
+// that reading Rn through the cache is worth it. Switching to Thumb does not
+// bank any register (CPSR.T is not part of the banked set), so unlike a mode
+// change this needs no flush.
+static int OP_BX(const u32 i) { return op_bx(rc_read(REG_POS(i,0), R1), 0, 1); }
+static int OP_BLX_REG(const u32 i) { return op_bx(rc_read(REG_POS(i,0), R1), 1, 1); }
 
 //-----------------------------------------------------------------------------
 //   CLZ
 //-----------------------------------------------------------------------------
 static int OP_CLZ(const u32 i)
 {
-	reg_pos_ptr(0, tmp2_reg, VALUE);
+	g_regs.read_into(REG_POS(i,0), tmp2_reg);
 		
 	emit_clz(g_out, tmp2_reg, tmp_reg);
 	
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), tmp_reg);
+	rc_store(REG_POS(i,12), tmp_reg);
 	
 	return 1;
 }
@@ -2547,7 +3270,7 @@ static int OP_MCR(const u32 i)
 	u8 opcode2 = ((i>>5)&0x7);		// opcode2
 
 	static uintptr_t bb_cp15;
-	reg_pos_ptr(12, data, VALUE);
+	rc_read(REG_POS(i, 12), data);
 	emit_write_ptr(g_out, (uintptr_t)&bb_cp15, (uintptr_t)&cp15);
 
 	bool bUnknown = false;
@@ -2911,7 +3634,7 @@ static int OP_MRC(const u32 i)
 	}
 	else {
 		//if (REG_POS(i, 12) == 1) emit_brk(g_out);
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(12, R1, ADDRESS), data);
+		rc_store(REG_POS(i, 12), data);
 	}
 		
 	#undef data
@@ -2928,11 +3651,16 @@ u32 op_swi(u8 swinum)
 
 		emit_ptr(g_out, (uintptr_t)ARM_swi_tab[PROCNUM][swinum], R3);
 		callR3(g_out);
-		emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+		emit_st_counters(BB_CYCLES_FIELD, R0);
 		emit_inc_ptr_imm(g_out, (uintptr_t)&bb_cycles, 3);
 		return 1;
 	}
 	
+	// Entering SVC mode banks R13/R14/SPSR by reading them out of armcpu_t, so
+	// any deferred write has to land first -- `add sp, sp, #-4` followed by an
+	// `swi` in the same block is the shape that breaks otherwise.
+	g_regs.flush();
+
 	cpu_ptr(CPSR.val, R4, VALUE);
 	
 	emit_ptr(g_out, (uintptr_t)&ARMPROC, R0);
@@ -2962,7 +3690,40 @@ static int OP_SWI(const u32 i) { return op_swi((i >> 16) & 0x1F); }
 //-----------------------------------------------------------------------------
 //   BKPT
 //-----------------------------------------------------------------------------
-static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return 0; }
+// A prefetch abort, emitted the same way arm_instructions.cpp:OP_BKPT does it:
+// the old CPSR becomes SPSR, LR_abt points past the BKPT, T/EE are cleared, I is
+// set and execution continues at the abort vector. It is JIT_BYPASS in the
+// attribute table, so the block ends here and next_instruction is what the
+// sequencer picks up (the tail copies it into instruct_adr).
+//
+// Same flush rule as MSR/SWI: armcpu_switchMode() banks R13/R14/SPSR by reading
+// them out of armcpu_t, so deferred writes have to land first.
+static int OP_BKPT(const u32 i)
+{
+	g_regs.flush();
+
+	cpu_ptr(CPSR.val, R4, VALUE);           // SPSR_abt = old CPSR
+
+	emit_ptr(g_out, (uintptr_t)&ARMPROC, R0);
+	emit_movimm(g_out, ABT, R1);
+	emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3);
+	callR3(g_out);
+
+	emit_movimm(g_out, bb_adr + 4, R0);     // R14_abt = address of BKPT + 4
+	emit_write_ptr32_regptrTO_regFROM(g_out, reg_ptr(14, R1, ADDRESS), R0);
+	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(SPSR.val, R1, ADDRESS), R4);
+
+	cpu_ptr(CPSR.val, R4, VALUE);
+	emit_andimm(g_out, R4, ~(1 << 5), R4);  // ARM state
+	emit_orimm(g_out, R4, (1 << 7), R4);    // normal interrupts disabled
+	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(CPSR.val, R1, ADDRESS), R4);
+
+	emit_movimm(g_out, cpu->intVector + 0x0C, R0);
+	emit_write_ptr32_regptrTO_regFROM(g_out, reg_ptr(15, R1, ADDRESS), R0);
+	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), R0);
+
+	return 1;
+}
 
 //-----------------------------------------------------------------------------
 //   THUMB
@@ -2971,34 +3732,28 @@ static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return
 	u8 cf_change = 1; \
 	const u32 rhs2 = ((i>>6) & 0x1F); \
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3)) \
-	{ \
-		reg_pos_thumb(0, R1, VALUE);\
-		x86inst(g_out, R1, rhs2);\
-		emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_thumb(0, R2, ADDRESS)), R1); \
-	} \
+		x86inst(g_out, rc_t_rw(0), rhs2); \
 	else \
 	{ \
-		reg_pos_thumb(3, R1, VALUE); \
-		x86inst(g_out, R1, rhs2);\
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R2, ADDRESS), R1); \
+		int t = rc_t_write(0); \
+		emit_mov(g_out, rc_t_read(3, R1), t); \
+		x86inst(g_out, t, rhs2); \
 	} \
 	SET_NZC; \
 	return 1;
 
 #define OP_SHIFTS_REG(x86inst, bit) \
 	u8 cf_change = 1; \
-	reg_pos_thumb(3, imm_reg, VALUE); \
-	x86inst(g_out, reg_pos_thumb(0, R1, VALUE), imm_reg); \
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R0, ADDRESS), R1); \
+	rc_t_read(3, imm_reg); \
+	x86inst(g_out, rc_t_rw(0), imm_reg); \
 	SET_NZC; \
 	return 1;
 
 #define OP_LOGIC(x86inst, _conv) \
-	emit_mov(g_out, reg_pos_thumb(3, R1, VALUE), rhs); \
+	int t = rc_t_rw(0); \
+	rc_t_read(3, rhs); \
 	if (_conv==1) emit_not(g_out, rhs, rhs);\
-	reg_pos_thumb(0, R1, VALUE);\
-	x86inst(g_out, R1, rhs, R1);\
-	emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_thumb(0, R2, ADDRESS)), R1); \
+	x86inst(g_out, t, rhs, t); \
 	SET_NZ(0);\
 	return 1;
 
@@ -3008,14 +3763,12 @@ static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return
 static int OP_LSL_0(const u32 i) 
 {	
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
-		emit_cmpimm(g_out, reg_pos_thumb(0, R1, VALUE), 0);
+		emit_cmpimm(g_out, rc_t_read(0, R1), 0);
 	else
 	{
-		//emit_read_ptr32_regptrFROM_regTO(g_out, reg_pos_thumb(3, R1, VALUE), rhs);
-		emit_mov(g_out, reg_pos_thumb(3, R1, VALUE), rhs);
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), rhs);
-		
-		emit_cmpimm(g_out, rhs, 0);
+		int t = rc_t_write(0);
+		emit_mov(g_out, rc_t_read(3, R1), t);
+		emit_cmpimm(g_out, t, 0);
 	}
 	SET_NZ(0);
 	
@@ -3028,10 +3781,13 @@ static int OP_LSL_REG(const u32 i) { OP_SHIFTS_REG(emit_lsls_reg, 0); }
 
 static int OP_LSR_0(const u32 i) 
 {
-	emit_testimm(g_out, reg_pos_thumb(3, R1, VALUE), (1 << 31));
+	emit_testimm(g_out, rc_t_read(3, R1), (1 << 31));
 	emit_setnz(g_out, rcf);
 	SET_NZC_SHIFTS_ZERO(1);
-	emit_write_ptr32_regptrTO_immFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), 0);
+	{
+		int t = rc_t_write(0);
+		emit_zeroreg(g_out, t);
+	}
 	
 	return 1;
 }
@@ -3041,16 +3797,30 @@ static int OP_LSR_REG(const u32 i) { OP_SHIFTS_REG(emit_lsrs_reg, 31); }
 
 static int OP_ASR_0(const u32 i)
 {
+	// ASR #0 encodes ASR #32, not ASR #31.
+	//
+	//   DecodeImmShift(), Arm ARM DDI 0597 (A32/T32), shared pseudocode:
+	//       when '10' shift_t = SRType_ASR; shift_n = if imm5 == '00000' then 32
+	//                                                     else UInt(imm5);
+	//   ASR_C(), same manual's standard library:
+	//       return (ASR{N}(x, shift), x[Min(shift-1, N-1)]);
+	//
+	// so for ASR #32 the carry out is x[31], while ASR #31 would carry x[30].
+	// The two shifts produce the *same result* (ASR{} uses
+	// bshift = Min(shift, N-1), i.e. it clamps to 31), which is why shifting by
+	// 31 looked correct: only C was wrong. Passing 32 takes emit_asrs_reg()'s
+	// "count >= 32" path, which materialises C from bit 31 exactly as the
+	// interpreter's OP_ASR_0 does (CPSR.C = BIT31(operand)). The arm64
+	// differential harness caught this as Thumb slot 040.
 	u8 cf_change = 1;
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3)) {
-		emit_asrs(g_out, reg_pos_thumb(0, R1, VALUE), 31);
-		emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_thumb(0, R2, ADDRESS)), R1); // TAGCHECK
+		emit_asrs(g_out, rc_t_rw(0), 32);
 	}
 	else
 	{
-		reg_pos_thumb(3, rhs, VALUE);
-		emit_asrs(g_out, rhs, 31);
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), rhs);
+		int t = rc_t_write(0);
+		emit_mov(g_out, rc_t_read(3, R1), t);
+		emit_asrs(g_out, t, 32);
 	}
 	SET_NZC;
 	
@@ -3062,9 +3832,8 @@ static int OP_ASR_REG(const u32 i)
 {
 	u8 cf_change = 1;
 	GET_CARRY(0);
-	reg_pos_thumb(3, imm_reg, VALUE);
-	emit_asrs_reg(g_out, reg_pos_thumb(0, R1, VALUE), imm_reg);
-	emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_thumb(0, R0, ADDRESS)), R1);
+	rc_t_read(3, imm_reg);
+	emit_asrs_reg(g_out, rc_t_rw(0), imm_reg);
 	SET_NZC;	
 	return 1;
 }
@@ -3076,9 +3845,8 @@ static int OP_ROR_REG(const u32 i)
 {
 	u8 cf_change = 1;
 	GET_CARRY(0);
-	reg_pos_thumb(3, imm_reg, VALUE);
-	emit_rors_reg(g_out, reg_pos_thumb(0, R1, VALUE), imm_reg);
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R0, ADDRESS), R1);
+	rc_t_read(3, imm_reg);
+	emit_rors_reg(g_out, rc_t_rw(0), imm_reg);
 	SET_NZC;
 
 	return 1;
@@ -3097,14 +3865,15 @@ static int OP_BIC(const u32 i) { OP_LOGIC(emit_ands, 1); }
 //-----------------------------------------------------------------------------
 static int OP_NEG(const u32 i)
 {
+	int t;
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
-		emit_negs_ptr32_regptr(g_out, reg_pos_thumb(0, R1, ADDRESS));
+		t = rc_t_rw(0);
 	else
 	{
-		reg_pos_thumb(3, tmp, VALUE);
-		emit_negs(g_out, tmp, tmp);
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), tmp);
-	}	
+		t = rc_t_write(0);
+		emit_mov(g_out, rc_t_read(3, R1), t);
+	}
+	emit_negs(g_out, t, t);
 	SET_NZCV(1);
 	
 	return 1;
@@ -3119,22 +3888,22 @@ static int OP_ADD_IMM3(const u32 i)
 
 	if (imm3 == 0)	// mov 2
 	{
-		reg_pos_thumb(3, tmp, VALUE);
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), tmp);
-		emit_cmpimm(g_out, tmp,0);
+		int t = rc_t_write(0);
+		emit_mov(g_out, rc_t_read(3, R1), t);
+		emit_cmpimm(g_out, t,0);
 		SET_NZ(1);
 		
 		return 1;
 	}
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
 	{
-		emit_adds_ptr32_regptrTO_immFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), imm3);
+		int t = rc_t_rw(0);
+		emit_addsimm(g_out, t, imm3, t);
 	}
 	else
 	{
-		reg_pos_thumb(3, tmp, VALUE);
-		emit_addsimm(g_out, tmp, imm3, tmp);
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), tmp);
+		int t = rc_t_write(0);
+		emit_addsimm(g_out, rc_t_read(3, R1), imm3, t);
 	}
 	SET_NZCV(0);
 	
@@ -3142,31 +3911,30 @@ static int OP_ADD_IMM3(const u32 i)
 }
 static int OP_ADD_IMM8(const u32 i) 
 {
-	emit_adds_ptr32_regptrTO_immFROM(g_out, reg_pos_thumb(8, R1, ADDRESS), (i & 0xFF));
+	int t = rc_t_rw(8);
+	emit_addsimm(g_out, t, (i & 0xFF), t);
 	SET_NZCV(0);
 
 	return 1; 
 }
 static int OP_ADD_REG(const u32 i) 
 {
-	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
+	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))       // Rd == Rm: Rd += Rn
 	{
-		reg_pos_thumb(6, tmp, VALUE);
-		emit_adds_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), tmp);
+		int t = rc_t_rw(0);
+		emit_adds(g_out, t, rc_t_read(6, R1), t);
+	}
+	else if (_REG_NUM(i, 0) == _REG_NUM(i, 6))  // Rd == Rn: Rd += Rm
+	{
+		int t = rc_t_rw(0);
+		emit_adds(g_out, t, rc_t_read(3, R1), t);
 	}
 	else
-		if (_REG_NUM(i, 0) == _REG_NUM(i, 6))
-		{
-			reg_pos_thumb(3, tmp, VALUE);
-			emit_adds_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), tmp);
-		}
-		else
-		{
-			reg_pos_thumb(3, tmp, VALUE);
-			reg_pos_thumb(6, tmp2, VALUE);
-			emit_adds(g_out, tmp, tmp2, tmp);
-			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), tmp);
-		}
+	{
+		rc_t_read(3, R1);
+		int t = rc_t_write(0);
+		emit_adds(g_out, R1, rc_t_read(6, tmp), t);
+	}
 			
 	SET_NZCV(0);	
 	
@@ -3175,10 +3943,12 @@ static int OP_ADD_REG(const u32 i)
 static int OP_ADD_SPE(const u32 i)
 {
 	u32 Rd = _REG_NUM(i, 0) | ((i>>4)&8);
-	reg_ptr(Rd, tmp, VALUE);
-	reg_pos_ptr(3, tmp2, VALUE);
-	emit_add(g_out, tmp, tmp2, tmp);
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_ptr(Rd, R1, ADDRESS), tmp);
+	rc_read_at(REG_POS(i,3), tmp);
+	emit_add(g_out, rc_read(Rd, R1), tmp, tmp);
+	if (Rd == 15)
+		emit_write_ptr32_regptrTO_regFROM(g_out, reg_ptr(15, R1, ADDRESS), tmp);
+	else
+		rc_store(Rd, tmp);
 	
 	if(Rd==15)
 		emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), tmp);
@@ -3189,7 +3959,8 @@ static int OP_ADD_SPE(const u32 i)
 static int OP_ADD_2PC(const u32 i)
 {
 	u32 imm = ((i&0xFF)<<2);
-	emit_write_ptr32_regptrTO_immFROM(g_out, reg_pos_thumb(8, R1, ADDRESS), (bb_r15 & 0xFFFFFFFC) + imm);
+	emit_movimm(g_out, (bb_r15 & 0xFFFFFFFC) + imm, R1);
+	rc_store(_T3(8), R1);
 	
 	return 1;
 }
@@ -3197,9 +3968,9 @@ static int OP_ADD_2PC(const u32 i)
 static int OP_ADD_2SP(const u32 i)
 {
 	u32 imm = ((i&0xFF)<<2);
-	reg_ptr(13, tmp, VALUE);
+	rc_read(13, tmp);
 	if (imm) emit_addimm(g_out, tmp, imm, tmp);
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(8, R1, ADDRESS), tmp);
+	rc_store(_T3(8), tmp);
 	
 	return 1;
 }
@@ -3213,13 +3984,13 @@ static int OP_SUB_IMM3(const u32 i)
 
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
 	{
-		emit_subs_ptr32_regptrTO_immFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), imm3);
+		int t = rc_t_rw(0);
+		emit_subsimm(g_out, t, imm3, t);
 	}
 	else
 	{
-		reg_pos_thumb(3, tmp, VALUE);
-		emit_subsimm(g_out, tmp, imm3, tmp);
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), tmp);
+		int t = rc_t_write(0);
+		emit_subsimm(g_out, rc_t_read(3, R1), imm3, t);
 	}
 
 	SET_NZCV(1);
@@ -3228,26 +3999,29 @@ static int OP_SUB_IMM3(const u32 i)
 }
 static int OP_SUB_IMM8(const u32 i)
 {
-	emit_subs_ptr32_regptrTO_immFROM(g_out, reg_pos_thumb(8, R1, ADDRESS), (i & 0xFF));
+	int t = rc_t_rw(8);
+	emit_subsimm(g_out, t, (i & 0xFF), t);
 	SET_NZCV(1);
 	
 	return 1; 
 }
 static int OP_SUB_REG(const u32 i)
 {
-	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
+	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))       // Rd == Rm: Rd -= Rn
 	{
-		reg_pos_thumb(6, tmp, VALUE);
-		reg_pos_thumb(0, tmp2, VALUE);
-		emit_subs(g_out, tmp2, tmp, tmp2);
-		emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_thumb(0, R1, ADDRESS)), tmp2);
+		int t = rc_t_rw(0);
+		emit_subs(g_out, t, rc_t_read(6, R1), t);
+	}
+	else if (_REG_NUM(i, 0) == _REG_NUM(i, 6))  // Rd == Rn: Rd = Rm - Rd
+	{
+		int t = rc_t_rw(0);
+		emit_subs(g_out, rc_t_read(3, R1), t, t);
 	}
 	else
 	{
-		reg_pos_thumb(3, tmp, VALUE);
-		reg_pos_thumb(6, tmp2, VALUE);
-		emit_subs(g_out, tmp, tmp2, tmp);
-		emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), tmp);
+		rc_t_read(3, R1);
+		int t = rc_t_write(0);
+		emit_subs(g_out, R1, rc_t_read(6, tmp), t);
 	}
 	
 	SET_NZCV(1);
@@ -3260,12 +4034,10 @@ static int OP_SUB_REG(const u32 i)
 //-----------------------------------------------------------------------------
 static int OP_ADC_REG(const u32 i)
 {
-	
 	GET_CARRY(0);
-	reg_pos_thumb(3, tmp, VALUE);
-	reg_pos_thumb(0, tmp2, VALUE);
-	emit_adcs(g_out, tmp2, tmp, tmp2);
-	emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_thumb(0, R1, ADDRESS)), tmp2);
+	rc_t_read(3, tmp);
+	int t = rc_t_rw(0);
+	emit_adcs(g_out, t, tmp, t);
 	SET_NZCV(0);
 	
 	return 1;
@@ -3277,10 +4049,9 @@ static int OP_ADC_REG(const u32 i)
 static int OP_SBC_REG(const u32 i)
 {
 	GET_CARRY(1);
-	reg_pos_thumb(3, tmp, VALUE);
-	reg_pos_thumb(0, tmp2, VALUE);
-	emit_sbcs(g_out, tmp2, tmp, tmp2);
-	emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_thumb(0, R1, ADDRESS)), tmp2);
+	rc_t_read(3, tmp);
+	int t = rc_t_rw(0);
+	emit_sbcs(g_out, t, tmp, t);
 	SET_NZCV(1);
 	
 	return 1;
@@ -3291,8 +4062,8 @@ static int OP_SBC_REG(const u32 i)
 //-----------------------------------------------------------------------------
 static int OP_MOV_IMM8(const u32 i)
 {
-	emit_movimms(g_out, i & 0xFF, tmp);
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(8, R1, ADDRESS), tmp);
+	int t = rc_t_write(8);
+	emit_movimms(g_out, i & 0xFF, t);
 	SET_NZ(0);
 	
 	return 1;
@@ -3301,8 +4072,11 @@ static int OP_MOV_IMM8(const u32 i)
 static int OP_MOV_SPE(const u32 i)
 {
 	u32 Rd = _REG_NUM(i, 0) | ((i>>4)&8);
-	reg_pos_ptr(3, tmp, VALUE);
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_ptr(Rd, R1, ADDRESS), tmp);
+	rc_read_at(REG_POS(i,3), tmp);
+	if (Rd == 15)
+		emit_write_ptr32_regptrTO_regFROM(g_out, reg_ptr(15, R1, ADDRESS), tmp);
+	else
+		rc_store(Rd, tmp);
 	if(Rd == 15)
 	{
 		emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), tmp);
@@ -3314,9 +4088,9 @@ static int OP_MOV_SPE(const u32 i)
 
 static int OP_MVN(const u32 i)
 {
-	reg_pos_thumb(3, tmp, VALUE);
-	emit_mvns(g_out, tmp, tmp2);
-	emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_thumb(0, R1, ADDRESS), tmp2);
+	rc_t_read(3, tmp);
+	int t = rc_t_write(0);
+	emit_mvns(g_out, tmp, t);
 	SET_NZ(0);
 	
 	return 1;
@@ -3327,16 +4101,18 @@ static int OP_MVN(const u32 i)
 //-----------------------------------------------------------------------------
 static int OP_MUL_REG(const u32 i) 
 {
-	reg_pos_thumb(3, tmp, VALUE);
-	reg_pos_thumb(0, lhs, VALUE);
-	
+	// The result has to stay in a scratch register: the cycle tail below rewrites
+	// its argument in place to work out the operand width, so a cache slot would
+	// lose the value it is supposed to hold.
+	rc_t_read(3, tmp);
+	emit_mov(g_out, rc_t_read(0, R1), lhs);
 	emit_muls(g_out, lhs, tmp);
-	emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_thumb(0, R1, ADDRESS)), lhs);
 	SET_NZ(0);
+	rc_store(_T3(0), lhs);
 	if (PROCNUM == ARMCPU_ARM7)
 		emit_write_ptr32(g_out, (uintptr_t)&bb_cycles, (uintptr_t)4);
 	else
-		MUL_Mxx_END(lhs, 0, 1);
+		MUL_Mxx_END(tmp, 0, 1);
 	
 	return 1;
 }
@@ -3346,8 +4122,7 @@ static int OP_MUL_REG(const u32 i)
 //-----------------------------------------------------------------------------
 static int OP_CMP_IMM8(const u32 i) 
 {
-	reg_pos_thumb(8, tmp, VALUE);
-	emit_cmpimm(g_out, tmp, (i & 0xFF));
+	emit_cmpimm(g_out, rc_t_read(8, tmp), (i & 0xFF));
 	SET_NZCV(1);
 	
 	return 1; 
@@ -3355,9 +4130,8 @@ static int OP_CMP_IMM8(const u32 i)
 
 static int OP_CMP(const u32 i) 
 {
-	reg_pos_thumb(3, tmp2, VALUE);
-	reg_pos_thumb(0, tmp, VALUE);
-	emit_cmp(g_out, tmp, tmp2);
+	rc_t_read(3, tmp2);
+	emit_cmp(g_out, rc_t_read(0, tmp), tmp2);
 	SET_NZCV(1);
 	
 	return 1; 
@@ -3366,9 +4140,8 @@ static int OP_CMP(const u32 i)
 static int OP_CMP_SPE(const u32 i) 
 {
 	u32 Rn = (i&7) | ((i>>4)&8);
-	reg_pos_ptr(3, tmp2, VALUE);
-	reg_ptr(Rn, tmp, VALUE);
-	emit_cmp(g_out, tmp, tmp2);
+	rc_read_at(REG_POS(i,3), tmp2);
+	emit_cmp(g_out, rc_read(Rn, tmp), tmp2);
 	SET_NZCV(1);
 	
 	return 1;
@@ -3376,9 +4149,8 @@ static int OP_CMP_SPE(const u32 i)
 
 static int OP_CMN(const u32 i) 
 {
-	reg_pos_thumb(0, tmp, VALUE);
-	reg_pos_thumb(3, tmp2, VALUE);
-	emit_adds(g_out, tmp, tmp2, tmp); // MAY NEED TO SET FLAGS HERE
+	rc_t_read(3, tmp2);
+	emit_adds(g_out, rc_t_read(0, tmp), tmp2, tmp); // MAY NEED TO SET FLAGS HERE
 	SET_NZCV(0);
 	
 	return 1; 
@@ -3389,9 +4161,8 @@ static int OP_CMN(const u32 i)
 //-----------------------------------------------------------------------------
 static int OP_TST(const u32 i)
 {
-	reg_pos_thumb(3, tmp, VALUE);
-	reg_pos_thumb(0, tmp2, VALUE);
-	emit_test(g_out, tmp, tmp2);
+	rc_t_read(3, tmp);
+	emit_test(g_out, rc_t_read(0, tmp2), tmp);
 	SET_NZ(0);
 	
 	return 1;
@@ -3400,9 +4171,13 @@ static int OP_TST(const u32 i)
 //-----------------------------------------------------------------------------
 //   STR / LDR / STRB / LDRB
 //-----------------------------------------------------------------------------
+// The helper takes the address and the stored value *by value*, so both can come
+// straight out of the cache. Only the load's `u32* dstreg` reaches into
+// armcpu_t, which is why LDR_THUMB drops its destination slot instead of writing
+// it back.
 #define STR_THUMB(mem_op, offset) \
 	u32 adr_first = cpu->R[_REG_NUM(i, 3)];\
-	reg_pos_thumb(3, R0, VALUE);\
+	rc_t_read(3, R0);\
 	if ((offset) != -1) \
 	{ \
 		if ((offset) != 0) \
@@ -3413,19 +4188,19 @@ static int OP_TST(const u32 i)
 	} \
 	else \
 	{ \
-		reg_pos_thumb(6, R1, VALUE); \
+		rc_t_read(6, R1); \
 		emit_add(g_out, R0, R1, R0);\
 		adr_first += cpu->R[_REG_NUM(i, 6)]; \
 	} \
-	reg_pos_thumb(0, R1, VALUE); \
+	rc_t_read(0, R1); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,1)], R3); \
-	callR3(g_out); \
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);\
+	call_mem(g_out); \
+	emit_st_counters(BB_CYCLES_FIELD, R0);\
 	return 1;
 
 #define LDR_THUMB(mem_op, offset) \
 	u32 adr_first = cpu->R[_REG_NUM(i, 3)]; \
-	reg_pos_thumb(3, R0, VALUE);\
+	rc_t_read(3, R0);\
 	if ((offset) != -1) \
 	{ \
 		if ((offset) != 0) \
@@ -3436,14 +4211,14 @@ static int OP_TST(const u32 i)
 	} \
 	else \
 	{ \
-		reg_pos_thumb(6, R1, VALUE); \
+		rc_t_read(6, R1); \
 		emit_add(g_out, R0, R1, R0);\
 		adr_first += cpu->R[_REG_NUM(i, 6)]; \
 	} \
-	reg_pos_thumb(0, R1, ADDRESS); \
+	reg_pos_thumb_dst(0, R1); \
 	emit_ptr(g_out, (uintptr_t)mem_op##_tab[PROCNUM][classify_adr(adr_first,0)], R3); \
-	callR3(g_out); \
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);\
+	call_mem(g_out); \
+	emit_st_counters(BB_CYCLES_FIELD, R0);\
 	return 1;
 
 static int OP_STRB_IMM_OFF(const u32 i) { STR_THUMB(STRB, ((i>>6)&0x1F)); }
@@ -3471,16 +4246,16 @@ static int OP_STR_SPREL(const u32 i)
 	u32 imm = ((i&0xFF)<<2);
 	u32 adr_first = cpu->R[13] + imm;
 	
-	reg_ptr(13, addr, VALUE);
+	rc_read(13, addr);
 	if (imm) emit_addimm(g_out, addr, imm, addr);
-	reg_pos_thumb(8, data, VALUE);
+	rc_t_read(8, data);
 	
 	// Add function
 	emit_ptr(g_out, (uintptr_t)STR_tab[PROCNUM][classify_adr(adr_first,1)], R3);
 	
-	// Call function
-	callR3(g_out);
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+	// Call function: only cycles (R0) is live afterwards.
+	call_mem(g_out);
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 	
 	#undef addr
 	#undef data
@@ -3496,17 +4271,17 @@ static int OP_LDR_SPREL(const u32 i)
 	u32 imm = ((i&0xFF)<<2);
 	u32 adr_first = cpu->R[13] + imm;
 	
-	reg_ptr(13, addr, VALUE);
+	rc_read(13, addr);
 	if (imm) emit_addimm(g_out, addr, imm, addr);
-	reg_pos_thumb(8, data, ADDRESS);
+	reg_pos_thumb_dst(8, data);
 	
 	// Add function
 	emit_ptr(g_out, (uintptr_t)LDR_tab[PROCNUM][classify_adr(adr_first,0)], R3);
 	
-	// Call function
-	callR3(g_out);
+	// Call function: only cycles (R0) is live afterwards.
+	call_mem(g_out);
 	
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 	
 	#undef addr
 	#undef data
@@ -3523,15 +4298,15 @@ static int OP_LDR_PCREL(const u32 i)
 	u32 adr_first = (bb_r15 & 0xFFFFFFFC) + imm;
 	
 	emit_movimm(g_out, adr_first, addr);
-	reg_pos_thumb(8, data, ADDRESS);
+	reg_pos_thumb_dst(8, data);
 
 	// Add function
 	emit_ptr(g_out, (uintptr_t)LDR_tab[PROCNUM][classify_adr(adr_first,0)], R3);
 	
-	// Call function
-	callR3(g_out);
+	// Call function: only cycles (R0) is live afterwards.
+	call_mem(g_out);
 	
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 	
 	#undef addr
 	#undef data
@@ -3549,25 +4324,36 @@ static int op_ldm_stm_thumb(u32 i, bool store)
 	u32 pop = popregcount(bitmask);
 
 	#define adr R4
+	#define thumb_base ((i>>8)&0x7)
 
-	reg_pos_thumb(8, adr, VALUE);
+	rc_t_read(8, adr);
 
-	call_ldm_stm(adr, bitmask, store, 1);
+	// OP_LDM_STM walks cpu->R[] through a register list, i.e. it reads armcpu_t
+	// directly -- the same invariant as the ARM form. A store needs the current
+	// value in memory, a load is about to overwrite whatever the slot holds.
+	for (u32 r = 0; r < 8; r++)
+		if (bitmask & (1u << r))
+			store ? g_regs.evict((int)r) : g_regs.discard((int)r);
 
 	// ARM_REF:	THUMB: Causes base register write-back, and is not optional
 	// ARM_REF:	If the base register <Rn> is specified in <registers>, the final value of <Rn> is the loaded value
 	//			(not the written-back value).
-	if (store) emit_add_ptr32_regptrTO_immFROM(g_out, reg_pos_thumb(8, R1, ADDRESS), 4*pop); //c.add(reg_pos_thumb(8), 4*pop);
-		
-	else
+	//
+	// Computed before the call: the base lives in x4, which the helper is free to
+	// clobber, and parking the result in a slot also settles the ordering --
+	// memory still holds the old base while the helper runs.
+	if (store || !BIT_N(i, _REG_NUM(i, 8)))
 	{
-		if (!BIT_N(i, _REG_NUM(i, 8)))
-			emit_add_ptr32_regptrTO_immFROM(g_out, reg_pos_thumb(8, R1, ADDRESS), 4*pop); //c.add(reg_pos_thumb(8), 4*pop);
+		int t = g_regs.write(thumb_base);
+		emit_addimm(g_out, adr, 4*pop, t);
 	}
+
+	call_ldm_stm(adr, bitmask, store, 1);
 
 	emit_MMU_aluMemCycles(store ? 2 : 3, &bb_cycles, pop);
 	
 	#undef adr
+	#undef thumb_base
 	
 	return 1;
 }
@@ -3593,15 +4379,24 @@ static int op_push_pop(u32 i, bool store, bool pc_lr)
 	u32 pop = popregcount(bitmask);
 	int dir = store ? -1 : 1;
 	
-	reg_ptr(13, adr, VALUE);	
+	rc_read(13, adr);
 	
 	if(store) emit_subimm(g_out, adr, 4, adr);
+
+	// Same invariant as op_ldm_stm: the helper walks cpu->R[], so a store needs
+	// the current values in memory and a load invalidates whatever the slots hold.
+	for (u32 r = 0; r < 16; r++)
+		if (bitmask & (1u << r))
+			store ? g_regs.evict((int)r) : g_regs.discard((int)r);
 
 	call_ldm_stm(adr, bitmask, store, dir);
 
 	if(pc_lr && !store)
 		op_bx_thumb(reg_ptr(15, R1, VALUE), 0, PROCNUM == ARMCPU_ARM9);
-	emit_add_ptr32_regptrTO_immFROM(g_out, reg_ptr(13, R1, ADDRESS), 4*dir*pop);
+	{
+		int t = g_regs.read_write(13);
+		emit_addimm(g_out, t, 4*dir*pop, t);
+	}
 
 	emit_MMU_aluMemCycles(store ? (pc_lr?4:3) : (pc_lr?5:2), &bb_cycles, pop);
 	
@@ -3629,7 +4424,7 @@ static int OP_B_COND(const u32 i)
 	emit_branch((i>>8)&0xF, skip);
 	emit_write_ptr32_regptrTO_immFROM(g_out,12/*cpu_ptr(instruct_adr, R1, ADDRESS)*/, dst);
 	
-	emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, 2);
+	emit_add_counters_imm(BB_TOTAL_FIELD, 2);
 	emit_label(g_out, skip);
 
 	return 1;
@@ -3647,7 +4442,7 @@ static int OP_BLX(const u32 i)
 {
 	#define dst R4
 	
-	reg_ptr(14, dst, VALUE);
+	rc_read(14, dst);
 	emit_addimm(g_out, dst, (i&0x7FF) << 1, dst);
 	emit_andimm(g_out, dst, 0xFFFFFFFC, dst);
 	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(instruct_adr, R1, ADDRESS), dst);
@@ -3672,7 +4467,7 @@ static int OP_BL_11(const u32 i)
 {
 	#define dst R4
 	
-	reg_ptr(14, dst, VALUE);
+	rc_read(14, dst);
 	emit_addimm(g_out, dst, (i&0x7FF) << 1, dst);
 	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(instruct_adr, R1, ADDRESS), dst);
 	emit_write_ptr32_regptrTO_immFROM(g_out, reg_ptr(14, R1, ADDRESS), bb_next_instruction | 1);
@@ -3732,8 +4527,8 @@ static int op_bx_thumbR15()
 	return 1;
 }
 
-static int OP_BX_THUMB(const u32 i) { if (REG_POS(i, 3) == 15) return op_bx_thumbR15(); return op_bx_thumb(reg_pos_ptr(3, R1, VALUE), 0, 0); }
-static int OP_BLX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3, R1, VALUE), 1, 1); }
+static int OP_BX_THUMB(const u32 i) { if (REG_POS(i, 3) == 15) return op_bx_thumbR15(); return op_bx_thumb(rc_read_at(REG_POS(i,3), R1), 0, 0); }
+static int OP_BLX_THUMB(const u32 i) { return op_bx_thumb(rc_read_at(REG_POS(i,3), R1), 1, 1); }
 
 static int OP_SWI_THUMB(const u32 i) { return op_swi(i & 0x1F); }
 //-----------------------------------------------------------------------------
@@ -3949,6 +4744,11 @@ static void emit_armop_call(u32 opcode)
 		return;
 	}
 	
+	// Nothing inline: the interpreter function is about to read and write
+	// armcpu_t directly, so the cache has to be on disk first and is void
+	// afterwards (rules 2 and 3).
+	g_regs.flush();
+
 	OpFunc f = bb_thumb ? thumb_instructions_set[PROCNUM][opcode>>6]
 	                     : arm_instructions_set[PROCNUM][INSTRUCTION_INDEX(opcode)];
 						 	
@@ -3960,7 +4760,7 @@ static void emit_armop_call(u32 opcode)
 	// Call function
 	callR3(g_out);
 	
-	emit_write_ptr32_reg(g_out, (uintptr_t)&bb_cycles, R0);	
+	emit_st_counters(BB_CYCLES_FIELD, R0);	
 }
 
 static void _armlog(u8 proc, u32 addr, u32 opcode)
@@ -3983,6 +4783,77 @@ static void _armlog(u8 proc, u32 addr, u32 opcode)
 #else
 	return;
 #endif
+}
+
+//-----------------------------------------------------------------------------
+//   Event-boundary support
+//-----------------------------------------------------------------------------
+
+// Returns a register holding the address of mmu_dma_event_pending, which the
+// DMA event check loads from. The address never changes, so it is materialised
+// once per block, on the first store that needs it -- the same thing arm_jit.cpp
+// does with bb_dma_pending.
+static int emit_dma_event_flag_ptr()
+{
+	if(!bb_dma_flag_ptr_ready)
+	{
+		bb_dma_flag_ptr_ready = true;
+		emit_ptr(g_out, (uintptr_t)&mmu_dma_event_pending, JIT_DMA_FLAG_REG);
+	}
+	return JIT_DMA_FLAG_REG;
+}
+
+// Emit an early exit out of the current block.
+//
+// A store just retired. If it programmed a DMA channel that starts immediately,
+// DmaController::write32() has set mmu_dma_event_pending; the transfer is due
+// *now* (nextEvent == nds_timer), so the CPU must not retire another instruction
+// before Sequencer::execHardware() has run it. Returning here reproduces what
+// the interpreter does after every single instruction.
+//
+// bb_total_cycles holds the runtime (variable) cycle count of the instructions
+// already emitted, bb_constant_cycles the constant part of exactly those
+// instructions, so together they are the correct cycle count for the partial
+// block.
+static void emit_dma_event_check(u32 resume_adr)
+{
+	uint64_t skip = genlabel();
+
+	// The flag lives at a fixed address, so the pointer is materialised once per
+	// block, on the first store that needs it, instead of on every store.
+	const int flag_ptr = emit_dma_event_flag_ptr();
+
+	emit_read_ptr32_regptrFROM_regTO(g_out, flag_ptr, R0);
+	emit_testimm(g_out, R0, 1);
+	emit_branch_label(g_out, skip, 0x0);		// beq skip
+
+	JIT_COMMENT("DMA armed: leave block at %08Xh", resume_adr);
+	emit_write_ptr32_regptrTO_immFROM(g_out, flag_ptr, 0);
+
+	// This is a mid-block return, so armcpu_t must be complete before it
+	// (rule 3).
+	//
+	// Write back without invalidating. flush() would be wrong here: it clears
+	// the *compile-time* dirty bits as well, and this code sits inside one arm
+	// of a branch. The fall-through path still has those values in its slots,
+	// but a cleared dirty bit means the block tail's flush() emits nothing for
+	// them -- the pending stores then only land when a DMA happens to be armed.
+	// Measured on hardware: `smlabb` (deferred result) followed by this check
+	// came out with R0 unmodified, because the only `str w12,[x25,#16]` in the
+	// block was inside the armed arm.
+	for (int i = 0; i < ARM_RC_SLOTS; i++)
+		g_regs.write_back(i);
+
+	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(instruct_adr, R1, ADDRESS), resume_adr);
+	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(next_instruction, R2, ADDRESS), resume_adr);
+
+	if(bb_constant_cycles > 0)
+		emit_add_counters_imm(BB_TOTAL_FIELD, bb_constant_cycles);
+
+	emit_ld_counters(BB_TOTAL_FIELD, R0);
+	emit_endfunc(g_out);
+
+	emit_label(g_out, skip);
 }
 
 ArmOpCompiled gf = NULL;
@@ -4020,9 +4891,22 @@ static u32 compile_basicblock()
 	
 	emit_write_ptr(g_out, (uintptr_t)&bb_cpu, (uintptr_t)&ARMPROC);
 
+	JIT_COMMENT("CPU base");
+
+	emit_ptr(g_out, (uintptr_t)&ARMPROC, JIT_CPU_BASE_REG);
+
 	JIT_COMMENT("reset bb_total_cycles");
 
-	emit_write_ptr32(g_out, (uintptr_t)&bb_total_cycles, (uintptr_t)0);
+	JIT_COMMENT("counters base");
+
+	emit_ptr(g_out, (uintptr_t)&bb_counters, JIT_COUNTERS_REG);
+
+	emit_st_counters_zero(BB_TOTAL_FIELD);
+
+	// The cache is a block-local idea: nothing survives into the next block, and
+	// an empty cache at entry is what lets every handler assume "not cached"
+	// means "memory is current".
+	g_regs.reset();
 
 #if (PROFILER_JIT_LEVEL > 0)
 	JIT_COMMENT("Profiler ptr");
@@ -4030,6 +4914,7 @@ static u32 compile_basicblock()
 #endif
 
 	bb_constant_cycles = 0;
+	bb_dma_flag_ptr_ready = false;
 	for(u32 i=0, bEndBlock = 0; bEndBlock == 0; i++)
 	{
 		bb_adr = start_adr + (i * bb_opcodesize);
@@ -4056,6 +4941,11 @@ static u32 compile_basicblock()
 #endif
 		bb_constant_cycles += instr_is_conditional(opcode) ? 1 : cycles;
 
+		// A handler may hold at most ARM_RC_SLOTS-1 emulated registers at a
+		// time; resetting the per-instruction marker here is what keeps an
+		// earlier instruction's entries from being reused as the victim.
+		g_regs.begin_insn();
+
 #if (PROFILER_JIT_LEVEL > 0)
 		JIT_COMMENT("*** profiler - counter");
 #endif
@@ -4079,15 +4969,32 @@ static u32 compile_basicblock()
 			if(cycles == 0)
 			{
 				JIT_COMMENT("variable cycles");
-				emit_inc_ptr(g_out, (uintptr_t)&bb_total_cycles, (uintptr_t)&bb_cycles);
-				emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, -1);
+				emit_add_counters(BB_TOTAL_FIELD, BB_CYCLES_FIELD);
+				emit_add_counters_imm(BB_TOTAL_FIELD, -1);
 			}
 			else
 				if (cycles > 1)
 				{
 					JIT_COMMENT("cycles (%d)", cycles);
-					emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, -1);
+					emit_add_counters_imm(BB_TOTAL_FIELD, -1);
 				}
+
+			// Rule 5, and the one that cost a whole debugging round: the body
+			// above executes only when the condition holds, but the cache's
+			// dirty/loaded bits are *compile-time* state. A slot marked dirty
+			// here would be written back on a path that never executed its load,
+			// so the deferred store would drop a stale host register into
+			// armcpu_t -- for `AND r0,r0,#0` under a false NE that is exactly
+			// "R0 becomes whatever the allocator left in x12".
+			//
+			// So the write-back has to sit *inside* the guarded region, and the
+			// merge point has to start from an empty cache: memory is the only
+			// state both paths agree on.
+			if (g_regs.any_dirty())
+				g_regs.flush();
+			else
+				g_regs.invalidate();
+
 			emit_label(g_out, skip);
 		}
 		else
@@ -4098,9 +5005,16 @@ static u32 compile_basicblock()
 			if(cycles == 0)
 			{
 				JIT_COMMENT("variable cycles");
-				emit_inc_ptr(g_out, (uintptr_t)&bb_total_cycles, (uintptr_t)&bb_cycles);
+				emit_add_counters(BB_TOTAL_FIELD, BB_CYCLES_FIELD);
 			}
 		}
+
+		// A store may have armed a DMA channel. If it did, the transfer is due
+		// immediately and has to run before the next instruction, otherwise a
+		// following write to the same DMA registers would overwrite the
+		// parameters that were just latched.
+		if(instr_is_store(opcode, bb_thumb))
+			emit_dma_event_check(bb_next_instruction);
 
 		interpreted_cycles += op_decode[PROCNUM][bb_thumb]();
 	}
@@ -4110,16 +5024,21 @@ static u32 compile_basicblock()
 		emit_var_copy32_reg(g_out, cpu_ptr(next_instruction, R1, VALUE), cpu_ptr(instruct_adr, R2, ADDRESS));
 	}
 
+	// Rule 3: the block is about to return, so every dirty entry goes to memory
+	// first. This is also the only place the deferred stores of a fully inline
+	// block are paid for.
+	g_regs.flush();
+
 	JIT_COMMENT("total cycles (block)");
 
 	if (bb_constant_cycles > 0)
-		emit_inc_ptr_imm(g_out, (uintptr_t)&bb_total_cycles, bb_constant_cycles);
+		emit_add_counters_imm(BB_TOTAL_FIELD, bb_constant_cycles);
 
 #if LOG_JIT
 	fprintf(stderr, "cycles %d%s\n", bb_constant_cycles, has_variable_cycles ? " + variable" : "");
 #endif
 	
-	emit_read_ptr32_reg(g_out, (uintptr_t)&bb_total_cycles, R0);
+	emit_ld_counters(BB_TOTAL_FIELD, R0);
 	
 	emit_endfunc(g_out);
 	
@@ -4371,4 +5290,5 @@ void arm_jit_close()
 	printf(" done.\n");
 #endif
 }
+#endif // __aarch64__ host
 #endif // HAVE_JIT

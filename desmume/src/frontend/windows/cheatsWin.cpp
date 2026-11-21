@@ -29,6 +29,7 @@
 
 #include "resource.h"
 #include "main.h"
+#include "DPI.h"
 
 extern u8	CheatsR4Type = 0;
 
@@ -733,17 +734,17 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 			memset(&lvColumn,0,sizeof(LV_COLUMN));
 			lvColumn.mask=LVCF_FMT|LVCF_WIDTH|LVCF_TEXT;
 			lvColumn.fmt=LVCFMT_CENTER;
-			lvColumn.cx=20;
+			lvColumn.cx=DPI_ListColumnWidth(cheatListView, "", 20);
 			lvColumn.pszText="";
 			ListView_InsertColumn(cheatListView, 0, &lvColumn);
 			lvColumn.fmt=LVCFMT_LEFT;
-			lvColumn.cx=84;
+			lvColumn.cx=DPI_ListColumnWidth(cheatListView, "Address", 84);
 			lvColumn.pszText="Address";
 			ListView_InsertColumn(cheatListView, 1, &lvColumn);
-			lvColumn.cx=100;
+			lvColumn.cx=DPI_ListColumnWidth(cheatListView, "Value", 100);
 			lvColumn.pszText="Value";
 			ListView_InsertColumn(cheatListView, 2, &lvColumn);
-			lvColumn.cx=467;
+			lvColumn.cx=DPI_ListColumnWidth(cheatListView, "Description", 467);
 			lvColumn.pszText="Description";
 			ListView_InsertColumn(cheatListView, 3, &lvColumn);
 			lvColumn.fmt=LVCFMT_CENTER;
@@ -1289,10 +1290,10 @@ INT_PTR CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM 
 				memset(&lvColumn,0,sizeof(LV_COLUMN));
 				lvColumn.mask=LVCF_FMT|LVCF_WIDTH|LVCF_TEXT;
 				lvColumn.fmt=LVCFMT_LEFT;
-				lvColumn.cx=94;
+				lvColumn.cx=DPI_ListColumnWidth(searchListView, "Address", 94);
 				lvColumn.pszText="Address";
 				ListView_InsertColumn(searchListView, 0, &lvColumn);
-				lvColumn.cx=130;
+				lvColumn.cx=DPI_ListColumnWidth(searchListView, "Value", 130);
 				lvColumn.pszText="Value";
 				ListView_InsertColumn(searchListView, 1, &lvColumn);
 
@@ -1550,7 +1551,9 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 			memset(&lvColumn,0,sizeof(LV_COLUMN));
 			lvColumn.mask=LVCF_FMT|LVCF_TEXT|LVCF_WIDTH;
 			lvColumn.fmt=LVCFMT_LEFT;
-			lvColumn.cx=1000;
+			// One catch-all column, wider than any description: keep it wide at
+			// any DPI instead of letting it shrink relative to the rows.
+			lvColumn.cx=DPI_ScaleForWindow(1000, exportListView);
 			lvColumn.pszText="Cheats";
 			ListView_InsertColumn(exportListView, 0, &lvColumn);
 

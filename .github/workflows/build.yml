@@ -7,33 +7,77 @@ on:
 jobs:
   build:
     name: Build DeSmuME (Linux)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: checkout
         uses: actions/checkout@v4
 
       - name: install dependencies
-        run: sudo apt update && sudo apt install meson libsdl2-dev libpcap-dev libgtk-3-dev
+        run: sudo apt update && sudo apt install meson libsdl3-dev libpcap-dev libgtk-3-dev
 
       - name: meson
         run: |
           cd desmume/src/frontend/posix/
-          meson build
+          meson setup build -Dfrontend-gtk=gtk3
 
       - name: ninja
         run: ninja -C desmume/src/frontend/posix/build
 
-  build_gtk2:
-    name: Build DeSmuME (Linux/GTK+2)
-    runs-on: ubuntu-24.04
+  build_gtk4:
+    name: Build DeSmuME (Linux/GTK4)
+    runs-on: ubuntu-26.04
 
     steps:
       - name: checkout
         uses: actions/checkout@v4
 
       - name: install dependencies
-        run: sudo apt update && sudo apt install autoconf libglu1-mesa-dev libsdl2-dev libpcap-dev libgtk2.0-dev
+        run: sudo apt update && sudo apt install meson libgtk-4-dev libsdl3-dev libpcap-dev desktop-file-utils appstream xvfb
+
+      # The default frontend is gtk3, so pin gtk4 explicitly for this job.
+      - name: meson
+        run: |
+          cd desmume/src/frontend/posix/
+          meson setup build-gtk4 -Dfrontend-gtk=gtk4
+
+      - name: ninja
+        run: ninja -C desmume/src/frontend/posix/build-gtk4
+
+      - name: check that gtk4 was built
+        run: test -x desmume/src/frontend/posix/build-gtk4/gtk4/desmume
+
+      # P8: validate the GTK4 packaging assets and the UI resource so a
+      # malformed desktop/metainfo/menu file fails CI instead of shipping.
+      # gtk4-builder-tool initializes GDK even for plain GMenu files, so it
+      # needs a display; xvfb provides one on the headless runner.
+      - name: validate packaging assets
+        run: |
+          cd desmume/src/frontend/posix/gtk4
+          desktop-file-validate org.desmume.DeSmuME.GTK4.desktop
+          appstreamcli validate --no-net org.desmume.DeSmuME.GTK4.metainfo.xml
+          xvfb-run -a gtk4-builder-tool validate menu.ui
+          xvfb-run -a gtk4-builder-tool validate shortcuts.ui
+
+      - name: install to staging dir
+        run: |
+          cd desmume/src/frontend/posix/
+          DESTDIR=/tmp/gtk4-root meson install -C build-gtk4 --no-rebuild
+          test -x /tmp/gtk4-root/usr/local/bin/desmume
+          test -f /tmp/gtk4-root/usr/local/share/applications/org.desmume.DeSmuME.GTK4.desktop
+          test -f /tmp/gtk4-root/usr/local/share/metainfo/org.desmume.DeSmuME.GTK4.metainfo.xml
+          test -f /tmp/gtk4-root/usr/local/share/man/man1/desmume.1
+
+  build_gtk2:
+    name: Build DeSmuME (Linux/GTK+2)
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install dependencies
+        run: sudo apt update && sudo apt install autoconf libglu1-mesa-dev libsdl3-dev libpcap-dev libgtk2.0-dev
 
       - name: buildit
         run: |
@@ -56,7 +100,7 @@ jobs:
 
   build_mingw:
     name: Build DeSmuME (mingw/i686)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: checkout
@@ -86,7 +130,7 @@ jobs:
 
   build_macos:
     name: Build DeSmuME (macOS)
-    runs-on: macos-15
+    runs-on: macos-latest
 
     steps:
       - name: checkout

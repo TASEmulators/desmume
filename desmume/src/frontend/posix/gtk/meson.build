@@ -15,15 +15,39 @@ desmume_src = [
   '../shared/avout_x264.cpp',
   '../shared/ctrlssdl.cpp',
   '../shared/sndsdl.cpp',
+  # RAM Watch / RAM Search core, shared with the Windows and Cocoa frontends.
+  '../../shared/ram_debug_core.cpp',
+  '../../shared/ramwatch_core.cpp',
+  '../../shared/ram_search_core.cpp',
+  # Play/Record Movie dialogs: header parsing, desync assessment, comment
+  # rewriting and name/RTC helpers, shared with Windows and Cocoa.
+  '../../shared/movie_info_core.cpp',
   'config.cpp',
   'desmume.cpp',
   'dToolsList.cpp',
   'tools/ioregsView.cpp',
+  'tools/ramWatch.cpp',
+  'tools/ramSearch.cpp',
+  'tools/moviePlay.cpp',
+  'tools/movieRecord.cpp',
   'utilsGTK.cpp',
   'cheatsGTK.cpp',
   'main.cpp',
   gresource,
 ]
+
+desmume_src += ['tools/luaScriptConsole.cpp']
+
+if ffmpeg_recording
+  desmume_src += ['../shared/avout_ffmpeg.cpp']
+  gtk_dependencies += [
+    dep_libavcodec,
+    dep_libavformat,
+    dep_libavutil,
+    dep_libswscale,
+    dep_libswresample,
+  ]
+endif
 
 if get_option('glx') and dep_gl.found()
   desmume_src += [
@@ -44,6 +68,8 @@ includes = include_directories(
   '../../../../src',
   '../../../../src/libretro-common/include',
   '../../../../src/frontend',
+  '../../../../src/frontend/windows/agg/include',
+  '../../../../src/frontend/windows/agg/font_freetype',
 )
 
 executable('desmume',

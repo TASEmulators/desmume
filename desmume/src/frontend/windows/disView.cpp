@@ -30,6 +30,7 @@
 
 #include "resource.h"
 #include "main.h"
+#include "UiFont.h"
 
 typedef struct
 {
@@ -79,7 +80,10 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
         
         FillRect(mem_dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
         
-        SelectObject(mem_dc, GetStockObject(SYSTEM_FIXED_FONT));
+        // Machine generated text: a TrueType fixed pitch face that matches the
+        // size of the dialog's own font (the stock bitmap face when modern UI
+        // fonts are turned off).
+        SelectObject(mem_dc, uiFont::mono(hwnd));
         
         GetTextExtentPoint32(mem_dc, "0", 1, &fontsize);
         
@@ -295,7 +299,7 @@ LRESULT CALLBACK ViewDisasm_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
 				 GetClientRect(hwnd, &rect);
 				 dc = GetDC(hwnd);
-				 old = (HFONT)SelectObject(dc, GetStockObject(SYSTEM_FIXED_FONT));
+				 old = (HFONT)SelectObject(dc, uiFont::mono(hwnd));
 				 GetTextExtentPoint32(dc, "0", 1, &fontsize);
 
 				 nbligne = (rect.bottom - rect.top)/fontsize.cy;
@@ -628,7 +632,7 @@ LRESULT CALLBACK ViewDisasm_ARM9BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
 				 GetClientRect(hwnd, &rect);
 				 dc = GetDC(hwnd);
-				 old = (HFONT)SelectObject(dc, GetStockObject(SYSTEM_FIXED_FONT));
+				 old = (HFONT)SelectObject(dc, uiFont::mono(hwnd));
 				 GetTextExtentPoint32(dc, "0", 1, &fontsize);
 
 				 nbligne = (rect.bottom - rect.top)/fontsize.cy;

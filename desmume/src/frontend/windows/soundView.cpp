@@ -368,18 +368,26 @@ INT_PTR CALLBACK LevelBarProc(HWND hBar, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if (msg == WM_PAINT)
 	{
-		u8 chan = (u8)GetProp(hBar, "chan");
+		u8 chan = (u8)(LONG_PTR)GetProp(hBar, "chan");
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hBar, &ps);
-		int vol =  volBar[chan + chanOfs()];
+
+		// volBar is a 0..128 level, but the static control is 85 dialog units
+		// wide, which is only 127 pixels at 96 DPI and grows with the DPI.
+		// Map the level onto the actual client width instead of 128 pixels.
+		RECT client;
+		GetClientRect(hBar, &client);
+		const int width = client.right;
+		const int vol = MulDiv(volBar[chan + chanOfs()], width, 128);
+
 		if (vol > 0)
 		{
 			RECT rc = {0, 0, vol, ps.rcPaint.bottom};
 			FillRect(hdc, &rc, level_color);
 		}
-		if (vol < 128)
+		if (vol < width)
 		{
-			RECT rc2 = {vol + 1, 0, 128, ps.rcPaint.bottom};
+			RECT rc2 = {vol + 1, 0, width, ps.rcPaint.bottom};
 			FillRect(hdc, &rc2, level_background);
 		}
 		EndPaint(hBar, &ps);
@@ -392,22 +400,31 @@ INT_PTR CALLBACK PanBarProc(HWND hBar, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if (msg == WM_PAINT)
 	{
-		u8 chan = (u8)GetProp(hBar, "chan");
+		u8 chan = (u8)(LONG_PTR)GetProp(hBar, "chan");
 		channel_struct &thischan = SPU_core->channels[chan + chanOfs()];
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hBar, &ps);
 		FillRect(hdc, &ps.rcPaint, pan_background);
-		
+
+		// pan is 0..127 with 64 as the centre; the control is 128 pixels wide
+		// only at 96 DPI, so the centre line and the pan position have to be
+		// mapped onto the real client width too.
+		RECT client;
+		GetClientRect(hBar, &client);
+		const int width = client.right;
+
 		SelectObject(hdc, GetStockObject(DC_PEN));
 		if (thischan.pan != 64)
 		{
 			SetDCPenColor(hdc, pan_center_color);
-			MoveToEx(hdc, 64, 0, NULL);
-			LineTo(hdc, 64, ps.rcPaint.bottom);
+			const int center = MulDiv(64, width, 128);
+			MoveToEx(hdc, center, 0, NULL);
+			LineTo(hdc, center, ps.rcPaint.bottom);
 		}
 		SetDCPenColor(hdc, pan_color);
-		MoveToEx(hdc, thischan.pan, 0, NULL);
-		LineTo(hdc, thischan.pan, ps.rcPaint.bottom);
+		const int pan = MulDiv(thischan.pan, width, 128);
+		MoveToEx(hdc, pan, 0, NULL);
+		LineTo(hdc, pan, ps.rcPaint.bottom);
 		EndPaint(hBar, &ps);
 	}
 
@@ -427,11 +444,11 @@ static INT_PTR CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 			for(int chanId = 0; chanId < 8; chanId++) {
 				HWND tmp = GetDlgItem(hDlg, IDC_SOUND0VOLBAR+chanId);
 				OldLevelBarProc = SetWindowLongPtr(tmp, GWLP_WNDPROC, (LONG_PTR)LevelBarProc);
-				SetProp(tmp, "chan", (HANDLE)chanId);
+				SetProp(tmp, "chan", (HANDLE)(LONG_PTR)chanId);
 
 				tmp = GetDlgItem(hDlg, IDC_SOUND0PANBAR+chanId);
 				OldPanBarProc = SetWindowLongPtr(tmp, GWLP_WNDPROC, (LONG_PTR)PanBarProc);
-				SetProp(tmp, "chan", (HANDLE)chanId);
+				SetProp(tmp, "chan", (HANDLE)(LONG_PTR)chanId);
 			}
 
 			for(int chanId = 0; chanId < 8; chanId++) {

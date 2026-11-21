@@ -17,7 +17,7 @@
  */
 
 #include <stdio.h>
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include "sdl_3Demu.h"
 
@@ -69,7 +69,8 @@ static bool __sdl_initOpenGL(const int requestedProfile, const int requestedVers
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, requestedVersionMajor);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, requestedVersionMinor);
 
-    currWindow = SDL_CreateWindow(NULL, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 192, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+    /* SDL3 dropped the x/y position arguments from SDL_CreateWindow(). */
+    currWindow = SDL_CreateWindow(NULL, 256, 192, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
     if (currWindow == NULL)
     {
         fprintf(stderr, "%s: Failed to create a window: %s\n", ctxString, SDL_GetError());
@@ -123,7 +124,7 @@ void sdl_deinitOpenGL()
 
     if (currContext != NULL)
     {
-        SDL_GL_DeleteContext(currContext);
+        SDL_GL_DestroyContext(currContext);
         currContext = NULL;
     }
 
@@ -145,7 +146,7 @@ void sdl_deinitOpenGL()
 
 bool sdl_beginOpenGL()
 {
-	int ret = 1;
+	bool ok = true;
 
     prevWindow = SDL_GL_GetCurrentWindow();
     prevContext = SDL_GL_GetCurrentContext();
@@ -154,8 +155,8 @@ bool sdl_beginOpenGL()
 	{
 		bool previousIsCurrent = (prevWindow == currWindow);
 
-		ret = SDL_GL_MakeCurrent(pendingWindow, currContext);
-		if (ret == 0)
+		ok = SDL_GL_MakeCurrent(pendingWindow, currContext);
+		if (ok)
 		{
 			SDL_DestroyWindow(currWindow);
 			currWindow = pendingWindow;
@@ -170,10 +171,10 @@ bool sdl_beginOpenGL()
 	}
 	else
 	{
-		ret = SDL_GL_MakeCurrent(currWindow, currContext);
+		ok = SDL_GL_MakeCurrent(currWindow, currContext);
 	}
 
-    return (ret == 0);
+    return ok;
 }
 
 void sdl_endOpenGL()
@@ -220,8 +221,8 @@ bool sdl_framebufferDidResizeCallback(bool isFBOSupported, size_t w, size_t h)
 		SDL_DestroyWindow(pendingWindow);
 	}
 
-	pendingWindow = SDL_CreateWindow(NULL, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, (int)w, (int)h, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-    if (currWindow == NULL)
+	pendingWindow = SDL_CreateWindow(NULL, (int)w, (int)h, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+    if (pendingWindow == NULL)
     {
         fprintf(stderr, "SDL: sdl_framebufferDidResizeCallback failed to create the resized window: %s\n", SDL_GetError());
         return result;

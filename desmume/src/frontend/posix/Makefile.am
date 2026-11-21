@@ -1,6 +1,6 @@
 include desmume.mk
 
-AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
+AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
 
 
 
@@ -120,88 +120,97 @@ libdesmume_a_SOURCES = \
 	../../libretro-common/rthreads/rthreads.c \
 	../../libretro-common/encodings/encoding_utf.c
 
-if HAVE_JIT
+# WebGPU. The portable presentation core, the display wrapper and the 3D
+# renderer always compile and provide stubs when wgpu-native is absent. The
+# Linux native-window adapter is only built when configure finds wgpu-native
+# (--enable-wgpu, plus CPPFLAGS/LDFLAGS or a non-system installation on the
+# link path).
 libdesmume_a_SOURCES += \
-	../../arm_jit.h ../../instruction_attributes.h
+	../../WGPURender.cpp \
+	../shared/wgpu_present.cpp \
+	shared/wgpu_display_linux.cpp
+
+if ENABLE_WGPU
+AM_CPPFLAGS += $(WGPU_CFLAGS) -I$(top_srcdir)/../../../3rdparty/wgpu
+LIBS += $(WGPU_LIBS)
+libdesmume_a_SOURCES += \
+	shared/wgpu_present_linux.cpp
+endif
+
+# asmjit and the ARM JIT front-end need C++20 while the rest of the core
+# stays at C++14 (configure.ac).  Compile them in a convenience library with
+# per-target flags, then fold its objects into libdesmume.a: core code calls
+# the JIT and the JIT calls core code, so two separate archives would be
+# circular.  This is the autotools equivalent of Meson's link_whole.
+if HAVE_JIT
+noinst_LIBRARIES += libdesmume_jit.a
+libdesmume_a_LIBADD = $(libdesmume_jit_a_OBJECTS)
+libdesmume_jit_a_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/../../../3rdparty -DASMJIT_STATIC
+libdesmume_jit_a_CXXFLAGS = $(AM_CXXFLAGS) $(CXXFLAGS) -std=c++20
+libdesmume_jit_a_SOURCES = \
+	../../arm_jit.h ../../instruction_attributes.h \
+	../../../3rdparty/asmjit/arm/a64_assembler.cpp \
+	../../../3rdparty/asmjit/arm/a64_builder.cpp \
+	../../../3rdparty/asmjit/arm/a64_compiler.cpp \
+	../../../3rdparty/asmjit/arm/a64_emit_helper.cpp \
+	../../../3rdparty/asmjit/arm/a64_formatter.cpp \
+	../../../3rdparty/asmjit/arm/a64_func.cpp \
+	../../../3rdparty/asmjit/arm/a64_inst_api.cpp \
+	../../../3rdparty/asmjit/arm/a64_inst_db.cpp \
+	../../../3rdparty/asmjit/arm/a64_ra_pass.cpp \
+	../../../3rdparty/asmjit/arm/arm_formatter.cpp \
+	../../../3rdparty/asmjit/axl/arena.cpp \
+	../../../3rdparty/asmjit/axl/arena_bit_set.cpp \
+	../../../3rdparty/asmjit/axl/arena_hash.cpp \
+	../../../3rdparty/asmjit/axl/arena_vector.cpp \
+	../../../3rdparty/asmjit/core/arch_traits.cpp \
+	../../../3rdparty/asmjit/core/assembler.cpp \
+	../../../3rdparty/asmjit/core/builder.cpp \
+	../../../3rdparty/asmjit/core/code_holder.cpp \
+	../../../3rdparty/asmjit/core/code_writer.cpp \
+	../../../3rdparty/asmjit/core/compiler.cpp \
+	../../../3rdparty/asmjit/core/const_pool.cpp \
+	../../../3rdparty/asmjit/core/cpu_info.cpp \
+	../../../3rdparty/asmjit/core/debug_utils.cpp \
+	../../../3rdparty/asmjit/core/emit_helper.cpp \
+	../../../3rdparty/asmjit/core/emitter.cpp \
+	../../../3rdparty/asmjit/core/emitter_utils.cpp \
+	../../../3rdparty/asmjit/core/environment.cpp \
+	../../../3rdparty/asmjit/core/error.cpp \
+	../../../3rdparty/asmjit/core/error_handler.cpp \
+	../../../3rdparty/asmjit/core/formatter.cpp \
+	../../../3rdparty/asmjit/core/func.cpp \
+	../../../3rdparty/asmjit/core/func_args_context.cpp \
+	../../../3rdparty/asmjit/core/inst.cpp \
+	../../../3rdparty/asmjit/core/inst_db.cpp \
+	../../../3rdparty/asmjit/core/jit_allocator.cpp \
+	../../../3rdparty/asmjit/core/jit_runtime.cpp \
+	../../../3rdparty/asmjit/core/logger.cpp \
+	../../../3rdparty/asmjit/core/pauth.cpp \
+	../../../3rdparty/asmjit/core/ra_local.cpp \
+	../../../3rdparty/asmjit/core/ra_pass.cpp \
+	../../../3rdparty/asmjit/core/ra_stack.cpp \
+	../../../3rdparty/asmjit/core/string.cpp \
+	../../../3rdparty/asmjit/core/target.cpp \
+	../../../3rdparty/asmjit/core/type.cpp \
+	../../../3rdparty/asmjit/core/virt_mem.cpp \
+	../../../3rdparty/asmjit/x86/x86_assembler.cpp \
+	../../../3rdparty/asmjit/x86/x86_builder.cpp \
+	../../../3rdparty/asmjit/x86/x86_compiler.cpp \
+	../../../3rdparty/asmjit/x86/x86_emit_helper.cpp \
+	../../../3rdparty/asmjit/x86/x86_formatter.cpp \
+	../../../3rdparty/asmjit/x86/x86_func.cpp \
+	../../../3rdparty/asmjit/x86/x86_inst_api.cpp \
+	../../../3rdparty/asmjit/x86/x86_inst_db.cpp \
+	../../../3rdparty/asmjit/x86/x86_ra_pass.cpp
 
 if HOST_CPU_KIND_X86
-libdesmume_a_SOURCES += \
-	../../arm_jit.cpp \
-	../../utils/AsmJit/AsmJit.h \
-	../../utils/AsmJit/Config.h \
-	../../utils/AsmJit/core.h \
-	../../utils/AsmJit/x86.h \
-	../../utils/AsmJit/core/apibegin.h \
-	../../utils/AsmJit/core/apiend.h \
-	../../utils/AsmJit/core/assembler.cpp \
-	../../utils/AsmJit/core/assembler.h \
-	../../utils/AsmJit/core/assert.cpp \
-	../../utils/AsmJit/core/assert.h \
-	../../utils/AsmJit/core/buffer.cpp \
-	../../utils/AsmJit/core/buffer.h \
-	../../utils/AsmJit/core/build.h \
-	../../utils/AsmJit/core/compiler.cpp \
-	../../utils/AsmJit/core/compiler.h \
-	../../utils/AsmJit/core/compilercontext.cpp \
-	../../utils/AsmJit/core/compilercontext.h \
-	../../utils/AsmJit/core/compilerfunc.cpp \
-	../../utils/AsmJit/core/compilerfunc.h \
-	../../utils/AsmJit/core/compileritem.cpp \
-	../../utils/AsmJit/core/compileritem.h \
-	../../utils/AsmJit/core/context.cpp \
-	../../utils/AsmJit/core/context.h \
-	../../utils/AsmJit/core/cpuinfo.cpp \
-	../../utils/AsmJit/core/cpuinfo.h \
-	../../utils/AsmJit/core/defs.cpp \
-	../../utils/AsmJit/core/defs.h \
-	../../utils/AsmJit/core/func.cpp \
-	../../utils/AsmJit/core/func.h \
-	../../utils/AsmJit/core/intutil.h \
-	../../utils/AsmJit/core/lock.h \
-	../../utils/AsmJit/core/logger.cpp \
-	../../utils/AsmJit/core/logger.h \
-	../../utils/AsmJit/core/memorymanager.cpp \
-	../../utils/AsmJit/core/memorymanager.h \
-	../../utils/AsmJit/core/memorymarker.cpp \
-	../../utils/AsmJit/core/memorymarker.h \
-	../../utils/AsmJit/core/operand.cpp \
-	../../utils/AsmJit/core/operand.h \
-	../../utils/AsmJit/core/podvector.h \
-	../../utils/AsmJit/core/stringbuilder.cpp \
-	../../utils/AsmJit/core/stringbuilder.h \
-	../../utils/AsmJit/core/stringutil.cpp \
-	../../utils/AsmJit/core/stringutil.h \
-	../../utils/AsmJit/core/virtualmemory.cpp \
-	../../utils/AsmJit/core/virtualmemory.h \
-	../../utils/AsmJit/core/zonememory.cpp \
-	../../utils/AsmJit/core/zonememory.h \
-	../../utils/AsmJit/x86/x86assembler.cpp \
-	../../utils/AsmJit/x86/x86assembler.h \
-	../../utils/AsmJit/x86/x86compiler.cpp \
-	../../utils/AsmJit/x86/x86compiler.h \
-	../../utils/AsmJit/x86/x86compilercontext.cpp \
-	../../utils/AsmJit/x86/x86compilercontext.h \
-	../../utils/AsmJit/x86/x86compilerfunc.cpp \
-	../../utils/AsmJit/x86/x86compilerfunc.h \
-	../../utils/AsmJit/x86/x86compileritem.cpp \
-	../../utils/AsmJit/x86/x86compileritem.h \
-	../../utils/AsmJit/x86/x86cpuinfo.cpp \
-	../../utils/AsmJit/x86/x86cpuinfo.h \
-	../../utils/AsmJit/x86/x86defs.cpp \
-	../../utils/AsmJit/x86/x86defs.h \
-	../../utils/AsmJit/x86/x86func.cpp \
-	../../utils/AsmJit/x86/x86func.h \
-	../../utils/AsmJit/x86/x86operand.cpp \
-	../../utils/AsmJit/x86/x86operand.h \
-	../../utils/AsmJit/x86/x86util.cpp \
-	../../utils/AsmJit/x86/x86util.h
+libdesmume_jit_a_SOURCES += ../../arm_jit.cpp
 else
 if HOST_CPU_KIND_ARM
-libdesmume_a_SOURCES += \
-	../../utils/arm_jit/arm_jit_arm.cpp
+libdesmume_jit_a_SOURCES += ../../utils/arm_jit/arm_jit_arm.cpp
 endif
 endif
-
 endif
 
 libdesmume_a_SOURCES += shared/desmume_config.cpp shared/desmume_config.h
@@ -219,15 +228,9 @@ libdesmume_a_SOURCES += \
 endif
 endif
 
-if HAVE_OPENAL
-libdesmume_a_SOURCES += shared/mic_openal.cpp
-else
-if HAVE_ALSA
-libdesmume_a_SOURCES += shared/mic_alsa.cpp
-else
-libdesmume_a_SOURCES += ../../mic.cpp
-endif
-endif
+# SDL3 is a hard dependency of the POSIX frontends, so microphone capture
+# is always available through SDL (no ALSA/OpenAL conditionals).
+libdesmume_a_SOURCES += shared/mic_sdl.cpp
 
 if HAVE_LIBSOUNDTOUCH
 libdesmume_a_SOURCES += ../../metaspu/SndOut.cpp ../../metaspu/SndOut.h ../../metaspu/Timestretcher.cpp
@@ -237,8 +240,8 @@ if HAVE_LIBAGG
 libdesmume_a_SOURCES += ../../frontend/modules/osd/agg/aggdraw.cpp ../../frontend/modules/osd/agg/aggdraw.h ../../frontend/modules/osd/agg/agg_osd.cpp
 endif
 if HAVE_LUA
-AM_CPPFLAGS += $(LUA_CFLAGS)
-libdesmume_a_SOURCES += ../../lua-engine.cpp
+AM_CPPFLAGS += -I$(top_srcdir)/../windows/lua/include
+libdesmume_a_SOURCES += ../../lua-engine.cpp ../cocoa/LuaJITApi.cpp
 endif
 if HAVE_GDB_STUB
 libdesmume_a_SOURCES += ../../gdbstub/gdbstub.cpp

@@ -58,6 +58,7 @@ GKeyFile *desmume_config_read_file(const u32 *kb_cfg, const char* keysection)
     load_default_config(kb_cfg);
     desmume_config_read_keys(keyfile, keysection);
     desmume_config_read_joykeys(keyfile);
+    desmume_config_read_turbo(keyfile);
 
     return keyfile;
 }
@@ -141,6 +142,38 @@ gboolean desmume_config_read_joykeys(GKeyFile *keyfile)
             g_error_free(error);
             return FALSE;
         }
+    }
+
+    return TRUE;
+}
+
+gboolean desmume_config_update_turbo(GKeyFile *keyfile)
+{
+    for (int i = 0; i < NB_KEYS; i++) {
+        g_key_file_set_integer(keyfile, "TURBO", key_names[i], turbo_cfg[i] ? 1 : 0);
+    }
+
+    return desmume_config_write_file(keyfile);
+}
+
+gboolean desmume_config_read_turbo(GKeyFile *keyfile)
+{
+    for (int i = 0; i < NB_KEYS; i++)
+        turbo_cfg[i] = 0;
+
+    if (!g_key_file_has_group(keyfile, "TURBO"))
+        return TRUE;
+
+    // Missing entries are not an error: a config written by an older build
+    // only has the buttons that were ticked at the time.
+    for (int i = 0; i < NB_KEYS; i++) {
+        GError *error = NULL;
+        gint value = g_key_file_get_integer(keyfile, "TURBO", key_names[i], &error);
+        if (error != NULL) {
+            g_error_free(error);
+            continue;
+        }
+        turbo_cfg[i] = (value != 0) ? 1 : 0;
     }
 
     return TRUE;

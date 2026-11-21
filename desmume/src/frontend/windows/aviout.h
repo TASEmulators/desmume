@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2025 DeSmuME team
+	Copyright (C) 2009-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include <vfw.h>
 
 #include <queue>
+#include <string>
 
 #include <rthreads/rthreads.h>
 #include <rthreads/rsemaphore.h>
@@ -33,6 +34,9 @@
 #include "GPU.h"
 #include "SPU.h"
 #include "utils/task.h"
+
+#include "video_writer.h"
+#include "mf_build.h"
 
 #define VIDEO_STREAM				0
 #define AUDIO_STREAM				1
@@ -52,6 +56,8 @@ enum FileStreamCloseAction
 };
 
 class NDSCaptureObject;
+class MFVideoWriter;
+class RecordCompositor;
 
 struct VideoConvertParam
 {
@@ -80,12 +86,67 @@ typedef struct AVIFileWriteParam AVIFileWriteParam;
 
 typedef std::queue<AVIFileWriteParam> AVIWriteQueue;
 
-class AVIFileStream
+// The part of a recording both writers share: the frame queue, the semaphore
+// that pushes back on the emulation thread when the writer falls behind, and
+// WriteAllFrames() as the body of the file write thread.
+//
+// A derived class only has to open whatever it writes into and turn one
+// queued frame into one written frame.  The queue itself is writer agnostic,
+// which is what lets the capture path in NDSCaptureObject stay untouched
+// whichever backend the user picked.
+class VideoSink
 {
-private:
-	static bool __needAviLibraryInit;
+protected:
+	bool _valid;
+
+	ssem_t *_semQueue;
+	slock_t *_mutexQueue;
+	AVIWriteQueue _writeQueue;
+
+	VideoSink();
+
+public:
+	virtual ~VideoSink();
+
+	// Creates the file and everything the writer needs before the first frame
+	// arrives.  bmpFormat is NULL for an audio-only recording, which is how
+	// "no video stream" is expressed here.
+	virtual HRESULT Open(const char *fileName, const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat, size_t pendingFrameCount) = 0;
+
+	// Drains or discards the queue according to theAction, then closes the
+	// file.  Safe to call twice.
+	void Close(FileStreamCloseAction theAction);
+	bool IsValid();
+
+	void QueueAdd(u8 *srcVideo, const size_t videoBufferSize, u8 *srcAudio, const size_t audioBufferSize);
+	void QueueWait();
+	size_t GetQueueSize();
+	HRESULT WriteAllFrames();
+
+	// Only a sink that can stop mid-file has anything to do here.  The AVI
+	// writer cannot: VFW has no notion of a paused stream.
+	virtual bool CanPause() { return false; }
+	virtual void SetPaused(bool pause) {}
+	virtual bool IsPaused() { return false; }
 
 protected:
+	// Writes one queued frame, video first.  Returning a failure closes the
+	// file and ends the recording, which is the behaviour the AVI writer has
+	// always had.
+	virtual HRESULT WriteOneFrame(const AVIFileWriteParam &param) = 0;
+
+	// Releases the file itself.  Called once by Close().
+	virtual void CloseFile() = 0;
+};
+
+// One AVI file, or one segment of it, written through Video for Windows.
+// The codec is chosen by the AVISaveOptions dialog inside its own copy of
+// Windows, so nothing above this class knows about VFW.
+class AVIFileStream : public VideoSink
+{
+protected:
+	static bool __needAviLibraryInit;
+
 	PAVIFILE _file;
 	PAVISTREAM _stream[2];
 	PAVISTREAM _compressedStream[2];
@@ -95,38 +156,58 @@ protected:
 	BITMAPINFOHEADER _bmpFormat;
 	WAVEFORMATEX _wavFormat;
 
-	char _baseFileName[MAX_PATH];
-	char _baseFileNameExt[MAX_PATH];
-	size_t _segmentNumber;
-
 	size_t _expectedFrameSize;
 	size_t _writtenBytes;
 	LONG _writtenVideoFrameCount;
 	LONG _writtenAudioSampleCount;
 
-	ssem_t *_semQueue;
-	slock_t *_mutexQueue;
-	AVIWriteQueue _writeQueue;
+	// Name generation for this file and its segments.  Only the AVI writer
+	// splits a recording, so only it needs these.
+	char _baseFileName[MAX_PATH];
+	char _baseFileNameExt[MAX_PATH];
+	size_t _segmentNumber;
 
+	HRESULT _OpenSegment();
 	void _CloseStreams();
 
 public:
 	AVIFileStream();
-	~AVIFileStream();
+	virtual ~AVIFileStream();
 
-	HRESULT InitBaseProperties(const char *fileName, BITMAPINFOHEADER *bmpFormat, WAVEFORMATEX *wavFormat, size_t pendingFrameCount);
-	HRESULT Open();
-	void Close(FileStreamCloseAction theAction);
-	bool IsValid();
-
-	void QueueAdd(u8 *srcVideo, const size_t videoBufferSize, u8 *srcAudio, const size_t audioBufferSize);
-	void QueueWait();
-	size_t GetQueueSize();
+	virtual HRESULT Open(const char *fileName, const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat, size_t pendingFrameCount);
 
 	HRESULT FlushVideo(u8 *srcBuffer, const LONG bufferSize);
 	HRESULT FlushAudio(u8 *srcBuffer, const LONG bufferSize);
-	HRESULT WriteOneFrame(const AVIFileWriteParam &param);
-	HRESULT WriteAllFrames();
+
+protected:
+	virtual HRESULT WriteOneFrame(const AVIFileWriteParam &param);
+	virtual void CloseFile();
+};
+
+// The Media Foundation side: whatever the recording dialog asked for, muxed by
+// an IMFSinkWriter.  Unlike the AVI writer it never splits the file, and it
+// can be paused, because the sink writer simply stops receiving samples.
+class MFVideoSink : public VideoSink
+{
+protected:
+	MFVideoWriter *_writer;
+	RecordParams _params;
+	bool _hasVideo;
+	bool _hasAudio;
+
+public:
+	MFVideoSink(const RecordParams &params);
+	virtual ~MFVideoSink();
+
+	virtual HRESULT Open(const char *fileName, const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat, size_t pendingFrameCount);
+
+	virtual bool CanPause() { return true; }
+	virtual void SetPaused(bool pause);
+	virtual bool IsPaused();
+
+protected:
+	virtual HRESULT WriteOneFrame(const AVIFileWriteParam &param);
+	virtual void CloseFile();
 };
 
 class NDSCaptureObject
@@ -135,7 +216,8 @@ private:
 	void __InstanceInit();
 
 protected:
-	AVIFileStream *_fs;
+	VideoSink *_fs;
+	RecordCompositor *_compositor;
 
 	BITMAPINFOHEADER _bmpFormat;
 	WAVEFORMATEX _wavFormat;
@@ -152,8 +234,11 @@ protected:
 	VideoConvertParam _convertParam[MAX_CONVERT_THREADS];
 
 public:
-	NDSCaptureObject();
-	NDSCaptureObject(size_t videoWidth, size_t videoHeight, const WAVEFORMATEX *wfex);
+	// outputWidth/outputHeight are the finished frame, so the composed mode
+	// passes the canvas size and the native mode passes one screen's size
+	// doubled.  The compositor, when there is one, is owned by this object.
+	NDSCaptureObject(VideoSink *sink, size_t outputWidth, size_t outputHeight, const WAVEFORMATEX *wfex,
+	                 RecordCompositor *compositor = NULL);
 	~NDSCaptureObject();
 
 	static size_t GetExpectedFrameSize(const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat);
@@ -168,14 +253,25 @@ public:
 
 	void ConvertVideoSlice555Xto888(const VideoConvertParam &param);
 	void ConvertVideoSlice888Xto888(const VideoConvertParam &param);
+	void ComposeVideoSlice(const VideoConvertParam &param);
 
-	void ReadVideoFrame(const void *srcVideoFrame, const size_t inFrameWidth, const size_t inFrameHeight, const NDSColorFormat colorFormat);
+	void ReadVideoFrame(const void *srcVideoFrame, const size_t inFrameWidth, const size_t inFrameHeight,
+	                    const NDSColorFormat colorFormat, float mainIntensity, float touchIntensity);
 	void ReadAudioFrames(const void *srcAudioBuffer, const size_t inSampleCount);
+
+	bool CanPause() { return _fs != NULL && _fs->CanPause(); }
+	void SetPaused(bool pause) { if (_fs != NULL) _fs->SetPaused(pause); }
+	bool IsPaused() { return _fs != NULL && _fs->IsPaused(); }
 };
 
 bool DRV_AviBegin(const char *fileName);
+bool DRV_AviBeginEx(const char *fileName, const RecordParams &params);
 void DRV_AviEnd();
 bool AVI_IsRecording();
+
+void DRV_AviPause(bool pause);
+bool DRV_AviIsPaused();
+bool DRV_AviCanPause();
 
 void DRV_AviFrameStart();
 void DRV_AviVideoUpdate(const NDSDisplayInfo &displayInfo);

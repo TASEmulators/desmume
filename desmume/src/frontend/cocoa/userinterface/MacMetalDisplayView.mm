@@ -21,6 +21,11 @@
 
 #include "MacMetalDisplayView.h"
 
+#ifdef HAVE_LUA
+#include "../MacLuaScriptConsole.h"
+#include "../../../lua-engine.h"
+#endif
+
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <IOKit/graphics/IOGraphicsLib.h>
@@ -935,6 +940,9 @@
 @synthesize colorAttachment0Desc;
 @synthesize pixelScalePipeline;
 @synthesize outputDrawablePipeline;
+#ifdef HAVE_LUA
+@synthesize luaOverlayPipeline;
+#endif
 @synthesize drawableFormat;
 @synthesize bufCPUFilterDstMain;
 @synthesize bufCPUFilterDstTouch;
@@ -973,6 +981,15 @@
 	
 	pixelScalePipeline = nil;
 	outputDrawablePipeline = nil;
+#ifdef HAVE_LUA
+	luaOverlayPipeline = nil;
+	texLuaOverlay[0] = nil;
+	texLuaOverlay[1] = nil;
+	isLuaOverlayTexCreated = NO;
+#endif
+#ifdef DESMUME_COCOA_METAL_OSD
+	osdRenderer = nil;
+#endif
 	drawableFormat = MTLPixelFormatRGBA8Unorm;
 	
 	_texDisplaySrcDeposterize[NDSDisplayID_Main][0]  = nil;
@@ -1068,7 +1085,20 @@
 	
 	[self setPixelScalePipeline:nil];
 	[self setOutputDrawablePipeline:nil];
+#ifdef HAVE_LUA
+	[self setLuaOverlayPipeline:nil];
+	if (isLuaOverlayTexCreated)
+	{
+		[texLuaOverlay[0] release];
+		[texLuaOverlay[1] release];
+		isLuaOverlayTexCreated = NO;
+	}
+#endif
 	[self setTexHUDCharMap:nil];
+#ifdef DESMUME_COCOA_METAL_OSD
+	[osdRenderer release];
+	osdRenderer = nil;
+#endif
 	
 	for (size_t i = 0; i < RENDER_BUFFER_COUNT; i++)
 	{
@@ -1343,6 +1373,45 @@
 	[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self drawableFormat]];
 	outputDrawablePipeline = [[[[self sharedData] device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil] retain];
 	[outputPipelineDesc release];
+
+#ifdef HAVE_LUA
+	MTLRenderPipelineDescriptor *luaPipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
+	[luaPipelineDesc setAlphaToOneEnabled:NO];
+	[luaPipelineDesc setVertexFunction:[[[self sharedData] defaultLibrary] newFunctionWithName:@"display_output_vertex"]];
+	[luaPipelineDesc setFragmentFunction:[[[self sharedData] defaultLibrary] newFunctionWithName:@"lua_overlay_filter"]];
+	
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self drawableFormat]];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setBlendingEnabled:YES];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setRgbBlendOperation:MTLBlendOperationAdd];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setAlphaBlendOperation:MTLBlendOperationAdd];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setSourceRGBBlendFactor:MTLBlendFactorSourceAlpha];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setSourceAlphaBlendFactor:MTLBlendFactorZero];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setDestinationRGBBlendFactor:MTLBlendFactorOneMinusSourceAlpha];
+	[[[luaPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setDestinationAlphaBlendFactor:MTLBlendFactorOne];
+
+#if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+	if (@available(macOS 10.13, *))
+	{
+		[[[luaPipelineDesc vertexBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+		[[[luaPipelineDesc vertexBuffers] objectAtIndexedSubscript:1] setMutability:MTLMutabilityImmutable];
+		[[[luaPipelineDesc vertexBuffers] objectAtIndexedSubscript:2] setMutability:MTLMutabilityImmutable];
+		[[[luaPipelineDesc vertexBuffers] objectAtIndexedSubscript:3] setMutability:MTLMutabilityImmutable];
+		[[[luaPipelineDesc fragmentBuffers] objectAtIndexedSubscript:0] setMutability:MTLMutabilityImmutable];
+		[[[luaPipelineDesc fragmentBuffers] objectAtIndexedSubscript:1] setMutability:MTLMutabilityImmutable];
+	}
+#endif
+
+	luaOverlayPipeline = [[[[self sharedData] device] newRenderPipelineStateWithDescriptor:luaPipelineDesc error:nil] retain];
+	[luaPipelineDesc release];
+#endif
+
+#ifdef DESMUME_COCOA_METAL_OSD
+	// GPU OSD: SDF shapes + bitmap glyphs rendered into a 256x384 premultiplied
+	// texture, composited over the two screens in -renderForCommandBuffer:.
+	[osdRenderer release];
+	osdRenderer = [[MacMetalOSDRenderer alloc] initWithDevice:[[self sharedData] device]
+	                                                  library:[[self sharedData] defaultLibrary]];
+#endif
 	
 	// Set up processing textures.
 	MTLTextureDescriptor *texDisplaySrcDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
@@ -2115,6 +2184,14 @@
 						doYFlip:(BOOL)willFlip
 					   doSwapRB:(BOOL)willSwapRB
 {
+#ifdef DESMUME_COCOA_METAL_OSD
+	// Encode the offscreen OSD pass first: Metal serializes encoders within one
+	// command buffer, so the HUD texture is complete before the main pass
+	// samples it.  This covers drawables, screenshots and video capture alike.
+	BOOL willDrawMetalOSD = ((osdRenderer != nil) && [osdRenderer isReady]) ?
+	                        [osdRenderer renderIntoCommandBuffer:cb] : NO;
+#endif
+
 	const ClientDisplayPresenterProperties &cdpp = cdp->GetPresenterProperties();
 	
 	// Generate the command encoder.
@@ -2208,6 +2285,191 @@
 			break;
 	}
 	
+#ifdef HAVE_LUA
+	if (AnyLuaActive())
+	{
+		if (!isLuaOverlayTexCreated)
+		{
+			MTLTextureDescriptor *texDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+																							   width:256
+																							  height:192
+																						   mipmapped:NO];
+			[texDesc setResourceOptions:MTLResourceStorageModeShared];
+			[texDesc setStorageMode:MTLStorageModeShared];
+			[texDesc setUsage:MTLTextureUsageShaderRead];
+			
+			texLuaOverlay[0] = [[[self sharedData] device] newTextureWithDescriptor:texDesc];
+			texLuaOverlay[1] = [[[self sharedData] device] newTextureWithDescriptor:texDesc];
+			isLuaOverlayTexCreated = YES;
+		}
+		
+		uint32_t *luaBuffer = lua_script_lock_overlay_buffer();
+
+		MTLRegion region = MTLRegionMake2D(0, 0, 256, 192);
+		[texLuaOverlay[NDSDisplayID_Main] replaceRegion:region mipmapLevel:0 withBytes:luaBuffer bytesPerRow:256 * sizeof(uint32_t)];
+		[texLuaOverlay[NDSDisplayID_Touch] replaceRegion:region mipmapLevel:0 withBytes:luaBuffer + (256 * 192) bytesPerRow:256 * sizeof(uint32_t)];
+
+		lua_script_unlock_overlay_buffer();
+		
+		[rce setRenderPipelineState:luaOverlayPipeline];
+		[rce setVertexBytes:_vtxPositionBuffer length:sizeof(_vtxPositionBuffer) atIndex:0];
+		[rce setVertexBytes:_texCoordBuffer length:sizeof(_texCoordBuffer) atIndex:1];
+		[rce setVertexBytes:&_cdvPropertiesBuffer length:sizeof(_cdvPropertiesBuffer) atIndex:2];
+		[rce setVertexBytes:&doYFlip length:sizeof(uint8_t) atIndex:3];
+		[rce setFragmentBytes:&willSwapRB length:sizeof(uint8_t) atIndex:1];
+		
+		const float fullIntensity = 1.0f;
+		
+		switch (cdp->GetPresenterProperties().mode)
+		{
+			case ClientDisplayMode_Main:
+			{
+				if ( (texDisplay.main != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main) )
+				{
+					[rce setFragmentBytes:&fullIntensity length:sizeof(fullIntensity) atIndex:0];
+					[rce setFragmentTexture:texLuaOverlay[NDSDisplayID_Main] atIndex:0];
+					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+				}
+				break;
+			}
+				
+			case ClientDisplayMode_Touch:
+			{
+				if ( (texDisplay.touch != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch) )
+				{
+					[rce setFragmentBytes:&fullIntensity length:sizeof(fullIntensity) atIndex:0];
+					[rce setFragmentTexture:texLuaOverlay[NDSDisplayID_Touch] atIndex:0];
+					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+				}
+				break;
+			}
+				
+			case ClientDisplayMode_Dual:
+			{
+				const NDSDisplayID majorDisplayID = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
+				const size_t majorDisplayVtx = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
+				
+				switch (cdp->GetPresenterProperties().layout)
+				{
+					case ClientDisplayLayout_Hybrid_2_1:
+					case ClientDisplayLayout_Hybrid_16_9:
+					case ClientDisplayLayout_Hybrid_16_10:
+					{
+						if ( (texDisplay.tex[majorDisplayID] != nil) && cdp->IsSelectedDisplayEnabled(majorDisplayID) )
+						{
+							[rce setFragmentBytes:&fullIntensity length:sizeof(fullIntensity) atIndex:0];
+							[rce setFragmentTexture:texLuaOverlay[majorDisplayID] atIndex:0];
+							[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:majorDisplayVtx vertexCount:4];
+						}
+						break;
+					}
+						
+					default:
+						break;
+				}
+				
+				if ( (texDisplay.main != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main) )
+				{
+					[rce setFragmentBytes:&fullIntensity length:sizeof(fullIntensity) atIndex:0];
+					[rce setFragmentTexture:texLuaOverlay[NDSDisplayID_Main] atIndex:0];
+					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+				}
+				
+				if ( (texDisplay.touch != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch) )
+				{
+					[rce setFragmentBytes:&fullIntensity length:sizeof(fullIntensity) atIndex:0];
+					[rce setFragmentTexture:texLuaOverlay[NDSDisplayID_Touch] atIndex:0];
+					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+				}
+				break;
+			}
+				
+			default:
+				break;
+		}
+	}
+#endif
+
+#ifdef DESMUME_COCOA_METAL_OSD
+	// Composite the GPU OSD (agg.* shapes and text) over the emulated screens,
+	// using exactly the same screen quads and projection as the Lua overlay.
+	// The upper half of the 256x384 HUD texture belongs to the main screen and
+	// the lower half to the touch screen.
+	if (willDrawMetalOSD)
+	{
+		id<MTLTexture> osdTexture = [osdRenderer hudTexture];
+		const MTLPixelFormat attachmentFormat = [[[self colorAttachment0Desc] texture] pixelFormat];
+		id<MTLRenderPipelineState> osdPipeline = [osdRenderer overlayPipelineForFormat:attachmentFormat];
+
+		if ((osdTexture != nil) && (osdPipeline != nil))
+		{
+			[rce setRenderPipelineState:osdPipeline];
+			[rce setVertexBytes:_vtxPositionBuffer length:sizeof(_vtxPositionBuffer) atIndex:0];
+			[rce setVertexBytes:[osdRenderer overlayTexCoords] length:(sizeof(float) * 32) atIndex:1];
+			[rce setVertexBytes:&_cdvPropertiesBuffer length:sizeof(_cdvPropertiesBuffer) atIndex:2];
+			[rce setVertexBytes:&doYFlip length:sizeof(uint8_t) atIndex:3];
+			[rce setFragmentTexture:osdTexture atIndex:0];
+
+			switch (cdp->GetPresenterProperties().mode)
+			{
+				case ClientDisplayMode_Main:
+				{
+					if ((texDisplay.main != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main))
+					{
+						[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+					}
+					break;
+				}
+
+				case ClientDisplayMode_Touch:
+				{
+					if ((texDisplay.touch != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
+					{
+						[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+					}
+					break;
+				}
+
+				case ClientDisplayMode_Dual:
+				{
+					const NDSDisplayID majorDisplayID = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
+					const size_t majorDisplayVtx = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
+
+					switch (cdp->GetPresenterProperties().layout)
+					{
+						case ClientDisplayLayout_Hybrid_2_1:
+						case ClientDisplayLayout_Hybrid_16_9:
+						case ClientDisplayLayout_Hybrid_16_10:
+						{
+							if ((texDisplay.tex[majorDisplayID] != nil) && cdp->IsSelectedDisplayEnabled(majorDisplayID))
+							{
+								[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:majorDisplayVtx vertexCount:4];
+							}
+							break;
+						}
+
+						default:
+							break;
+					}
+
+					if ((texDisplay.main != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main))
+					{
+						[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+					}
+					if ((texDisplay.touch != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
+					{
+						[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+					}
+					break;
+				}
+
+				default:
+					break;
+			}
+		}
+	}
+#endif
+
 	// Draw the HUD.
 	[self renderStartAtIndex:mrfi.renderIndex];
 	
@@ -2375,10 +2637,107 @@
 	semaphore_destroy(renderTask, semRenderToBuffer);
 }
 
+- (void) setRenderBufferingCapacity:(long)capacity
+{
+	// dispatch_semaphore has no "grow" API, but the value is just a counter, so
+	// signalling it up front raises the effective capacity.  Each rendered
+	// frame still consumes one slot in -renderStartAtIndex: and returns it from
+	// the command buffer completion handler, so this stays balanced.
+	if (capacity < 1)
+	{
+		capacity = 1;
+	}
+	
+	for (size_t i = 0; i < RENDER_BUFFER_COUNT; i++)
+	{
+		for (long slot = 1; slot < capacity; slot++)
+		{
+			dispatch_semaphore_signal(_semRenderBuffers[i]);
+		}
+	}
+}
+
+// Video capture output.  Everything up to the vertex/texture bindings is the
+// exact same code path the on-screen view uses, so rotation, view scale,
+// layout (including the hybrid ones), order, gap, deposterize, pixel scaler,
+// output filter and backlight intensity all apply without any capture-side
+// reimplementation.  The only difference is the render target: instead of a
+// CAMetalDrawable it is a texture backed by a CVPixelBuffer's IOSurface, so
+// VideoToolbox reads the GPU frame in place with no CPU round trip.
+- (BOOL) renderToPixelBuffer:(CVPixelBufferRef)pixelBuffer textureCache:(CVMetalTextureCacheRef)textureCache
+{
+	if ( (pixelBuffer == NULL) || (textureCache == NULL) )
+	{
+		return NO;
+	}
+	
+	const size_t width  = CVPixelBufferGetWidth(pixelBuffer);
+	const size_t height = CVPixelBufferGetHeight(pixelBuffer);
+	const size_t clientWidth  = (size_t)cdp->GetPresenterProperties().viewportActualWidth;
+	const size_t clientHeight = (size_t)cdp->GetPresenterProperties().viewportActualHeight;
+	
+	if ( (width == 0) || (height == 0) || (width != clientWidth) || (height != clientHeight) )
+	{
+		return NO;
+	}
+	
+	CVMetalTextureRef cvTexture = NULL;
+	if (CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault, textureCache, pixelBuffer, NULL,
+												  MTLPixelFormatBGRA8Unorm, width, height, 0, &cvTexture) != kCVReturnSuccess)
+	{
+		return NO;
+	}
+	
+	id<MTLTexture> texTarget = CVMetalTextureGetTexture(cvTexture);
+	if (texTarget == nil)
+	{
+		CFRelease(cvTexture);
+		return NO;
+	}
+	
+	@autoreleasepool
+	{
+		[colorAttachment0Desc setTexture:texTarget];
+		
+		// doSwapRB MUST be NO here, for the same reason the presented drawable
+		// path uses NO: the render target is BGRA8Unorm, so Metal already maps
+		// the fragment's R/G/B onto the B/G/R bytes of the IOSurface, which is
+		// exactly the byte order kCVPixelFormatType_32BGRA promises.  Swapping
+		// here would exchange red and blue in the encoded video.
+		//
+		// (-renderToBuffer: passes YES only because its contract is "produce
+		// 32-bit RGBA memory for NSBitmapImageRep", the opposite direction.)
+		id<MTLCommandBuffer> cb = [self newCommandBuffer];
+		const MetalRenderFrameInfo mrfi = [self renderFrameInfo];
+		
+		[self renderForCommandBuffer:cb
+				 outputPipelineState:[self outputDrawablePipeline]
+					   hudPipelineState:[[self sharedData] hudBGRAPipeline]
+							 texDisplays:[self texPairProcess]
+									mrfi:mrfi
+								 doYFlip:NO
+							   doSwapRB:NO];
+		
+		// -renderForCommandBuffer: took a render-buffer slot in
+		// -renderStartAtIndex:, so it MUST be handed back when the GPU is done
+		// -- exactly like the presented-drawable path does.  The CVMetalTexture
+		// wrapper has to outlive the GPU work that reads it for the same reason.
+		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+			[self renderFinishAtIndex:mrfi.renderIndex];
+			CFRelease(cvTexture);
+		}];
+		
+		[cb commit];
+		
+		[colorAttachment0Desc setTexture:nil];
+	}
+	
+	return YES;
+}
+
 @end
 
 @implementation DisplayViewMetalLayer
-
 @synthesize _cdv;
 @synthesize presenterObject;
 @synthesize layerDrawable0;

@@ -29,6 +29,9 @@
 @class CheatWindowDelegate;
 @class DisplayWindowController;
 @class RomInfoPanel;
+@class MemoryViewerWindowController;
+@class RAMWatchWindowController;
+@class RAMSearchWindowController;
 @class MacScreenshotCaptureToolDelegate;
 @class MacAVCaptureToolDelegate;
 @class PreferencesWindowDelegate;
@@ -59,6 +62,10 @@ class AudioSampleBlockGenerator;
 	NSMenu *cheatDatabaseRecentsMenu;
 	
 	RomInfoPanel *romInfoPanel;
+	
+	MemoryViewerWindowController *_memoryViewerWindowController;
+	RAMWatchWindowController *_ramWatchWindowController;
+	RAMSearchWindowController *_ramSearchWindowController;
 	
 	NSWindow *displayRotationPanel;
 	NSWindow *displaySeparationPanel;
@@ -218,7 +225,9 @@ class AudioSampleBlockGenerator;
 - (IBAction) loadEmuSaveStateSlot:(id)sender;
 - (IBAction) saveEmuSaveStateSlot:(id)sender;
 - (IBAction) openReplay:(id)sender;
+- (void) playMovieFromController:(id)sender;
 - (IBAction) recordReplay:(id)sender;
+- (void) recordMovieFromController:(id)sender;
 - (IBAction) stopReplay:(id)sender;
 - (IBAction) importRomSave:(id)sender;
 - (IBAction) exportRomSave:(id)sender;
@@ -246,6 +255,18 @@ class AudioSampleBlockGenerator;
 // Tools Menu
 - (IBAction) toggleGPUState:(id)sender;
 - (IBAction) toggleGDBStubActivate:(id)sender;
+- (IBAction) openMemoryViewer:(id)sender;
+- (IBAction) openRAMWatch:(id)sender;
+- (IBAction) openRAMSearch:(id)sender;
+
+// Reusable helper for debug tool windows. startsNewGroup adds a separator
+// above the item; related tools can pass NO to stay in the same group.
+- (NSMenu *) toolsMenu;
+- (NSMenuItem *) installToolMenuItemWithTitle:(NSString *)title
+                                        action:(SEL)action
+                                 keyEquivalent:(NSString *)keyEquivalent
+                                 modifierMask:(NSEventModifierFlags)modifierMask
+                               startsNewGroup:(BOOL)startsNewGroup;
 
 - (IBAction) autoholdSet:(id)sender;
 - (IBAction) autoholdClear:(id)sender;
@@ -267,6 +288,9 @@ class AudioSampleBlockGenerator;
 - (IBAction) slot1Eject:(id)sender;
 - (IBAction) simulateEmulationCrash:(id)sender;
 - (IBAction) generateFirmwareMACAddress:(id)sender;
+- (IBAction) addLuaScript:(id)sender;
+- (IBAction) closeAllLuaScripts:(id)sender;
+- (IBAction) showLuaAbout:(id)sender;
 
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender;
 - (IBAction) writeDefaultsEmulationSettings:(id)sender;

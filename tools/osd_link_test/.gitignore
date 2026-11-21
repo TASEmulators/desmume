@@ -1,0 +1,4 @@
+# Build output of the AGG-free OSD link test (wgpu-agg.md 20.4).
+osd_link_test
+osd_link_test.exe
+osd_link_test.o

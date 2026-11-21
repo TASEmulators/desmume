@@ -537,13 +537,30 @@ TEMPLATE static  u32 DESMUME_FASTCALL OP_NEG(const u32 i)
 {
 	u32 Rm = cpu->R[REG_NUM(i, 3)];
 
-	cpu->R[REG_NUM(i, 0)] = (u32)((s32)0 - (s32)Rm);
-	
-	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
-	cpu->CPSR.bits.Z = (cpu->R[REG_NUM(i, 0)] == 0);
+	// Negate as unsigned. `(s32)0 - (s32)Rm` is signed overflow -- undefined
+	// behaviour -- exactly when Rm is 0x80000000, and clang -O3 uses that
+	// assumption to fold the V computation below to a constant `false`, so the
+	// flag disappears from the compiled interpreter.
+	//
+	// The hardware behaviour comes from the Arm ARM, and it keeps the flag:
+	//   RSB (immediate), T1 encoding (DDI 0597): imm32 = Zeros(32), and the
+	//   operation is
+	//       (result, carry, overflow) = AddWithCarry(NOT(R[n]), imm32, '1');
+	//   AddWithCarry (DDI 0487 E1.2.2): "nzcv[0] == '1' if signed overflow
+	//   occurred during the subtraction", and 0 - INT_MIN overflows.
+	// So NEG of 0x80000000 must set V, and the AArch64 JIT already did (the
+	// host `neg` sets OF); only the interpreter lost it, and only under clang.
+	// The result is identical either way; only V changes.
+	const u32 result = 0u - Rm;
+	cpu->R[REG_NUM(i, 0)] = result;
+
+	cpu->CPSR.bits.N = BIT31(result);
+	cpu->CPSR.bits.Z = (result == 0);
 	cpu->CPSR.bits.C = !BorrowFrom(0, Rm);
-	cpu->CPSR.bits.V = OverflowFromSUB(cpu->R[REG_NUM(i, 0)], 0, Rm);
-	
+	// 0 - Rm overflows precisely when Rm is INT_MIN: that is the only operand
+	// whose negation keeps the sign of the input instead of flipping it.
+	cpu->CPSR.bits.V = (Rm == 0x80000000u);
+
 	return 1;
 }
 

@@ -25,6 +25,15 @@
 #include "types.h"
 #include "mem.h"
 
+/* Some SIMD branches define helpers that a given translation unit may not
+ * reference; mark them to avoid -Wunused-function noise without changing
+ * behaviour.  Kept local to this header. */
+#if defined(__GNUC__) || defined(__clang__)
+#	define MATRIX_UNUSED __attribute__((unused))
+#else
+#	define MATRIX_UNUSED
+#endif
+
 #ifdef ENABLE_SSE
 #include <xmmintrin.h>
 #endif
@@ -146,7 +155,7 @@ FORCEINLINE s32 sfx32_shiftdown(const s64 a)
 //-------------
 #if defined(ENABLE_AVX512_0)
 
-static void memset_u16(void *dst, const u16 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 {
 	v512u16 *dst_vec512 = (v512u16 *)dst;
 	const size_t length_vec512 = elementCount / (sizeof(v512u16) / sizeof(u16));
@@ -165,7 +174,7 @@ static void memset_u16_fast(void *dst, const u16 val)
 	MACRODO_N(ELEMENTCOUNT / (sizeof(v512u16) / sizeof(u16)), _mm512_store_si512(dst_vec512 + (X), val_vec512));
 }
 
-static void memset_u32(void *dst, const u32 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u32(void *dst, const u32 val, const size_t elementCount)
 {
 	v512u32 *dst_vec512 = (v512u32 *)dst;
 	const size_t length_vec512 = elementCount / (sizeof(v512u32) / sizeof(u32));
@@ -230,7 +239,7 @@ static void __buffer_copy_or_constant(void *__restrict dst, const void *__restri
 	}
 }
 
-static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+MATRIX_UNUSED static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
 {
 	const v512s8 c_vec = _mm512_set1_epi8(c);
 	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
@@ -273,7 +282,7 @@ static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *_
 
 #elif defined(ENABLE_AVX2)
 
-static void memset_u16(void *dst, const u16 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 {
 	v256u16 *dst_vec256 = (v256u16 *)dst;
 	const size_t length_vec256 = elementCount / (sizeof(v256u16) / sizeof(u16));
@@ -292,7 +301,7 @@ static void memset_u16_fast(void *dst, const u16 val)
 	MACRODO_N(ELEMENTCOUNT / (sizeof(v256u16) / sizeof(u16)), _mm256_store_si256(dst_vec256 + (X), val_vec256));
 }
 
-static void memset_u32(void *dst, const u32 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u32(void *dst, const u32 val, const size_t elementCount)
 {
 	v256u32 *dst_vec256 = (v256u32 *)dst;
 	const size_t length_vec256 = elementCount / (sizeof(v256u32) / sizeof(u32));
@@ -355,7 +364,7 @@ static void __buffer_copy_or_constant(void *__restrict dst, const void *__restri
 	}
 }
 
-static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+MATRIX_UNUSED static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
 {
 	if (c != 0)
 	{
@@ -440,7 +449,7 @@ static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *_
 
 #elif defined(ENABLE_SSE2)
 
-static void memset_u16(void *dst, const u16 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 {
 	v128u16 *dst_vec128 = (v128u16 *)dst;
 	const size_t length_vec128 = elementCount / (sizeof(v128u16) / sizeof(u16));
@@ -459,7 +468,7 @@ static void memset_u16_fast(void *dst, const u16 val)
 	MACRODO_N(ELEMENTCOUNT / (sizeof(v128u16) / sizeof(u16)), _mm_store_si128(dst_vec128 + (X), val_vec128));
 }
 
-static void memset_u32(void *dst, const u32 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u32(void *dst, const u32 val, const size_t elementCount)
 {
 	v128u32 *dst_vec128 = (v128u32 *)dst;
 	const size_t length_vec128 = elementCount / (sizeof(v128u32) / sizeof(u32));
@@ -524,7 +533,7 @@ static void __buffer_copy_or_constant(void *__restrict dst, const void *__restri
 	}
 }
 
-static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+MATRIX_UNUSED static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
 {
 	const v128s8 c_vec = _mm_set1_epi8(c);
 	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
@@ -567,7 +576,7 @@ static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *_
 
 #elif defined(ENABLE_NEON_A64)
 
-static void memset_u16(void *dst, const u16 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 {
 	u16 *dst16 = (u16 *)dst;
 	
@@ -586,7 +595,7 @@ static void memset_u16_fast(void *dst, const u16 val)
 	MACRODO_N( ELEMENTCOUNT / (sizeof(uint16x8x4_t) / sizeof(u16)), vst1q_u16_x4(dst16 + ((X) * (sizeof(uint16x8x4_t)/sizeof(u16))), val_vec128x4) );
 }
 
-static void memset_u32(void *dst, const u32 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u32(void *dst, const u32 val, const size_t elementCount)
 {
 	u32 *dst32 = (u32 *)dst;
 	
@@ -649,7 +658,7 @@ static void __buffer_copy_or_constant(void *__restrict dst, const void *__restri
 	}
 }
 
-static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+MATRIX_UNUSED static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
 {
 	const v128u8 c_vec = vreinterpretq_u8_s8( vdupq_n_s8(c) );
 	__buffer_copy_or_constant(dst, src, vecLength, c_vec);
@@ -692,7 +701,7 @@ static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *_
 
 #elif defined(ENABLE_ALTIVEC)
 
-static void memset_u16(void *dst, const u16 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 {
 	CACHE_ALIGN const u16 val_u16 = val;
 	v128u16 *dst_vec128 = (v128u16 *)dst;
@@ -713,7 +722,7 @@ static void memset_u16_fast(void *dst, const u16 val)
 	MACRODO_N(ELEMENTCOUNT / (sizeof(v128u16) / sizeof(u16)), vec_st(val_vec128, (X)*sizeof(v128u16), dst_vec128));
 }
 
-static void memset_u32(void *dst, const u32 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u32(void *dst, const u32 val, const size_t elementCount)
 {
 	CACHE_ALIGN const u32 val_u32 = val;
 	v128u32 *dst_vec128 = (v128u32 *)dst;
@@ -803,7 +812,7 @@ static void __buffer_copy_or_constant(void *__restrict dst, const void *__restri
 	}
 }
 
-static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+MATRIX_UNUSED static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
 {
 	CACHE_ALIGN const s8 c_8 = c;
 	const v128s8 c_vec = (v128s8)vec_splat( vec_lde(0, &c_8), 0 );
@@ -884,7 +893,7 @@ static void buffer_copy_or_constant_s32_fast(void *__restrict dst, const void *_
 
 #else // No SIMD
 
-static void memset_u16(void *dst, const u16 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 {
 #ifdef HOST_64
 	u64 *dst_u64 = (u64 *)dst;
@@ -912,7 +921,7 @@ static void memset_u16_fast(void *dst, const u16 val)
 #endif
 }
 
-static void memset_u32(void *dst, const u32 val, const size_t elementCount)
+MATRIX_UNUSED static void memset_u32(void *dst, const u32 val, const size_t elementCount)
 {
 #ifdef HOST_64
 	u64 *dst_u64 = (u64 *)dst;
@@ -962,7 +971,7 @@ static void buffer_copy_fast(void *__restrict dst, const void *__restrict src)
 	memcpy(dst, src, VECLENGTH);
 }
 
-static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
+MATRIX_UNUSED static void buffer_copy_or_constant_s8(void *__restrict dst, const void *__restrict src, const size_t vecLength, const s8 c)
 {
 #ifdef HOST_64
 	s64 *src_64 = (s64 *)src;

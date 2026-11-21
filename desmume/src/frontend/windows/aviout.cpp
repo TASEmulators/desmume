@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2006-2025 DeSmuME team
+	Copyright (C) 2006-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,14 +24,27 @@
 
 #include "debug.h"
 #include "common.h"
+#include "video.h"
+#include "record_compositor.h"
 
 #include "windriver.h"
 #include "driver.h"
 #include "NDSSystem.h"
 
+#if DESMUME_ENABLE_MF
+#include "mfvideowriter.h"
+#include "videoencoders.h"
+#endif
+
+// The display's own picture settings, read once when a recording starts so the
+// composed mode follows the layout the user is looking at.  Declared here
+// rather than through display.h, which drags in the whole window class for the
+// sake of two variables.
+extern VideoInfo video;
+extern int ScreenGapColor;
+
 
 NDSCaptureObject *captureObject = NULL;
-bool AVIFileStream::__needAviLibraryInit = true;
 
 static void EMU_PrintError(const char* msg)
 {
@@ -59,13 +72,202 @@ static void* RunConvertVideoSlice888XTo888(void *arg)
 	return NULL;
 }
 
+static void* RunComposeVideoSlice(void *arg)
+{
+	VideoConvertParam *convertParam = (VideoConvertParam *)arg;
+	convertParam->captureObj->ComposeVideoSlice(*convertParam);
+
+	return NULL;
+}
+
 static void* RunAviFileWrite(void *arg)
 {
-	AVIFileStream *fs = (AVIFileStream *)arg;
+	VideoSink *fs = (VideoSink *)arg;
 	fs->WriteAllFrames();
 
 	return NULL;
 }
+
+// The file name arrives from the ANSI save dialog; everything Media
+// Foundation takes is UTF-16.
+#if DESMUME_ENABLE_MF
+static std::wstring WidenFileName(const char *name)
+{
+	wchar_t buffer[MAX_PATH];
+	buffer[0] = L'\0';
+
+	MultiByteToWideChar(CP_ACP, 0, name, -1, buffer, MAX_PATH - 1);
+
+	return std::wstring(buffer);
+}
+#endif
+
+// --- VideoSink -------------------------------------------------------------
+
+VideoSink::VideoSink()
+{
+	this->_valid = false;
+
+	this->_semQueue = NULL;
+	this->_mutexQueue = slock_new();
+}
+
+VideoSink::~VideoSink()
+{
+	slock_free(this->_mutexQueue);
+	ssem_free(this->_semQueue);
+}
+
+void VideoSink::Close(FileStreamCloseAction theAction)
+{
+	switch (theAction)
+	{
+		case FSCA_PurgeQueue:
+		{
+			AVIWriteQueue clearQueue;
+
+			slock_lock(this->_mutexQueue);
+			this->_writeQueue.swap(clearQueue);
+			slock_unlock(this->_mutexQueue);
+
+			if (this->_semQueue != NULL)
+			{
+				const size_t remainingFrameCount = (size_t)ssem_get(this->_semQueue);
+				for (size_t i = 0; i < remainingFrameCount; i++)
+				{
+					ssem_signal(this->_semQueue);
+				}
+			}
+			break;
+		}
+
+		case FSCA_WriteRemainingInQueue:
+		{
+			if (this->_valid)
+			{
+				do
+				{
+					slock_lock(this->_mutexQueue);
+					if (this->_writeQueue.empty())
+					{
+						slock_unlock(this->_mutexQueue);
+						break;
+					}
+
+					const AVIFileWriteParam param = this->_writeQueue.front();
+					slock_unlock(this->_mutexQueue);
+
+					this->WriteOneFrame(param);
+
+					slock_lock(this->_mutexQueue);
+					if (!this->_writeQueue.empty())
+					{
+						this->_writeQueue.pop();
+					}
+					slock_unlock(this->_mutexQueue);
+
+					if (this->_semQueue != NULL)
+					{
+						ssem_signal(this->_semQueue);
+					}
+
+				} while (true);
+			}
+			break;
+		}
+
+		case FSCA_DoNothing:
+		default:
+			break;
+	}
+
+	this->CloseFile();
+	this->_valid = false;
+}
+
+bool VideoSink::IsValid()
+{
+	return this->_valid;
+}
+
+void VideoSink::QueueAdd(u8 *srcVideo, const size_t videoBufferSize, u8 *srcAudio, const size_t audioBufferSize)
+{
+	AVIFileWriteParam newParam;
+	newParam.srcVideo = srcVideo;
+	newParam.videoBufferSize = videoBufferSize;
+	newParam.srcAudio = srcAudio;
+	newParam.audioBufferSize = audioBufferSize;
+
+	ssem_wait(this->_semQueue);
+
+	slock_lock(this->_mutexQueue);
+	this->_writeQueue.push(newParam);
+	slock_unlock(this->_mutexQueue);
+}
+
+void VideoSink::QueueWait()
+{
+	// If the queue if full, the ssem_wait() will force a wait until the current frame is finished writing.
+	ssem_wait(this->_semQueue);
+	ssem_signal(this->_semQueue);
+}
+
+size_t VideoSink::GetQueueSize()
+{
+	slock_lock(this->_mutexQueue);
+	const size_t queueSize = this->_writeQueue.size();
+	slock_unlock(this->_mutexQueue);
+
+	return queueSize;
+}
+
+HRESULT VideoSink::WriteAllFrames()
+{
+	HRESULT error = S_OK;
+
+	do
+	{
+		slock_lock(this->_mutexQueue);
+		if (this->_writeQueue.empty())
+		{
+			slock_unlock(this->_mutexQueue);
+			break;
+		}
+
+		const AVIFileWriteParam param = this->_writeQueue.front();
+		slock_unlock(this->_mutexQueue);
+
+		error = this->WriteOneFrame(param);
+
+		slock_lock(this->_mutexQueue);
+		if (!this->_writeQueue.empty())
+		{
+			this->_writeQueue.pop();
+		}
+		slock_unlock(this->_mutexQueue);
+
+		if (this->_semQueue != NULL)
+		{
+			ssem_signal(this->_semQueue);
+		}
+
+		if (FAILED(error))
+		{
+			// Nothing else is going to succeed on this file, so drop what is
+			// still queued instead of letting the emulation thread wait on a
+			// semaphore nobody signals.
+			this->Close(FSCA_PurgeQueue);
+			return error;
+		}
+
+	} while (true);
+
+	return error;
+}
+
+// --- AVIFileStream ---------------------------------------------------------
+
+bool AVIFileStream::__needAviLibraryInit = true;
 
 AVIFileStream::AVIFileStream()
 {
@@ -98,20 +300,14 @@ AVIFileStream::AVIFileStream()
 	_writtenVideoFrameCount = 0;
 	_writtenAudioSampleCount = 0;
 	_writtenBytes = 0;
-
-	_semQueue = NULL;
-	_mutexQueue = slock_new();
 }
 
 AVIFileStream::~AVIFileStream()
 {
 	this->Close(FSCA_WriteRemainingInQueue);
-
-	slock_free(this->_mutexQueue);
-	ssem_free(this->_semQueue);
 }
 
-HRESULT AVIFileStream::InitBaseProperties(const char *fileName, BITMAPINFOHEADER *bmpFormat, WAVEFORMATEX *wavFormat, size_t pendingFrameCount)
+HRESULT AVIFileStream::Open(const char *fileName, const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat, size_t pendingFrameCount)
 {
 	HRESULT error = S_OK;
 
@@ -148,12 +344,20 @@ HRESULT AVIFileStream::InitBaseProperties(const char *fileName, BITMAPINFOHEADER
 
 	this->_expectedFrameSize = NDSCaptureObject::GetExpectedFrameSize(bmpFormat, wavFormat);
 
-	_semQueue = ssem_new(pendingFrameCount);
+	this->_semQueue = ssem_new(pendingFrameCount);
+
+	error = this->_OpenSegment();
+	if (FAILED(error))
+	{
+		return error;
+	}
+
+	this->_valid = true;
 
 	return error;
 }
 
-HRESULT AVIFileStream::Open()
+HRESULT AVIFileStream::_OpenSegment()
 {
 	HRESULT error = S_OK;
 
@@ -284,60 +488,8 @@ void AVIFileStream::_CloseStreams()
 	}
 }
 
-void AVIFileStream::Close(FileStreamCloseAction theAction)
+void AVIFileStream::CloseFile()
 {
-	switch (theAction)
-	{
-		case FSCA_PurgeQueue:
-		{
-			AVIWriteQueue clearQueue;
-
-			slock_lock(this->_mutexQueue);
-			this->_writeQueue.swap(clearQueue);
-			slock_unlock(this->_mutexQueue);
-
-			const size_t remainingFrameCount = (size_t)ssem_get(this->_semQueue);
-			for (size_t i = 0; i < remainingFrameCount; i++)
-			{
-				ssem_signal(this->_semQueue);
-			}
-			break;
-		}
-
-		case FSCA_WriteRemainingInQueue:
-		{
-			if (this->_file != NULL)
-			{
-				do
-				{
-					slock_lock(this->_mutexQueue);
-					if (this->_writeQueue.empty())
-					{
-						slock_unlock(this->_mutexQueue);
-						break;
-					}
-
-					const AVIFileWriteParam param = this->_writeQueue.front();
-					slock_unlock(this->_mutexQueue);
-
-					this->WriteOneFrame(param);
-
-					slock_lock(this->_mutexQueue);
-					this->_writeQueue.pop();
-					slock_unlock(this->_mutexQueue);
-
-					ssem_signal(this->_semQueue);
-
-				} while (true);
-			}
-			break;
-		}
-
-		case FSCA_DoNothing:
-		default:
-			break;
-	}
-
 	this->_CloseStreams();
 
 	if (this->_file != NULL)
@@ -345,42 +497,6 @@ void AVIFileStream::Close(FileStreamCloseAction theAction)
 		AVIFileClose(this->_file);
 		this->_file = NULL;
 	}
-}
-
-bool AVIFileStream::IsValid()
-{
-	return (this->_file != NULL);
-}
-
-void AVIFileStream::QueueAdd(u8 *srcVideo, const size_t videoBufferSize, u8 *srcAudio, const size_t audioBufferSize)
-{
-	AVIFileWriteParam newParam;
-	newParam.srcVideo = srcVideo;
-	newParam.videoBufferSize = videoBufferSize;
-	newParam.srcAudio = srcAudio;
-	newParam.audioBufferSize = audioBufferSize;
-
-	ssem_wait(this->_semQueue);
-
-	slock_lock(this->_mutexQueue);
-	this->_writeQueue.push(newParam);
-	slock_unlock(this->_mutexQueue);
-}
-
-void AVIFileStream::QueueWait()
-{
-	// If the queue if full, the ssem_wait() will force a wait until the current frame is finished writing.
-	ssem_wait(this->_semQueue);
-	ssem_signal(this->_semQueue);
-}
-
-size_t AVIFileStream::GetQueueSize()
-{
-	slock_lock(this->_mutexQueue);
-	const size_t queueSize = this->_writeQueue.size();
-	slock_unlock(this->_mutexQueue);
-
-	return queueSize;
 }
 
 HRESULT AVIFileStream::FlushVideo(u8 *srcBuffer, const LONG bufferSize)
@@ -447,14 +563,12 @@ HRESULT AVIFileStream::WriteOneFrame(const AVIFileWriteParam &param)
 	error = this->FlushVideo(param.srcVideo, param.videoBufferSize);
 	if (FAILED(error))
 	{
-		this->Close(FSCA_PurgeQueue);
 		return error;
 	}
 
 	error = this->FlushAudio(param.srcAudio, param.audioBufferSize);
 	if (FAILED(error))
 	{
-		this->Close(FSCA_PurgeQueue);
 		return error;
 	}
 
@@ -467,13 +581,12 @@ HRESULT AVIFileStream::WriteOneFrame(const AVIFileWriteParam &param)
 		this->_CloseStreams();
 		this->_segmentNumber++;
 
-		error = this->Open();
+		error = this->_OpenSegment();
 		AVIFileClose(oldFile);
 
 		if (FAILED(error))
 		{
 			EMU_PrintError("Error creating new AVI segment.");
-			this->Close(FSCA_PurgeQueue);
 			return error;
 		}
 	}
@@ -481,51 +594,148 @@ HRESULT AVIFileStream::WriteOneFrame(const AVIFileWriteParam &param)
 	return error;
 }
 
-HRESULT AVIFileStream::WriteAllFrames()
-{
-	HRESULT error = S_OK;
+// --- MFVideoSink -----------------------------------------------------------
 
-	do
+#if DESMUME_ENABLE_MF
+
+MFVideoSink::MFVideoSink(const RecordParams &params)
+{
+	this->_writer = NULL;
+	this->_params = params;
+	this->_hasVideo = false;
+	this->_hasAudio = false;
+
+	// The capture pipeline already owns the thread that calls into a sink, and
+	// the sink writer has to be created on the thread that writes to it.  So
+	// the encoder always gets a worker of its own: AddFrame() then only copies
+	// into a free slot, and the capture writer thread never blocks on it.
+	this->_params.async = true;
+}
+
+MFVideoSink::~MFVideoSink()
+{
+	this->Close(FSCA_WriteRemainingInQueue);
+
+	delete this->_writer;
+	this->_writer = NULL;
+}
+
+HRESULT MFVideoSink::Open(const char *fileName, const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat, size_t pendingFrameCount)
+{
+	if (fileName == NULL)
 	{
-		slock_lock(this->_mutexQueue);
-		if (this->_writeQueue.empty())
-		{
-			slock_unlock(this->_mutexQueue);
-			break;
-		}
+		return E_INVALIDARG;
+	}
 
-		const AVIFileWriteParam param = this->_writeQueue.front();
-		slock_unlock(this->_mutexQueue);
+	BITMAPINFOHEADER bi;
+	memset(&bi, 0, sizeof(bi));
+	if (bmpFormat != NULL)
+	{
+		bi = *bmpFormat;
+	}
 
-		error = this->WriteOneFrame(param);
+	WAVEFORMATEX wf;
+	memset(&wf, 0, sizeof(wf));
+	if (wavFormat != NULL)
+	{
+		wf = *wavFormat;
+	}
 
-		slock_lock(this->_mutexQueue);
-		this->_writeQueue.pop();
-		slock_unlock(this->_mutexQueue);
+	this->_hasVideo = (bi.biWidth > 0 && bi.biHeight > 0);
+	this->_hasAudio = (wf.nBlockAlign > 0 && wf.nSamplesPerSec > 0);
 
-		ssem_signal(this->_semQueue);
+	if (!this->_hasVideo && !this->_hasAudio)
+	{
+		return E_INVALIDARG;
+	}
 
-		if (FAILED(error))
-		{
-			return error;
-		}
+	this->_writer = new MFVideoWriter(this->_params);
 
-	} while (true);
+	if (this->_hasVideo)
+	{
+		this->_writer->SetVideoFormat(&bi);
+	}
 
-	return error;
+	if (this->_hasAudio)
+	{
+		this->_writer->SetSoundFormat(&wf);
+	}
+
+	const std::wstring wideName = WidenFileName(fileName);
+	if (wideName.empty() || !this->_writer->Open(wideName.c_str()))
+	{
+		delete this->_writer;
+		this->_writer = NULL;
+		return E_FAIL;
+	}
+
+	// The queue is only used to hand frames from the emulation thread to the
+	// capture writer thread, so it needs no headroom beyond the ring buffer
+	// NDSCaptureObject already keeps.
+	this->_semQueue = ssem_new(pendingFrameCount);
+
+	this->_valid = true;
+
+	return S_OK;
 }
 
-NDSCaptureObject::NDSCaptureObject()
+void MFVideoSink::SetPaused(bool pause)
 {
-	__InstanceInit();
+	if (this->_writer != NULL)
+	{
+		this->_writer->Pause(pause);
+	}
 }
 
-NDSCaptureObject::NDSCaptureObject(size_t frameWidth, size_t frameHeight, const WAVEFORMATEX *wfex)
+bool MFVideoSink::IsPaused()
 {
+	return (this->_writer != NULL) && this->_writer->IsPaused();
+}
+
+HRESULT MFVideoSink::WriteOneFrame(const AVIFileWriteParam &param)
+{
+	if (this->_writer == NULL)
+	{
+		return E_UNEXPECTED;
+	}
+
+	if (this->_hasVideo && !this->_writer->AddFrame(param.srcVideo))
+	{
+		return E_FAIL;
+	}
+
+	if (this->_hasAudio && param.audioBufferSize > 0 &&
+	    !this->_writer->AddSound(param.srcAudio, (u32)param.audioBufferSize))
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
+void MFVideoSink::CloseFile()
+{
+	// The writer's destructor is what stops the worker thread, and that thread
+	// is the one that calls Finalize().  Dropping it here also drops any frame
+	// the encoder refused.
+	delete this->_writer;
+	this->_writer = NULL;
+}
+
+#endif // DESMUME_ENABLE_MF
+
+// --- NDSCaptureObject ------------------------------------------------------
+
+NDSCaptureObject::NDSCaptureObject(VideoSink *sink, size_t outputWidth, size_t outputHeight, const WAVEFORMATEX *wfex,
+                                   RecordCompositor *compositor)
+{
+	_fs = sink;
+	_compositor = compositor;
+
 	__InstanceInit();
 
-	_bmpFormat.biWidth = frameWidth;
-	_bmpFormat.biHeight = frameHeight * 2;
+	_bmpFormat.biWidth = outputWidth;
+	_bmpFormat.biHeight = outputHeight;
 	_bmpFormat.biSizeImage = _bmpFormat.biWidth * _bmpFormat.biHeight * 3;
 
 	if (wfex != NULL)
@@ -621,9 +831,6 @@ void NDSCaptureObject::__InstanceInit()
 		_convertThread[i] = new Task();
 		_convertThread[i]->start(false);
 	}
-	
-	// Generate the AVI file streams.
-	_fs = new AVIFileStream;
 
 	_fileWriteThread = new Task();
 	_fileWriteThread->start(false);
@@ -641,6 +848,8 @@ NDSCaptureObject::~NDSCaptureObject()
 	}
 
 	delete this->_fs;
+	delete this->_compositor;
+	this->_compositor = NULL;
 
 	free_aligned(this->_pendingVideoBuffer);
 	free_aligned(this->_pendingAudioBuffer);
@@ -668,15 +877,7 @@ size_t NDSCaptureObject::GetExpectedFrameSize(const BITMAPINFOHEADER *bmpFormat,
 
 HRESULT NDSCaptureObject::OpenFileStream(const char *fileName)
 {
-	HRESULT error = S_OK;
-
-	error = this->_fs->InitBaseProperties(fileName, &this->_bmpFormat, &this->_wavFormat, this->_pendingBufferCount);
-	if (FAILED(error))
-	{
-		return error;
-	}
-
-	return this->_fs->Open();
+	return this->_fs->Open(fileName, &this->_bmpFormat, &this->_wavFormat, this->_pendingBufferCount);
 }
 
 void NDSCaptureObject::CloseFileStream()
@@ -761,18 +962,67 @@ void NDSCaptureObject::ConvertVideoSlice888Xto888(const VideoConvertParam &param
 	}
 }
 
-void NDSCaptureObject::ReadVideoFrame(const void *srcVideoFrame, const size_t inFrameWidth, const size_t inFrameHeight, const NDSColorFormat colorFormat)
+void NDSCaptureObject::ComposeVideoSlice(const VideoConvertParam &param)
 {
-	//dont do anything if prescale has changed, it's just going to be garbage
-	if ((this->_bmpFormat.biSizeImage == 0) ||
-		(this->_bmpFormat.biWidth != inFrameWidth) ||
-		(this->_bmpFormat.biHeight != (inFrameHeight * 2)))
+	if (this->_compositor != NULL)
+	{
+		this->_compositor->ComposeRows(param.dst, param.firstLineIndex, param.lastLineIndex);
+	}
+}
+
+void NDSCaptureObject::ReadVideoFrame(const void *srcVideoFrame, const size_t inFrameWidth, const size_t inFrameHeight,
+                                      const NDSColorFormat colorFormat, float mainIntensity, float touchIntensity)
+{
+	if (this->_bmpFormat.biSizeImage == 0)
 	{
 		return;
 	}
 
 	const size_t bufferIndex = this->_currentBufferIndex;
 	u8 *convertBufferHead = this->_pendingVideoBuffer + (this->_bmpFormat.biSizeImage * bufferIndex);
+
+	// Composed mode: the frame the writer gets is laid out, filtered and sized
+	// by the compositor, so the row bands here are bands of the *output*, not
+	// of the GPU buffer.
+	if (this->_compositor != NULL)
+	{
+		// A GPU scale change mid-recording would change the source behind the
+		// compositor's back; dropping the frame is what the native path does
+		// with the same condition.
+		if (inFrameWidth != this->_compositor->SourceWidth() ||
+			inFrameHeight != this->_compositor->SourceHeight())
+		{
+			return;
+		}
+
+		this->_compositor->BeginFrame(srcVideoFrame, colorFormat, mainIntensity, touchIntensity);
+
+		if (this->_numThreads == 0)
+		{
+			this->_convertParam[0].src = (void *)srcVideoFrame;
+			this->_convertParam[0].dst = convertBufferHead;
+			this->ComposeVideoSlice(this->_convertParam[0]);
+		}
+		else
+		{
+			for (size_t i = 0; i < this->_numThreads; i++)
+			{
+				this->_convertThread[i]->finish();
+				this->_convertParam[i].src = (void *)srcVideoFrame;
+				this->_convertParam[i].dst = convertBufferHead;
+				this->_convertThread[i]->execute(&RunComposeVideoSlice, &this->_convertParam[i]);
+			}
+		}
+
+		return;
+	}
+
+	//dont do anything if prescale has changed, it's just going to be garbage
+	if ((this->_bmpFormat.biWidth != inFrameWidth) ||
+		(this->_bmpFormat.biHeight != (inFrameHeight * 2)))
+	{
+		return;
+	}
 
 	if (colorFormat == NDSColorFormat_BGR555_Rev)
 	{
@@ -828,40 +1078,141 @@ void NDSCaptureObject::ReadAudioFrames(const void *srcAudioBuffer, const size_t 
 	this->_pendingAudioWriteSize[bufferIndex] += soundSize;
 }
 
-bool DRV_AviBegin(const char *fileName)
-{
-	HRESULT error = S_OK;
-	bool result = true;
+// --- driver entry points ---------------------------------------------------
 
+static WAVEFORMATEX _RecordingSoundFormat()
+{
 	WAVEFORMATEX wf;
-	wf.cbSize = sizeof(WAVEFORMATEX);
+	memset(&wf, 0, sizeof(wf));
+	wf.wFormatTag = WAVE_FORMAT_PCM;
 	wf.nAvgBytesPerSec = DESMUME_SAMPLE_RATE * sizeof(u16) * 2;
 	wf.nBlockAlign = 4;
 	wf.nChannels = 2;
 	wf.nSamplesPerSec = DESMUME_SAMPLE_RATE;
 	wf.wBitsPerSample = 16;
-	wf.wFormatTag = WAVE_FORMAT_PCM;
-	 
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	NDSCaptureObject *newCaptureObject = new NDSCaptureObject(dispInfo.customWidth, dispInfo.customHeight, &wf);
+	wf.cbSize = sizeof(WAVEFORMATEX);
 
-	error = newCaptureObject->OpenFileStream(fileName);
+	return wf;
+}
+
+static HRESULT _BeginCapture(VideoSink *sink, const char *fileName, size_t width, size_t height, bool hasAudio,
+                             RecordCompositor *compositor = NULL)
+{
+	const WAVEFORMATEX wf = _RecordingSoundFormat();
+
+	NDSCaptureObject *newCaptureObject = new NDSCaptureObject(sink, width, height, hasAudio ? &wf : NULL, compositor);
+
+	HRESULT error = newCaptureObject->OpenFileStream(fileName);
 	if (FAILED(error))
 	{
+		delete newCaptureObject;
+		return error;
+	}
+
+	captureObject = newCaptureObject;
+	return S_OK;
+}
+
+bool DRV_AviBegin(const char *fileName)
+{
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+
+	const HRESULT error = _BeginCapture(new AVIFileStream, fileName, dispInfo.customWidth, dispInfo.customHeight * 2, true);
+	if (FAILED(error))
+	{
+		// E_ABORT is the user closing the codec dialog, which is not a failure.
 		if (error != E_ABORT)
 		{
 			EMU_PrintError("Error starting AVI file.");
 			driver->AddLine("Error starting AVI file.");
 		}
 
-		delete newCaptureObject;
-
-		result = false;
-		return result;
+		return false;
 	}
 
-	captureObject = newCaptureObject;
-	return result;
+	return true;
+}
+
+// Fills in everything the compositor needs from the picture settings the user
+// is looking at right now.  Called once, when the recording starts: a layout or
+// a rotation changed mid-recording cannot be allowed to change the frame size,
+// because the encoder has already been told what it is.
+static void _FillPicture(RecordPicture *picture, const RecordParams &params, const NDSDisplayInfo &dispInfo)
+{
+	memset(picture, 0, sizeof(*picture));
+
+	picture->mode   = params.pictureMode;
+	picture->size   = params.pictureSize;
+	picture->width  = params.pictureWidth;
+	picture->height = params.pictureHeight;
+	picture->layout	 = video.layout;
+	picture->rotation = video.rotation;
+	picture->screengap = video.screengap;
+	picture->swap	 = video.swap;
+	picture->mainScreenIsEngineMain = (dispInfo.engineID[NDSDisplayID_Main] == GPUEngineID_Main);
+	picture->filter	  = params.pictureFilter;
+	picture->gapColor = ScreenGapColor;
+}
+
+bool DRV_AviBeginEx(const char *fileName, const RecordParams &params)
+{
+#if DESMUME_ENABLE_MF
+	const bool hasVideo = !videoEncoders::isNullGuid(params.videoSubtype);
+	const bool hasAudio = !videoEncoders::isNullGuid(params.audioSubtype);
+
+	if (fileName == NULL || (!hasVideo && !hasAudio))
+	{
+		return false;
+	}
+
+	// An audio-only recording passes a size of zero, which is what tells the
+	// capture object and the sink that there is no video stream to set up.
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+
+	size_t width  = hasVideo ? dispInfo.customWidth : 0;
+	size_t height = hasVideo ? (dispInfo.customHeight * 2) : 0;
+
+	RecordCompositor *compositor = NULL;
+
+	if (hasVideo && params.pictureMode == RECORD_PICTURE_COMPOSED)
+	{
+		RecordPicture picture;
+		_FillPicture(&picture, params, dispInfo);
+
+		compositor = new RecordCompositor();
+
+		if (compositor->Configure(picture, dispInfo.customWidth, dispInfo.customHeight))
+		{
+			width  = compositor->OutputWidth();
+			height = compositor->OutputHeight();
+		}
+		else
+		{
+			// The picture could not be composed; the stacked frame is still
+			// recordable, so the recording goes ahead in that shape instead of
+			// failing outright.
+			delete compositor;
+			compositor = NULL;
+
+			EMU_PrintMessage("Could not compose the window picture; recording the two screens stacked instead.");
+		}
+	}
+
+	if (SUCCEEDED(_BeginCapture(new MFVideoSink(params), fileName, width, height, hasAudio, compositor)))
+	{
+		return true;
+	}
+
+	EMU_PrintError("Error starting the recording file.");
+	driver->AddLine("Error starting the recording file.");
+
+	return false;
+#else
+	// This build has no Media Foundation headers, so the settings the caller
+	// prepared cannot be honoured; the VFW writer is what it has.
+	(void)params;
+	return DRV_AviBegin(fileName);
+#endif
 }
 
 void DRV_AviFrameStart()
@@ -881,7 +1232,10 @@ void DRV_AviVideoUpdate(const NDSDisplayInfo &displayInfo)
 		return;
 	}
 
-	captureObject->ReadVideoFrame(displayInfo.masterCustomBuffer, displayInfo.customWidth, displayInfo.customHeight, displayInfo.colorFormat);
+	captureObject->ReadVideoFrame(displayInfo.masterCustomBuffer, displayInfo.customWidth, displayInfo.customHeight,
+	                              displayInfo.colorFormat,
+	                              displayInfo.backlightIntensity[NDSDisplayID_Main],
+	                              displayInfo.backlightIntensity[NDSDisplayID_Touch]);
 }
 
 void DRV_AviSoundUpdate(void *soundData, const int soundLen)
@@ -909,8 +1263,8 @@ void DRV_AviFileWriteStart()
 		delete captureObject;
 		captureObject = NULL;
 
-		EMU_PrintMessage("AVI recording ended.");
-		driver->AddLine("AVI recording ended.");
+		EMU_PrintMessage("Recording ended.");
+		driver->AddLine("Recording ended.");
 
 		return;
 	}
@@ -931,6 +1285,26 @@ void DRV_AviFileWriteFinish()
 bool AVI_IsRecording()
 {
 	return (captureObject != NULL);
+}
+
+void DRV_AviPause(bool pause)
+{
+	if (!AVI_IsRecording())
+	{
+		return;
+	}
+
+	captureObject->SetPaused(pause);
+}
+
+bool DRV_AviIsPaused()
+{
+	return AVI_IsRecording() && captureObject->IsPaused();
+}
+
+bool DRV_AviCanPause()
+{
+	return AVI_IsRecording() && captureObject->CanPause();
 }
 
 void DRV_AviEnd()

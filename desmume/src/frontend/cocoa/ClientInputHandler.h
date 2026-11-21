@@ -437,7 +437,12 @@ public:
 	int16_t GetPaddleAdjustApplied();
 	
 	void ProcessInputs();
-	void ApplyInputs();
+	// Commit the input processed by ProcessInputs() to the game. This mirrors
+	// the Windows loop's single NDS_endProcessingInput() call: call it exactly
+	// once per frame, after any LUACALL_BEFOREEMULATION hook that may adjust
+	// the input. ApplyInputs() is a compatibility alias.
+	void CommitInputs();
+	void ApplyInputs() { CommitInputs(); }
 	
 	virtual void SetHardwareMicAuthorized(bool isAuthorized);
 	virtual bool IsHardwareMicAuthorized();

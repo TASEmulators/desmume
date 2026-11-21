@@ -109,7 +109,9 @@ protected:
 public:
 	SoftRasterizerTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes);
 	virtual ~SoftRasterizerTexture();
-	
+
+	/* Expose the base-class overload so defining Load() below does not hide it. */
+	using TextureStore::Load;
 	virtual void Load();
 	
 	u32* GetUnpackData();

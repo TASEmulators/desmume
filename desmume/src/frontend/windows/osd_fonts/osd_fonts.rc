@@ -1,0 +1,43 @@
+// OSD bitmap font payloads.  Each .bin is an AGG 2.5 embedded raster font
+// copied byte-for-byte; they are linked into the executable as RCDATA and
+// read with FindResource/LoadResource/LockResource at run time.
+//
+// Paths are relative to $(ProjectDir) (desmume/src/frontend/windows).
+// RT_RCDATA is 10; defined here so the script needs no SDK headers.
+#define RCDATA 10
+#include "osd_fonts/osd_fonts.h"
+
+IDR_OSD_FONT_GSE4X6                 RCDATA "osd_fonts\\fonts\\gse4x6.bin"
+IDR_OSD_FONT_GSE4X8                 RCDATA "osd_fonts\\fonts\\gse4x8.bin"
+IDR_OSD_FONT_GSE5X7                 RCDATA "osd_fonts\\fonts\\gse5x7.bin"
+IDR_OSD_FONT_GSE5X9                 RCDATA "osd_fonts\\fonts\\gse5x9.bin"
+IDR_OSD_FONT_GSE6X9                 RCDATA "osd_fonts\\fonts\\gse6x9.bin"
+IDR_OSD_FONT_GSE6X12                RCDATA "osd_fonts\\fonts\\gse6x12.bin"
+IDR_OSD_FONT_GSE7X11                RCDATA "osd_fonts\\fonts\\gse7x11.bin"
+IDR_OSD_FONT_GSE7X11_BOLD           RCDATA "osd_fonts\\fonts\\gse7x11_bold.bin"
+IDR_OSD_FONT_GSE7X15                RCDATA "osd_fonts\\fonts\\gse7x15.bin"
+IDR_OSD_FONT_GSE7X15_BOLD           RCDATA "osd_fonts\\fonts\\gse7x15_bold.bin"
+IDR_OSD_FONT_GSE8X16                RCDATA "osd_fonts\\fonts\\gse8x16.bin"
+IDR_OSD_FONT_GSE8X16_BOLD           RCDATA "osd_fonts\\fonts\\gse8x16_bold.bin"
+IDR_OSD_FONT_MCS11_PROP             RCDATA "osd_fonts\\fonts\\mcs11_prop.bin"
+IDR_OSD_FONT_MCS11_PROP_CONDENSED   RCDATA "osd_fonts\\fonts\\mcs11_prop_condensed.bin"
+IDR_OSD_FONT_MCS12_PROP             RCDATA "osd_fonts\\fonts\\mcs12_prop.bin"
+IDR_OSD_FONT_MCS13_PROP             RCDATA "osd_fonts\\fonts\\mcs13_prop.bin"
+IDR_OSD_FONT_MCS5X10_MONO           RCDATA "osd_fonts\\fonts\\mcs5x10_mono.bin"
+IDR_OSD_FONT_MCS5X11_MONO           RCDATA "osd_fonts\\fonts\\mcs5x11_mono.bin"
+IDR_OSD_FONT_MCS6X10_MONO           RCDATA "osd_fonts\\fonts\\mcs6x10_mono.bin"
+IDR_OSD_FONT_MCS6X11_MONO           RCDATA "osd_fonts\\fonts\\mcs6x11_mono.bin"
+IDR_OSD_FONT_MCS7X12_MONO_HIGH      RCDATA "osd_fonts\\fonts\\mcs7x12_mono_high.bin"
+IDR_OSD_FONT_MCS7X12_MONO_LOW       RCDATA "osd_fonts\\fonts\\mcs7x12_mono_low.bin"
+IDR_OSD_FONT_VERDANA12              RCDATA "osd_fonts\\fonts\\verdana12.bin"
+IDR_OSD_FONT_VERDANA12_BOLD         RCDATA "osd_fonts\\fonts\\verdana12_bold.bin"
+IDR_OSD_FONT_VERDANA13              RCDATA "osd_fonts\\fonts\\verdana13.bin"
+IDR_OSD_FONT_VERDANA13_BOLD         RCDATA "osd_fonts\\fonts\\verdana13_bold.bin"
+IDR_OSD_FONT_VERDANA14              RCDATA "osd_fonts\\fonts\\verdana14.bin"
+IDR_OSD_FONT_VERDANA14_BOLD         RCDATA "osd_fonts\\fonts\\verdana14_bold.bin"
+IDR_OSD_FONT_VERDANA16              RCDATA "osd_fonts\\fonts\\verdana16.bin"
+IDR_OSD_FONT_VERDANA16_BOLD         RCDATA "osd_fonts\\fonts\\verdana16_bold.bin"
+IDR_OSD_FONT_VERDANA17              RCDATA "osd_fonts\\fonts\\verdana17.bin"
+IDR_OSD_FONT_VERDANA17_BOLD         RCDATA "osd_fonts\\fonts\\verdana17_bold.bin"
+IDR_OSD_FONT_VERDANA18              RCDATA "osd_fonts\\fonts\\verdana18.bin"
+IDR_OSD_FONT_VERDANA18_BOLD         RCDATA "osd_fonts\\fonts\\verdana18_bold.bin"
