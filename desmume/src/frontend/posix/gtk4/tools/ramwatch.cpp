@@ -39,6 +39,7 @@ static GtkWidget *sEditButton = NULL;
 static GtkWidget *sRemoveButton = NULL;
 static GtkWidget *sDuplicateButton = NULL;
 static GtkWidget *sSeparatorButton = NULL;
+static GtkWidget *sAddCheatButton = NULL;
 static GtkWidget *sMoveUpButton = NULL;
 static GtkWidget *sMoveDownButton = NULL;
 static GMenu *sRecentMenu = NULL;
@@ -180,6 +181,10 @@ update_control_states(void)
 	gtk_widget_set_sensitive(sRemoveButton, (selectedCount >= 1));
 	gtk_widget_set_sensitive(sDuplicateButton, (selectedCount == 1) && canAdd);
 	gtk_widget_set_sensitive(sSeparatorButton, canAdd);
+	/* Add Cheat needs exactly one real (non-separator) watch and a loaded ROM. */
+	gtk_widget_set_sensitive(sAddCheatButton,
+	                         (selectedCount == 1) && desmume_emu_has_rom() &&
+	                         (first >= 0) && !core.IsSeparator((size_t)first));
 	gtk_widget_set_sensitive(sMoveUpButton, (selectedCount == 1) && (first > 0));
 	gtk_widget_set_sensitive(sMoveDownButton,
 	                         (selectedCount == 1) && (first >= 0) &&
@@ -653,6 +658,143 @@ on_add_separator(GtkButton *button, gpointer data)
 	rebuild_model();
 }
 
+/* ------------------------------------------------------------ add cheat
+ * Windows' RAM Watch dialog has an "Add Cheat" button (IDC_C_ADDCHEAT):
+ * it feeds the selected watch's address/value/size/comment into
+ * CheatsAddDialog().  GTK4 has no Win32 dialog to reuse, so this builds a
+ * small GtkWindow that mirrors the RAM Search Add Cheat prompt and calls
+ * the shared desmume_emu_add_cheat() bridge. */
+
+struct WatchCheatCtx
+{
+	GtkWidget *window;
+	GtkWidget *descriptionEntry;
+	uint32_t address;
+	int sizeInBytes;
+	uint32_t value;
+	std::string addressText;
+};
+
+static void
+free_watch_cheat_ctx(gpointer data)
+{
+	delete (WatchCheatCtx *)data;
+}
+
+static void
+on_watch_cheat_ok(GtkButton *button, gpointer user_data)
+{
+	(void)button;
+	WatchCheatCtx *ctx = (WatchCheatCtx *)user_data;
+	const char *description = gtk_editable_get_text(GTK_EDITABLE(ctx->descriptionEntry));
+
+	char *error = NULL;
+	const gboolean added = desmume_emu_add_cheat(ctx->address, ctx->sizeInBytes,
+	                                             ctx->value, description, &error);
+	if (added)
+	{
+		gtk_window_destroy(GTK_WINDOW(ctx->window));
+	}
+	else
+	{
+		ShowError((error != NULL) ? error : "The cheat could not be added.");
+	}
+	g_free(error);
+}
+
+static void
+on_add_cheat(GtkButton *button, gpointer data)
+{
+	(void)button;
+	(void)data;
+	const int row = selected_row();
+	RAMWatchCore &core = RAMWatchCore::Get();
+	if ((row < 0) || ((size_t)row >= core.Count()) || core.IsSeparator((size_t)row))
+	{
+		return;
+	}
+	if (!desmume_emu_has_rom())
+	{
+		ShowError("Load a ROM before adding cheats.");
+		return;
+	}
+
+	const RAMWatchCore::Watch &watch = core.At((size_t)row);
+	if ((watch.Address < RAMDebugCore::kMainMemAddress) ||
+	    (watch.Address >= (RAMDebugCore::kMainMemAddress + RAMDebugCore::kMainMemSize)))
+	{
+		ShowError("Internal cheats can only target main RAM (0x02000000 - 0x023FFFFF).");
+		return;
+	}
+
+	/* Take the value the watch shows (its cached read), like Windows does
+	 * with watch.CurValue, rather than re-reading the bus. */
+	WatchCheatCtx *ctx = new WatchCheatCtx();
+	ctx->address = watch.Address;
+	ctx->sizeInBytes = RAMDebugCore::SizeInBytes(watch.Size);
+	ctx->value = RAMWatchCore::ReadValue(watch);
+	ctx->addressText = RAMWatchCore::DisplayAddress(watch);
+
+	ctx->window = desmume_tool_window_new("Add Cheat", sWindow, 420, 180);
+	GtkWidget *root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_widget_set_margin_start(root, 12);
+	gtk_widget_set_margin_end(root, 12);
+	gtk_widget_set_margin_top(root, 12);
+	gtk_widget_set_margin_bottom(root, 12);
+	gtk_window_set_child(GTK_WINDOW(ctx->window), root);
+
+	GtkWidget *grid = gtk_grid_new();
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 8);
+	gtk_box_append(GTK_BOX(root), grid);
+
+	gchar *info = g_strdup_printf("%s = %s (%d byte%s)",
+	                              ctx->addressText.c_str(),
+	                              RAMWatchCore::FormatValue(watch, ctx->value).c_str(),
+	                              ctx->sizeInBytes, (ctx->sizeInBytes == 1) ? "" : "s");
+	GtkWidget *cheatLabel = gtk_label_new("Cheat:");
+	gtk_label_set_xalign(GTK_LABEL(cheatLabel), 1.0f);
+	gtk_grid_attach(GTK_GRID(grid), cheatLabel, 0, 0, 1, 1);
+	GtkWidget *cheatValue = gtk_label_new(info);
+	gtk_label_set_xalign(GTK_LABEL(cheatValue), 0.0f);
+	gtk_widget_add_css_class(cheatValue, "desmume-tool-cell");
+	gtk_grid_attach(GTK_GRID(grid), cheatValue, 1, 0, 1, 1);
+	g_free(info);
+
+	GtkWidget *descriptionLabel = gtk_label_new("Description:");
+	gtk_label_set_xalign(GTK_LABEL(descriptionLabel), 1.0f);
+	gtk_grid_attach(GTK_GRID(grid), descriptionLabel, 0, 1, 1, 1);
+	ctx->descriptionEntry = gtk_entry_new();
+	const std::string defaultDescription = watch.Comment.empty()
+		? ("RAM Watch " + ctx->addressText) : watch.Comment;
+	gtk_editable_set_text(GTK_EDITABLE(ctx->descriptionEntry), defaultDescription.c_str());
+	gtk_widget_set_hexpand(ctx->descriptionEntry, TRUE);
+	gtk_grid_attach(GTK_GRID(grid), ctx->descriptionEntry, 1, 1, 1, 1);
+
+	GtkWidget *hint = gtk_label_new("Constant write, added to the cheat list and saved with the ROM.");
+	gtk_label_set_xalign(GTK_LABEL(hint), 0.0f);
+	gtk_widget_add_css_class(hint, "dim-label");
+	gtk_grid_attach(GTK_GRID(grid), hint, 1, 2, 1, 1);
+
+	GtkWidget *buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+	gtk_widget_set_halign(buttons, GTK_ALIGN_END);
+	gtk_box_append(GTK_BOX(root), buttons);
+
+	GtkWidget *cancel = gtk_button_new_with_label("_Cancel");
+	gtk_button_set_use_underline(GTK_BUTTON(cancel), TRUE);
+	g_signal_connect_swapped(cancel, "clicked", G_CALLBACK(gtk_window_destroy), ctx->window);
+	gtk_box_append(GTK_BOX(buttons), cancel);
+
+	GtkWidget *ok = gtk_button_new_with_label("_Add");
+	gtk_button_set_use_underline(GTK_BUTTON(ok), TRUE);
+	gtk_widget_add_css_class(ok, "suggested-action");
+	g_signal_connect(ok, "clicked", G_CALLBACK(on_watch_cheat_ok), ctx);
+	gtk_box_append(GTK_BOX(buttons), ok);
+
+	g_object_set_data_full(G_OBJECT(ctx->window), "watch-cheat-ctx", ctx, free_watch_cheat_ctx);
+	gtk_window_present(GTK_WINDOW(ctx->window));
+}
+
 static void
 on_move_up(GtkButton *button, gpointer data)
 {
@@ -817,6 +959,7 @@ clear_state(void)
 	sRemoveButton = NULL;
 	sDuplicateButton = NULL;
 	sSeparatorButton = NULL;
+	sAddCheatButton = NULL;
 	sMoveUpButton = NULL;
 	sMoveDownButton = NULL;
 	sRecentMenu = NULL;
@@ -938,6 +1081,7 @@ build_window(void)
 	sRemoveButton = add_button(sidebar, "Remove", G_CALLBACK(on_remove_selected));
 	sDuplicateButton = add_button(sidebar, "Duplicate", G_CALLBACK(on_duplicate));
 	sSeparatorButton = add_button(sidebar, "Separator", G_CALLBACK(on_add_separator));
+	sAddCheatButton = add_button(sidebar, "Add Cheat", G_CALLBACK(on_add_cheat));
 
 	GtkWidget *moveBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
 	sMoveUpButton = add_button(moveBox, "↑", G_CALLBACK(on_move_up));

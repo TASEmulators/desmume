@@ -540,22 +540,37 @@ on_poke(GtkButton *button, gpointer data)
 	update_status_label();
 }
 
-static void
-on_add_watch(GtkButton *button, gpointer data)
+/* Mirrors the Windows RAM Search "Add Watch" action: a single selected row
+ * pops the IDD_PROMPT "Input Prompt" dialog so the user can name the watch;
+ * a multi-row selection adds every row with an empty comment (Windows calls
+ * InsertWatch(tempWatch, "") for each row in that case). */
+struct AddWatchCtx
 {
-	(void)button;
-	(void)data;
-	const int row = selected_row();
+	GtkWidget *window;
+	GtkWidget *commentEntry;
+	size_t row;
+	std::string addressText;
+};
+
+static void
+free_add_watch_ctx(gpointer data)
+{
+	delete (AddWatchCtx *)data;
+}
+
+static void
+add_watch_with_comment(size_t row, const std::string &comment)
+{
 	RAMSearchCore &core = RAMSearchCore::Get();
-	if ((row < 0) || ((size_t)row >= core.ResultCount()))
+	if (row >= core.ResultCount())
 	{
 		return;
 	}
 
-	const RAMSearchCore::Result result = core.ResultAt((size_t)row);
+	const RAMSearchCore::Result result = core.ResultAt(row);
 	const char typeCode = selected_display_code();
 	bool duplicate = false;
-	if (core.AddResultToWatchList((size_t)row, typeCode, "", &duplicate))
+	if (core.AddResultToWatchList(row, typeCode, comment, &duplicate))
 	{
 		g_snprintf(sStatusNote, sizeof(sStatusNote), "added %s to RAM Watch",
 		           RAMDebugCore::FormatAddress(result.address).c_str());
@@ -566,6 +581,121 @@ on_add_watch(GtkButton *button, gpointer data)
 		           RAMDebugCore::FormatAddress(result.address).c_str());
 	}
 	update_status_label();
+}
+
+static void
+on_add_watch_ok(GtkButton *button, gpointer user_data)
+{
+	(void)button;
+	AddWatchCtx *ctx = (AddWatchCtx *)user_data;
+	const char *comment = gtk_editable_get_text(GTK_EDITABLE(ctx->commentEntry));
+	add_watch_with_comment(ctx->row, comment != NULL ? comment : "");
+	gtk_window_destroy(GTK_WINDOW(ctx->window));
+}
+
+static void
+present_add_watch_prompt(size_t row, const RAMSearchCore::Result &result)
+{
+	AddWatchCtx *ctx = new AddWatchCtx();
+	ctx->row = row;
+	ctx->addressText = RAMDebugCore::FormatAddress(result.address);
+
+	ctx->window = desmume_tool_window_new("Input Prompt", sWindow, 380, 150);
+	GtkWidget *root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_widget_set_margin_start(root, 12);
+	gtk_widget_set_margin_end(root, 12);
+	gtk_widget_set_margin_top(root, 12);
+	gtk_widget_set_margin_bottom(root, 12);
+	gtk_window_set_child(GTK_WINDOW(ctx->window), root);
+
+	GtkWidget *grid = gtk_grid_new();
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 8);
+	gtk_box_append(GTK_BOX(root), grid);
+
+	gchar *info = g_strdup_printf("%s = %s",
+	                              ctx->addressText.c_str(),
+	                              RAMDebugCore::FormatValue(selected_size_code(),
+	                                                        selected_display_code(),
+	                                                        result.currentValue).c_str());
+	GtkWidget *addressLabel = gtk_label_new("Address:");
+	gtk_label_set_xalign(GTK_LABEL(addressLabel), 1.0f);
+	gtk_grid_attach(GTK_GRID(grid), addressLabel, 0, 0, 1, 1);
+	GtkWidget *addressValue = gtk_label_new(info);
+	gtk_label_set_xalign(GTK_LABEL(addressValue), 0.0f);
+	gtk_widget_add_css_class(addressValue, "desmume-tool-cell");
+	gtk_grid_attach(GTK_GRID(grid), addressValue, 1, 0, 1, 1);
+	g_free(info);
+
+	GtkWidget *commentLabel = gtk_label_new("Notes:");
+	gtk_label_set_xalign(GTK_LABEL(commentLabel), 1.0f);
+	gtk_grid_attach(GTK_GRID(grid), commentLabel, 0, 1, 1, 1);
+	ctx->commentEntry = gtk_entry_new();
+	gtk_widget_set_hexpand(ctx->commentEntry, TRUE);
+	gchar *defaultComment = g_strdup_printf("RAM Search %s", ctx->addressText.c_str());
+	gtk_editable_set_text(GTK_EDITABLE(ctx->commentEntry), defaultComment);
+	g_free(defaultComment);
+	gtk_grid_attach(GTK_GRID(grid), ctx->commentEntry, 1, 1, 1, 1);
+
+	GtkWidget *buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+	gtk_widget_set_halign(buttons, GTK_ALIGN_END);
+	gtk_box_append(GTK_BOX(root), buttons);
+
+	GtkWidget *cancel = gtk_button_new_with_label("_Cancel");
+	gtk_button_set_use_underline(GTK_BUTTON(cancel), TRUE);
+	g_signal_connect_swapped(cancel, "clicked", G_CALLBACK(gtk_window_destroy), ctx->window);
+	gtk_box_append(GTK_BOX(buttons), cancel);
+
+	GtkWidget *ok = gtk_button_new_with_label("_OK");
+	gtk_button_set_use_underline(GTK_BUTTON(ok), TRUE);
+	gtk_widget_add_css_class(ok, "suggested-action");
+	g_signal_connect(ok, "clicked", G_CALLBACK(on_add_watch_ok), ctx);
+	gtk_box_append(GTK_BOX(buttons), ok);
+
+	g_object_set_data_full(G_OBJECT(ctx->window), "add-watch-ctx", ctx, free_add_watch_ctx);
+	gtk_window_present(GTK_WINDOW(ctx->window));
+}
+
+static void
+on_add_watch(GtkButton *button, gpointer data)
+{
+	(void)button;
+	(void)data;
+	RAMSearchCore &core = RAMSearchCore::Get();
+
+	/* Collect every selected row up front: the prompt window is modeless,
+	 * so the selection can change while the user is typing. */
+	std::vector<size_t> rows;
+	GArray *positions = NULL;
+	desmume_column_view_selected(sColumnView, &positions);
+	if (positions != NULL)
+	{
+		for (guint i = 0; i < positions->len; ++i)
+		{
+			const guint row = g_array_index(positions, guint, i);
+			if (row < core.ResultCount())
+			{
+				rows.push_back((size_t)row);
+			}
+		}
+		g_array_unref(positions);
+	}
+	if (rows.empty())
+	{
+		return;
+	}
+
+	if (rows.size() == 1)
+	{
+		present_add_watch_prompt(rows[0], core.ResultAt(rows[0]));
+	}
+	else
+	{
+		for (size_t row : rows)
+		{
+			add_watch_with_comment(row, "");
+		}
+	}
 }
 
 /* --------------------------------------------------------------- add cheat */
