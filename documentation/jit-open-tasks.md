@@ -4,7 +4,7 @@
 > **主文档仍是权威来源**，本文是索引视图；状态变化时两处同步更新。
 >
 > 快照：2026-11-21，HEAD `beda713b` + 本轮未提交改动（x64 差分台移植 arm64 探针形状 §10.11、
-> x64 补上 ARM `BKPT` §10.12、主存快路径实验与 `--bench` §10.13）。
+> x64 补上 ARM `BKPT` §10.12、主存快路径实验与 `--bench` §10.13、callee-saved 提示实验 §10.14）。
 
 ## 当前进度快照
 
@@ -13,6 +13,7 @@
 | 迁移主线（571 组 `diff-pass`） | **571 / 571，todo 归零**：族 1 数据处理 28 + 族 2 ARM 移位 224 + 族 3+4 访存 172 + LDM/STM 32 + 族 5 乘法/乘加 28 + CLZ + 族 6 分支/状态/异常 12 + **族 7+8 Thumb 68 + 饱和 4 + 协处理器 2**。余下 20 个 `interp-fallback`（`OP_UND`/`OP_CDP`/LDC-STC 全系/`LDREX`/`STREX`/Thumb 的 `BKPT`+`UND`）是有意不编译的 |
 | **两后端回退集合审计（2026-11-21）** | 逐函数比对 571 个 `OP_*`、20 行 `#define ... NULL` 与各函数体里的 `return 0`：**唯一差异是 ARM `OP_BKPT`**（x64 只有 `printf` + `return 0`，arm64 已内联 abort）。已按 arm64 补齐，两边现在一致；`OP_MCR`/`OP_MRC` 的 `return 2` 不发射代码，但解释器在同一条路径上也是空操作，三者等价（主文档 §10.12） |
 | **主存快路径实验（2026-11-21，已回退）** | 照 §10.13 做了"专用 helper + cache 命中常量 cycle"两条：功能**逐位等价**（132 探针 0 差异、`--full` 仍 12067），但 `--bench` 实测**读慢 12%、写慢 20%**（100% 命中的最好情况也不赢）。原因是成本在"每条访存一次间接 call"，不在 helper 指令数；写路径还因为写 miss 不更新 `m_cacheCache` 而永远进不去。两条都没进仓库，保留 `jit_diff --bench` |
+| **callee-saved 提示实验（2026-11-21，已回退）** | 把 `bb_cpu`/`bb_total_cycles`/`bb_dma_pending` 用 asmjit 的 home-id 提示放进 r14/r15/r13：代码体积 **−34%（Thumb LDR）/ −23%（STR）**，但 `--bench` 速度 **−1%~−4%**（序言/尾声的 push/pop 在 call-return 关键路径上，省掉的 spill/reload 被乱序执行完全遮住）。未进仓库。两个坑记在主文档 §10.14：invoke 参数**不能**是物理寄存器（`InvalidVirtId`，且块编译失败在探针里是静默的）；物理寄存器在 asmjit 里没有存活区间，会被分配给临时值 |
 | P0 访存 ABI（arm64 `call_mem`） | **已落地提交**：`call_mem` / `_r7` / `_r2` 三变体，24 处调用点中 15 处转轻量（commits `b7225baa`、`b1f5b455`）；原语级 + 块级真机均已验证 |
 | 族3 代码迁移 | **arm64 缓存接入完成**；x86 侧结构早已完成 |
 | **饱和算术（Q 系列）** | **两端都已内联**：arm64 见 §S4 族 7+8；x86 `arm_jit.cpp` 用同一份 DDI 0403E 语义（`seto` + `cmovnz`，两段饱和分别置 Q）。x86 侧 6 条 Q 探针 × 8 组操作数 × 2 种标志 = 704 次比较 0 mismatch，负对照（`cmovz`）确认探针有效 |
@@ -20,7 +21,7 @@
 | **arm64 handler 级真机验证** | `a64_block_probe` **904 项自检全绿**（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + **41 访存** + 78 Thumb + 4 Q 指令 + 2 cp15）；其中访存表本轮新增 4 例（LDRD/STRD/SWP 的脏 Rm/基址），改前改后输出**逐字节相同** |
 | **helper 读 `armcpu_t` 的不变量** | `armcpu_switchMode()`（族 6）与 `OP_LDM_STM`/`OP_LDRD`/`op_swp`/Thumb 的 `PUSH`/`POP`/`STM`/`LDM`（族 7）都直接读写 `cpu->R[]`：**调用前必须把涉及的寄存器落盘**。族 7 把同一条规则套到 Thumb 的寄存器列表上（8 位掩码 + LR/PC 位） |
 | x64 fastmem | **已评估放弃**（主文档 §10.6），x64 保持现状 |
-| 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0（`R0-R14`/`CPSR`/`instruct_adr`/异常/不变量），仅周期差 12067 与既有 3 条 `jit not repeatable`；**132 条定向探针** 2112 次比较 0 功能差异（176 条周期记录，其中 ARM `BKPT` 已从"回退解释器"改成内联 abort，功能仍 0 差异、周期由 jit=4 变 jit=0）；`--seq 2` 6848 次 0 mismatch。arm64 编码层 `check_a64` 4/241 已知基线差异（全部是 save/restore/startfunc/endfunc 的既有基线）；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` **904/904**（含 768 组 Q 对伪代码的模型比对）；arm64 后端另可在本机做 `clang++ -fsyntax-only` 语法门（x86_64 主机 + `-DASMJIT_NO_X86`） |
+| 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0（`R0-R14`/`CPSR`/`instruct_adr`/异常/不变量），仅周期差 12067 与既有 3 条 `jit not repeatable`；**132 条定向探针** 2112 次比较 0 功能差异（176 条周期记录，其中 ARM `BKPT` 已从"回退解释器"改成内联 abort，功能仍 0 差异、周期由 jit=4 变 jit=0）；`--seq 2` 6848 次 0 mismatch。差分台现在支持 `--opcode <hex>`，可测 `slot<<20` 造不出来的编码（如 `bkpt`）。arm64 编码层 `check_a64` 4/241 已知基线差异（全部是 save/restore/startfunc/endfunc 的既有基线）；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` **904/904**（含 768 组 Q 对伪代码的模型比对）；arm64 后端另可在本机做 `clang++ -fsyntax-only` 语法门（x86_64 主机 + `-DASMJIT_NO_X86`） |
 | 未跟踪文件 | `issue.md`（会话开始前既有，不属本次迁移） |
 
 ---
