@@ -4557,8 +4557,8 @@ static u32 compile_basicblock()
 	}
 	if(jit_status != asmjit::Error::kOk)
 	{
-		fprintf(stderr, "JIT error at %s%c-%08X: %s [block = %u instruction(s) from %s]\n",
-			bb_thumb?"THUMB":"ARM", PROCNUM?'7':'9', start_adr,
+		fprintf(stderr, "JIT error at %s%c-%08X (opcode %08X): %s [block = %u instruction(s) from %s]\n",
+			bb_thumb?"THUMB":"ARM", PROCNUM?'7':'9', start_adr, opcode,
 			asmjit::stringify_error(jit_status), bb_instr_count,
 			jit_bank_name(PROCNUM, start_adr));
 
