@@ -1,242 +1,242 @@
 # a64 primitive encodings, one line per corpus case
-[000] lsl r3, #0                                 52800000 1AC02063
-[001] lsl r3, #31                                528003E0 1AC02063
-[002] lsr r3, #0                                 53007C63
-[003] lsr r3, #31                                531F7C63
-[004] lsr r3, #32                                52800400 1AC02463
-[005] lsr r3, #40                                52800500 1AC02463
-[006] lsr64 x3, #8                               D348FC63
-[007] lsr64 x3, #40                              52800500 9AC02463
-[008] asr r3, #0                                 13007C63
-[009] asr r3, #31                                131F7C63
-[010] asr r3, #32                                52800400 1AC02863
-[011] asr64 x3, #8                               9348FC63
-[012] asr64 x3, #40                              52800500 9AC02863
-[013] ror r3, #0                                 13830063
-[014] ror r3, #31                                13837C63
-[015] ror r3, #32                                52800400 52801FEA 0A0A0000 7100001F 54000080 72001000 54000040 1AC02C63
-[016] rrx r3, #1                                 1A9F37ED 530101AD 5280002A 0A0A0065 52800020 52801FEA 0A0A0000 7100001F 54000080 72001000 54000040 1AC02C63 12B0000A 0A0A0063 2A0D0063
-[017] lsls r3, #0                                52800000 52801FEA 0A0A0000 7100001F 540000A1 D503201F 121B00A5 53057CA5 540002CE 2A0003F3 2A0303F4 52800410 6B10001F 54000140 540001CC 52800417 4B1302F7 1AC02063 52800036 1AD722D6 6A16029F 1A9F07E5 5400010E 52800036 6A16029F 1A9F07E5 52800003 5400006E 52800003 52800005 7100007F
-[018] lsrs r3, #7                                528000E0 52801FEA 0A0A0000 7100001F 540000A1 D503201F 121B00A5 53057CA5 540002CE 2A0003F3 2A0303F4 52800410 6B10001F 54000140 540001CC 52800037 4B170277 1AC02463 52800036 1AD722D6 6A16029F 1A9F07E5 5400010E 52B00016 6A16029F 1A9F07E5 52800003 5400006E 52800003 52800005 7100007F
-[019] asrs r3, #7                                528000E0 52801FEA 0A0A0000 7100001F 540000A1 D503201F 121B00A5 53057CA5 540002AE 2A0003F3 2A0303F4 52800410 6B10001F 5400012A 52800037 4B170277 1AC02863 52800036 1AD722D6 6A16029F 1A9F07E5 5400010E 1AC02863 52B00016 6A16029F 1A9F07E5 2A0503E3 12A00016 1B167C63 7100007F
-[020] rors r3, #7                                528000E0 2A0303F4 52801FEA 0A0A0000 7100001F 540000A1 D503201F 121B00A5 53057CA5 5400026E 528003EA 0A0A0000 2A0003F3 7100027F 54000120 52800037 4B170277 1AC02C63 52800036 1AD722D6 6A16029F 1A9F07E5 540000CE 2A1403E3 52B00016 6A16029F 1A9F07E5 5400002E 7100007F
-[021] rrxs r3, #7                                1A9F37ED 530101AD 5280002A 0A0A0065 528000E0 52801FEA 0A0A0000 7100001F 54000080 72001000 54000040 1AC02C63 12B0000A 0A0A0063 2A0D0063
-[022] lsl_reg r3, r4                             52801FEA 0A0A0084 52800410 6B10009F 5400006A 1AC42063 5400004E 52800003
-[023] lsl_reg_quick r3, r4                       1AC42063
-[024] lsr_reg_quick r3, r4                       1AC42463
-[025] lsr_reg r3, r4                             52801FEA 0A0A0084 52800410 6B10009F 5400006A 1AC42463 5400004E 52800003
-[026] asr_reg r3, r4                             52801FEA 0A0A0084 7100009F 54000160 52800410 6B10009F 5400006A 1AC42863 540000CE 52B00016 6A16007F 1A9F07E3 12A00016 1B167C63
-[027] ror_reg r3, r4                             52801FEA 0A0A0084 7100009F 54000080 72001084 54000040 1AC42C63
-[028] lsls_reg r3, r4                            52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 540002CE 2A0403F3 2A0303F4 52800410 6B10009F 54000140 540001CC 52800417 4B1302F7 1AC42063 52800036 1AD722D6 6A16029F 1A9F07E5 5400010E 52800036 6A16029F 1A9F07E5 52800003 5400006E 52800003 52800005 7100007F
-[029] lsrs_reg r3, r4                            52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 540002CE 2A0403F3 2A0303F4 52800410 6B10009F 54000140 540001CC 52800037 4B170277 1AC42463 52800036 1AD722D6 6A16029F 1A9F07E5 5400010E 52B00016 6A16029F 1A9F07E5 52800003 5400006E 52800003 52800005 7100007F
-[030] asrs_reg r3, r4                            52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 540002AE 2A0403F3 2A0303F4 52800410 6B10009F 5400012A 52800037 4B170277 1AC42863 52800036 1AD722D6 6A16029F 1A9F07E5 5400010E 1AC42863 52B00016 6A16029F 1A9F07E5 2A0503E3 12A00016 1B167C63 7100007F
-[031] rors_reg r3, r4                            2A0303F4 52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 5400026E 528003EA 0A0A0084 2A0403F3 7100027F 54000120 52800037 4B170277 1AC42C63 52800036 1AD722D6 6A16029F 1A9F07E5 540000CE 2A1403E3 52B00016 6A16029F 1A9F07E5 5400002E 7100007F
-[032] rrxs_reg r3, r4                            2A0303F4 52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 5400026E 528003EA 0A0A0084 2A0403F3 7100027F 54000120 52800037 4B170277 1AC42C63 52800036 1AD722D6 6A16029F 1A9F07E5 540000CE 2A1403E3 52B00016 6A16029F 1A9F07E5 5400002E 7100007F
-[033] mov r0, r1                                 2A0103E0
-[034] mov64 x0, x1                               AA0103E0
-[035] add r2, r3, r4                             0B040062
-[036] adds r2, r3, r4                            2B040062
-[037] add64 x2, x3, x4                           8B040062
-[038] adc r2, r3, r4                             1A040062
-[039] adcs r2, r3, r4                            3A040062
-[040] sub r2, r3, r4                             4B040062
-[041] subs r2, r3, r4                            6B040062
-[042] sbc r2, r3, r4                             5A040062
-[043] sbcs r2, r3, r4                            7A040062
-[044] neg r2, r3                                 4B0303E2
-[045] negs r2, r3                                6B0303E2
-[046] mvns r2, r3                                2A2303E2 7100005F
-[047] zeroreg r2                                 52800002
-[048] movs r2, r3                                2A0003E2 6B02005F
-[049] mov_cond r2, r3, eq                        54000040 5400004E 2A0303E2
-[050] mov_cond r2, r3, al                        5400004E 5400004E 2A0303E2
-[051] test r2, r3                                6A03005F
-[052] not r2, r3                                 2A2303E2
-[053] and r2, r3, r4                             0A040062
-[054] or r2, r3, r4                              2A040062
-[055] or64 x2, x3, x4                            AA040062
-[056] or_and_set_flags r2, r3, r4                2A040062 7100005F
-[057] xor r2, r3, r4                             4A040062
-[058] ands r2, r3, r4                            6A040062
-[059] ors r2, r3, r4                             2A040062 7100005F
-[060] xors r2, r3, r4                            4A040062 7100005F
-[061] cmp r2, r3                                 6B03005F
-[062] cmpx64 x2                                  F100005F
-[063] clz r2, r3                                 5AC01062
-[064] teq r2, r3                                 4A030050 7100021F
-[065] movz r2, #0                                52800002
-[066] movz r2, #0xFFFF                           529FFFE2
-[067] movz_lsl16 r2, #1                          52A00022
-[068] movn r2, #0                                12800002
-[069] movn_lsl16 r2, #1                          12A00022
-[070] movk r2, #0x1234                           72824682
-[071] movk_lsl16 r2, #0x1234                     72A24682
-[072] movk_lslnum r2, #0x1234, 0                 72824682
-[073] movk_lslnum r2, #0x1234, 16                72A24682
-[074] movk_lslnum64 x2, #0x1234, 16              F2A24682
-[075] movk_lslnum64 x2, #0x1234, 32              F2C24682
-[076] movk_lslnum64 x2, #0x1234, 48              F2E24682
-[077] movz64 x2, #0x1234                         D2824682
-[078] movimms r2, #0x1234                        52824682 7100005F
-[079] ptr 0                                      D2800002
-[080] ptr 0x1234                                 D2824682
-[081] ptr 0x12340000                             D2800002 F2A24682
-[082] ptr 0x12345678                             D28ACF02 F2A24682
-[083] ptr 0x123456789ABCDEF0                     D29BDE02 F2B35782 F2CACF02 F2E24682
-[084] ptr 0xFFFFFFFF                             D29FFFE2 F2BFFFE2
-[085] movimm 0                                   52800002
-[086] movimm 0xFFFF                              529FFFE2
-[087] movimm 0x10000                             52A00022
-[088] movimm 0xFFFF0000                          52BFFFE2
-[089] movimm 0xFFFFFFFE                          321F7BE2
-[090] movimm 0x00FF00FF                          32009FE2
-[091] movimm 0x12345678                          52A24682 728ACF02
-[092] movimm 0x1234567                           52A02462 7288ACE2
-[093] addimm 0                                   2A0303E2
-[094] addimm 0 same                             
-[095] addimm 1                                   11000462
-[096] addimm 4095                                113FFC62
-[097] addimm 4096                                11400462
-[098] addimm -1                                  51000462
-[099] addimm -4095                               513FFC62
-[100] addimm -4096                               51400462
-[101] addimm -4097                               51400462 51000442
-[102] addimm 0x123456                            11448C62 11115842
-[103] addimm64 0x1234                            52824690 8B100062
-[104] addsimm 0x1234                             52824690 2B100062
-[105] subimm 0x1234                              5282468A 4B0A0062
-[106] subsimm 0x1234                             5282468A 6B0A0062
-[107] cmpimm 0                                   7100007F
-[108] cmpimm 0x1234                              52824690 6B10007F
-[109] testimm 0xFF00                             72181C7F
-[110] testimm64 0xFF00                           F2781C7F
-[111] orimm 0                                    2A0303E2
-[112] orimm 0 same                              
-[113] orimm 0xFF00                               529FE009 2A090062
-[114] xorimm 0x1234                              5282468A 4A0A0062
-[115] andimm 0                                   52800002
-[116] andimm 0xFF00                              529FE00A 0A0A0062
-[117] andimm 0x12345                             52A0002A 728468AA 0A0A0062
-[118] andsimm 0                                  52800002 6B02005F
-[119] andsimm 0x1F                               72001062
-[120] andsimm 0x12345                            52A468AA 6A0A0062
-[121] smulbb r2, r3                              93403C51 93403C77 9B377E22
-[122] smulbt r2, r3                              93403C51 93507C77 9B377E22
-[123] smultb r2, r3                              93507C51 93403C77 9B377E22
-[124] smultt r2, r3                              93507C51 93507C77 9B377E22
-[125] smulwt r2, r3                              93507C57 9B377C62 9350FC42
-[126] smulwb r2, r3                              93403C57 9B377C62 9350FC42
-[127] smlawb r0, r1, r2, r3                      93403C57 9B377C6E 9350FDCE 2B0101C0
-[128] smlawt r0, r1, r2, r3                      93403C57 9B377C6E 9350FDCE 2B0101C0
-[129] smlabb r0, r1, r2, r3                      93403C51 93403C77 9B377E20 2B010000
-[130] smlabt r0, r1, r2, r3                      93403C51 93507C77 9B377E20 2B010000
-[131] smlatb r0, r1, r2, r3                      93507C51 93403C77 9B377E20 2B010000
-[132] smlatt r0, r1, r2, r3                      93507C51 93507C77 9B377E20 2B010000
-[133] smlalbb r0, r1, r2, r3                     2A0003F1 B3607C31 93403C53 93403C74 9B344671 D360FE21 2A1103E0
-[134] smlalbt r0, r1, r2, r3                     2A0003F1 B3607C31 93403C53 93507C74 9B344671 D360FE21 2A1103E0
-[135] smlaltb r0, r1, r2, r3                     2A0003F1 B3607C31 93507C53 93403C74 9B344671 D360FE21 2A1103E0
-[136] smlaltt r0, r1, r2, r3                     2A0003F1 B3607C31 93507C53 93507C74 9B344671 D360FE21 2A1103E0
-[137] mul r2, r3                                 1B037C42
-[138] muls r2, r3                                1B037C42 7100005F
-[139] mla r0, r1, r2, r3                         1B030440
-[140] mlas r0, r1, r2, r3                        1B030440 7100001F
-[141] umull r0, r1, r2, r3                       9BA37C51 D360FE21 2A1103E0
-[142] umulls r0, r1, r2, r3                      9BA37C51 F100023F D360FE21 2A1103E0
-[143] umlal r0, r1, r2, r3                       2A0003F1 B3607C31 9B234451 D360FE21 2A1103E0
-[144] umlals r0, r1, r2, r3                      2A0003F1 B3607C31 9B234451 F100023F D360FE21 2A1103E0
-[145] smull r0, r1, r2, r3                       9B237C51 D360FE21 2A1103E0
-[146] smulls r0, r1, r2, r3                      9B237C51 F100023F D360FE21 2A1103E0
-[147] smlal r0, r1, r2, r3                       2A0003F1 B3607C31 9B234451 D360FE21 2A1103E0
-[148] smlals r0, r1, r2, r3                      2A0003F1 B3607C31 9B234451 F100023F D360FE21 2A1103E0
-[149] ldr w2, [x3]                               B9400062
-[150] ldr64 x2, [x3]                             F9400062
-[151] str w2, [x3]                               B9000062
-[152] str64 x2, [x3]                             F9000062
-[153] str_cond w2, [x3], eq                      54000040 5400004E B9000062
-[154] str_cond w2, [x3], al                      5400004E 5400004E B9000062
-[155] ldrb w2, [x3]                              39400062
-[156] ldrsb w2, [x3]                             39C00062
-[157] strb w2, [x3]                              39000062
-[158] ldrsw w2, [x3]                             79C00062
-[159] ldrs w2, [x3]                              B9400062
-[160] ldrw w2, [x3]                              79400062
-[161] strw w2, [x3]                              79000062
-[162] str_ptr_cond                               D28ACF0A F2A2468A 54000041 5400004E B9000142
-[163] write_ptr32                                D28ACF02 F2A24682 529579A4 B9000044
-[164] write_ptr                                  D28ACF02 F2A24682 D28F1204 F2A68AC4 F2C00244 F9000044
-[165] write_ptr32_regptrTO_immFROM               5282468A B900006A
-[166] write_ptr32_regptrTO_regFROM               B9000064
-[167] write_ptr32_regptrTO_regptrFROM            B9400084 B9000064
-[168] read_ptr32_regptrFROM_regTO                B9400064
-[169] write_ptr32_reg                            D28ACF08 F2A24688 B9000104
-[170] writeBYTE_ptr32_regptrTO_immFROM           52800249 39000069
-[171] writeBYTE_ptr32_regptrTO_regFROM           39000064
-[172] writeBYTE_ptr32_regptrTO_regptrFROM        39400084 39000064
-[173] readBYTE_ptr32_regptrFROM_regTO            39400064
-[174] writeWORD_ptr32_regptrTO_immFROM           52824689 79000069
-[175] writeWORD_ptr32_regptrTO_regFROM           79000064
-[176] writeWORD_ptr32_regptrTO_regptrFROM        79400084 79000064
-[177] readWORD_ptr32_regptrFROM_regTO            79400064
-[178] add_ptr32_regptrTO_regFROM                 B940006A 0B04014A B900006A
-[179] adds_ptr32_regptrTO_regFROM                B940006A 2B04014A B900006A
-[180] add_ptr32_regptrTO_immFROM                 52824689 B940006A 0B09014A B900006A
-[181] adds_ptr32_regptrTO_immFROM                52824689 B940006A 2B09014A B900006A
-[182] sub_ptr32_regptrTO_regFROM                 B940006A 4B04014A B900006A
-[183] subs_ptr32_regptrTO_regFROM                B940006A 6B04014A B900006A
-[184] sub_ptr32_regptrTO_immFROM                 52824689 B940006A 4B09014A B900006A
-[185] subs_ptr32_regptrTO_immFROM                52824689 B940006A 6B09014A B900006A
-[186] neg_ptr32_regptr                           B940006A 4B0A03EA B900006A
-[187] negs_ptr32_regptr                          B940006A 6B0A03EA B900006A
-[188] ror_ptr32_regptr                           B940006A 138A1D4A B900006A
-[189] rors_ptr32_regptr                          B940006A 528000E0 2A0A03F4 52801FEA 0A0A0000 7100001F 540000A1 D503201F 121B00A5 53057CA5 5400026E 528003EA 0A0A0000 2A0003F3 7100027F 54000120 52800037 4B170277 1AC02D4A 52800036 1AD722D6 6A16029F 1A9F07E5 540000CE 2A1403EA 52B00016 6A16029F 1A9F07E5 5400002E 7100015F B900006A
-[190] rors_ptr32_regptr_reg                      B940006A 2A0A03F4 52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 5400026E 528003EA 0A0A0084 2A0403F3 7100027F 54000120 52800037 4B170277 1AC42D4A 52800036 1AD722D6 6A16029F 1A9F07E5 540000CE 2A1403EA 52B00016 6A16029F 1A9F07E5 5400002E 7100015F B900006A
-[191] ror_ptr32_regptr_reg                       B940006A 52801FEA 0A0A0084 7100009F 54000080 72001084 54000040 1AC42D4A B900006A
-[192] and_ptr32_regptr                           B940006D 528003EA 0A0A01AD B900006D
-[193] or_ptr32_regptr                            B940006D 528003E9 2A0901AD B900006D
-[194] or_ptr8_regptr_reg                         3940006D 2A0401AD 3900006D
-[195] or_ptr8_regptr_imm                         3940006D 528003E9 2A0901AD 3900006D
-[196] or_ptr32_regptr_reg                        B940006D 2A0401AD B900006D
-[197] and_ptr32_regptr_reg                       B940006D 0A0401AD B900006D
-[198] write_ptr32_reg_byte                       52A24688 728ACF08 39000104
-[199] setc r2                                    1A9F37E2
-[200] sets r2                                    1A9F57E2
-[201] setz r2                                    1A9F17E2
-[202] setnz r2                                   1A9F07E2
-[203] setnc r2                                   1A9F27E2
-[204] seto r2                                    1A9F77E2
-[205] lea_reg_reg 4                              52800040 1AC02084 0B03008A 2A0A03E2
-[206] lea_reg_reg 8                              52800060 1AC02084 0B03008A 2A0A03E2
-[207] lea_ptr_reg 4                              52A2468A 728ACF0A 52800040 1AC02084 0B0A008A 2A0A03E2
-[208] lea_ptr_val 4                              52A2468A 728ACF0A 528000A9 52800080 1AC02129 0B0A012A 2A0203EA
-[209] clear_carry_flag                           D53B4213 9262FA73 D51B4213
-[210] set_carry_flag                             D53B4213 B2630273 D51B4213
-[211] get_carry_flag                             D503201F 121B00A5 53057CA5
-[212] read_ptr32_reg                             D28ACF0A F2A2468A B9400144
-[213] read_ptr64_reg                             D28ACF0A F2A2468A F9400144
-[214] read_ptr32_reg_byte                        D28ACF08 F2A24688 39400104
-[215] var_copy32                                 D28ACF07 F2A24687 D28ACF87 F2A24687
-[216] var_copy32_reg                             B9000083
-[217] set_ptr_imm                                528000EA D28ACF08 F2A24688 B900010A
-[218] inc_ptr_imm +7                             D28ACF0A F2A2468A B940014A 528000E9 0B09014A D28ACF08 F2A24688 B900010A
-[219] inc_ptr_imm -7                             D28ACF0A F2A2468A B940014A 528000E9 4B09014A D28ACF08 F2A24688 B900010A
-[220] sub_ptr_imm 7                              D28ACF0A F2A2468A B940014A 528000E9 4B09014A D28ACF08 F2A24688 B900010A
-[221] inc_ptr                                    D28ACF0A F2A2468A B9400142 D28ACF8A F2A2468A B9400143 0B030042 D28ACF08 F2A24688 B9000102
-[222] inc_ptr_reg                                D28ACF0A F2A2468A B9400147 D28ACF8A F2A2468A B9400149 0B0900A7
-[223] inc_reg                                    D28ACF0A F2A2468A B9400149 0B0900A5
-[224] brk                                        D4200000
-[225] save                                       A9BF53F3 A9BF5BF5 A9BF63F7
-[226] restore                                    A8C163F7 A8C15BF5 A8C153F3
-[227] startfunc                                  A9BF77FE A9BF53F3 A9BF5BF5 A9BF63F7
-[228] endfunc                                    A8C163F7 A8C15BF5 A8C153F3 A8C177FE D65F03C0
-[229] save_call                                  A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7
-[230] restore_call                               F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1
-[231] callR3                                     A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7 D63F0060 F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1
-[232] callR9                                     A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7 D63F0120 F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1
-[233] callR7                                     A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7 D63F00E0 F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1
-[234] callR6                                     A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7 D63F00C0 F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1
-[235] callR8                                     A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7 D63F0100 F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1
-[236] save_mem_call                              A9BF3FEC
-[237] restore_mem_call                           A8C13FEC
-[238] call_mem                                   A9BF3FEC D63F0060 A8C13FEC
-[239] call_mem_r7                                A9BF3FEC D63F00E0 A8C13FEC
-[240] call_mem_r2                                A9BF33E2 F81F0FEF D63F0060 F84107EF A8C133E2
+[000] lsl r3, #0                                 52800000 1AC02063 D65F03C0
+[001] lsl r3, #31                                528003E0 1AC02063 D65F03C0
+[002] lsr r3, #0                                 53007C63 D65F03C0
+[003] lsr r3, #31                                531F7C63 D65F03C0
+[004] lsr r3, #32                                52800400 1AC02463 D65F03C0
+[005] lsr r3, #40                                52800500 1AC02463 D65F03C0
+[006] lsr64 x3, #8                               D348FC63 D65F03C0
+[007] lsr64 x3, #40                              52800500 9AC02463 D65F03C0
+[008] asr r3, #0                                 13007C63 D65F03C0
+[009] asr r3, #31                                131F7C63 D65F03C0
+[010] asr r3, #32                                52800400 1AC02863 D65F03C0
+[011] asr64 x3, #8                               9348FC63 D65F03C0
+[012] asr64 x3, #40                              52800500 9AC02863 D65F03C0
+[013] ror r3, #0                                 13830063 D65F03C0
+[014] ror r3, #31                                13837C63 D65F03C0
+[015] ror r3, #32                                52800400 52801FEA 0A0A0000 7100001F 54000080 72001000 54000040 1AC02C63 D65F03C0
+[016] rrx r3, #1                                 1A9F37ED 530101AD 5280002A 0A0A0065 52800020 52801FEA 0A0A0000 7100001F 54000080 72001000 54000040 1AC02C63 12B0000A 0A0A0063 2A0D0063 D65F03C0
+[017] lsls r3, #0                                52800000 52801FEA 0A0A0000 7100001F 540000A1 D503201F 121B00A5 53057CA5 14000016 2A0003F3 2A0303F4 52800410 6B10001F 54000140 540001CC 52800417 4B1302F7 1AC02063 52800036 1AD722D6 6A16029F 1A9F07E5 14000008 52800036 6A16029F 1A9F07E5 52800003 14000003 52800003 52800005 7100007F D65F03C0
+[018] lsrs r3, #7                                528000E0 52801FEA 0A0A0000 7100001F 540000A1 D503201F 121B00A5 53057CA5 14000016 2A0003F3 2A0303F4 52800410 6B10001F 54000140 540001CC 52800037 4B170277 1AC02463 52800036 1AD722D6 6A16029F 1A9F07E5 14000008 52B00016 6A16029F 1A9F07E5 52800003 14000003 52800003 52800005 7100007F D65F03C0
+[019] asrs r3, #7                                528000E0 52801FEA 0A0A0000 7100001F 540000A1 D503201F 121B00A5 53057CA5 14000015 2A0003F3 2A0303F4 52800410 6B10001F 5400012A 52800037 4B170277 1AC02863 52800036 1AD722D6 6A16029F 1A9F07E5 14000008 1AC02863 52B00016 6A16029F 1A9F07E5 2A0503E3 12A00016 1B167C63 7100007F D65F03C0
+[020] rors r3, #7                                528000E0 2A0303F4 52801FEA 0A0A0000 7100001F 540000A1 D503201F 121B00A5 53057CA5 14000013 528003EA 0A0A0000 2A0003F3 7100027F 54000120 52800037 4B170277 1AC02C63 52800036 1AD722D6 6A16029F 1A9F07E5 14000006 2A1403E3 52B00016 6A16029F 1A9F07E5 14000001 7100007F D65F03C0
+[021] rrxs r3, #7                                1A9F37ED 530101AD 5280002A 0A0A0065 528000E0 52801FEA 0A0A0000 7100001F 54000080 72001000 54000040 1AC02C63 12B0000A 0A0A0063 2A0D0063 D65F03C0
+[022] lsl_reg r3, r4                             52801FEA 0A0A0084 52800410 6B10009F 5400006A 1AC42063 14000002 52800003 D65F03C0
+[023] lsl_reg_quick r3, r4                       1AC42063 D65F03C0
+[024] lsr_reg_quick r3, r4                       1AC42463 D65F03C0
+[025] lsr_reg r3, r4                             52801FEA 0A0A0084 52800410 6B10009F 5400006A 1AC42463 14000002 52800003 D65F03C0
+[026] asr_reg r3, r4                             52801FEA 0A0A0084 7100009F 54000160 52800410 6B10009F 5400006A 1AC42863 14000006 52B00016 6A16007F 1A9F07E3 12A00016 1B167C63 D65F03C0
+[027] ror_reg r3, r4                             52801FEA 0A0A0084 7100009F 54000080 72001084 54000040 1AC42C63 D65F03C0
+[028] lsls_reg r3, r4                            52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 14000016 2A0403F3 2A0303F4 52800410 6B10009F 54000140 540001CC 52800417 4B1302F7 1AC42063 52800036 1AD722D6 6A16029F 1A9F07E5 14000008 52800036 6A16029F 1A9F07E5 52800003 14000003 52800003 52800005 7100007F D65F03C0
+[029] lsrs_reg r3, r4                            52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 14000016 2A0403F3 2A0303F4 52800410 6B10009F 54000140 540001CC 52800037 4B170277 1AC42463 52800036 1AD722D6 6A16029F 1A9F07E5 14000008 52B00016 6A16029F 1A9F07E5 52800003 14000003 52800003 52800005 7100007F D65F03C0
+[030] asrs_reg r3, r4                            52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 14000015 2A0403F3 2A0303F4 52800410 6B10009F 5400012A 52800037 4B170277 1AC42863 52800036 1AD722D6 6A16029F 1A9F07E5 14000008 1AC42863 52B00016 6A16029F 1A9F07E5 2A0503E3 12A00016 1B167C63 7100007F D65F03C0
+[031] rors_reg r3, r4                            2A0303F4 52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 14000013 528003EA 0A0A0084 2A0403F3 7100027F 54000120 52800037 4B170277 1AC42C63 52800036 1AD722D6 6A16029F 1A9F07E5 14000006 2A1403E3 52B00016 6A16029F 1A9F07E5 14000001 7100007F D65F03C0
+[032] rrxs_reg r3, r4                            2A0303F4 52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 14000013 528003EA 0A0A0084 2A0403F3 7100027F 54000120 52800037 4B170277 1AC42C63 52800036 1AD722D6 6A16029F 1A9F07E5 14000006 2A1403E3 52B00016 6A16029F 1A9F07E5 14000001 7100007F D65F03C0
+[033] mov r0, r1                                 2A0103E0 D65F03C0
+[034] mov64 x0, x1                               AA0103E0 D65F03C0
+[035] add r2, r3, r4                             0B040062 D65F03C0
+[036] adds r2, r3, r4                            2B040062 D65F03C0
+[037] add64 x2, x3, x4                           8B040062 D65F03C0
+[038] adc r2, r3, r4                             1A040062 D65F03C0
+[039] adcs r2, r3, r4                            3A040062 D65F03C0
+[040] sub r2, r3, r4                             4B040062 D65F03C0
+[041] subs r2, r3, r4                            6B040062 D65F03C0
+[042] sbc r2, r3, r4                             5A040062 D65F03C0
+[043] sbcs r2, r3, r4                            7A040062 D65F03C0
+[044] neg r2, r3                                 4B0303E2 D65F03C0
+[045] negs r2, r3                                6B0303E2 D65F03C0
+[046] mvns r2, r3                                2A2303E2 7100005F D65F03C0
+[047] zeroreg r2                                 52800002 D65F03C0
+[048] movs r2, r3                                2A0003E2 6B02005F D65F03C0
+[049] mov_cond r2, r3, eq                        54000040 14000002 2A0303E2 D65F03C0
+[050] mov_cond r2, r3, al                        14000001 2A0303E2 D65F03C0
+[051] test r2, r3                                6A03005F D65F03C0
+[052] not r2, r3                                 2A2303E2 D65F03C0
+[053] and r2, r3, r4                             0A040062 D65F03C0
+[054] or r2, r3, r4                              2A040062 D65F03C0
+[055] or64 x2, x3, x4                            AA040062 D65F03C0
+[056] or_and_set_flags r2, r3, r4                2A040062 7100005F D65F03C0
+[057] xor r2, r3, r4                             4A040062 D65F03C0
+[058] ands r2, r3, r4                            6A040062 D65F03C0
+[059] ors r2, r3, r4                             2A040062 7100005F D65F03C0
+[060] xors r2, r3, r4                            4A040062 7100005F D65F03C0
+[061] cmp r2, r3                                 6B03005F D65F03C0
+[062] cmpx64 x2                                  F100005F D65F03C0
+[063] clz r2, r3                                 5AC01062 D65F03C0
+[064] teq r2, r3                                 4A030050 7100021F D65F03C0
+[065] movz r2, #0                                52800002 D65F03C0
+[066] movz r2, #0xFFFF                           529FFFE2 D65F03C0
+[067] movz_lsl16 r2, #1                          52A00022 D65F03C0
+[068] movn r2, #0                                12800002 D65F03C0
+[069] movn_lsl16 r2, #1                          12A00022 D65F03C0
+[070] movk r2, #0x1234                           72824682 D65F03C0
+[071] movk_lsl16 r2, #0x1234                     72A24682 D65F03C0
+[072] movk_lslnum r2, #0x1234, 0                 72824682 D65F03C0
+[073] movk_lslnum r2, #0x1234, 16                72A24682 D65F03C0
+[074] movk_lslnum64 x2, #0x1234, 16              F2A24682 D65F03C0
+[075] movk_lslnum64 x2, #0x1234, 32              F2C24682 D65F03C0
+[076] movk_lslnum64 x2, #0x1234, 48              F2E24682 D65F03C0
+[077] movz64 x2, #0x1234                         D2824682 D65F03C0
+[078] movimms r2, #0x1234                        52824682 7100005F D65F03C0
+[079] ptr 0                                      D2800002 D65F03C0
+[080] ptr 0x1234                                 D2824682 D65F03C0
+[081] ptr 0x12340000                             D2800002 F2A24682 D65F03C0
+[082] ptr 0x12345678                             D28ACF02 F2A24682 D65F03C0
+[083] ptr 0x123456789ABCDEF0                     D29BDE02 F2B35782 F2CACF02 F2E24682 D65F03C0
+[084] ptr 0xFFFFFFFF                             D29FFFE2 F2BFFFE2 D65F03C0
+[085] movimm 0                                   52800002 D65F03C0
+[086] movimm 0xFFFF                              529FFFE2 D65F03C0
+[087] movimm 0x10000                             52A00022 D65F03C0
+[088] movimm 0xFFFF0000                          52BFFFE2 D65F03C0
+[089] movimm 0xFFFFFFFE                          321F7BE2 D65F03C0
+[090] movimm 0x00FF00FF                          32009FE2 D65F03C0
+[091] movimm 0x12345678                          52A24682 728ACF02 D65F03C0
+[092] movimm 0x1234567                           52A02462 7288ACE2 D65F03C0
+[093] addimm 0                                   2A0303E2 D65F03C0
+[094] addimm 0 same                              D65F03C0
+[095] addimm 1                                   11000462 D65F03C0
+[096] addimm 4095                                113FFC62 D65F03C0
+[097] addimm 4096                                11400462 D65F03C0
+[098] addimm -1                                  51000462 D65F03C0
+[099] addimm -4095                               513FFC62 D65F03C0
+[100] addimm -4096                               51400462 D65F03C0
+[101] addimm -4097                               51400462 51000442 D65F03C0
+[102] addimm 0x123456                            11448C62 11115842 D65F03C0
+[103] addimm64 0x1234                            52824690 8B100062 D65F03C0
+[104] addsimm 0x1234                             52824690 2B100062 D65F03C0
+[105] subimm 0x1234                              5282468A 4B0A0062 D65F03C0
+[106] subsimm 0x1234                             5282468A 6B0A0062 D65F03C0
+[107] cmpimm 0                                   7100007F D65F03C0
+[108] cmpimm 0x1234                              52824690 6B10007F D65F03C0
+[109] testimm 0xFF00                             72181C7F D65F03C0
+[110] testimm64 0xFF00                           F2781C7F D65F03C0
+[111] orimm 0                                    2A0303E2 D65F03C0
+[112] orimm 0 same                               D65F03C0
+[113] orimm 0xFF00                               529FE009 2A090062 D65F03C0
+[114] xorimm 0x1234                              5282468A 4A0A0062 D65F03C0
+[115] andimm 0                                   52800002 D65F03C0
+[116] andimm 0xFF00                              529FE00A 0A0A0062 D65F03C0
+[117] andimm 0x12345                             52A0002A 728468AA 0A0A0062 D65F03C0
+[118] andsimm 0                                  52800002 6B02005F D65F03C0
+[119] andsimm 0x1F                               72001062 D65F03C0
+[120] andsimm 0x12345                            52A468AA 6A0A0062 D65F03C0
+[121] smulbb r2, r3                              93403C51 93403C77 9B377E22 D65F03C0
+[122] smulbt r2, r3                              93403C51 93507C77 9B377E22 D65F03C0
+[123] smultb r2, r3                              93507C51 93403C77 9B377E22 D65F03C0
+[124] smultt r2, r3                              93507C51 93507C77 9B377E22 D65F03C0
+[125] smulwt r2, r3                              93507C57 9B377C62 9350FC42 D65F03C0
+[126] smulwb r2, r3                              93403C57 9B377C62 9350FC42 D65F03C0
+[127] smlawb r0, r1, r2, r3                      93403C57 9B377C6E 9350FDCE 2B0101C0 D65F03C0
+[128] smlawt r0, r1, r2, r3                      93507C57 9B377C6E 9350FDCE 2B0101C0 D65F03C0
+[129] smlabb r0, r1, r2, r3                      93403C51 93403C77 9B377E20 2B010000 D65F03C0
+[130] smlabt r0, r1, r2, r3                      93403C51 93507C77 9B377E20 2B010000 D65F03C0
+[131] smlatb r0, r1, r2, r3                      93507C51 93403C77 9B377E20 2B010000 D65F03C0
+[132] smlatt r0, r1, r2, r3                      93507C51 93507C77 9B377E20 2B010000 D65F03C0
+[133] smlalbb r0, r1, r2, r3                     2A0003F1 B3607C31 93403C53 93403C74 9B344671 D360FE21 2A1103E0 D65F03C0
+[134] smlalbt r0, r1, r2, r3                     2A0003F1 B3607C31 93403C53 93507C74 9B344671 D360FE21 2A1103E0 D65F03C0
+[135] smlaltb r0, r1, r2, r3                     2A0003F1 B3607C31 93507C53 93403C74 9B344671 D360FE21 2A1103E0 D65F03C0
+[136] smlaltt r0, r1, r2, r3                     2A0003F1 B3607C31 93507C53 93507C74 9B344671 D360FE21 2A1103E0 D65F03C0
+[137] mul r2, r3                                 1B037C42 D65F03C0
+[138] muls r2, r3                                1B037C42 7100005F D65F03C0
+[139] mla r0, r1, r2, r3                         1B030440 D65F03C0
+[140] mlas r0, r1, r2, r3                        1B030440 7100001F D65F03C0
+[141] umull r0, r1, r2, r3                       9BA37C51 D360FE21 2A1103E0 D65F03C0
+[142] umulls r0, r1, r2, r3                      9BA37C51 F100023F D360FE21 2A1103E0 D65F03C0
+[143] umlal r0, r1, r2, r3                       2A0003F1 B3607C31 9BA34451 D360FE21 2A1103E0 D65F03C0
+[144] umlals r0, r1, r2, r3                      2A0003F1 B3607C31 9BA34451 F100023F D360FE21 2A1103E0 D65F03C0
+[145] smull r0, r1, r2, r3                       9B237C51 D360FE21 2A1103E0 D65F03C0
+[146] smulls r0, r1, r2, r3                      9B237C51 F100023F D360FE21 2A1103E0 D65F03C0
+[147] smlal r0, r1, r2, r3                       2A0003F1 B3607C31 9B234451 D360FE21 2A1103E0 D65F03C0
+[148] smlals r0, r1, r2, r3                      2A0003F1 B3607C31 9B234451 F100023F D360FE21 2A1103E0 D65F03C0
+[149] ldr w2, [x3]                               B9400062 D65F03C0
+[150] ldr64 x2, [x3]                             F9400062 D65F03C0
+[151] str w2, [x3]                               B9000062 D65F03C0
+[152] str64 x2, [x3]                             F9000062 D65F03C0
+[153] str_cond w2, [x3], eq                      54000040 14000002 B9000062 D65F03C0
+[154] str_cond w2, [x3], al                      14000001 B9000062 D65F03C0
+[155] ldrb w2, [x3]                              39400062 D65F03C0
+[156] ldrsb w2, [x3]                             39C00062 D65F03C0
+[157] strb w2, [x3]                              39000062 D65F03C0
+[158] ldrsw w2, [x3]                             79C00062 D65F03C0
+[159] ldrs w2, [x3]                              B9400062 D65F03C0
+[160] ldrw w2, [x3]                              79400062 D65F03C0
+[161] strw w2, [x3]                              79000062 D65F03C0
+[162] str_ptr_cond                               D28ACF0A F2A2468A 54000041 14000002 B9000142 D65F03C0
+[163] write_ptr32                                D28ACF02 F2A24682 529579A4 B9000044 D65F03C0
+[164] write_ptr                                  D28ACF02 F2A24682 D28F1204 F2A68AC4 F2C00244 F9000044 D65F03C0
+[165] write_ptr32_regptrTO_immFROM               5282468A B900006A D65F03C0
+[166] write_ptr32_regptrTO_regFROM               B9000064 D65F03C0
+[167] write_ptr32_regptrTO_regptrFROM            B9400084 B9000064 D65F03C0
+[168] read_ptr32_regptrFROM_regTO                B9400064 D65F03C0
+[169] write_ptr32_reg                            D28ACF08 F2A24688 B9000104 D65F03C0
+[170] writeBYTE_ptr32_regptrTO_immFROM           52800249 39000069 D65F03C0
+[171] writeBYTE_ptr32_regptrTO_regFROM           39000064 D65F03C0
+[172] writeBYTE_ptr32_regptrTO_regptrFROM        39400084 39000064 D65F03C0
+[173] readBYTE_ptr32_regptrFROM_regTO            39400064 D65F03C0
+[174] writeWORD_ptr32_regptrTO_immFROM           52824689 79000069 D65F03C0
+[175] writeWORD_ptr32_regptrTO_regFROM           79000064 D65F03C0
+[176] writeWORD_ptr32_regptrTO_regptrFROM        79400084 79000064 D65F03C0
+[177] readWORD_ptr32_regptrFROM_regTO            79400064 D65F03C0
+[178] add_ptr32_regptrTO_regFROM                 B940006A 0B04014A B900006A D65F03C0
+[179] adds_ptr32_regptrTO_regFROM                B940006A 2B04014A B900006A D65F03C0
+[180] add_ptr32_regptrTO_immFROM                 52824689 B940006A 0B09014A B900006A D65F03C0
+[181] adds_ptr32_regptrTO_immFROM                52824689 B940006A 2B09014A B900006A D65F03C0
+[182] sub_ptr32_regptrTO_regFROM                 B940006A 4B04014A B900006A D65F03C0
+[183] subs_ptr32_regptrTO_regFROM                B940006A 6B04014A B900006A D65F03C0
+[184] sub_ptr32_regptrTO_immFROM                 52824689 B940006A 4B09014A B900006A D65F03C0
+[185] subs_ptr32_regptrTO_immFROM                52824689 B940006A 6B09014A B900006A D65F03C0
+[186] neg_ptr32_regptr                           B940006A 4B0A03EA B900006A D65F03C0
+[187] negs_ptr32_regptr                          B940006A 6B0A03EA B900006A D65F03C0
+[188] ror_ptr32_regptr                           B940006A 138A1D4A B900006A D65F03C0
+[189] rors_ptr32_regptr                          B940006A 528000E0 2A0A03F4 52801FEA 0A0A0000 7100001F 540000A1 D503201F 121B00A5 53057CA5 14000013 528003EA 0A0A0000 2A0003F3 7100027F 54000120 52800037 4B170277 1AC02D4A 52800036 1AD722D6 6A16029F 1A9F07E5 14000006 2A1403EA 52B00016 6A16029F 1A9F07E5 14000001 7100015F B900006A D65F03C0
+[190] rors_ptr32_regptr_reg                      B940006A 2A0A03F4 52801FEA 0A0A0084 7100009F 540000A1 D503201F 121B00A5 53057CA5 14000013 528003EA 0A0A0084 2A0403F3 7100027F 54000120 52800037 4B170277 1AC42D4A 52800036 1AD722D6 6A16029F 1A9F07E5 14000006 2A1403EA 52B00016 6A16029F 1A9F07E5 14000001 7100015F B900006A D65F03C0
+[191] ror_ptr32_regptr_reg                       B940006A 52801FEA 0A0A0084 7100009F 54000080 72001084 54000040 1AC42D4A B900006A D65F03C0
+[192] and_ptr32_regptr                           B940006D 528003EA 0A0A01AD B900006D D65F03C0
+[193] or_ptr32_regptr                            B940006D 528003E9 2A0901AD B900006D D65F03C0
+[194] or_ptr8_regptr_reg                         3940006D 2A0401AD 3900006D D65F03C0
+[195] or_ptr8_regptr_imm                         3940006D 528003E9 2A0901AD 3900006D D65F03C0
+[196] or_ptr32_regptr_reg                        B940006D 2A0401AD B900006D D65F03C0
+[197] and_ptr32_regptr_reg                       B940006D 0A0401AD B900006D D65F03C0
+[198] write_ptr32_reg_byte                       52A24688 728ACF08 39000104 D65F03C0
+[199] setc r2                                    1A9F37E2 D65F03C0
+[200] sets r2                                    1A9F57E2 D65F03C0
+[201] setz r2                                    1A9F17E2 D65F03C0
+[202] setnz r2                                   1A9F07E2 D65F03C0
+[203] setnc r2                                   1A9F27E2 D65F03C0
+[204] seto r2                                    1A9F77E2 D65F03C0
+[205] lea_reg_reg 4                              52800040 1AC02084 0B03008A 2A0A03E2 D65F03C0
+[206] lea_reg_reg 8                              52800060 1AC02084 0B03008A 2A0A03E2 D65F03C0
+[207] lea_ptr_reg 4                              52A2468A 728ACF0A 52800040 1AC02084 0B0A008A 2A0A03E2 D65F03C0
+[208] lea_ptr_val 4                              52A2468A 728ACF0A 528000A9 52800080 1AC02129 0B0A012A 2A0203EA D65F03C0
+[209] clear_carry_flag                           D53B4213 9262FA73 D51B4213 D65F03C0
+[210] set_carry_flag                             D53B4213 B2630273 D51B4213 D65F03C0
+[211] get_carry_flag                             D503201F 121B00A5 53057CA5 D65F03C0
+[212] read_ptr32_reg                             D28ACF0A F2A2468A B9400144 D65F03C0
+[213] read_ptr64_reg                             D28ACF0A F2A2468A F9400144 D65F03C0
+[214] read_ptr32_reg_byte                        D28ACF08 F2A24688 39400104 D65F03C0
+[215] var_copy32                                 D28ACF07 F2A24687 D28ACF87 F2A24687 D65F03C0
+[216] var_copy32_reg                             B9000083 D65F03C0
+[217] set_ptr_imm                                528000EA D28ACF08 F2A24688 B900010A D65F03C0
+[218] inc_ptr_imm +7                             D28ACF0A F2A2468A B940014A 528000E9 0B09014A D28ACF08 F2A24688 B900010A D65F03C0
+[219] inc_ptr_imm -7                             D28ACF0A F2A2468A B940014A 528000E9 4B09014A D28ACF08 F2A24688 B900010A D65F03C0
+[220] sub_ptr_imm 7                              D28ACF0A F2A2468A B940014A 528000E9 4B09014A D28ACF08 F2A24688 B900010A D65F03C0
+[221] inc_ptr                                    D28ACF0A F2A2468A B9400142 D28ACF8A F2A2468A B9400143 0B030042 D28ACF08 F2A24688 B9000102 D65F03C0
+[222] inc_ptr_reg                                D28ACF0A F2A2468A B9400147 D28ACF8A F2A2468A B9400149 0B0900A7 D65F03C0
+[223] inc_reg                                    D28ACF0A F2A2468A B9400149 0B0900A5 D65F03C0
+[224] brk                                        D4200000 D65F03C0
+[225] save                                       A9BF53F3 A9BF5BF5 A9BF63F7 A9BF6BF9 D65F03C0
+[226] restore                                    A8C16BF9 A8C163F7 A8C15BF5 A8C153F3 D65F03C0
+[227] startfunc                                  A9BF77FE A9BF53F3 A9BF5BF5 A9BF63F7 A9BF6BF9 D65F03C0
+[228] endfunc                                    A8C16BF9 A8C163F7 A8C15BF5 A8C153F3 A8C177FE D65F03C0
+[229] save_call                                  A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7 D65F03C0
+[230] restore_call                               F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1 D65F03C0
+[231] callR3                                     A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7 D63F0060 F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1 D65F03C0
+[232] callR9                                     A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7 D63F0120 F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1 D65F03C0
+[233] callR7                                     A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7 D63F00E0 F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1 D65F03C0
+[234] callR6                                     A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7 D63F00C0 F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1 D65F03C0
+[235] callR8                                     A9BF0BE1 A9BF13E3 A9BF1BE5 A9BF23E7 A9BF2BE9 A9BF33EB F81F0FF7 D63F0100 F84107F7 A8C133EB A8C12BE9 A8C123E7 A8C11BE5 A8C113E3 A8C10BE1 D65F03C0
+[236] save_mem_call                              A9BF3FEC D65F03C0
+[237] restore_mem_call                           A8C13FEC D65F03C0
+[238] call_mem                                   A9BF3FEC D63F0060 A8C13FEC D65F03C0
+[239] call_mem_r7                                A9BF3FEC D63F00E0 A8C13FEC D65F03C0
+[240] call_mem_r2                                A9BF33E2 F81F0FEF D63F0060 F84107EF A8C133E2 D65F03C0
