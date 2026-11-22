@@ -1183,11 +1183,21 @@ static int measureBlockSize(int n, int slot, bool thumb, u32 dumpAdr, u32 rawOpc
 // the win is entirely inside the call. This plants `n` copies of one opcode,
 // compiles the block once and times repeated calls of the compiled function.
 //
+// --bench-interp additionally times the interpreter over the same n opcodes and
+// prints the ratio. That ratio is the frame-rate gate the migration plan asks
+// for (§S4: ALU >= 1.3x), and it has to be measured in one process: two runs
+// differ by page placement, CPU frequency and whatever else the host was doing.
+// The interpreter side calls armcpu_exec<0,false>() directly rather than
+// execInterp(), because the guarded wrapper wraps every instruction in
+// sigsetjmp/siglongjmp -- on POSIX that costs more than the instruction being
+// measured. A fault here would therefore be a real crash; bench slots are
+// chosen from handlers that are known to work.
+//
 // The whole block re-reads the same address, so after the first access the
 // cache controller's last-block shortcut is primed. That is the best case for
 // any main-RAM fast-path work, which makes the number a ceiling rather than a
 // prediction -- see the note in the migration plan (10.13).
-static int runBench(int n, int slot, bool thumb, int iters, u32 rawOpcode)
+static int runBench(int n, int slot, bool thumb, int iters, u32 rawOpcode, bool withInterp)
 {
 	if (!rawOpcode && slot < 0)
 	{
@@ -1209,15 +1219,51 @@ static int runBench(int n, int slot, bool thumb, int iters, u32 rawOpcode)
 		else _MMU_write32<0>(kCodeBase + i * insnSize, opcode);
 	}
 
-	CommonSettings.jit_max_block_size = n;
-	arm_jit_reset(true, true);
 	// Every register points into main RAM, so load and store shapes both land
 	// in the region the fast path covers (kOperands[1] is 1, which would send
 	// every access down the generic path instead).
 	u32 ops[8];
 	for (int i = 0; i < 8; i++)
 		ops[i] = kCodeBase + 0x3000;
-	primeState(kCodeBase, ops, opcode, 0x00000013u | (thumb ? 0x20u : 0u));
+	const u32 primeCpsr = 0x00000013u | (thumb ? 0x20u : 0u);
+
+	// Interpreter baseline first, so both engines run on the same page-cache
+	// and branch-predictor state and neither benefits from the other having
+	// gone first. armcpu_exec<0,false> is one instruction per call and leaves
+	// instruct_adr at the next one, so n calls walk the block exactly like the
+	// compiled block does.
+	double nsPerInsnInterp = 0.0;
+	if (withInterp)
+	{
+		primeState(kCodeBase, ops, opcode, primeCpsr);
+		for (int i = 0; i < 2000; i++)
+		{
+			NDS_ARM9.instruct_adr = kCodeBase;
+			for (int k = 0; k < n; k++)
+				armcpu_exec<0, false>();
+		}
+
+		const std::chrono::steady_clock::time_point i0 = std::chrono::steady_clock::now();
+		for (int i = 0; i < iters; i++)
+		{
+			NDS_ARM9.instruct_adr = kCodeBase;
+			for (int k = 0; k < n; k++)
+				armcpu_exec<0, false>();
+		}
+		const std::chrono::steady_clock::time_point i1 = std::chrono::steady_clock::now();
+		nsPerInsnInterp = std::chrono::duration<double, std::nano>(i1 - i0).count() / ((double)iters * n);
+
+		if (rawOpcode)
+			printf("bench: interp %s opcode %08X x %d -> %.3f ns/instruction (%d iterations)\n",
+				thumb ? "thumb" : "arm", opcode, n, nsPerInsnInterp, iters);
+		else
+			printf("bench: interp %s slot %03X x %d -> %.3f ns/instruction (%d iterations)\n",
+				thumb ? "thumb" : "arm", slot, n, nsPerInsnInterp, iters);
+	}
+
+	CommonSettings.jit_max_block_size = n;
+	arm_jit_reset(true, true);
+	primeState(kCodeBase, ops, opcode, primeCpsr);
 	execJit();
 
 	u32 (*fn)() = (u32 (*)())JIT_COMPILED_FUNC(kCodeBase, 0);
@@ -1244,6 +1290,10 @@ static int runBench(int n, int slot, bool thumb, int iters, u32 rawOpcode)
 	else
 		printf("bench: %s slot %03X x %d -> %.1f ns/block, %.3f ns/instruction (%d iterations)\n",
 			thumb ? "thumb" : "arm", slot, n, nsPerBlock, nsPerBlock / n, iters);
+
+	if (withInterp && nsPerInsnInterp > 0.0)
+		printf("bench: speedup %.2fx (jit %.3f / interp %.3f ns per instruction, %d per block)\n",
+			nsPerInsnInterp / (nsPerBlock / n), nsPerBlock / n, nsPerInsnInterp, n);
 	return 0;
 }
 
@@ -1254,7 +1304,7 @@ static int runBench(int n, int slot, bool thumb, int iters, u32 rawOpcode)
 // Every comparison above runs a one-instruction block, which is exactly what a
 // per-handler check wants: the result is unambiguous. It is also blind to the
 // whole class of defects that only appear once instructions share a block --
-// register residency, the CACHED_PTR() side effect, sync_r15() bookkeeping, and
+// register residency, the PTR_STORE_REG side effect, sync_r15() bookkeeping, and
 // everything S4 changes. So this mode plants n instructions, runs the
 // interpreter one step at a time and one compiled block of the same n
 // instructions, and compares the end state.
@@ -1579,6 +1629,7 @@ int main(int argc, char **argv)
 	int onlySlot = -1;
 	int measureBlock = 0;
 	int benchIters = 0;
+	bool benchInterp = false;
 	int sequenceLen = 0;
 	bool measureThumb = false;
 	u32 dumpBlockAdr = 0;
@@ -1594,6 +1645,7 @@ int main(int argc, char **argv)
 			rawOpcode = (u32)strtoul(argv[++i], NULL, 16);
 		else if (strcmp(argv[i], "--block") == 0 && i + 1 < argc) measureBlock = atoi(argv[++i]);
 		else if (strcmp(argv[i], "--bench") == 0 && i + 1 < argc) benchIters = atoi(argv[++i]);
+		else if (strcmp(argv[i], "--bench-interp") == 0) benchInterp = true;
 		else if (strcmp(argv[i], "--seq") == 0 && i + 1 < argc) { sequenceLen = atoi(argv[++i]); sweep = true; }
 		else if (strcmp(argv[i], "--thumb") == 0) measureThumb = true;
 		else if (strcmp(argv[i], "--dump") == 0 && i + 1 < argc)
@@ -1651,7 +1703,7 @@ int main(int argc, char **argv)
 	arm_jit_reset(true, true);
 
 	if (benchIters > 0)
-		return runBench(measureBlock > 0 ? measureBlock : 16, onlySlot, measureThumb, benchIters, rawOpcode);
+		return runBench(measureBlock > 0 ? measureBlock : 16, onlySlot, measureThumb, benchIters, rawOpcode, benchInterp);
 
 	if (measureBlock > 0)
 		return measureBlockSize(measureBlock, onlySlot, measureThumb, dumpBlockAdr, rawOpcode);
