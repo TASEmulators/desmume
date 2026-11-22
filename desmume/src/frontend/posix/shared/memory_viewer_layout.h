@@ -2,40 +2,13 @@
 #ifndef DESMUME_GTK_MEMORY_VIEWER_LAYOUT_H
 #define DESMUME_GTK_MEMORY_VIEWER_LAYOUT_H
 
-#include <gtk/gtk.h>
-
-static GSettings *
-memory_viewer_font_settings(void)
-{
-	GSettingsSchemaSource *source = g_settings_schema_source_get_default();
-	if (source == NULL)
-		return NULL;
-	GSettingsSchema *schema = g_settings_schema_source_lookup(source, "org.gnome.desktop.interface", TRUE);
-	if (schema == NULL)
-		return NULL;
-	GSettings *settings = g_settings_schema_has_key(schema, "monospace-font-name")
-		? g_settings_new_full(schema, NULL, NULL) : NULL;
-	g_settings_schema_unref(schema);
-	return settings;
-}
+#include "gtk_monospace_font.h"
 
 static PangoLayout *
 memory_viewer_layout_new(GtkWidget *widget, GSettings *settings)
 {
 	PangoLayout *layout = gtk_widget_create_pango_layout(widget, NULL);
-	PangoFontDescription *font;
-	if (settings != NULL)
-	{
-		gchar *name = g_settings_get_string(settings, "monospace-font-name");
-		font = pango_font_description_from_string(name);
-		g_free(name);
-	}
-	else
-	{
-		font = pango_font_description_copy(pango_context_get_font_description(
-			gtk_widget_get_pango_context(widget)));
-		pango_font_description_set_family(font, "monospace");
-	}
+	PangoFontDescription *font = gtk_monospace_font_description(widget, settings);
 	pango_layout_set_font_description(layout, font);
 	pango_font_description_free(font);
 	return layout;

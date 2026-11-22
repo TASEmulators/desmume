@@ -41,6 +41,7 @@
 #include <string>
 
 #include "../dTool.h"
+#include "../../shared/gtk_monospace_font.h"
 #include "../../../shared/ram_debug_core.h"
 #include "../../../shared/ram_search_core.h"
 
@@ -877,11 +878,28 @@ static GtkWidget *button_row(GtkWidget *left, GtkWidget *right)
 	return rowBox;
 }
 
+static void set_table_font(GSettings *settings, gchar *key, gpointer data)
+{
+	(void)key;
+	GtkWidget *tree = GTK_WIDGET(data);
+	PangoFontDescription *font = gtk_monospace_font_description(tree, settings);
+	GList *columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(tree));
+	for (GList *col = columns; col != NULL; col = col->next)
+	{
+		GList *cells = gtk_cell_layout_get_cells(GTK_CELL_LAYOUT(col->data));
+		for (GList *cell = cells; cell != NULL; cell = cell->next)
+			g_object_set(cell->data, "font-desc", font, NULL);
+		g_list_free(cells);
+	}
+	g_list_free(columns);
+	pango_font_description_free(font);
+}
+
 static void build_window(void)
 {
 	sWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(sWindow), TOOL_NAME);
-	gtk_window_set_default_size(GTK_WINDOW(sWindow), 880, 640);
+	gtk_window_set_default_size(GTK_WINDOW(sWindow), 587, 640);
 	gtk_window_set_resizable(GTK_WINDOW(sWindow), TRUE);
 	gtk_window_set_icon_name(GTK_WINDOW(sWindow), "org.desmume.DeSmuME");
 	gtk_container_set_border_width(GTK_CONTAINER(sWindow), 6);
@@ -901,7 +919,6 @@ static void build_window(void)
 	GtkTreeViewColumn *column;
 
 	renderer = gtk_cell_renderer_text_new();
-	g_object_set(renderer, "family", "monospace", NULL);
 	column = gtk_tree_view_column_new_with_attributes("Address", renderer,
 	                                                  "text", COL_ADDRESS, NULL);
 	gtk_tree_view_column_set_resizable(column, TRUE);
@@ -909,7 +926,6 @@ static void build_window(void)
 	gtk_tree_view_append_column(GTK_TREE_VIEW(sTreeView), column);
 
 	renderer = gtk_cell_renderer_text_new();
-	g_object_set(renderer, "family", "monospace", NULL);
 	column = gtk_tree_view_column_new_with_attributes("Value", renderer,
 	                                                  "text", COL_VALUE, NULL);
 	gtk_tree_view_column_set_resizable(column, TRUE);
@@ -917,7 +933,6 @@ static void build_window(void)
 	gtk_tree_view_append_column(GTK_TREE_VIEW(sTreeView), column);
 
 	renderer = gtk_cell_renderer_text_new();
-	g_object_set(renderer, "family", "monospace", NULL);
 	column = gtk_tree_view_column_new_with_attributes("Previous", renderer,
 	                                                  "text", COL_PREVIOUS, NULL);
 	gtk_tree_view_column_set_resizable(column, TRUE);
@@ -925,12 +940,21 @@ static void build_window(void)
 	gtk_tree_view_append_column(GTK_TREE_VIEW(sTreeView), column);
 
 	renderer = gtk_cell_renderer_text_new();
-	g_object_set(renderer, "family", "monospace", NULL);
 	column = gtk_tree_view_column_new_with_attributes("Changes", renderer,
 	                                                  "text", COL_CHANGES, NULL);
 	gtk_tree_view_column_set_resizable(column, TRUE);
 	gtk_tree_view_column_set_expand(column, TRUE);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(sTreeView), column);
+
+	GSettings *fontSettings = gtk_monospace_font_settings_new();
+	set_table_font(fontSettings, NULL, sTreeView);
+	if (fontSettings != NULL)
+	{
+		g_signal_connect_object(fontSettings, "changed::monospace-font-name",
+		                        G_CALLBACK(set_table_font), sTreeView, (GConnectFlags)0);
+		g_object_set_data_full(G_OBJECT(sTreeView), "monospace-font-settings",
+		                       fontSettings, g_object_unref);
+	}
 
 	GtkWidget *scrolledWindow = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledWindow),
@@ -974,12 +998,14 @@ static void build_window(void)
 
 	add_label(GTK_GRID(grid), "Value", 2);
 	sValueEntry = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(sValueEntry), 10);
 	gtk_entry_set_text(GTK_ENTRY(sValueEntry), "0");
 	gtk_entry_set_activates_default(GTK_ENTRY(sValueEntry), TRUE);
 	gtk_grid_attach(GTK_GRID(grid), sValueEntry, 1, 2, 1, 1);
 
 	add_label(GTK_GRID(grid), "Parameter", 3);
 	sParameterEntry = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(sParameterEntry), 10);
 	gtk_entry_set_text(GTK_ENTRY(sParameterEntry), "0");
 	gtk_entry_set_activates_default(GTK_ENTRY(sParameterEntry), TRUE);
 	gtk_grid_attach(GTK_GRID(grid), sParameterEntry, 1, 3, 1, 1);
@@ -1034,6 +1060,8 @@ static void build_window(void)
 	gtk_box_pack_start(GTK_BOX(sidebar), button_row(sAddWatchButton, sAddCheatButton), FALSE, FALSE, 0);
 
 	sStatusLabel = gtk_label_new("");
+	gtk_label_set_line_wrap(GTK_LABEL(sStatusLabel), TRUE);
+	gtk_label_set_max_width_chars(GTK_LABEL(sStatusLabel), 28);
 	gtk_label_set_justify(GTK_LABEL(sStatusLabel), GTK_JUSTIFY_CENTER);
 	gtk_label_set_xalign(GTK_LABEL(sStatusLabel), 0.5f);
 	gtk_style_context_add_class(gtk_widget_get_style_context(sStatusLabel), "dim-label");

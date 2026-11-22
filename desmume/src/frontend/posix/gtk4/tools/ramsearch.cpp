@@ -17,6 +17,7 @@
 #include "ramsearch.h"
 #include "../emulation.h"
 #include "rowmodel.h"
+#include "../../shared/gtk_monospace_font.h"
 
 #include <string>
 
@@ -1031,9 +1032,34 @@ on_window_close_request(GtkWindow *window, gpointer user_data)
 }
 
 static void
+set_label_font(GSettings *settings, gchar *key, gpointer data)
+{
+	(void)key;
+	GtkWidget *label = GTK_WIDGET(data);
+	PangoFontDescription *font = gtk_monospace_font_description(label, settings);
+	PangoAttrList *attrs = pango_attr_list_new();
+	pango_attr_list_insert(attrs, pango_attr_font_desc_new(font));
+	gtk_label_set_attributes(GTK_LABEL(label), attrs);
+	pango_attr_list_unref(attrs);
+	pango_font_description_free(font);
+}
+
+static void
+on_cell_setup(GtkListItemFactory *factory, GtkListItem *item, gpointer data)
+{
+	(void)factory;
+	GSettings *settings = (GSettings *)data;
+	GtkWidget *label = gtk_list_item_get_child(item);
+	set_label_font(settings, NULL, label);
+	if (settings != NULL)
+		g_signal_connect_object(settings, "changed::monospace-font-name",
+		                        G_CALLBACK(set_label_font), label, (GConnectFlags)0);
+}
+
+static void
 build_window(void)
 {
-	sWindow = desmume_tool_window_new(TOOL_NAME, NULL, 880, 640);
+	sWindow = desmume_tool_window_new(TOOL_NAME, NULL, 587, 640);
 	g_object_add_weak_pointer(G_OBJECT(sWindow), (gpointer *)&sWindow);
 	g_signal_connect(sWindow, "close-request",
 	                 G_CALLBACK(on_window_close_request), NULL);
@@ -1050,6 +1076,18 @@ build_window(void)
 	sColumnView = desmume_column_view_new(sRows,
 	                                      sColumnTitles,
 	                                      G_N_ELEMENTS(sColumnTitles));
+	GSettings *fontSettings = gtk_monospace_font_settings_new();
+	if (fontSettings != NULL)
+		g_object_set_data_full(G_OBJECT(sColumnView), "monospace-font-settings",
+		                       fontSettings, g_object_unref);
+	GListModel *columns = gtk_column_view_get_columns(GTK_COLUMN_VIEW(sColumnView));
+	for (guint i = 0; i < g_list_model_get_n_items(columns); ++i)
+	{
+		GtkColumnViewColumn *column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, i));
+		g_signal_connect(gtk_column_view_column_get_factory(column), "setup",
+		                 G_CALLBACK(on_cell_setup), fontSettings);
+		g_object_unref(column);
+	}
 	GtkSelectionModel *selection = gtk_column_view_get_model(GTK_COLUMN_VIEW(sColumnView));
 
 	GtkWidget *scrolled = gtk_scrolled_window_new();
@@ -1076,11 +1114,13 @@ build_window(void)
 
 	add_label(GTK_GRID(grid), "Value", 2);
 	sValueEntry = gtk_entry_new();
+	gtk_editable_set_width_chars(GTK_EDITABLE(sValueEntry), 10);
 	gtk_editable_set_text(GTK_EDITABLE(sValueEntry), "0");
 	gtk_grid_attach(GTK_GRID(grid), sValueEntry, 1, 2, 1, 1);
 
 	add_label(GTK_GRID(grid), "Parameter", 3);
 	sParameterEntry = gtk_entry_new();
+	gtk_editable_set_width_chars(GTK_EDITABLE(sParameterEntry), 10);
 	gtk_editable_set_text(GTK_EDITABLE(sParameterEntry), "0");
 	gtk_grid_attach(GTK_GRID(grid), sParameterEntry, 1, 3, 1, 1);
 
@@ -1116,6 +1156,8 @@ build_window(void)
 	gtk_box_append(GTK_BOX(sidebar), button_row(sAddWatchButton, sAddCheatButton));
 
 	sStatusLabel = gtk_label_new("");
+	gtk_label_set_wrap(GTK_LABEL(sStatusLabel), TRUE);
+	gtk_label_set_max_width_chars(GTK_LABEL(sStatusLabel), 28);
 	gtk_label_set_justify(GTK_LABEL(sStatusLabel), GTK_JUSTIFY_CENTER);
 	gtk_label_set_xalign(GTK_LABEL(sStatusLabel), 0.5f);
 	gtk_widget_add_css_class(sStatusLabel, "dim-label");

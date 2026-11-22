@@ -1318,6 +1318,9 @@ gdb 在 `desmume_tools_update` 断点后 `desmume_tools_open(4)`，两次 `is_op
 
 ### RAM Search 虚拟滚动与打开性能（2026-11-21）
 
+GTK3 和 GTK4 的 RAM Search 结果列与 Memory Viewer 共用桌面等宽字体设置，
+字体设置变化后会更新已显示的结果；默认窗口宽度为 587 像素，结果表可横向滚动。
+
 **问题**：打开弹窗卡顿好一会。根因有两层：
 1. `rebuild_model()` 一次性物化最多 50000 个 `DesmumeRow` GObject，每个都做
    `FormatAddress` + 2× `FormatValue` 字符串格式化；ColumnView 的 widget 虽是虚拟的，

@@ -1211,7 +1211,7 @@ open_window(int ID)
 	st->windowSize = kDefaultRows * kBytesPerRow;
 	st->address = MemoryViewerRegionGet(st->region)->hardwareAddress;
 	st->lastRefresh = 0;
-	st->fontSettings = memory_viewer_font_settings();
+	st->fontSettings = gtk_monospace_font_settings_new();
 
 	MemoryViewerResetRegions();
 
