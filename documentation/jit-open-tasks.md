@@ -3,10 +3,12 @@
 > 本文把 `asmjit-jit-migration-plan.md`（下称「主文档」）中散落的未完成项集中成一份可勾选清单。
 > **主文档仍是权威来源**，本文是索引视图；状态变化时两处同步更新。
 >
-> 快照：2026-11-22，HEAD `8475e92c` + 本轮未提交改动（**Android arm64 真机差分（主文档 §10.15）**：
+> 快照：2026-11-22，HEAD `71cfc43f`（**Android arm64 真机差分（主文档 §10.15）**：
 > 抓出并修掉 4 个 arm64 专属功能缺陷 —— Thumb `adds Rd,Rs,#0` 的缓存别名、UMLAL 误用 `smaddl`、
 > SMLAWT 取错半字、LDRD/STRD 后索引写回被 `CACHED_PTR()` 吞掉；新增
-> `build_diff_termux.sh` / `jit_diff_stubs_posix.cpp` / `disasm_dump.sh` 与 6 条块级探针用例）。
+> `build_diff_termux.sh` / `jit_diff_stubs_posix.cpp` / `disasm_dump.sh` 与 8 条块级探针用例。
+> **同日收尾（主文档 §10.16）**：删掉 `CACHED_PTR()` 宏并把 5 处"碰巧对"改成显式
+> `PTR_STORE_REG`、`--bench-interp` 补上解释器基线、`a64_golden.txt` 重新冻结）。
 
 ## 当前进度快照
 
@@ -15,7 +17,10 @@
 | 迁移主线（571 组 `diff-pass`） | **571 / 571，todo 归零**：族 1 数据处理 28 + 族 2 ARM 移位 224 + 族 3+4 访存 172 + LDM/STM 32 + 族 5 乘法/乘加 28 + CLZ + 族 6 分支/状态/异常 12 + **族 7+8 Thumb 68 + 饱和 4 + 协处理器 2**。余下 20 个 `interp-fallback`（`OP_UND`/`OP_CDP`/LDC-STC 全系/`LDREX`/`STREX`/Thumb 的 `BKPT`+`UND`）是有意不编译的 |
 | **Android arm64 真机差分（2026-11-22，新增）** | 设备（aarch64 Android / clang 21.1.8）上直接链 meson 的 `libdesmume.a`：**132 探针 2112 次比较 0 差异**、**`--full` 81920 次比较功能桶全 0**（周期 14751）、**`--seq 2/3/4` 19776 次 0 mismatch**、`jit not repeatable` 仍 3。修复前同一套测试报 16 个 `R0-R14` + 50 条探针失败 + 两条指令 SIGSEGV |
 | **真机抓出的 4 个缺陷（已修）** | ① Thumb `OP_ADD_IMM3` imm3==0：`rc_t_write` 先于 `rc_t_read`，Rd==Rs 时读到未加载的槽位（实测复制出块地址）；② `emit_umlal_common` 用 `smaddl` 而非 `umaddl`；③ `emit_smlawt` 与 `emit_smlawb` 逐字相同（T 位失效）；④ LDRD/STRD 后索引写回包在 `CACHED_PTR()` 里，而 arm64 的该宏**丢弃参数**，写回落到 x11 残值上（SIGSEGV at `0x2E0`）。详见主文档 §10.15 |
-| **块级探针语料盲点（已补）** | 904/904 全绿的同时，上面 4 条一条都测不出来：`umlal`/`smlawb,t` 全用"两乘数都为正 / 上下半字相同"的 kSetC，LDRD/STRD 没有后索引立即数用例，Thumb 只有 IMM8 版 `adds`。新增 8 条用例（`kSetD` + `umlal (b)`×2 + `smlawb/t (b/t)`×2 + `ldrd/strd [r1],#8`×2 + Thumb `adds r0,r0,#0`/`r1,r1,#0`）→ **913 项**。负对照：换回 `HEAD` 源码重编同一探针 → 2 条 FAIL + 新增 LDRD 用例上 SIGSEGV |
+| **块级探针语料盲点（已补）** | 904/904 全绿的同时，上面 4 条一条都测不出来：`umlal`/`smlawb,t` 全用"两乘数都为正 / 上下半字相同"的 kSetC，LDRD/STRD 没有后索引立即数用例，Thumb 只有 IMM8 版 `adds`。新增 8 条用例（`kSetD` + `umlal (b)`×2 + `smlawb/t (b/t)`×2 + `ldrd/strd [r1],#8`×2 + Thumb `adds r0,r0,#0`/`r1,r1,#0`）→ 913，**§10.16 又补 `ldrd/strd [r1],r3` 两条 → 916**（同一 handler 的寄存器偏移分支，写回是另一份发射代码）。负对照：换回修复前源码重编同一探针 → 2 条 FAIL + 在 `ldrd r2,[r1],r3` 上 SIGSEGV（`stdbuf -oL` 行缓冲才能定位到具体用例） |
+| **PTR_STORE_REG 契约显式化（2026-11-22，主文档 §10.16）** | 上轮只修了 LDRD/STRD 那一处 `CACHED_PTR(reg_pos_ptr(...))`，同形状的另外 5 处（`OP_ARITHMETIC`/`OP_ARITHMETIC_S` 的 `Rd==Rn` 分支、`SET_NZC_SHIFTS_ZERO`×3、`SET_Q`）只是**碰巧对**——上一行的 VALUE 访问正好把同一个地址留在 x11。现在全部写成显式 `PTR_STORE_REG` + 注释，**宏已删除**（下次误用是编译错误，不再是真机 SIGSEGV）。生成代码逐字节不变（旧宏本来就不求值参数），真机复测：探针 2112 次 0 差异、`--full` 功能桶全 0、`--seq 2` 6848 次 0 mismatch、`a64_block_probe` 916/916 |
+| **arm64 帧率基线（2026-11-22，主文档 §10.16）** | `jit_diff --bench-interp` 在同一进程里量两个引擎（分两次跑会被调频/热状态影响：同一份 16 条 `add` 块间隔 15 分钟测到 0.538 与 1.182 ns/instruction）。设备实测 16 条/块 × 20 万次：**add 0.538 vs 9.544（17.75×）、ldr 2.732 vs 9.694（3.55×）、str 2.010 vs 4.113（2.05×）**。ALU 的 ≥1.3× 门槛与访存"明显提升"都已满足；剩下的是整机 ROM 帧率 |
+| **编码层基线重新冻结（2026-11-22）** | 设备上 `pip install capstone` 成功，`check_a64.py` 终于能跑：7/241 差异 = 3 条按设计改了编码（`smlawt`/`umlal`/`umlals`）+ 4 条既有的 callee-saved 基线（save/restore/startfunc/endfunc 多存 x25/x26）。用新 dump 覆盖 `a64_golden.txt` 后 **241/241 全对**，且不再需要 `EXPECTED_DEAD_BRANCH` 豁免（dump 里已经是 asmjit 的 CFG 消除结果） |
 | **两后端回退集合审计（2026-11-21）** | 逐函数比对 571 个 `OP_*`、20 行 `#define ... NULL` 与各函数体里的 `return 0`：**唯一差异是 ARM `OP_BKPT`**（x64 只有 `printf` + `return 0`，arm64 已内联 abort）。已按 arm64 补齐，两边现在一致；`OP_MCR`/`OP_MRC` 的 `return 2` 不发射代码，但解释器在同一条路径上也是空操作，三者等价（主文档 §10.12） |
 | **主存快路径实验（2026-11-21，已回退）** | 照 §10.13 做了"专用 helper + cache 命中常量 cycle"两条：功能**逐位等价**（132 探针 0 差异、`--full` 仍 12067），但 `--bench` 实测**读慢 12%、写慢 20%**（100% 命中的最好情况也不赢）。原因是成本在"每条访存一次间接 call"，不在 helper 指令数；写路径还因为写 miss 不更新 `m_cacheCache` 而永远进不去。两条都没进仓库，保留 `jit_diff --bench` |
 | **callee-saved 提示实验（2026-11-21，已回退）** | 把 `bb_cpu`/`bb_total_cycles`/`bb_dma_pending` 用 asmjit 的 home-id 提示放进 r14/r15/r13：代码体积 **−34%（Thumb LDR）/ −23%（STR）**，但 `--bench` 速度 **−1%~−4%**（序言/尾声的 push/pop 在 call-return 关键路径上，省掉的 spill/reload 被乱序执行完全遮住）。未进仓库。两个坑记在主文档 §10.14：invoke 参数**不能**是物理寄存器（`InvalidVirtId`，且块编译失败在探针里是静默的）；物理寄存器在 asmjit 里没有存活区间，会被分配给临时值 |
@@ -23,10 +28,10 @@
 | 族3 代码迁移 | **arm64 缓存接入完成**；x86 侧结构早已完成 |
 | **饱和算术（Q 系列）** | **两端都已内联**：arm64 见 §S4 族 7+8；x86 `arm_jit.cpp` 用同一份 DDI 0403E 语义（`seto` + `cmovnz`，两段饱和分别置 Q）。x86 侧 6 条 Q 探针 × 8 组操作数 × 2 种标志 = 704 次比较 0 mismatch，负对照（`cmovz`）确认探针有效 |
 | 访存差分安全网 | **x64 侧已扩到 132 条探针**（§10.8 的 20 条访存 + §10.11 的 91 条，覆盖 LDRD/STRD/SWP/LDM/STM/乘法/PSR/分支/Thumb 各宽度）：2112 次比较 **0 功能差异**，176 条周期记录（异常收尾、长乘法、映射区字读三类，均属 §3.5 边界） |
-| **arm64 handler 级真机验证** | `a64_block_probe` **913 项自检全绿**（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + **43 访存** + 80 Thumb + 4 Q 指令 + 2 cp15；本轮新增 8 例：`umlal` 无符号向量、`smlawb/t` 半字可分向量、LDRD/STRD 后索引）。**注意覆盖边界**：修复前它 904/904 全绿却漏掉 4 个真实缺陷，原因是语料盲点（见快照表）；另 `a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、Q 模型 768/768 |
+| **arm64 handler 级真机验证** | `a64_block_probe` **916 项自检全绿**（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + **45 访存** + 80 Thumb + 4 Q 指令 + 2 cp15；§10.15 新增 8 例，§10.16 再补 `ldrd/strd [r1],r3` 两条）**注意覆盖边界**：修复前它 904/904 全绿却漏掉 4 个真实缺陷，原因是语料盲点（见快照表）；另 `a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、Q 模型 768/768 |
 | **helper 读 `armcpu_t` 的不变量** | `armcpu_switchMode()`（族 6）与 `OP_LDM_STM`/`OP_LDRD`/`op_swp`/Thumb 的 `PUSH`/`POP`/`STM`/`LDM`（族 7）都直接读写 `cpu->R[]`：**调用前必须把涉及的寄存器落盘**。族 7 把同一条规则套到 Thumb 的寄存器列表上（8 位掩码 + LR/PC 位） |
 | x64 fastmem | **已评估放弃**（主文档 §10.6），x64 保持现状 |
-| 本机 + 真机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0（`R0-R14`/`CPSR`/`instruct_adr`/异常/不变量），仅周期差 12067 与既有 3 条 `jit not repeatable`；**132 条定向探针** 2112 次比较 0 功能差异（176 条周期记录）；`--seq 2` 6848 次 0 mismatch。差分台支持 `--opcode <hex>`（测 `slot<<20` 造不出来的编码）与 POSIX 侧 `pc`/寄存器/机器码转储。**arm64 真机（2026-11-22）**：探针 2112 次 0 差异、`--full` 81920 次功能桶全 0（周期 14751）、`--seq 2/3/4` 19776 次 0 mismatch、`jit not repeatable` 3；`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` **913/913**（含 768 组 Q 对伪代码的模型比对）。arm64 编码层 `check_a64` 待重新生成基线（`umlal`/`smlawt` 编码按设计变了，设备无 capstone，见主文档 §10.15 末） |
+| 本机 + 真机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0（`R0-R14`/`CPSR`/`instruct_adr`/异常/不变量），仅周期差 12067 与既有 3 条 `jit not repeatable`；**132 条定向探针** 2112 次比较 0 功能差异（176 条周期记录）；`--seq 2` 6848 次 0 mismatch。差分台支持 `--opcode <hex>`（测 `slot<<20` 造不出来的编码）与 POSIX 侧 `pc`/寄存器/机器码转储。**arm64 真机（2026-11-22）**：探针 2112 次 0 差异、`--full` 81920 次功能桶全 0（周期 14751）、`--seq 2/3/4` 19776 次 0 mismatch、`jit not repeatable` 3；`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` **916/916**（含 768 组 Q 对伪代码的模型比对）。arm64 编码层 `check_a64` **241/241 全对**（基线已按 §10.16 重新冻结）；帧率基线 add 17.75× / ldr 3.55× / str 2.05×（`--bench-interp`，同进程对照） |
 | 未跟踪文件 | `issue.md`（会话开始前既有，不属本次迁移） |
 
 ---
@@ -158,25 +163,29 @@
    - 关注点按 §3.7：块内 DMA 提前退出、`m_cacheCache` 脏值在 helper 调用后是否丢失、
      自修改代码路径不崩。
    - 回退粒度仍然是"按族换回 `callR3`/`callR7`"，所以真出问题也能二分到具体调用点。
-2. **帧率门槛（族 1/2 的 ≥1.3×，全量 ≥1.5×）**——代码尺寸达标不等于帧率达标（§S4 批次纪律）。
-   - 设备上直接 `jit_diff --bench <iters> --block <n> --slot <s>`：x64 侧基线是
-     0.62 / 3.5 / 3.5 ns（`add` / `ldr` / `str`），arm64 侧**还没有这组数字**，先补基线。
-   - 解释器一侧的对照要另做一个开关（当前 `--bench` 只量 JIT）。
-3. **`a64_golden.txt` 重新生成**——`umlal`（`smaddl`→`umaddl`）、`smlawt`（`sbfx #0`→`#16`）
-   按设计改了编码，编码层基线会多出这 2 条差异；LDRD/STRD 后索引那条不在 dump 语料里。
-   - 做法：`~/a64/a64_dump_new > a64_new_arm64.txt`，再 `python3 tools/jit_matrix/check_a64.py
-     tools/jit_matrix/a64_golden.txt a64_new_arm64.txt`。设备上没有 `capstone`
-     （`pkg install python-capstone` 或换一台装了它的机器），所以上一轮没做。
-   - **不要**在没看 `check_a64` 输出前覆盖 `a64_golden.txt`：它是"逐字节冻结"的参照物。
-4. **同类模式的复审**（两条，都是本轮"只修被踩到的那一处"留下的）：
-   - `rc_t_write(X)` 紧跟 `rc_t_read(Y)` 的 handler：本轮 Thumb `OP_ADD_IMM3` 是唯一一处
-     在 `Rd==Rs` 时没走 `rw` 分支的。全文件再扫一遍，确认没有第二个（`OP_LSL_0`/
-     `OP_SHIFTS_IMM`/`OP_SUB_IMM3`/`OP_ADD_REG`/`OP_SUB_REG` 已有守卫）。
-   - `CACHED_PTR(reg_pos_ptr(12, R2, ADDRESS))`（`arm_jit_arm.cpp` 两处，`OP_ARITHMETIC`
-     的 `Rd==Rn` 分支）：**碰巧对**——上一行 `reg_pos_ptr(12, R1, VALUE)` 已经把同一个地址
-     写进 x11。建议改成直接用返回值，或至少加注释，否则下次重排这两行就是同一个 SIGSEGV。
+2. ~~**帧率门槛（族 1/2 的 ≥1.3×，全量 ≥1.5×）**~~ —— **单指令基准已补，整帧仍待 ROM**
+   （§10.16）。`jit_diff --bench <iters> --slot <s> --bench-interp` 现在在同一进程里量两个
+   引擎，设备实测（16 条/块 × 20 万次）：**add 0.538 vs 9.544 ns/instruction（17.75×）、
+   ldr 2.732 vs 9.694（3.55×）、str 2.010 vs 4.113（2.05×）**。
+   - 必须同进程量：同一份 16 条 `add` 块间隔 15 分钟测到 0.538 与 1.182 ns/instruction，
+     调频/热状态的漂移比门槛本身还大。x64 旧基线 0.62 / 3.5 / 3.5 ns 也是 JIT 单侧，
+     不可与新数字混用。
+   - 仍然缺的是"整机帧率"：它只能由第 1 项（ROM 冒烟）顺带给出，单块基准推不出。
+3. ~~**`a64_golden.txt` 重新生成**~~ —— **完成（2026-11-22）**。设备上 `pip install capstone`
+   可用，`check_a64.py` 报 7/241 差异：3 条是按设计改了编码（`smlawt` `sbfx #16`、`umlal`/
+   `umlals` `umaddl`），4 条是既有 callee-saved 基线（save/restore/startfunc/endfunc 多存
+   x25/x26）。覆盖后 **241/241 全对**，连 `EXPECTED_DEAD_BRANCH` 豁免都不再需要。
+4. ~~**同类模式的复审**~~ —— **完成（2026-11-22，§10.16）**：
+   - `rc_t_write(X)` 紧跟 `rc_t_read(Y)`：全文件逐个看过，Thumb `OP_ADD_IMM3` 是**唯一**
+     缺 `Rd==Rs` 守卫的一处；`OP_SHIFTS_IMM`/`OP_LSL_0`/`OP_ASR_0`/`OP_NEG`/`OP_SUB_IMM3`/
+     `OP_ADD_REG`/`OP_SUB_REG` 与 ARM 侧的 `OP_RC_ARITHMETIC` 都有。
+   - `CACHED_PTR(reg_pos_ptr(...))`：共 5 处"碰巧对"（2 处 `Rd==Rn` 算术、3 处
+     `SET_NZC_SHIFTS_ZERO`/`SET_Q`），已全部改成显式 `PTR_STORE_REG`，**宏本身删除**。
+     生成代码逐字节不变（旧宏不求值参数），所以这是一次纯可读性/防回归改动。
 5. **块级探针语料继续补**（这轮证明了"语料漏一条 = 全绿但错"）：
-   - LDRD/STRD 的寄存器偏移后索引（`[r1],r2`）、SWP 的脏基址组合；
+   - ~~LDRD/STRD 的寄存器偏移后索引（`[r1],r3`）~~ **已完成（§10.16）**，修复版 916/916，
+     负对照（`d492756c^`）在该用例上 SIGSEGV；
+   - SWP 的脏基址组合（块级表已有 `add r1,#4 ; swp` 的两指令组合，单指令的脏基址仍缺）；
    - 乘法族里所有 `_S`（带标志）变体的高位操作数向量；
    - Thumb 侧 `Rd==Rs` 的其余别名（`movs`、`lsls #0` 等）。
    - 注意：块级探针是语料驱动，负对照能复现才算有效用例（Thumb 别名那两条就复现不了，
@@ -201,7 +210,9 @@
    抓出 4 个 arm64 专属缺陷。下一步是把同一套差分台拿来跑**整机 ROM**：从"单指令/单块等价"
    跨到"整帧等价"，这也是花屏 / DMA 提前退出路径唯一的验证手段。
 2. **继续迁移主线**：从族 3 访存语义迁移起步（C 组 206 组），但需先解决「x86 可差分、arm64 语义只能等 macOS」的验证不对称。**该不对称已解除**：`jit_diff` 现在能在设备上原生跑，arm64 侧与 x64 侧的差分粒度一致（探针 / 全量槽位 / 序列），剩整机帧率一块。
-3. **帧率门槛实测**：在族 1/2 上取解释器 / 旧 JIT / 迁移后 JIT 三组数字，确认 ALU 族真的 ≥1.3×，再决定是否继续推 571 条。代码尺寸一侧已可先用 `--marginal` 预判（§10.10 表）；设备上可直接用 `jit_diff --bench` 做对应测量。
+3. ~~**帧率门槛实测**~~ **单指令部分完成（§10.16）**：`--bench-interp` 给出同进程的 JIT/解释器
+   比，族 1 的 `add` 是 17.75×、访存 3.55×/2.05×，远高于门槛。但"全量 ≥1.5×"只能由整机
+   ROM 给出，仍需第 1 项。代码尺寸一侧可先用 `--marginal` 预判（§10.10 表）。
 4. **P1/P2/P3 优化** 与 **S7 收尾** 收口：P3 已按「不扩槽、用 `read_into()`」收口；P2 的收益上限由 `--marginal` 的 `add` 4 vs `adds` 9 直接给出。
 
 ---
