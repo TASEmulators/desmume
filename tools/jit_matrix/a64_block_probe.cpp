@@ -1079,6 +1079,16 @@ int main(int argc, char **argv)
 			// address 0x2E0 before any of these tables ever ran, which is why
 			// nothing here caught it. If the regression comes back the probe
 			// dies with a SIGSEGV instead of a FAIL line.
+			// Same handler, register-offset arm (BIT22 == 0). The post-index
+			// writeback is emitted twice in that handler, once per arm, so the
+			// two forms are separate cases -- and the register one goes first:
+			// with the pre-fix CACHED_PTR() both arms die on the same stale
+			// x11, and whichever comes first is the one the crash names.
+			// Bits 22:21 = 0b10 is the "no writeback" spelling and the decoder
+			// maps it to OP_UND, so this is the 0b00 form -- P=0 already means
+			// writeback.
+			{ "ldrd r2,[r1],r3",      {0xE08120D3u}, 1, {0,B,0,4},   {0x11223344u,0x55667788u},  1, 0x02003004u,  -1, 0 },
+			{ "strd r2,[r1],r3",      {0xE08120F3u}, 1, {0,B,0xAABBCCDDu,4}, {0,0},               1, 0x02003004u,   0, 0xAABBCCDDu },
 			{ "ldrd r2,[r1],#8",      {0xE0C120D8u}, 1, {0,B},      {0x11223344u,0x55667788u},  1, 0x02003008u,  -1, 0 },
 			{ "strd r2,[r1],#8",      {0xE0C120F8u}, 1, {0,B,0xAABBCCDDu,0x11223344u}, {0,0},      1, 0x02003008u,   0, 0xAABBCCDDu },
 			{ "swp r0,r2,[r1]",       {0xE1010092u}, 1, {0,B,0xCAFEBABEu}, {0x12345678u,0},    0, 0x12345678u,   0, 0xCAFEBABEu },
