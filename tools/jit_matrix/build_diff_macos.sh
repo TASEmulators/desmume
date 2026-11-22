@@ -89,6 +89,9 @@ DEFINES=(
     -DHAVE_JIT
     -DNDEBUG
     -DASMJIT_STATIC
+    # jit_diff_main.cpp includes <ucontext.h> for its SIGSEGV guard; the macOS
+    # 27 SDK rejects that header unless an X/Open conformance level is set.
+    -D_XOPEN_SOURCE
 )
 INCLUDES=(
     -I"$SRC"
