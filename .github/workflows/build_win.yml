@@ -17,9 +17,9 @@ jobs:
           msbuild-architecture: x64
 
       - name: Build solution
+        shell: cmd
         run: |
-          SET CL=-Wno-c++11-narrowing
-          msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release" /p:platform=x64 /p:CL_cgthreads=1 /p:CLToolExe=clang-cl.exe
+          msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release" /p:platform=x64 /p:CL_cgthreads=1 /m || exit /b 1
           cmd /c desmume\src\frontend\windows\ci_postbuild.bat
 
       - name: Upload artifact
@@ -27,6 +27,7 @@ jobs:
         with:
           name: desmume-win-x64
           path: desmume/src/frontend/windows/__bins/*.exe
+          if-no-files-found: error
 
   build-sln-arm64:
     name: Build DeSmuME (Windows ARM64)
@@ -41,9 +42,10 @@ jobs:
           msbuild-architecture: arm64
 
       - name: Build solution
+        shell: cmd
         run: |
           SET CL=-Wno-c++11-narrowing
-          msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release" /p:platform=ARM64 /p:CLToolExe=clang-cl.exe /m
+          msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release" /p:platform=ARM64 /p:CLToolExe=clang-cl.exe /m || exit /b 1
           cmd /c desmume\src\frontend\windows\ci_postbuild.bat
 
       - name: Upload artifact
@@ -51,3 +53,4 @@ jobs:
         with:
           name: desmume-win-arm64
           path: desmume/src/frontend/windows/__bins/*.exe
+          if-no-files-found: error

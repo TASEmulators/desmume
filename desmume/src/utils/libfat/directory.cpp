@@ -34,6 +34,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#if defined(_WIN32) && !defined(__MINGW32__)
+#include <malloc.h>
+#define alloca _alloca
+#endif
+
 #include "directory.h"
 #include "common.h"
 #include "partition.h"
