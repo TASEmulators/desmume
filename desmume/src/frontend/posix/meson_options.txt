@@ -49,7 +49,14 @@ option('wgpu',
 option('wgpu-native-path',
   type: 'string',
   value: '',
-  description: 'Directory containing libwgpu_native.so, or a wgpu-native release root with lib/ and include/webgpu. Empty uses 3rdparty/libs/linux-<host cpu family> (e.g. linux-x86_64 or linux-aarch64).',
+  description: 'Directory containing libwgpu_native.so, or a wgpu-native release root with lib/ and include/webgpu. Empty uses 3rdparty/libs/<platform>-<cpu family> (e.g. linux-x86_64, linux-aarch64, android-aarch64).',
+)
+
+option('wgpu-platform',
+  type: 'combo',
+  choices: ['auto', 'linux', 'android'],
+  value: 'auto',
+  description: 'Which bundled wgpu-native to use. auto detects Termux/Android (uname -o == Android) and otherwise picks linux; android selects 3rdparty/libs/android-aarch64 and its matching headers.',
 )
 
 option('osd-elf-fonts',

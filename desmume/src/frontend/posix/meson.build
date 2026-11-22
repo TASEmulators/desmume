@@ -13,6 +13,27 @@ project('desmume',
 fs = import('fs')
 cxx = meson.get_compiler('cpp')
 
+# Which bundled wgpu-native to use. Termux runs a native Android toolchain, so
+# uname -s still reports Linux; uname -o is the reliable signal there. An
+# NDK cross-build can set -Dwgpu-platform=android explicitly instead.
+wgpu_platform = get_option('wgpu-platform')
+if wgpu_platform == 'auto'
+  if host_machine.system() == 'android'
+    wgpu_platform = 'android'
+  else
+    uname_os = run_command('uname', '-o', check: false).stdout()
+    if uname_os.contains('Android') or uname_os.contains('android')
+      wgpu_platform = 'android'
+    else
+      wgpu_platform = 'linux'
+    endif
+  endif
+endif
+if (wgpu_platform == 'android') and (host_machine.cpu_family() != 'aarch64')
+  warning('The bundled Android wgpu-native is aarch64 only, but the host cpu family is ' + host_machine.cpu_family())
+endif
+message('wgpu platform: ' + wgpu_platform)
+
 dep_glib2 = dependency('glib-2.0')
 dep_sdl = dependency('sdl3')
 dep_pcap = dependency('pcap')
@@ -453,9 +474,9 @@ libdesmume_src += [
 
 if get_option('wgpu')
   # wgpu-native is taken from the checked-in 3rdparty copy, or from the
-  # directory passed with -Dwgpu-native-path=/path/to/wgpu-linux-<arch>-release.
+  # directory passed with -Dwgpu-native-path=/path/to/wgpu-<platform>-<arch>-release.
   wgpu_native_path = get_option('wgpu-native-path')
-  wgpu_native_lib_dir = meson.current_source_dir() / '../../../3rdparty/libs' / ('linux-' + host_machine.cpu_family())
+  wgpu_native_lib_dir = meson.current_source_dir() / '../../../3rdparty/libs' / (wgpu_platform + '-' + host_machine.cpu_family())
   wgpu_native_include = include_directories('../../../3rdparty/wgpu')
 
   if wgpu_native_path != ''
