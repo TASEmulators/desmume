@@ -183,13 +183,15 @@
      见主文档 §10.15），所以每加一条都该做一次"换回 HEAD 源码重编"的对照。
 6. **`ldmda`/`stmda` 与 ARM ARM 的差异**（若确认存在）：JIT 与解释器已判定一致（上面第一节），
    所以这是**既有语义**问题，应另开 issue，不混进 JIT 迁移。
-7. **日常回归的一条命令**（建议写进 CI 或 pre-push）：
+7. **日常回归的一条命令**（建议写进 CI 或 pre-push）。设备登录 shell 是 fish，别用 `&&`/`$?`：
    ```
-   ssh -p8022 192.168.1.4 'cd ~/desmume && bash tools/jit_matrix/build_diff_termux.sh &&
-       ./.build/diff-a64/jit_diff | tail -3 && ./.build/diff-a64/jit_diff --full | tail -12'
+   ssh -p8022 192.168.1.4 'bash ~/desmume/tools/jit_matrix/build_diff_termux.sh; \
+       ~/desmume/.build/diff-a64/jit_diff | tail -2; \
+       ~/desmume/.build/diff-a64/jit_diff --full | grep -E "sweep|R0-R14|CPSR|instruct_adr|exceptions|invariant|repeatable:"'
    ```
-   期望：探针 `0 mismatch`，`--full` 的 `R0-R14` / `CPSR` / `instruct_adr` /
-   `harness invariant` / `exceptions` 全 0（周期项不是失败）。
+   期望：探针 `0 mismatch(es)`，`--full` 的 `R0-R14` / `CPSR` / `instruct_adr` /
+   `harness invariant` / `exceptions` 全 0（周期项不是失败），`jit not repeatable` 3。
+   最后这条要单独看：它是既有的"首次编译与稳态块结果不同"，x64 也是 3，不是本轮引入的。
 
 ---
 
