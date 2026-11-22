@@ -2,7 +2,7 @@
 //subsequently modified for desmume
 
 /*
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -40,7 +40,9 @@ std::string toupper(const std::string& str);
 
 int HexStringToBytesLength(const std::string& str);
 int Base64StringToBytesLength(const std::string& str);
-std::string u32ToHexString(u32 val);
+std::string U32ToHexStringUTF8(u32 val);
+u32 HexStringUTF8ToU32(const char *inCString);
+u32 HexStringUTF8ToU32(const std::string& inString);
 std::string BytesToString(const void* data, int len);
 bool StringToBytes(const std::string& str, void* data, int len);
 

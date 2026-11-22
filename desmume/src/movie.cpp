@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2025 DeSmuME team
+	Copyright 2008-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -297,14 +297,7 @@ void MovieData::truncateAt(int frame)
 
 void MovieData::installRomChecksum(std::string& key, std::string& val)
 {
-	// TODO: The current implementation of reading the checksum doesn't work correctly, and can
-	// cause crashes when the MovieData object is deallocated. (This is caused by StringToBytes()
-	// overrunning romChecksum into romSerial, making romSerial undefined.) Set romChecksum to
-	// some dummy value for now to prevent crashing. This is okay, since romChecksum isn't actually
-	// used in practice at this time. - rogerman, 2012/08/24
-	//StringToBytes(val,&romChecksum,MD5DATA::size);
-
-	romChecksum = 0;
+	romChecksum = HexStringUTF8ToU32(val);
 }
 void MovieData::installRtcStart(std::string& key, std::string& val)
 {
@@ -360,7 +353,7 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	fp.fprintf("rerecordCount %d\n", rerecordCount);
 
 	fp.fprintf("romFilename %s\n", romFilename.c_str());
-	fp.fprintf("romChecksum %s\n", u32ToHexString(gameInfo.crc).c_str());
+	fp.fprintf("romChecksum %s\n", U32ToHexStringUTF8(gameInfo.crc).c_str());
 	fp.fprintf("romSerial %s\n", romSerial.c_str());
 	fp.fprintf("guid %s\n", guid.toString().c_str());
 	fp.fprintf("useExtBios %d\n", CommonSettings.UseExtBIOS?1:0); // TODO: include bios file data, not just a flag saying something was used

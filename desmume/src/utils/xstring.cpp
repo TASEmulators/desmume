@@ -2,7 +2,7 @@
 //subsequently modified for desmume
 
 /*
-	Copyright (C) 2008-2025 DeSmuME team
+	Copyright (C) 2008-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -77,11 +77,59 @@ private:
 	unsigned char data[256];
 } Base64Table;
 
-std::string u32ToHexString(u32 val)
+std::string U32ToHexStringUTF8(u32 val)
 {
 	char temp[16];
 	snprintf(temp, sizeof(temp), "%08X", val);
 	return temp;
+}
+
+u32 HexStringUTF8ToU32(const char *inCString)
+{
+	static const char *validHexCharList = "Oo0123456789ABCDEFabcdef";
+	u32 outValue32 = 0;
+	
+	char validatedCString[8+1];
+	validatedCString[8] = '\0';
+	
+	// Skip any "0x" or "0X" prefix.
+	if ( ((inCString[0] == '0') || (inCString[0] == 'o') || (inCString[0] == 'O')) &&
+		 ((inCString[1] == 'x') || (inCString[1] == 'X')) )
+	{
+		inCString += 2;
+	}
+	
+	for (size_t i = 0; i < 8; i++)
+	{
+		char c = inCString[i];
+		
+		if (strchr(validHexCharList, c) != NULL)
+		{
+			// As a special case, the lowercase letter "o" and the
+			// uppercase letter "O" will be converted to the number 0.
+			if ( (c == 'o') || (c == 'O') )
+			{
+				c = '0';
+			}
+			
+			validatedCString[i] = c;
+		}
+		else
+		{
+			// An invalid character was found, so just bail.
+			return outValue32;
+		}
+	}
+	
+	// Do the string-to-integer conversion using our validated string.
+	outValue32 = (u32)strtoul(validatedCString, NULL, 16);
+	
+	return outValue32;
+}
+
+u32 HexStringUTF8ToU32(const std::string& inString)
+{
+	return HexStringUTF8ToU32(inString.c_str());
 }
 
 ///Converts the provided data to a string in a standard, user-friendly, round-trippable format
@@ -143,7 +191,7 @@ std::string BytesToString(const void* data, int len)
 int HexStringToBytesLength(const std::string& str)
 {
 	if(str.size()>2 && str[0] == '0' && toupper(str[1]) == 'X')
-		return (int)(str.size() / 2) - 1;
+		return (int)((str.size() - 2) / 2);
 	else return -1;
 }
 
@@ -194,7 +242,7 @@ bool StringToBytes(const std::string& str, void* data, int len)
 	{
 		// hex
 		int amt = len;
-		int bytesAvailable = (int)(str.size() / 2);
+		int bytesAvailable = (int)((str.size() - 2) / 2);
 		if(bytesAvailable < amt)
 			amt = bytesAvailable;
 		const char* cstr = str.c_str()+2;
