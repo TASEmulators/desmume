@@ -438,35 +438,6 @@
     <ClCompile Include="FEX_Interface.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
-    </ClCompile>
     <ClCompile Include="sndxa2.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -1202,45 +1173,6 @@
     <ClInclude Include="FEX_Interface.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
-    </ClInclude>
     <ClInclude Include="sndxa2.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
@@ -1655,7 +1587,6 @@
     </None>
     <None Include="DeSmuME.ico">
       <Filter>frontend\Windows\resources</Filter>
-    </None>
     </None>
     <None Include="File_Extractor\7z_C\7zC.txt">
       <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
