@@ -1881,7 +1881,8 @@ static void callR8(t_bytes *out) {
 // x23/x24/x25/x26), so the C helper preserves it for free; x12/x15 are caller-
 // saved and must be saved here, otherwise a dirty value cached by a preceding
 // instruction in the block is lost when the helper clobbers them. x11 is not
-// saved because its CACHED_PTR() address is dead at both call sites.
+// saved because the PTR_STORE_REG address it may hold is dead at both call
+// sites.
 //
 // Net: 2 (stp/ldp) + 1 (blr) = 3 instructions instead of 15.
 static void save_mem_call(t_bytes *out) {
@@ -1953,18 +1954,23 @@ static void call_mem_r2(t_bytes *out) {
 	emit_strb_off(g_out, X1_REG, JIT_CPU_BASE_REG, RC_FLAGS_OFF); \
 }
 
+// Both macros read the flags byte with VALUE first, which is what puts
+// &CPU.CPSR.val in PTR_STORE_REG (cpu_get_ptrB's VALUE branch); the merge
+// below writes back through that register instead of recomputing the address.
+// An address-register form is not used here because the byte is only ever
+// accessed at that one offset -- RC_FLAGS_OFF covers the other macros.
 #define SET_NZC_SHIFTS_ZERO(cf) { \
 	JIT_COMMENT("SET_NZC_SHIFTS_ZERO"); \
 	flags_ptr(R3, VALUE); \
-	emit_and_ptr32_regptr(g_out, CACHED_PTR(flags_ptr(X1_REG, ADDRESS)), 0x1F); \
+	emit_and_ptr32_regptr(g_out, PTR_STORE_REG, 0x1F); \
 	if(cf) \
 	{ \
 		emit_lsl(g_out, rcf_reg, 5); \
 		emit_orimm(g_out,rcf_reg, (1<<6), rcf_reg); \
-		emit_or_ptr32_regptr_reg(g_out, CACHED_PTR(flags_ptr(X1_REG, ADDRESS)), rcf_reg); \
+		emit_or_ptr32_regptr_reg(g_out, PTR_STORE_REG, rcf_reg); \
 	} \
 	else \
-		emit_or_ptr32_regptr(g_out, CACHED_PTR(flags_ptr(X1_REG, ADDRESS)), (1<<6)); \
+		emit_or_ptr32_regptr(g_out, PTR_STORE_REG, (1<<6)); \
 }
 
 #define SET_NZ(clear_cv) { \
@@ -1999,7 +2005,7 @@ static void call_mem_r2(t_bytes *out) {
 	flags_ptr(y_reg, VALUE); \
 	emit_seto(g_out, y_reg); \
 	emit_lsl(g_out, y_reg, 3); \
-	emit_or_ptr32_regptr_reg(g_out, CACHED_PTR(flags_ptr(X1_REG, ADDRESS)), y_reg); \
+	emit_or_ptr32_regptr_reg(g_out, PTR_STORE_REG, y_reg); \
 }
 
 // x86 uses `bt flags_ptr, 5` (+ `cmc` for SBC) to load the emulated carry into

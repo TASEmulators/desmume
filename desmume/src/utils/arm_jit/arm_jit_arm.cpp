@@ -139,14 +139,24 @@ void jit_write() {
 #define printJIT(buf, val)
 #endif
 
-// The x86 back end's CACHED_PTR() re-emits the address expression and returns
-// the register holding it. Here it expands to PTR_STORE_REG and *discards* the
-// argument, which is only valid when an earlier VALUE access put the same
-// address there -- cpu_get_ptr()'s VALUE branch emits that `add x11, ...`.
-// Wrapping an ADDRESS expression in it is a bug in both directions: no
-// eviction, and no address. Four handlers did; the LDRD/STRD post-index ones
-// faulted on device with a stale x11.
-#define CACHED_PTR(exp) PTR_STORE_REG
+// There is no CACHED_PTR() on this back end, on purpose.
+//
+// The x86 back end had one: it re-emitted the address expression and returned
+// the register holding it. Here the equivalent would have to expand to
+// PTR_STORE_REG and *discard* the argument, which is only valid when an
+// earlier VALUE access put that exact address there -- cpu_get_ptr()'s VALUE
+// branch emits the `add x11, ...`. Wrapping an ADDRESS expression in it is a
+// bug in both directions (no eviction, no address), and four handlers did:
+// LDRD/STRD post-index faulted on device with a stale x11, and five more sites
+// were only correct because the line above happened to load the same field.
+//
+// So those sites now say PTR_STORE_REG and carry a comment naming the VALUE
+// access that fills it, and a new `CACHED_PTR(expr)` no longer compiles. When
+// an address is actually needed, emit it: cpu_field_addr() for CPU fields,
+// reg_pos_ptr(..., ADDRESS) for R[].
+//
+// The rule for PTR_STORE_REG itself: it is scratch, and it holds "the address
+// of the last VALUE access" only until the next one.
 
 u32 saveBlockSizeJIT = 0;
 
@@ -207,8 +217,9 @@ static int inline cpu_field_addr(int o, int r) {
 	return r;
 }
 
-// VALUE keeps the address in PTR_STORE_REG as well: CACHED_PTR() expands to
-// that register, and a handful of handlers store through it after a load.
+// VALUE keeps the address in PTR_STORE_REG as well, and a handful of handlers
+// store back through that register after the load instead of paying for a
+// second address computation.
 static int inline cpu_get_ptr(void *start, int o, int r, int v) {
 	if (v == VALUE) {
 		emit_ldr_off(g_out, r, JIT_CPU_BASE_REG, o);
@@ -228,8 +239,8 @@ static int inline cpu_get_ptrB(void *start, int o, int r, int v) {
 		emit_add_off64(g_out, PTR_STORE_REG, JIT_CPU_BASE_REG, o);
 	} else if (v == VALUE_NO_CACHE) {
 		// Only the value is wanted. The flag macros use this to avoid the
-		// `add x11, x25, #off` they would otherwise pay just to feed
-		// CACHED_PTR() a second time.
+		// `add x11, x25, #off` they would otherwise pay just to feed a
+		// store through PTR_STORE_REG.
 		emit_ldrb_off(g_out, r, JIT_CPU_BASE_REG, o);
 	} else if (v) {
 		cpu_field_addr(o, r);
@@ -616,9 +627,9 @@ static ArmRegCache g_regs;
 #define cpu_ptr_byte(x, y, reg, v)	cpu_byte_ptr(bb_cpu, offsetof(armcpu_t, x) + y, reg, v)
 #define flags_ptr(reg, v)			cpu_ptr_byte(CPSR.val, 3, reg, v)
 // Direct base+displacement address of the byte the flag macros merge into.
-// Using it instead of CACHED_PTR() removes the `add x11, x25, #off` that the
-// old `flags_ptr(..., ADDRESS)` needed, without depending on x11's implicit
-// "last VALUE address" state. offsets: CPSR at 80, .val byte 3 => N/Z/C/V.
+// Using it removes the `add x11, x25, #off` that an address form of
+// `flags_ptr(...)` would need, without depending on x11's implicit "last VALUE
+// address" state. offsets: CPSR at 80, .val byte 3 => N/Z/C/V.
 #define RC_FLAGS_OFF				(offsetof(armcpu_t, CPSR) + 3)
 // Rule 4: every access to R[] through memory evicts the register first. A
 // handler that has not been migrated to the cache still reads and writes
@@ -1090,7 +1101,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 // the cache makes the two coexist: the shift path evicts what it touches.
 //
 // R15 is excluded on purpose (rule 1): a handler that writes the PC keeps the
-// old body, which stores through CACHED_PTR and then runs S_DST_R15.
+// old body, which stores through PTR_STORE_REG and then runs S_DST_R15.
 #define OP_RC_ARITHMETIC(x86inst) \
 	const int rc_rd = REG_POS(i,12); \
 	const int rc_rn = REG_POS(i,16); \
@@ -1146,9 +1157,13 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 	} \
 	if(REG_POS(i,12) == REG_POS(i,16)) \
 	{ \
+		/* Rd == Rn: the VALUE load above leaves both the value (R1) and \
+		   &R[Rd] (PTR_STORE_REG) live, so the store needs no second address \
+		   computation -- and must not re-evaluate the expression, which is \
+		   what the old CACHED_PTR() spelling silently did not do either. */ \
 		reg_pos_ptr(12, R1, VALUE);\
 		x86inst(g_out, R1, rhs, R1); \
-		emit_write_ptr32_regptrTO_regFROM(g_out,CACHED_PTR(reg_pos_ptr(12, R2, ADDRESS)), R1); \
+		emit_write_ptr32_regptrTO_regFROM(g_out, PTR_STORE_REG, R1); \
 	} \
 	else if(symmetric && !rhs_is_imm) \
 	{ \
@@ -1291,9 +1306,10 @@ static void emit_MMU_aluMemCycles(int alu_cycles, void *mem_cycles, int populati
 	} \
 	if(REG_POS(i,12) == REG_POS(i,16)) \
 	{ \
+		/* Same shape as OP_ARITHMETIC: VALUE leaves &R[Rd] in PTR_STORE_REG. */ \
 		reg_pos_ptr(12, R1, VALUE); \
 		x86inst(g_out, R1, rhs, R1); \
-		emit_write_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_ptr(12, R2, ADDRESS)), R1); \
+		emit_write_ptr32_regptrTO_regFROM(g_out, PTR_STORE_REG, R1); \
 	} \
 	else if(symmetric && !rhs_is_imm) \
 	{ \
@@ -1521,7 +1537,7 @@ static int OP_BIC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_S(S_IMM_VAL; rhs_var = 
 //-----------------------------------------------------------------------------
 // TST/TEQ/CMP/CMN have no destination, so the cache path is one line: read Rn
 // from wherever it lives and compare. The old form also materialised the field
-// address into CACHED_PTR on the way, which nothing here stores through.
+// address into PTR_STORE_REG on the way, which nothing here stores through.
 #define OP_TST_(arg) \
 	arg; \
 	if(REG_POS(i,16) != 15) \
@@ -2571,12 +2587,12 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 	//
 	// The writeback goes through reg_pos_ptr(..., ADDRESS), which evicts the
 	// slot and leaves the address of cpu->R[n] in R1 -- so R1 is the operand.
-	// Wrapping that in CACHED_PTR() looks like the x86 idiom but is wrong here:
-	// CACHED_PTR() expands to PTR_STORE_REG and *discards* its argument, so it
-	// skipped both the eviction and the address computation and the add landed
-	// on whatever x11 happened to hold. On device that was the block's own
-	// halfword index, which is the SIGSEGV the differential harness reported
-	// for `ldrd r0,[r13],#8` / `strd r0,[r13],#8`.
+	// The old spelling wrapped it in CACHED_PTR(), which looked like the x86
+	// idiom but on this back end expanded to PTR_STORE_REG and *discarded* its
+	// argument: no eviction, no address, and the add landed on whatever x11
+	// happened to hold. On device that was the block's own halfword index,
+	// which is the SIGSEGV the differential harness reported for
+	// `ldrd r0,[r13],#8` / `strd r0,[r13],#8`.
 	if (BIT22(i))
 	{
 		IMM_OFF;
