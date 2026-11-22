@@ -74,6 +74,11 @@
 	#include "gdbstub.h"
 #endif
 
+#ifdef HAVE_LUA
+	#include "tools/luaScriptConsole.h"
+	#include "lua-engine.h"
+#endif
+
 #if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
 	#if defined(ENABLE_OPENGL_ES)
 		#include "OGLRender_ES3.h"
@@ -235,6 +240,11 @@ static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void *);
 #endif
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 
+#ifdef HAVE_LUA
+static void AddLuaScript(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void CloseAllLuaScripts(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+#endif
+
 static const GActionEntry app_entries[] = {
     // File
     { "open",          OpenNdsDialog },
@@ -307,7 +317,11 @@ static const GActionEntry app_entries[] = {
     { "editjoyctrls",        Edit_Joystick_Controls },
 
     // Tools
-    // Populated in desmume_gtk_menu_tools().
+    // dTool entries are populated dynamically in desmume_gtk_menu_tools().
+#ifdef HAVE_LUA
+    { "addluascript",        AddLuaScript },
+    { "closealluascripts",   CloseAllLuaScripts },
+#endif
 
     // Help
     { "about",         About },
@@ -578,6 +592,17 @@ struct nds_screen_t {
 struct nds_screen_t nds_screen;
 
 static guint regMainLoop = 0;
+
+#ifdef HAVE_LUA
+static void AddLuaScript(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    lua_script_open_console(GTK_WINDOW(pWindow));
+}
+static void CloseAllLuaScripts(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    lua_script_close_all();
+}
+#endif
 
 static inline void UpdateStatusBar (const char *message)
 {
@@ -2946,7 +2971,18 @@ gboolean EmuLoop(gpointer data)
         touchpad.click = 0;
     }
 
+#ifdef HAVE_LUA
+    NDS_beginProcessingInput();
+    CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+    NDS_endProcessingInput();
+#endif
+
     desmume_cycle();    /* Emule ! */
+
+#ifdef HAVE_LUA
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+    CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+#endif
 
     _updateDTools();
 
