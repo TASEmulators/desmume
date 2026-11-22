@@ -3062,12 +3062,29 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	u32 adr_first = cpu->R[REG_POS(i, 16)];
 
 	#define adr R4
-	#define oldmode R5
+	// oldmode has to survive call_ldm_stm(), which is a lightweight call:
+	// call_mem_r7() saves only the two register-cache slots (x12/x15), not the
+	// x1..x12 set callR3() preserves. Parking it in x5 made the second
+	// armcpu_switchMode() receive whatever the LDM helper left there -- an
+	// invalid mode, which prints "switchMode: WRONG mode" once per popped PC
+	// and leaves CPSR in mode 4. x19 is callee-saved, unused by this handler,
+	// and the block prologue already pushes it.
+	#define oldmode X19_REG
 	
 	reg_pos_ptr(16, adr, VALUE);
 
 	if(before)
 		emit_addimm(g_out, adr, 4*dir, adr);
+
+	// OP_LDM_STM walks cpu->R[] through a register-number list, i.e. it reads
+	// armcpu_t directly. Every register in the mask therefore has to be settled
+	// before the call: a store needs the current value in memory, and a load is
+	// about to overwrite whatever a slot still holds -- otherwise the block-end
+	// flush writes the stale slot back over the value the helper just loaded.
+	// This is the PC-in-list variant of op_ldm_stm, which has the same loop.
+	for (u32 r = 0; r < 16; r++)
+		if (bitmask & (1u << r))
+			store ? g_regs.evict((int)r) : g_regs.discard((int)r);
 
 	if (!bit15 || store)
 	{  
@@ -3079,6 +3096,21 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 		emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3);
 		callR3(g_out);
 		emit_mov(g_out, R0, oldmode);
+	}
+
+	// Base in the list, with a PC load: the write-back value has to be
+	// computed *before* the call -- it is derived from the address in x4,
+	// which call_mem_r7 does not preserve -- and parked in the cache slot so
+	// it wins over the value the load just wrote into R[Rn], which is what the
+	// interpreter does (it assigns R[Rn] last). Same shape as op_ldm_stm.
+	if(writeback && !store && (i & (1 << REG_POS(i,16))))
+	{
+		u32 bitlist = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
+		if(i & bitlist)
+		{
+			emit_addimm(g_out, adr, 4*dir*(pop-before), tmp_reg);
+			rc_store(REG_POS(i,16), tmp_reg);
+		}
 	}
 
 	call_ldm_stm(adr, bitmask, store, dir);
@@ -3096,22 +3128,10 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 		S_DST_R15;
 	}
 
-	// FIXME
-	if(writeback)
-	{
-		if(store || !(i & (1 << REG_POS(i,16)))) {
-			emit_add_ptr32_regptrTO_immFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), 4*dir*pop);
-		}
-		else 
-		{
-			u32 bitlist = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
-			if(i & bitlist)
-			{
-				emit_addimm(g_out, adr, 4*dir*(pop-before), adr);
-				emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), adr);
-			}
-		}
-	}
+	// The base-in-list load case was settled before the call; only the plain
+	// write-back is left to do here.
+	if(writeback && (store || !(i & (1 << REG_POS(i,16)))))
+		emit_add_ptr32_regptrTO_immFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), 4*dir*pop);
 
 	emit_MMU_aluMemCycles(store ? 1 : 2, &bb_cycles, pop);
 	
@@ -5001,6 +5021,17 @@ static u32 compile_basicblock()
 			// 25% of conditional instructions are immediately followed by
 			// another with the same condition, but merging them into a
 			// single branch has negligible effect on speed.
+			//
+			// Write back everything produced earlier in the block *before*
+			// the condition branch. The handler below is skipped when the
+			// condition is false, and so is its own flush; if the earlier
+			// values were still only in cache slots, the false path would
+			// continue from stale memory. That is exactly how the divide
+			// loop's `mov r2,#0x1c; suble r2,r2,#0x10` lost the mov and
+			// turned a later `add pc,pc,r2,lsl #2` into a jump into the
+			// sound-driver string table.
+			g_regs.flush();
+
 			if(bEndBlock) sync_r15(opcode, 1, 1);
 			uint64_t skip;
 			skip=genlabel();
