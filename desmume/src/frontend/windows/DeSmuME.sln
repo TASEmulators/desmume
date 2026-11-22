@@ -11,6 +11,10 @@ Global
 		Dev+|x64 = Dev+|x64
 		Release Fastbuild|x64 = Release Fastbuild|x64
 		Release|x64 = Release|x64
+		Debug|ARM64 = Debug|ARM64
+		Dev+|ARM64 = Dev+|ARM64
+		Release Fastbuild|ARM64 = Release Fastbuild|ARM64
+		Release|ARM64 = Release|ARM64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Debug|x64.ActiveCfg = Debug|x64
@@ -21,6 +25,14 @@ Global
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release Fastbuild|x64.Build.0 = Release Fastbuild|x64
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release|x64.ActiveCfg = Release|x64
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release|x64.Build.0 = Release|x64
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Debug|ARM64.Build.0 = Debug|ARM64
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Dev+|ARM64.ActiveCfg = Dev+|ARM64
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Dev+|ARM64.Build.0 = Dev+|ARM64
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release Fastbuild|ARM64.ActiveCfg = Release Fastbuild|ARM64
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release Fastbuild|ARM64.Build.0 = Release Fastbuild|ARM64
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release|ARM64.ActiveCfg = Release|ARM64
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release|ARM64.Build.0 = Release|ARM64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

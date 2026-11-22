@@ -28,3 +28,26 @@ jobs:
           name: desmume-win-x64
           path: desmume/src/frontend/windows/__bins/*.exe
 
+  build-sln-arm64:
+    name: Build DeSmuME (Windows ARM64)
+    runs-on: windows-11-arm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSBuild.exe
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: arm64
+
+      - name: Build solution
+        run: |
+          SET CL=-Wno-c++11-narrowing
+          msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release" /p:platform=ARM64 /p:CLToolExe=clang-cl.exe /m
+          cmd /c desmume\src\frontend\windows\ci_postbuild.bat
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desmume-win-arm64
+          path: desmume/src/frontend/windows/__bins/*.exe

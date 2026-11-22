@@ -46,6 +46,7 @@
 		<OutDir>$(SolutionDir)__bins\</OutDir>
 		<TargetName>$(ProjectName)-$(NDS_VisualStudioName)-$(Configuration)</TargetName>
 		<TargetName Condition="'$(Platform)' == 'x64'">$(ProjectName)-$(NDS_VisualStudioName)-x64-$(Configuration)</TargetName>
+		<TargetName Condition="'$(Platform)' == 'ARM64'">$(ProjectName)-$(NDS_VisualStudioName)-arm64-$(Configuration)</TargetName>
 		<TargetPath>$(OutDir)$(TargetName).exe</TargetPath>
 	</PropertyGroup>
 
@@ -66,8 +67,10 @@
 	<!-- some defaults and validation of user prefs -->
 	<!-- TODO: throw errors here instead -->
 	<PropertyGroup>
-		<SSE_Level Condition="'$(SSE_Level)' == ''">20</SSE_Level>
-		<AVX_Level Condition="'$(AVX_Level)' == ''">0</AVX_Level>
+		<SSE_Level Condition="'$(Platform)' == 'ARM64'">0</SSE_Level>
+		<SSE_Level Condition="'$(Platform)' != 'ARM64' AND '$(SSE_Level)' == ''">20</SSE_Level>
+		<AVX_Level Condition="'$(Platform)' == 'ARM64'">0</AVX_Level>
+		<AVX_Level Condition="'$(Platform)' != 'ARM64' AND '$(AVX_Level)' == ''">0</AVX_Level>
 		<!-- dont use optimizations the compiler cant handle. this isn't accurate to the compiler capabilities but we're only supporting 2010 and 2015 -->
 		<SSE_Level Condition="'$(NDS_VSVER)' &lt; '14' AND '$(SSE_Level)' &gt; '20'">20</SSE_Level>
 		<!-- validation: x64 14.0 can't handle SSE_Level 1.0 and anyway SSE2 is automatically available -->
@@ -94,7 +97,7 @@
 
 		<ClCompile>
 
-			<AdditionalIncludeDirectories>.;..\..;lua\include;glib-2.20.1\build;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\..\libretro-common\include;..\..\..\3rdparty;..\..\..\3rdparty\wgpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\..;lua\include;glib-2.20.1\build;..\..\..\3rdparty\zlib-1.4;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\..\libretro-common\include;..\..\..\3rdparty;..\..\..\3rdparty\wgpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 
 			<!-- universal definitions -->
 			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;WIN32_FRONTEND;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -164,7 +167,7 @@
 			<PreprocessorDefinitions Condition="'$(UseNativeOsd)' != 'false'">DESMUME_NATIVE_DRAW=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 			<!-- WebGPU renderer. wgpu-native binaries are only shipped for x64. -->
-			<PreprocessorDefinitions Condition="'$(Platform)' == 'x64'">ENABLE_WGPU=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(Platform)' == 'x64' Or '$(Platform)' == 'ARM64'">ENABLE_WGPU=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 			<!-- Stage 1 OSD migration: blend the HUD as a second GPU texture on
 			     the WebGPU display method instead of compositing it into the
@@ -192,7 +195,7 @@
 			     The pieces the legacy DirectX SDK also used to supply are built from
 			     source instead: dinput8.lib ships c_dfDIJoystick2 itself, and
 			     dxerr8_compat.cpp provides the dxerr8 entry points. -->
-			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;zlib-vc8-x64.lib;wgpu_native.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;wgpu_native.lib;%(AdditionalDependencies)</AdditionalDependencies>
 			<!-- libagg is only needed by the legacy AGG backend (UseNativeOsd=false).
 			     DESMUME_NATIVE_DRAW draws with GDI+ and takes its bitmap fonts from
 			     RCDATA; the WebGPU OSD recorder (wgpu_osd_draw.cpp) implements the
@@ -203,8 +206,10 @@
 
 			<!-- deps config for Win32 -->
 			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">.\zlib128;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
-			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;zlib-vc8-Win32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
 			<AdditionalDependencies Condition="'$(Platform)' == 'Win32' AND '$(UseNativeOsd)' == 'false'">agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'ARM64'">.\zlib128;agg;.libs;.libs\arm64;..\..\..\3rdparty\libs\arm64</AdditionalLibraryDirectories>
+			<AdditionalDependencies Condition="'$(Platform)' == 'ARM64'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;wgpu_native.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- special deps config for newer VS -->
 			<AdditionalDependencies Label="Configuration" Condition="'$(NDS_VSVER)' &gt;= '14'">legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -230,6 +235,7 @@
 			<RandomizedBaseAddress>false</RandomizedBaseAddress>
 			<LinkIncremental>true</LinkIncremental>
 			<TargetMachine Condition="'$(Platform)' == 'x64'">MachineX64</TargetMachine>
+			<TargetMachine Condition="'$(Platform)' == 'ARM64'">MachineARM64</TargetMachine>
 
 			<!-- prebuilt zlib is incompatible with this, and it's useless anyway -->
 			<ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
@@ -300,9 +306,10 @@
 		<!-- ================ UNDUPOBJ ================ -->
 
 		<!-- Ship the WebGPU runtime next to the executable. -->
-	<Target Name="CopyWGPUNative" AfterTargets="Build" Condition="'$(Platform)' == 'x64'">
+	<Target Name="CopyWGPUNative" AfterTargets="Build" Condition="'$(Platform)' == 'x64' Or '$(Platform)' == 'ARM64'">
 		<ItemGroup>
-			<WGPUNativeFiles Include="$(MSBuildThisFileDirectory)..\..\..\3rdparty\libs\x64\wgpu_native.dll" />
+			<WGPUNativeFiles Condition="'$(Platform)' == 'x64'" Include="$(MSBuildThisFileDirectory)..\..\..\3rdparty\libs\x64\wgpu_native.dll" />
+			<WGPUNativeFiles Condition="'$(Platform)' == 'ARM64'" Include="$(MSBuildThisFileDirectory)..\..\..\3rdparty\libs\arm64\wgpu_native.dll" />
 		</ItemGroup>
 		<Copy SourceFiles="@(WGPUNativeFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="'@(WGPUNativeFiles)' != ''" />
 	</Target>

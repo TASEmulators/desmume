@@ -17,6 +17,22 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Dev+|ARM64">
+      <Configuration>Dev+</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Fastbuild|ARM64">
+      <Configuration>Release Fastbuild</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectName>DeSmuME</ProjectName>
@@ -63,6 +79,21 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\adler32.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\compress.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\crc32.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\deflate.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\gzclose.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\gzlib.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\gzread.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\gzwrite.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\infback.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\inffast.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\inflate.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\inftrees.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\trees.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\uncompr.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\zutil.c" />
     <ClCompile Include="..\..\addons\slot1comp_mc.cpp" />
     <ClCompile Include="..\..\addons\slot1comp_protocol.cpp" />
     <ClCompile Include="..\..\addons\slot1comp_rom.cpp" />
@@ -82,6 +113,17 @@
     <ClCompile Include="..\..\armcpu.cpp" />
     <ClCompile Include="..\..\arm_jit.cpp">
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\utils\arm_jit\arm_jit_arm.cpp">
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\bios.cpp" />
     <ClCompile Include="..\..\cheatSystem.cpp" />
@@ -325,18 +367,30 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AVX2.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_SSE2.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|ARM64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\utils\datetime.cpp" />
     <ClCompile Include="..\..\utils\dlditool.cpp" />

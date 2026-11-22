@@ -25,7 +25,7 @@ CPPFLAGS = -DMINGW_HAS_SECURE_API \
   -DSOUNDTOUCH_DISABLE_X86_OPTIMIZATIONS \
   -D_CRT_SECURE_NO_DEPRECATE -DWIN32 -DHAVE_ZLIB_DEFLATE -DHAVE_LIBZ \
   -DNOMINMAX -DASMJIT_STATIC \
-  -I../../libretro-common/include -Izlib128
+  -I../../libretro-common/include -I../../../3rdparty/zlib-1.4
 
 # MinGW still compiles the vendored Lua 5.1.5 sources (see the liblua.a rule
 # below).  lua-engine.cpp now uses only Lua's public 5.1 C API, so this path
@@ -376,6 +376,21 @@ SRCS = \
 #	../../utils/colorspacehandler\colorspacehandler_SSE2.cpp \
 
 CSRCS = \
+	../../../3rdparty/zlib-1.4/adler32.c \
+	../../../3rdparty/zlib-1.4/compress.c \
+	../../../3rdparty/zlib-1.4/crc32.c \
+	../../../3rdparty/zlib-1.4/deflate.c \
+	../../../3rdparty/zlib-1.4/gzclose.c \
+	../../../3rdparty/zlib-1.4/gzlib.c \
+	../../../3rdparty/zlib-1.4/gzread.c \
+	../../../3rdparty/zlib-1.4/gzwrite.c \
+	../../../3rdparty/zlib-1.4/infback.c \
+	../../../3rdparty/zlib-1.4/inffast.c \
+	../../../3rdparty/zlib-1.4/inflate.c \
+	../../../3rdparty/zlib-1.4/inftrees.c \
+	../../../3rdparty/zlib-1.4/trees.c \
+	../../../3rdparty/zlib-1.4/uncompr.c \
+	../../../3rdparty/zlib-1.4/zutil.c \
 	../../libretro-common/compat/compat_fnmatch.c \
 	../../libretro-common/compat/compat_getopt.c \
 	../../libretro-common/compat/compat_posix_string.c \
@@ -469,27 +484,17 @@ all: desmume.exe
 ../../scmrev.h:
 	SRCROOT=. sh ../cocoa/git-scmrev.sh
 
-zlib-1.2.8.tar.xz:
-	wget http://download.sourceforge.net/project/libpng/zlib/1.2.8/zlib-1.2.8.tar.xz
-
-zlib-1.2.8/.extracted: zlib-1.2.8.tar.xz
-	tar xf $<
-	touch $@
-
-zlib-1.2.8/libz.a: zlib-1.2.8/.extracted
-	( cd zlib-1.2.8 ; CC=$(CC) AR=$(AR) RANLIB=$(RANLIB) ./configure ; make -j libz.a ; cd .. )
-
 ../../lua/liblua.a: $(wildcard ../../lua/*.c)
 	( cd ../../lua ; rm -f liblua.a *.o ; make -j CC=$(CC) AR="$(AR) rcu" RANLIB=$(RANLIB) MYCFLAGS="-O3" liblua.a ; )
 
 resources.o: resources.rc
 	$(WINDRES) $< $@
 
-desmume.exe: $(OBJS) $(COBJS) $(RESOBJS) ../../lua/liblua.a zlib-1.2.8/libz.a
+desmume.exe: $(OBJS) $(COBJS) $(RESOBJS) ../../lua/liblua.a
 	$(CXX) $^ $(LDFLAGS) -o $@ $(LIBS)
 
 clean:
-	rm -f $(OBJS) $(COBJS) $(RESOBJS) desmume.exe ../../lua/*.o ../../lua/liblua.a zlib-1.2.8/libz.a zlib-1.2.8/*.o ../../scmrev.h
+	rm -f $(OBJS) $(COBJS) $(RESOBJS) desmume.exe ../../lua/*.o ../../lua/liblua.a ../../scmrev.h
 
 lightclean:
 	rm -f $(OBJS) desmume.exe
