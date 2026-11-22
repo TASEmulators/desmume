@@ -19,7 +19,7 @@ jobs:
       - name: Build solution
         shell: cmd
         run: |
-          msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release" /p:platform=x64 /p:CL_cgthreads=1 /m || exit /b 1
+          msbuild "desmume/src/frontend/windows/DeSmuME.sln" /p:configuration="Release" /p:platform=x64 /p:CL_cgthreads=1 /m || exit /b 1
           cmd /c desmume\src\frontend\windows\ci_postbuild.bat
 
       - name: Upload artifact
@@ -45,7 +45,7 @@ jobs:
         shell: cmd
         run: |
           SET CL=-Wno-c++11-narrowing
-          msbuild 'desmume/src/frontend/windows/DeSmuME.sln' /p:configuration="Release" /p:platform=ARM64 /p:CLToolExe=clang-cl.exe /m || exit /b 1
+          msbuild "desmume/src/frontend/windows/DeSmuME.sln" /p:configuration="Release" /p:platform=ARM64 /p:CLToolExe=clang-cl.exe /m || exit /b 1
           cmd /c desmume\src\frontend\windows\ci_postbuild.bat
 
       - name: Upload artifact
