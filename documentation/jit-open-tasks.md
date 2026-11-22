@@ -3,14 +3,19 @@
 > 本文把 `asmjit-jit-migration-plan.md`（下称「主文档」）中散落的未完成项集中成一份可勾选清单。
 > **主文档仍是权威来源**，本文是索引视图；状态变化时两处同步更新。
 >
-> 快照：2026-11-21，HEAD `beda713b` + 本轮未提交改动（x64 差分台移植 arm64 探针形状 §10.11、
-> x64 补上 ARM `BKPT` §10.12、主存快路径实验与 `--bench` §10.13、callee-saved 提示实验 §10.14）。
+> 快照：2026-11-22，HEAD `8475e92c` + 本轮未提交改动（**Android arm64 真机差分（主文档 §10.15）**：
+> 抓出并修掉 4 个 arm64 专属功能缺陷 —— Thumb `adds Rd,Rs,#0` 的缓存别名、UMLAL 误用 `smaddl`、
+> SMLAWT 取错半字、LDRD/STRD 后索引写回被 `CACHED_PTR()` 吞掉；新增
+> `build_diff_termux.sh` / `jit_diff_stubs_posix.cpp` / `disasm_dump.sh` 与 6 条块级探针用例）。
 
 ## 当前进度快照
 
 | 项 | 状态 |
 |---|---|
 | 迁移主线（571 组 `diff-pass`） | **571 / 571，todo 归零**：族 1 数据处理 28 + 族 2 ARM 移位 224 + 族 3+4 访存 172 + LDM/STM 32 + 族 5 乘法/乘加 28 + CLZ + 族 6 分支/状态/异常 12 + **族 7+8 Thumb 68 + 饱和 4 + 协处理器 2**。余下 20 个 `interp-fallback`（`OP_UND`/`OP_CDP`/LDC-STC 全系/`LDREX`/`STREX`/Thumb 的 `BKPT`+`UND`）是有意不编译的 |
+| **Android arm64 真机差分（2026-11-22，新增）** | 设备（aarch64 Android / clang 21.1.8）上直接链 meson 的 `libdesmume.a`：**132 探针 2112 次比较 0 差异**、**`--full` 81920 次比较功能桶全 0**（周期 14751）、**`--seq 2/3/4` 19776 次 0 mismatch**、`jit not repeatable` 仍 3。修复前同一套测试报 16 个 `R0-R14` + 50 条探针失败 + 两条指令 SIGSEGV |
+| **真机抓出的 4 个缺陷（已修）** | ① Thumb `OP_ADD_IMM3` imm3==0：`rc_t_write` 先于 `rc_t_read`，Rd==Rs 时读到未加载的槽位（实测复制出块地址）；② `emit_umlal_common` 用 `smaddl` 而非 `umaddl`；③ `emit_smlawt` 与 `emit_smlawb` 逐字相同（T 位失效）；④ LDRD/STRD 后索引写回包在 `CACHED_PTR()` 里，而 arm64 的该宏**丢弃参数**，写回落到 x11 残值上（SIGSEGV at `0x2E0`）。详见主文档 §10.15 |
+| **块级探针语料盲点（已补）** | 904/904 全绿的同时，上面 4 条一条都测不出来：`umlal`/`smlawb,t` 全用"两乘数都为正 / 上下半字相同"的 kSetC，LDRD/STRD 没有后索引立即数用例，Thumb 只有 IMM8 版 `adds`。新增 8 条用例（`kSetD` + `umlal (b)`×2 + `smlawb/t (b/t)`×2 + `ldrd/strd [r1],#8`×2 + Thumb `adds r0,r0,#0`/`r1,r1,#0`）→ **913 项**。负对照：换回 `HEAD` 源码重编同一探针 → 2 条 FAIL + 新增 LDRD 用例上 SIGSEGV |
 | **两后端回退集合审计（2026-11-21）** | 逐函数比对 571 个 `OP_*`、20 行 `#define ... NULL` 与各函数体里的 `return 0`：**唯一差异是 ARM `OP_BKPT`**（x64 只有 `printf` + `return 0`，arm64 已内联 abort）。已按 arm64 补齐，两边现在一致；`OP_MCR`/`OP_MRC` 的 `return 2` 不发射代码，但解释器在同一条路径上也是空操作，三者等价（主文档 §10.12） |
 | **主存快路径实验（2026-11-21，已回退）** | 照 §10.13 做了"专用 helper + cache 命中常量 cycle"两条：功能**逐位等价**（132 探针 0 差异、`--full` 仍 12067），但 `--bench` 实测**读慢 12%、写慢 20%**（100% 命中的最好情况也不赢）。原因是成本在"每条访存一次间接 call"，不在 helper 指令数；写路径还因为写 miss 不更新 `m_cacheCache` 而永远进不去。两条都没进仓库，保留 `jit_diff --bench` |
 | **callee-saved 提示实验（2026-11-21，已回退）** | 把 `bb_cpu`/`bb_total_cycles`/`bb_dma_pending` 用 asmjit 的 home-id 提示放进 r14/r15/r13：代码体积 **−34%（Thumb LDR）/ −23%（STR）**，但 `--bench` 速度 **−1%~−4%**（序言/尾声的 push/pop 在 call-return 关键路径上，省掉的 spill/reload 被乱序执行完全遮住）。未进仓库。两个坑记在主文档 §10.14：invoke 参数**不能**是物理寄存器（`InvalidVirtId`，且块编译失败在探针里是静默的）；物理寄存器在 asmjit 里没有存活区间，会被分配给临时值 |
@@ -18,23 +23,36 @@
 | 族3 代码迁移 | **arm64 缓存接入完成**；x86 侧结构早已完成 |
 | **饱和算术（Q 系列）** | **两端都已内联**：arm64 见 §S4 族 7+8；x86 `arm_jit.cpp` 用同一份 DDI 0403E 语义（`seto` + `cmovnz`，两段饱和分别置 Q）。x86 侧 6 条 Q 探针 × 8 组操作数 × 2 种标志 = 704 次比较 0 mismatch，负对照（`cmovz`）确认探针有效 |
 | 访存差分安全网 | **x64 侧已扩到 132 条探针**（§10.8 的 20 条访存 + §10.11 的 91 条，覆盖 LDRD/STRD/SWP/LDM/STM/乘法/PSR/分支/Thumb 各宽度）：2112 次比较 **0 功能差异**，176 条周期记录（异常收尾、长乘法、映射区字读三类，均属 §3.5 边界） |
-| **arm64 handler 级真机验证** | `a64_block_probe` **904 项自检全绿**（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + **41 访存** + 78 Thumb + 4 Q 指令 + 2 cp15）；其中访存表本轮新增 4 例（LDRD/STRD/SWP 的脏 Rm/基址），改前改后输出**逐字节相同** |
+| **arm64 handler 级真机验证** | `a64_block_probe` **913 项自检全绿**（35 乘法 + 2 store + 1 两指令 + 15 PSR/分支 + **43 访存** + 80 Thumb + 4 Q 指令 + 2 cp15；本轮新增 8 例：`umlal` 无符号向量、`smlawb/t` 半字可分向量、LDRD/STRD 后索引）。**注意覆盖边界**：修复前它 904/904 全绿却漏掉 4 个真实缺陷，原因是语料盲点（见快照表）；另 `a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、Q 模型 768/768 |
 | **helper 读 `armcpu_t` 的不变量** | `armcpu_switchMode()`（族 6）与 `OP_LDM_STM`/`OP_LDRD`/`op_swp`/Thumb 的 `PUSH`/`POP`/`STM`/`LDM`（族 7）都直接读写 `cpu->R[]`：**调用前必须把涉及的寄存器落盘**。族 7 把同一条规则套到 Thumb 的寄存器列表上（8 位掩码 + LR/PC 位） |
 | x64 fastmem | **已评估放弃**（主文档 §10.6），x64 保持现状 |
-| 本机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0（`R0-R14`/`CPSR`/`instruct_adr`/异常/不变量），仅周期差 12067 与既有 3 条 `jit not repeatable`；**132 条定向探针** 2112 次比较 0 功能差异（176 条周期记录，其中 ARM `BKPT` 已从"回退解释器"改成内联 abort，功能仍 0 差异、周期由 jit=4 变 jit=0）；`--seq 2` 6848 次 0 mismatch。差分台现在支持 `--opcode <hex>`，可测 `slot<<20` 造不出来的编码（如 `bkpt`）。arm64 编码层 `check_a64` 4/241 已知基线差异（全部是 save/restore/startfunc/endfunc 的既有基线）；**真机**：`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` **904/904**（含 768 组 Q 对伪代码的模型比对）；arm64 后端另可在本机做 `clang++ -fsyntax-only` 语法门（x86_64 主机 + `-DASMJIT_NO_X86`） |
+| 本机 + 真机验证 | x86 `jit_diff --full` 81920 次比较功能桶全 0（`R0-R14`/`CPSR`/`instruct_adr`/异常/不变量），仅周期差 12067 与既有 3 条 `jit not repeatable`；**132 条定向探针** 2112 次比较 0 功能差异（176 条周期记录）；`--seq 2` 6848 次 0 mismatch。差分台支持 `--opcode <hex>`（测 `slot<<20` 造不出来的编码）与 POSIX 侧 `pc`/寄存器/机器码转储。**arm64 真机（2026-11-22）**：探针 2112 次 0 差异、`--full` 81920 次功能桶全 0（周期 14751）、`--seq 2/3/4` 19776 次 0 mismatch、`jit not repeatable` 3；`a64_exec_probe` 21/21、`a64_memcall_probe` 15/15、`a64_block_probe` **913/913**（含 768 组 Q 对伪代码的模型比对）。arm64 编码层 `check_a64` 待重新生成基线（`umlal`/`smlawt` 编码按设计变了，设备无 capstone，见主文档 §10.15 末） |
 | 未跟踪文件 | `issue.md`（会话开始前既有，不属本次迁移） |
 
 ---
 
-## 一、验证类 —— 需 macOS 整机，本机无法完成（最高优先）
+## 一、验证类 —— 原以为需 macOS 整机
 
-本类直接关系刚提交的 arm64 `call_mem` 改动（15 个调用点），是唯一可能引入功能回归的未验证面。
+> **2026-11-22 更新**：本类的前两项已由 Android arm64 设备完成（`build_diff_termux.sh`，
+> 见主文档 §10.15），并且**正是这一轮抓出 4 个真实缺陷**。剩下的整机 ROM 与帧率不需要
+> macOS，同样在这台设备上做。
+
+本类直接关系 arm64 `call_mem` 改动（15 个调用点），是唯一可能引入功能回归的未验证面。
 
 - [x] **§10.8 访存差分安全网（本机）**：差分台 `kProbes` 新增 20 条访存定向探针（写回 / Rd≠Rn / 宽度 / 符号扩展 / 寄存器偏移 / Thumb SP 相对 / PUSH-POP），38/38 探针 0 mismatch，`--full` 功能桶全 0。这是本机侧能做的加固；**不替代**下面的 macOS arm64 语义验证。
 - [x] **`call_mem` 原语级真机验证（Termux aarch64，本轮）**：`tools/jit_matrix/a64_memcall_probe.cpp` 15/15。负对照（同函数去掉 stp/ldp）证明 helper 真的把 x12/x15/x2 毁成 `BEEF0000`/`F00D0000`/`DEAD0000`，正例证明 `call_mem` 保 x12/x15、`call_mem_r2` 保 x2+x12+x15，x21 靠 AAPCS64 callee-saved 免费保住；1e6 次调用验 `call_mem_r2` 的栈收支与 canary。
 - [x] **handler 级真机验证通道（族 5 建立，族 6 扩展）**：`tools/jit_matrix/a64_block_probe.cpp` 直接 include `arm_jit_arm.cpp`、用 68 个桩符号补齐核心，在真机上执行 `compile_basicblock()` 生成的块。族 6 把其中的 `armcpu_switchMode` 桩换成**真正搬移 bank 的实现**（否则"缓存没 flush"这类 bug 一条都测不出来），并支持两指令块。**新增族时优先扩这个探针，而不是等 macOS。**
-- [ ] **§10.5/§10.7 访存差分（macOS / arm64）**：`build_diff_macos.sh` 重建后跑 `jit_diff --full`，确认访存槽位功能桶（R0–R14 / CPSR / `instruct_adr` / 内存写集）全 0。重点覆盖：LDR/STR 的 Rd==15 与写回变体、**LDRD/STRD 的 W 位写回、Thumb PUSH/POP、SWP、LDM/STM**。注意 macOS 的 `kProbes` 与本机同步后是 **132 条**（§10.11 把 arm64 探针的形状搬到了 x64）。
-- [ ] **`ldmda`/`stmda` 的有效地址对解释器核对（新增，需 oracle）**：探针里这两条只做了 pin（迁移前后相同），没有断言——它们的地址推进跟 ARM ARM 的写法对不上，而块级探针链不到解释器，判不了谁对。macOS 上拿 `jit_diff` 的 LDM/STM 槽位对比即可定性；若 JIT 与解释器一致而与 ARM ARM 不一致，那是既有语义，另开 issue。
+- [x] **§10.5/§10.7 访存差分（arm64 真机，2026-11-22 完成）**：不再需要 macOS ——
+  `tools/jit_matrix/build_diff_termux.sh` 在 aarch64 Android 上直接链 meson 的静态库，
+  `jit_diff --full` **81920 次比较功能桶全 0**，132 条定向探针 2112 次比较 0 差异。
+  覆盖到 LDR/STR 的 Rd==15 与写回变体、LDRD/STRD 的 W 位写回、Thumb PUSH/POP、SWP、
+  LDM/STM 四种地址形式。**顺带抓出 4 个后端缺陷**（见快照表与主文档 §10.15）。
+- [x] **`ldmda`/`stmda` 对解释器核对（2026-11-22，差异已判）**：真机 `--full` 里 STMDA
+  （slot 080）/ LDMDA（slot 081）**只剩周期记录**（`interp=1` vs `jit=2`/`9`），R0-R14 与
+  CPSR 全 0；带真实寄存器列表的 `LDMDA r13,{r0-r2}` / `STMDA r13,{r0-r2}` 探针也 0 差异。
+  **JIT 与解释器一致**，所以"地址推进跟 ARM ARM 对不上"若成立，是**解释器与 JIT 共同的
+  既有语义**，与本次迁移无关，另开 issue 才合适。
+- [ ] **整机 ROM / 帧率**：仍是设备上唯一没做的两块（花屏 / DMA 提前退出、ALU ≥1.3×）。见下面「剩余项」1、2。
 - [x] **带移位寄存器偏移的 LDR/STR 已接缓存（2026-11-21 完成）**：移位 `arg` 宏（10 个
   IMM/REG 变体）的 Rm/Rs 改用 `read_into()`——槽里有值就 `mov`，不占槽、不 evict；同一
   形状的 `LDRD/STRD` 寄存器偏移与 `SWP/SWPB` 基址一并改掉。真机 904/904，改前改后输出
@@ -69,7 +87,7 @@
 | 组 | 内容 | 组数 | 状态 |
 |---|---|---|---|
 | A/B | 数据处理 + ARM 移位（批次 1 + 2） | 252 | **完成**（§S4 族 1/2）；性能门槛未过 |
-| C | 访存 + LDM/STM（批次 3 + 4） | 204 | **完成**（§S4 族 3+4）；遗留两条 DA 形式待 macOS 对解释器 |
+| C | 访存 + LDM/STM（批次 3 + 4） | 204 | **完成**（§S4 族 3+4）；两条 DA 形式与解释器一致（真机 `--full` 只剩周期差） |
 | D | 乘法 + 分支 + 状态 + 异常（批次 5 + 6） | 41 | **完成**（`UND` 一直 `interp-fallback`） |
 | E | 协处理器 + 饱和 + Thumb（批次 7 + 8） | 74 | **完成**（§S4 族 7+8）：Thumb 68 + 饱和 4 + 协处理器 2 |
 
@@ -128,11 +146,60 @@
 
 ---
 
+## 六、2026-11-22 之后的剩余项（按性价比排序）
+
+> 上一轮（§10.15）把"验证不对称"消掉了，剩下的每一项都不再需要 macOS。设备 = `ssh -p8022
+> 192.168.1.4`（Termux，`u0_a478`），仓库在 `~/desmume`，差分台在 `~/desmume/.build/diff-a64/jit_diff`。
+
+1. **整机 ROM 冒烟（最高价值，暂无替代手段）**——单指令/单块等价推不出"整帧等价"，花屏与
+   DMA 提前退出路径只有跑 ROM 才看得见。
+   - 设备上已有 meson 产物：`desmume/src/frontend/posix/build/cli/desmume-cli`
+     （GTK 需要显示，CLI 不需要）。用同一 ROM 跑 JIT 开 / 关两遍，对比帧输出与暂存写计数。
+   - 关注点按 §3.7：块内 DMA 提前退出、`m_cacheCache` 脏值在 helper 调用后是否丢失、
+     自修改代码路径不崩。
+   - 回退粒度仍然是"按族换回 `callR3`/`callR7`"，所以真出问题也能二分到具体调用点。
+2. **帧率门槛（族 1/2 的 ≥1.3×，全量 ≥1.5×）**——代码尺寸达标不等于帧率达标（§S4 批次纪律）。
+   - 设备上直接 `jit_diff --bench <iters> --block <n> --slot <s>`：x64 侧基线是
+     0.62 / 3.5 / 3.5 ns（`add` / `ldr` / `str`），arm64 侧**还没有这组数字**，先补基线。
+   - 解释器一侧的对照要另做一个开关（当前 `--bench` 只量 JIT）。
+3. **`a64_golden.txt` 重新生成**——`umlal`（`smaddl`→`umaddl`）、`smlawt`（`sbfx #0`→`#16`）
+   按设计改了编码，编码层基线会多出这 2 条差异；LDRD/STRD 后索引那条不在 dump 语料里。
+   - 做法：`~/a64/a64_dump_new > a64_new_arm64.txt`，再 `python3 tools/jit_matrix/check_a64.py
+     tools/jit_matrix/a64_golden.txt a64_new_arm64.txt`。设备上没有 `capstone`
+     （`pkg install python-capstone` 或换一台装了它的机器），所以上一轮没做。
+   - **不要**在没看 `check_a64` 输出前覆盖 `a64_golden.txt`：它是"逐字节冻结"的参照物。
+4. **同类模式的复审**（两条，都是本轮"只修被踩到的那一处"留下的）：
+   - `rc_t_write(X)` 紧跟 `rc_t_read(Y)` 的 handler：本轮 Thumb `OP_ADD_IMM3` 是唯一一处
+     在 `Rd==Rs` 时没走 `rw` 分支的。全文件再扫一遍，确认没有第二个（`OP_LSL_0`/
+     `OP_SHIFTS_IMM`/`OP_SUB_IMM3`/`OP_ADD_REG`/`OP_SUB_REG` 已有守卫）。
+   - `CACHED_PTR(reg_pos_ptr(12, R2, ADDRESS))`（`arm_jit_arm.cpp` 两处，`OP_ARITHMETIC`
+     的 `Rd==Rn` 分支）：**碰巧对**——上一行 `reg_pos_ptr(12, R1, VALUE)` 已经把同一个地址
+     写进 x11。建议改成直接用返回值，或至少加注释，否则下次重排这两行就是同一个 SIGSEGV。
+5. **块级探针语料继续补**（这轮证明了"语料漏一条 = 全绿但错"）：
+   - LDRD/STRD 的寄存器偏移后索引（`[r1],r2`）、SWP 的脏基址组合；
+   - 乘法族里所有 `_S`（带标志）变体的高位操作数向量；
+   - Thumb 侧 `Rd==Rs` 的其余别名（`movs`、`lsls #0` 等）。
+   - 注意：块级探针是语料驱动，负对照能复现才算有效用例（Thumb 别名那两条就复现不了，
+     见主文档 §10.15），所以每加一条都该做一次"换回 HEAD 源码重编"的对照。
+6. **`ldmda`/`stmda` 与 ARM ARM 的差异**（若确认存在）：JIT 与解释器已判定一致（上面第一节），
+   所以这是**既有语义**问题，应另开 issue，不混进 JIT 迁移。
+7. **日常回归的一条命令**（建议写进 CI 或 pre-push）：
+   ```
+   ssh -p8022 192.168.1.4 'cd ~/desmume && bash tools/jit_matrix/build_diff_termux.sh &&
+       ./.build/diff-a64/jit_diff | tail -3 && ./.build/diff-a64/jit_diff --full | tail -12'
+   ```
+   期望：探针 `0 mismatch`，`--full` 的 `R0-R14` / `CPSR` / `instruct_adr` /
+   `harness invariant` / `exceptions` 全 0（周期项不是失败）。
+
+---
+
 ## 建议执行顺序
 
-1. **先 macOS 补测访存 15 个调用点**（§10.7）——当前唯一可能引入回归的未验证改动，优先排除风险。
-2. **继续迁移主线**：从族 3 访存语义迁移起步（C 组 206 组），但需先解决「x86 可差分、arm64 语义只能等 macOS」的验证不对称。**该不对称已部分缓解**：`a64_block_probe` + `--marginal` 能在真机上给出等价性与代码尺寸，剩三方差分与整机帧率两块。
-3. **帧率门槛实测**：在族 1/2 上取解释器 / 旧 JIT / 迁移后 JIT 三组数字，确认 ALU 族真的 ≥1.3×，再决定是否继续推 571 条。代码尺寸一侧已可先用 `--marginal` 预判（§10.10 表）。
+1. ~~先 macOS 补测访存 15 个调用点~~ **已完成（Android arm64 真机，§10.15）**，并且这一轮
+   抓出 4 个 arm64 专属缺陷。下一步是把同一套差分台拿来跑**整机 ROM**：从"单指令/单块等价"
+   跨到"整帧等价"，这也是花屏 / DMA 提前退出路径唯一的验证手段。
+2. **继续迁移主线**：从族 3 访存语义迁移起步（C 组 206 组），但需先解决「x86 可差分、arm64 语义只能等 macOS」的验证不对称。**该不对称已解除**：`jit_diff` 现在能在设备上原生跑，arm64 侧与 x64 侧的差分粒度一致（探针 / 全量槽位 / 序列），剩整机帧率一块。
+3. **帧率门槛实测**：在族 1/2 上取解释器 / 旧 JIT / 迁移后 JIT 三组数字，确认 ALU 族真的 ≥1.3×，再决定是否继续推 571 条。代码尺寸一侧已可先用 `--marginal` 预判（§10.10 表）；设备上可直接用 `jit_diff --bench` 做对应测量。
 4. **P1/P2/P3 优化** 与 **S7 收尾** 收口：P3 已按「不扩槽、用 `read_into()`」收口；P2 的收益上限由 `--marginal` 的 `add` 4 vs `adds` 9 直接给出。
 
 ---

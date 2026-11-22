@@ -2248,11 +2248,13 @@ x23（DMA flag 别名）、x24/x25/x26（三个常驻基址）无需在调用点
 的序言摊薄口径下保守取 8–12 条），字访存边际有望从 29→17~21、49→37~41，
 即访存膨胀率下降约 25–40%。这是**按编码推算**，不是实测。
 
-**本机测不了、需 macOS 补测**：
+**当时认为"本机测不了、需 macOS 补测"的**（前两项已由 Android arm64 真机完成，见 §10.15）：
 
-- [ ] `build_diff_macos.sh` 重建后跑 `jit_diff --full`，确认访存槽位 R0-R14 / CPSR /
-      `instruct_adr` / 内存写集全 0（尤其 LDR/STR 的 Rd==15 与写回变体）；
-- [ ] `jit_diff --block --slot` 实测 LDR/STR 边际指令数，与 10.5 的推算对照；
+- [x] ~~`build_diff_macos.sh`~~ 改用 `build_diff_termux.sh` 重建后跑 `jit_diff --full`，
+      确认访存槽位 R0-R14 / CPSR / `instruct_adr` / 内存写集全 0（尤其 LDR/STR 的 Rd==15
+      与写回变体）——**真机 0 功能差异**，顺带抓出 4 个后端缺陷（§10.15）。
+- [x] `jit_diff --block --slot` 实测 LDR/STR 边际指令数：x64 侧已完成；arm64 侧由
+      `a64_block_probe --marginal` 给出（§10.10 表），与 10.5 的推算对照一致。
 - [ ] 整机 ROM 回归（花屏 / DMA 提前退出路径，§3.7），确认缓存脏值在 helper 调用后未丢失；
 - [ ] 帧率门槛（§S4：ALU ≥1.3×、访存明显提升）仍只有这一刀之后才能谈，尚未验证。
 
@@ -2723,3 +2725,87 @@ callee-saved 上，不再需要 `frame.add_dirty_regs()`。
 **顺带观察（未深究）**：hint 版本在探针里周期记录从 176 条降到 144 条，而 `--full`
 81920 次比较的周期差 **12067 一条不差**。也就是说某些探针的周期值会随二进制的寄存器
 分配变化。周期按 §3.5 不进仲裁，这里只记录现象。
+
+### 10.15 Android arm64 真机差分：一次抓到 4 个功能缺陷（2026-11-22）
+
+**背景**：§10.5/§10.7 一直挂着"需 macOS 整机"。缺的其实不是 macOS，而是一台能原生执行
+`movz/movk/stp` 的机器——Android/Termux 设备就是，而且是同一颗 aarch64 核心。`jit_diff`
+本身没有任何 Cocoa 依赖，唯一的问题是**怎么链**：macOS 脚本复用 Xcode 产物，设备上复用
+meson 已经编好的静态库。
+
+**怎么搭**（新增 `tools/jit_matrix/build_diff_termux.sh` + `jit_diff_stubs_posix.cpp`）
+
+- 直接链 `desmume/src/frontend/posix/build/` 的 `libdesmume.a` / `libdesmume_jit.a` /
+  `libasmjit.a`：与 GUI 是同一批 TU、同一套宏（`-DHOST_64 -DHAVE_JIT`，`HOST_64` 决定
+  `arm_jit.h` 的结构布局）。另起一套 flag 编核心库也能跑，但那样验的就不是出货的那份代码。
+- 这个归档里混着**前端** TU（`path.cpp`、`mic_sdl.cpp`、`agg_font_freetype.cpp`），所以
+  链接要带 glib-2.0 / sdl3 / freetype2 / fontconfig；桩文件只补 5 个前端全局
+  （`execute`/`paused`/`emu_paused`/`core3DList`/`SNDCoreList`），3D 只注册 `gpu3DNull`
+  ——`gpu3DRasterize` 在 Windows 前端，POSIX 侧的软件光栅器这个 harness 用不到。
+- 差分台原有的 POSIX 信号护栏（`sigsetjmp`/`siglongjmp`，§10.8 之前就写好）直接可用，
+  所以"某条指令编坏了"只会变成一行 FAIL，不会让整个 sweep 停在那里。
+
+**结果（4 处修复之后，设备：aarch64 Android / clang 21.1.8）**
+
+| 测试 | 规模 | 功能差异 | 周期记录 |
+|---|---|---|---|
+| 132 条定向探针 | 132 × 8 向量 × 2 标志 = 2112 | **0** | 144 |
+| `--full` 全量槽位 | 4096 ARM + 1024 Thumb，8 向量 × 2 标志 = 81920 | **0**（R0-R14 / CPSR / `instruct_adr` / 异常 / 不变量 全 0） | 14751 |
+| `--seq 2/3/4` | 6848 + 6592 + 6336 = 19776 | **0** | 84 / — / — |
+| `a64_block_probe` | 913 项自检（含 768 项 Q 系列对伪代码） | **0 failed** | — |
+
+`jit not repeatable` 也是 3，与 x64 基线同数。周期记录 14751 比 x64 的 12067 多，两个后端
+的周期模型本来就不同（§3.5，不进仲裁）。
+
+**抓到的 4 个缺陷**——都是 arm64 独占，x64 的 132 探针与 `--full` 一直是 0 功能差异：
+
+1. **Thumb `adds Rd,Rs,#0`（slot 070，`OP_ADD_IMM3` 的 imm3==0 分支）**：先
+   `rc_t_write(Rd)` 再 `rc_t_read(Rs)`。`write()` 走 `need(load=false)`，抢到一个**没有
+   加载过**的槽位；Rd==Rs 时（槽位扫描每三位字段都是 0，正好就是这个形状）随后的
+   `read_into()` 命中该槽位，把宿主寄存器里"上一条指令留下的东西"复制给 Rd。实测复制的
+   是**块自己的地址**，8 个操作数向量全中。同文件的 `OP_LSL_0`/`OP_SHIFTS_IMM`/`OP_SUB_IMM3`
+   都有 `Rd==Rs` 分支，只有这一处漏了。
+2. **UMLAL 用 `smaddl` 发射**：`emit_umlal_common()` 里注释写着"UMADDL 与 SMADDL 只差
+   一条指令"，代码却是 `smaddl`。`0x80000000 * 0x7FFFFFFF` 于是得到符号扩展的
+   `0xC0000000_80000000`，而非 `0x3FFFFFFF_80000000`。
+3. **SMLAWT 取错半字**：`emit_smlawt()` 与 `emit_smlawb()` 逐字相同（`sbfx #0,#16`），
+   `SMLAW{T}` 的 T 位根本没生效。kSetC 那种"上下半字相同"的操作数看不出来，换成
+   `R2=0x00030002` 立刻差 1（低半字 2、高半字 3）。
+4. **LDRD/STRD 后索引写回跑到了野地址**：`CACHED_PTR(reg_pos_ptr(16, R1, ADDRESS))`。
+   arm64 的 `CACHED_PTR` 是 `#define CACHED_PTR(exp) PTR_STORE_REG`——**参数被整个丢弃**，
+   于是 `reg_pos_ptr()` 的 evict 和"把地址算进 R1"两件事都没发生，`add/sub` 落在 x11
+   的残值上。设备上 x11 恰好是块自身地址的**半字下标**（`(adr & 0x3FFE) >> 1`），
+   所以 `ldrd r0,[r13],#8` / `strd r0,[r13],#8` 两条一进块就 SIGSEGV at `0x2E0`。
+   正确写法是把 `reg_pos_ptr()` 的返回值（R1）直接当操作数用。
+   注意 1144/1289 两处的 `CACHED_PTR(reg_pos_ptr(...))` 是"碰巧对"：前面那行
+   `reg_pos_ptr(12, R1, VALUE)` 已经把同一个地址写进了 x11。
+
+**为什么 904 项块级探针一个都没抓到**——这是本轮最该记住的一条：
+
+- `umlal` 在语料里只有 kSetC 一组操作数，两个乘数都是正数，`smaddl == umaddl`；
+- `smlawb`/`smlawt` 用的也是 kSetC，`0x00020002` 的上下半字相同，B 与 T 不可区分；
+- LDRD/STRD 只有 `[r1]`、`[r1,r2]`、`[r1,r4]!` 三种形状，**没有后索引立即数**；
+- Thumb 的 `adds r0,#0` 用的是 IMM8（`0x3001`）而不是 IMM3（`0x1C00`）编码。
+
+也就是说"904/904 全绿"证明的是**语料覆盖到的那部分**是对的，而不是后端是对的。已按
+上述四点补 8 条用例（`kSetD` 专门拆开半字；新增 `umlal (b)` 两条、`smlawb/t (b/t)` 两条、
+`ldrd/strd [r1],#8` 两条、Thumb `adds r0,r0,#0` / `adds r1,r1,#0` 两条），904 → **913**。
+
+负对照（把两个源文件换回 `HEAD` 版本重编同一份探针）：`FAIL umlal (b) R5=00000002
+want=80000001`、`FAIL smlawt (t) R0=00000002 want=00000003`，随后在新增的
+`ldrd r2,[r1],#8` 上 SIGSEGV（exit 139）——三条缺陷各自独立可复现。
+
+补上的 Thumb 别名两条在块级探针里**不能可靠复现旧 bug**，这一点值得单独记：负对照跑到
+那里之前就已被 LDRD 的 SIGSEGV 打断；即使去掉那两条访存用例，结果也取决于 x12/x15/x21
+的残值（差分台里宿主的调用者正好把块地址留在 x12，所以每次都在，块探针里没有这个前提）。
+所以这两条在块探针里的作用是**钉住正确结果**，稳定复现仍然靠差分台。这也说明一个顺序
+问题：块级探针是"语料驱动"的，语料写错就永远绿；差分台是"全空间驱动"的，不挑输入。
+
+**顺带补的诊断**（差分台 POSIX 侧）：`faulted()` 以前只报 `si_addr`，一个数字，分不清
+"发射的代码访问了坏地址"和"跳进了坏块指针"。现在同时报 `pc`（从 `ucontext` 取，aarch64/x86-64
+各一条路径），`--verbose` 下再打 x0-x30 + sp 和 pc 前 256 字节的机器码。第 4 条缺陷就是
+靠这个定位的：`pc != si_addr` 说明是数据访问，x11 的值直接给出了"半字下标"这条线索。
+
+**还没做的**：整机 ROM / 帧率、`a64_golden.txt` 重新生成、同类模式的复审——逐条列在
+`jit-open-tasks.md` 的「2026-11-22 之后的剩余项」小节，那里也写了每条的具体做法。
+
