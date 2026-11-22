@@ -727,7 +727,7 @@ uint64_t cpu_features_get(void)
       if (flags[3] & (1 << 22))
          cpu |= RETRO_SIMD_MMXEXT;
    }
-#elif defined(__linux__)
+#elif defined(__ARM_ARCH) && (__ARM_ARCH > 0)
    if (check_arm_cpu_feature("neon"))
    {
       cpu |= RETRO_SIMD_NEON;
