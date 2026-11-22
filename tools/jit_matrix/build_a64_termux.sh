@@ -36,7 +36,9 @@ $CXX $LIBS obj/a64_memcall_probe.o -o a64_memcall_probe
 # a64_block_probe includes arm_jit_arm.cpp itself, so it needs the emulator
 # headers (sync desmume/src/*.h too) and must be compiled and linked in one go:
 # the stub core it defines has to live in the same translation unit.
-$CXX $FLAGS -I desmume/src -I desmume/src/utils -I desmume/src/libretro-common/include \
+# -DHAVE_JIT is not optional here: armcpu_t and the interpreter tables are only
+# declared with it, and without it the probe fails at `armcpu_t NDS_ARM9;`.
+$CXX $FLAGS -DHAVE_JIT -I desmume/src -I desmume/src/utils -I desmume/src/libretro-common/include \
 	tools/jit_matrix/a64_block_probe.cpp $LIBS -o a64_block_probe
 
 ./a64_dump_new > a64_new_arm64.txt

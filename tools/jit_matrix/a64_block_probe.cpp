@@ -413,6 +413,15 @@ static const u32 kSetC[16] = {
 	0x00000000u, 0x00010001u, 0x00020002u, 0xFFFFFFFEu,
 	0x7FFFFFFFu, 0x7FFFFFFFu, 0x0000FFFFu, 0x00000000u,
 };
+// Halves that differ from each other, which is what a B/T selector case needs:
+// with kSetC the top and bottom halfword of R2 are both 0x0002, so SMLAWB and
+// SMLAWT agree and the x/y bit can be wired to the wrong half without any
+// visible difference. The device differential harness caught exactly that
+// (emit_smlawt was a copy of emit_smlawb); these sets make it observable here.
+static const u32 kSetD[16] = {
+	0x00000000u, 0x00010000u, 0x00030002u, 0x00000000u,
+	0x00000000u, 0x00000000u, 0x00000000u, 0x00000000u,
+};
 // Operand pairs for the saturating forms: Rn/Rm sit in R1/R2, and these three
 // sets make the *signed* overflow actually happen (or not) where the case name
 // says so.
@@ -456,6 +465,13 @@ static const Case kCases[] = {
 	CR("umull r4, r5 (b)",     MULL_OP(4, 5, 4, 1, 2, 0), kSetB, 4, 0x80000000u),
 	CR("umull r4, r5 (b, hi)", MULL_OP(4, 5, 4, 1, 2, 0), kSetB, 5, 0x7FFFFFFFu),
 	C ("umlal r4, r5, r1, r2", MULL_OP(5, 5, 4, 1, 2, 0), kSetC),
+	// Unsigned with both operands' top bit set. kSetC keeps them positive, so
+	// smaddl and umaddl agree there and the (signed) instruction this used to
+	// emit went unnoticed: the differential harness reported UMLAL returning
+	// the sign-extended product. 0x80000000 * 0xFFFFFFFF + (1:0xFFFFFFFF) is
+	// 0x80000001:7FFFFFFF.
+	CR("umlal r4, r5 (b)",     MULL_OP(5, 5, 4, 1, 2, 0), kSetB, 5, 0x80000001u),
+	CR("umlal r4, r5 (b, lo)", MULL_OP(5, 5, 4, 1, 2, 0), kSetB, 4, 0x7FFFFFFFu),
 	CR("smull r4, r5 (b, hi)", MULL_OP(6, 5, 4, 1, 2, 0), kSetB, 5, 0x00000000u),
 	CR("smull r4, r5 (b)",     MULL_OP(6, 5, 4, 1, 2, 0), kSetB, 4, 0x80000000u),
 	CR("smlal r4, r5 (b)",     MULL_OP(7, 5, 4, 1, 2, 0), kSetB, 4, 0x7FFFFFFFu),
@@ -478,6 +494,10 @@ static const Case kCases[] = {
 	C ("smulwt r0, r1, r2",    SMULW_OP(0, 1, 2, 1), kSetB),
 	C ("smlawb r0, r1, r2, r3", SMLAW_OP(0, 3, 1, 2, 0), kSetC),
 	C ("smlawt r0, r1, r2, r3", SMLAW_OP(0, 3, 1, 2, 1), kSetC),
+	// B vs T with halves that differ: R2 = 0x00030002 and R1 = 0x00010000, so
+	// the result is 2 for the bottom half and 3 for the top one.
+	CR("smlawb r0,r1,r2,r3 (b)", SMLAW_OP(0, 3, 1, 2, 0), kSetD, 0, 2),
+	CR("smlawt r0,r1,r2,r3 (t)", SMLAW_OP(0, 3, 1, 2, 1), kSetD, 0, 3),
 
 	// --- CLZ (same batch: no flags, one source) ---------------------------
 	CR("clz r0, r1",           CLZ_OP(0, 1), kSetA, 0, 1),
@@ -1053,6 +1073,14 @@ int main(int argc, char **argv)
 			{ "strd r2,[r1] (hi)",    {0xE1C120F0u}, 1, {0,B,0xAABBCCDDu,0x11223344u}, {0,0},      -1, 0,           1, 0x11223344u },
 			{ "ldrd r2,[r1]",         {0xE1C120D0u}, 1, {0,B},      {0x11223344u,0x55667788u},  2, 0x11223344u,  -1, 0 },
 			{ "ldrd r2,[r1] (hi)",    {0xE1C120D0u}, 1, {0,B},      {0x11223344u,0x55667788u},  3, 0x55667788u,  -1, 0 },
+			// Post-index with a nonzero immediate. This is the writeback that
+			// went through CACHED_PTR() -- which discards its argument -- so the
+			// add landed on a stale x11: on device the block faulted reading
+			// address 0x2E0 before any of these tables ever ran, which is why
+			// nothing here caught it. If the regression comes back the probe
+			// dies with a SIGSEGV instead of a FAIL line.
+			{ "ldrd r2,[r1],#8",      {0xE0C120D8u}, 1, {0,B},      {0x11223344u,0x55667788u},  1, 0x02003008u,  -1, 0 },
+			{ "strd r2,[r1],#8",      {0xE0C120F8u}, 1, {0,B,0xAABBCCDDu,0x11223344u}, {0,0},      1, 0x02003008u,   0, 0xAABBCCDDu },
 			{ "swp r0,r2,[r1]",       {0xE1010092u}, 1, {0,B,0xCAFEBABEu}, {0x12345678u,0},    0, 0x12345678u,   0, 0xCAFEBABEu },
 			{ "swpb r0,r2,[r1]",      {0xE1410092u}, 1, {0,B,0xCAFEBABEu}, {0x00000078u,0},    0, 0x00000078u,   0, 0x000000BEu },
 			{ "stmia r0,{r1,r2,r3}",  {0xE880000Eu}, 1, {kDataAdr,1,2,3}, {0,0},                  -1, 0,           0, 1 },
@@ -1244,6 +1272,16 @@ int main(int argc, char **argv)
 			TX("subs r0,r0,r2",    T_SUB_R(2,0,0), tA, 0, 0x1111110Fu),
 			TX("adds r0,r1,#3",    T_ADD_I3(3,1,0), tA, 0, 0x80000002u),
 			TX("adds r0,r1,#0",    T_ADD_I3(0,1,0), tA, 0, 0x7FFFFFFFu),
+			// Rd == Rs on the MOVS alias. Every other case here separates the
+			// two, which is why the arm64 handler could take the destination
+			// cache slot before reading the source for months: with Rd != Rs
+			// the ordering is harmless. Rd == Rs reads a slot that was claimed
+			// but never loaded, so the result is whatever the host register
+			// held -- the device differential harness saw the block's own
+			// address; here it is an unpredictable value, so the check is
+			// "R0 must still be R0", not a specific sum.
+			TX("adds r0,r0,#0",    T_ADD_I3(0,0,0), tA, 0, 0x11111111u),
+			TX("adds r1,r1,#0",    T_ADD_I3(0,1,1), tA, 1, 0x7FFFFFFFu),
 			TX("subs r0,r1,#3",    T_SUB_I3(3,1,0), tA, 0, 0x7FFFFFFCu),
 			TX("movs r0,#0x5a",    T_IMM8(0x2000,0,0x5A), tA, 0, 0x0000005Au),
 			TA("cmp r1,#0x5a",     T_IMM8(0x2800,1,0x5A), tA),
