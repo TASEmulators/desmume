@@ -190,7 +190,7 @@
 			<ProgramDatabaseFile>$(IntDir)TargetName.pdb</ProgramDatabaseFile>
 
 			<!-- deps config for x64 -->
-			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">.\zlib128;agg;.libs;.libs\x64;..\..\..\3rdparty\libs\x64</AdditionalLibraryDirectories>
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">agg;.libs;.libs\x64;..\..\..\3rdparty\libs\x64</AdditionalLibraryDirectories>
 			<!-- ddraw/dinput8/dsound/dxguid come straight from the Windows SDK.
 			     The pieces the legacy DirectX SDK also used to supply are built from
 			     source instead: dinput8.lib ships c_dfDIJoystick2 itself, and
@@ -205,10 +205,10 @@
 			<AdditionalDependencies Condition="'$(Platform)' == 'x64' AND '$(UseNativeOsd)' == 'false'">agg-2.5-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- deps config for Win32 -->
-			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">.\zlib128;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">agg;.libs;.libs\win32</AdditionalLibraryDirectories>
 			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
 			<AdditionalDependencies Condition="'$(Platform)' == 'Win32' AND '$(UseNativeOsd)' == 'false'">agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
-			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'ARM64'">.\zlib128;agg;.libs;.libs\arm64;..\..\..\3rdparty\libs\arm64</AdditionalLibraryDirectories>
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'ARM64'">agg;.libs;.libs\arm64;..\..\..\3rdparty\libs\arm64</AdditionalLibraryDirectories>
 			<AdditionalDependencies Condition="'$(Platform)' == 'ARM64'">ddraw.lib;dinput8.lib;dsound.lib;dxguid.lib;wgpu_native.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- special deps config for newer VS -->

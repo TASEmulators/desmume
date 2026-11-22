@@ -166,11 +166,11 @@
 			<ProgramDatabaseFile>$(IntDir)TargetName.pdb</ProgramDatabaseFile>
 
 			<!-- deps config for x64 -->
-			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">..\..\windows\zlib128;..\..\windows\agg;.libs;.libs\x64;.\SDL3\lib\x64</AdditionalLibraryDirectories>
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">..\..\windows\agg;.libs;.libs\x64;.\SDL3\lib\x64</AdditionalLibraryDirectories>
 			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">agg-2.5-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- deps config for Win32 -->
-			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">..\..\windows\zlib128;..\..\windows\agg;.libs;.libs\win32;.\SDL3\lib\x86</AdditionalLibraryDirectories>
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">..\..\windows\agg;.libs;.libs\win32;.\SDL3\lib\x86</AdditionalLibraryDirectories>
 			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- special deps config for newer VS -->

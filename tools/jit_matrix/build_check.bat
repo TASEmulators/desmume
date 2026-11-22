@@ -53,7 +53,7 @@ REM arm_jit.cpp uses C++20 through the vendored asmjit headers; asmjit 1.0
 REM (formerly src\utils\AsmJit) was removed after the migration (plan S7.2).
 set CFLAGS=/c /nologo /EHsc /W1 /std:c++20 /D_CRT_SECURE_NO_DEPRECATE /DWIN32 /DNOMINMAX /DASMJIT_STATIC
 set DEFS=/DHAVE_JIT /DHAVE_LIBZ /DHAVE_ZLIB_DEFLATE
-set INCS=/I"%ROOT%\desmume\3rdparty" /I"%SRC%" /I"%SRC%\libretro-common\include" /I"%SRC%\frontend\windows" /I"%SRC%\frontend\windows\zlib128"
+set INCS=/I"%ROOT%\desmume\3rdparty" /I"%SRC%" /I"%SRC%\libretro-common\include" /I"%SRC%\frontend\windows" /I"%ROOT%\desmume\3rdparty\zlib-1.4"
 
 if /I "%CONFIG%"=="Debug" (
   set CFLAGS=%CFLAGS% /Od /Zi /D_DEBUG

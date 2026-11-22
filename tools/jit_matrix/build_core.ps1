@@ -120,7 +120,7 @@ $incCandidates = @(
     $Src
     (Join-Path $Src 'libretro-common\include')
     $baseDir
-    (Join-Path $baseDir 'zlib128')
+    (Join-Path $Project '3rdparty\zlib-1.4')
     (Join-Path $baseDir 'zziplib')
     (Join-Path $baseDir 'glib-2.20.1\build')
     (Join-Path $baseDir 'agg\include')

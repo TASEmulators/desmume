@@ -61,14 +61,14 @@ if (-not $sources) { throw "no sources in $DiffDir" }
 
 # zlib's crc32, which NDS_LoadROM references. The libretro-common copy is a
 # standalone test program (it has its own main), so the zlib source is used.
-$crc32 = Join-Path $Src 'frontend\windows\zlib128\crc32.c'
+$crc32 = Join-Path $Project '3rdparty\zlib-1.4\crc32.c'
 if (Test-Path $crc32) { $sources += $crc32 }
 
 $incArgs = @(
     "/I$Src"
     "/I$(Join-Path $Src 'libretro-common\include')"
     "/I$(Join-Path $Src 'frontend\windows')"
-    "/I$(Join-Path $Src 'frontend\windows\zlib128')"
+    "/I$(Join-Path $Project '3rdparty\zlib-1.4')"
 )
 
 $optArgs = if ($Config -eq 'Debug') { @('/Od', '/Zi') } else { @('/O2') }
