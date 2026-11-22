@@ -203,7 +203,6 @@ ClientAudioOutput::ClientAudioOutput()
 	}
 	
 	_volume = MAX_VOLUME;
-	_spuAdvancedLogic = true;
 	_interpolationModeID = SPUInterpolation_Cosine;
 	_spuInterpolationModeString = "Cosine";
 	_syncModeID = ESynchMode_Synchronous;
@@ -213,13 +212,11 @@ ClientAudioOutput::ClientAudioOutput()
 	
 	_mutexEngine = slock_new();
 	_mutexVolume = slock_new();
-	_mutexSpuAdvancedLogic = slock_new();
 	_mutexSpuInterpolationMode = slock_new();
 	_mutexSpuSyncMethod = slock_new();
 	
 	_needUpdateAudioEngine = true;
 	_needUpdateVolume = true;
-	_needUpdateSPUAdvancedLogic = true;
 	_needUpdateSPUInterpolationMode = true;
 	_needUpdateSPUSyncMethod = true;
 }
@@ -231,7 +228,6 @@ ClientAudioOutput::~ClientAudioOutput()
 	
 	slock_free(this->_mutexEngine);
 	slock_free(this->_mutexVolume);
-	slock_free(this->_mutexSpuAdvancedLogic);
 	slock_free(this->_mutexSpuInterpolationMode);
 	slock_free(this->_mutexSpuSyncMethod);
 }
@@ -291,23 +287,6 @@ float ClientAudioOutput::GetVolume()
 	slock_unlock(this->_mutexVolume);
 	
 	return vol;
-}
-
-void ClientAudioOutput::SetSPUAdvancedLogic(bool theState)
-{
-	slock_lock(this->_mutexSpuAdvancedLogic);
-	this->_spuAdvancedLogic = theState;
-	this->_needUpdateSPUAdvancedLogic = true;
-	slock_unlock(this->_mutexSpuAdvancedLogic);
-}
-
-bool ClientAudioOutput::GetSPUAdvancedLogic()
-{
-	slock_lock(this->_mutexSpuAdvancedLogic);
-	const bool spuAdvancedLogic = this->_spuAdvancedLogic;
-	slock_unlock(this->_mutexSpuAdvancedLogic);
-	
-	return spuAdvancedLogic;
 }
 
 void ClientAudioOutput::SetSPUInterpolationModeByID(SPUInterpolationMode interpModeID)
@@ -526,18 +505,6 @@ void ClientAudioOutput::NDSExecConfigure()
 	else
 	{
 		slock_unlock(this->_mutexVolume);
-	}
-	
-	slock_lock(this->_mutexSpuAdvancedLogic);
-	if (this->_needUpdateSPUAdvancedLogic)
-	{
-		this->_needUpdateSPUAdvancedLogic = false;
-		CommonSettings.spu_advanced = this->_spuAdvancedLogic;
-		slock_unlock(this->_mutexSpuAdvancedLogic);
-	}
-	else
-	{
-		slock_unlock(this->_mutexSpuAdvancedLogic);
 	}
 	
 	slock_lock(this->_mutexSpuInterpolationMode);

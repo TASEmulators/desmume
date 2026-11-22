@@ -1160,11 +1160,6 @@
 	[audioController setEngineIDValue:(int)[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
-- (IBAction) changeSpuAdvancedLogic:(id)sender
-{
-	[audioController setSpuAdvancedLogic:[CocoaDSUtil getIBActionSenderButtonStateBool:sender] ? YES : NO];
-}
-
 - (IBAction) changeSpuInterpolationMode:(id)sender
 {
 	[audioController setSpuInterpolationModeIDValue:(SPUInterpolationMode)[CocoaDSUtil getIBActionSenderTag:sender]];
@@ -1419,7 +1414,6 @@
 {
 	[[NSUserDefaults standardUserDefaults] setFloat:[audioController volumeValue] forKey:@"Sound_Volume"];
 	[[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)[audioController engineIDValue] forKey:@"Sound_AudioOutputEngine"];
-	[[NSUserDefaults standardUserDefaults] setBool:[audioController spuAdvancedLogic] forKey:@"SPU_AdvancedLogic"];
 	[[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)[audioController spuInterpolationModeIDValue] forKey:@"SPU_InterpolationMode"];
 	[[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)[audioController spuSyncModeIDValue] forKey:@"SPU_SyncMode"];
 	[[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)[audioController spuSyncMethodIDValue] forKey:@"SPU_SyncMethod"];
@@ -2968,7 +2962,6 @@
 	// Set the SPU settings per user preferences.
 	[audioController setEngineIDValue:(int)[[NSUserDefaults standardUserDefaults] integerForKey:@"Sound_AudioOutputEngine"]];
 	[audioController setVolumeValue:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
-	[audioController setSpuAdvancedLogic:[[NSUserDefaults standardUserDefaults] boolForKey:@"SPU_AdvancedLogic"]];
 	[audioController setSpuInterpolationModeIDValue:(SPUInterpolationMode)[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_InterpolationMode"]];
 	[audioController setSpuSyncModeIDValue:(ESynchMode)[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMode"]];
 	[audioController setSpuSyncMethodIDValue:(ESynchMethod)[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMethod"]];

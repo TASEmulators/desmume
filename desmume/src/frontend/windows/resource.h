@@ -415,7 +415,6 @@
 #define IDC_CAP0_ADD                    1023
 #define IDC_CAP0_CURDAD                 1024
 #define IDC_CAP1_ADD                    1025
-#define IDC_SPU_ADVANCED                1025
 #define IDC_CAP1_CURDAD                 1026
 #define IDC_CHECBOX_ADVANCEDTIMING      1026
 #define IDC_DEFAULT                     1027

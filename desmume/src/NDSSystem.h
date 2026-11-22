@@ -585,9 +585,8 @@ struct TCommonSettings
 	int SPU_sync_mode;
 	int SPU_sync_method;
 
-	bool spu_muteChannels[16];
+	u16  spu_muteChannels;
 	bool spu_captureMuted;
-	bool spu_advanced;
 
 	union
 	{

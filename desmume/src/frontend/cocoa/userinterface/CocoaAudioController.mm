@@ -29,7 +29,6 @@
 @dynamic _engineID;
 @dynamic _volume;
 @synthesize _speakerVolumeIcon;
-@dynamic _spuAdvancedLogic;
 @dynamic _spuInterpolationModeID;
 @dynamic _spuSyncModeID;
 @dynamic _spuSyncMethodID;
@@ -244,16 +243,6 @@
 	{
 		[self setSpeakerVolumeIcon:newIcon];
 	}
-}
-
-- (void) setSpuAdvancedLogic:(BOOL)theState
-{
-	_audioOutput->SetSPUAdvancedLogic((theState) ? true : false);
-}
-
-- (BOOL) spuAdvancedLogic
-{
-	return _audioOutput->GetSPUAdvancedLogic() ? YES : NO;
 }
 
 - (void) setSpuInterpolationModeID:(NSNumber *)idNumber

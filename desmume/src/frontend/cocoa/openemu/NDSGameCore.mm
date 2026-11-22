@@ -221,7 +221,6 @@ volatile bool execute = true;
 	
 	_audioOutput = new ClientAudioOutput;
 	_audioOutput->SetEngine(_audioEngine);
-	_audioOutput->SetSPUAdvancedLogic(true);
 	_audioOutput->SetSPUInterpolationModeByID(SPUInterpolation_Cosine);
 	_audioOutput->SetSPUSyncModeByID(ESynchMode_Synchronous);
 	_audioOutput->SetSPUSyncMethodByID(ESynchMethod_N);

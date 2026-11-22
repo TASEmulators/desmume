@@ -697,6 +697,11 @@
               <attribute name='action'>app.spu-interpolation</attribute>
               <attribute name='target'>cosine</attribute>
             </item>
+            <item>
+              <attribute name='label' translatable='yes'>_CatmullRom</attribute>
+              <attribute name='action'>app.spu-interpolation</attribute>
+              <attribute name='target'>catmullrom</attribute>
+            </item>
           </section>
         </submenu>
         <submenu>

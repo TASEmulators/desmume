@@ -63,7 +63,6 @@ class MacCoreAudioOutputEngine;
 @property (assign, nonatomic, getter=engineID, setter=setEngineID:) NSNumber *_engineID;
 @property (assign, nonatomic, getter=volume, setter=setVolume:) NSNumber *_volume;
 @property (assign, getter=speakerVolumeIcon, setter=setSpeakerVolumeIcon:) NSImage *_speakerVolumeIcon;
-@property (assign, nonatomic, getter=spuAdvancedLogic, setter=setSpuAdvancedLogic:) BOOL _spuAdvancedLogic;
 @property (assign, nonatomic, getter=spuInterpolationModeID, setter=setSpuInterpolationModeID:) NSNumber *_spuInterpolationModeID;
 @property (assign, nonatomic, getter=spuSyncModeID, setter=setSpuSyncModeID:) NSNumber *_spuSyncModeID;
 @property (assign, nonatomic, getter=spuSyncMethodID, setter=setSpuSyncMethodID:) NSNumber *_spuSyncMethodID;

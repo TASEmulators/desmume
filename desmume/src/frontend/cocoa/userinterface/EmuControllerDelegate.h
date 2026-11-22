@@ -278,7 +278,6 @@ class AudioSampleBlockGenerator;
 - (IBAction) changeHardwareMicMute:(id)sender;
 - (IBAction) changeVolume:(id)sender;
 - (IBAction) changeAudioEngine:(id)sender;
-- (IBAction) changeSpuAdvancedLogic:(id)sender;
 - (IBAction) changeSpuInterpolationMode:(id)sender;
 - (IBAction) changeSpuSyncMode:(id)sender;
 - (IBAction) changeSpuSyncMethod:(id)sender;

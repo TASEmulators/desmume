@@ -154,7 +154,6 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Fog: "] stringByAppendingString:([graphicsController fogEnable] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nVideo - Output Engine: "] stringByAppendingString:[NSString stringWithFormat:@"%s (%s)", [graphicsController fetchObject]->GetName(), [graphicsController fetchObject]->GetDescription()]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Output Engine: "] stringByAppendingString:[[emuControl audioController] engineString]];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Advanced SPU Logic: "] stringByAppendingString:([[emuControl audioController] spuAdvancedLogic] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Interpolation Method: "] stringByAppendingString:[[emuControl audioController] spuInterpolationModeString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Synchronization Method: "] stringByAppendingString:[[emuControl audioController] spuSyncMethodString]];
 	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n"];

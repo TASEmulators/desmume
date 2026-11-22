@@ -1481,9 +1481,12 @@ static void execHardware_hblank()
 
 	//emulation housekeeping. for some reason we always do this at hblank,
 	//even though it sounds more reasonable to do it at hstart
-	SPU_Emulate_core();
-	driver->AVI_SoundUpdate(SPU_core->outbuf,spu_core_samples);
-	WAV_WavSoundUpdate(SPU_core->outbuf,spu_core_samples);
+	int coreSamples = SPU_Emulate_core(355*6); // HLine = 355 dots @ 6c/dot
+	if(coreSamples)
+	{
+		driver->AVI_SoundUpdate(SPU_core->outbuf,coreSamples);
+		WAV_WavSoundUpdate(SPU_core->outbuf,coreSamples);
+	}
 }
 
 static void execHardware_hstart_vblankEnd()
@@ -3451,25 +3454,9 @@ TCommonSettings::TCommonSettings()
 	SPU_sync_mode = ESynchMode_Synchronous;
 	SPU_sync_method = ESynchMethod_N;
 	
-	spu_muteChannels[ 0] = false;
-	spu_muteChannels[ 1] = false;
-	spu_muteChannels[ 2] = false;
-	spu_muteChannels[ 3] = false;
-	spu_muteChannels[ 4] = false;
-	spu_muteChannels[ 5] = false;
-	spu_muteChannels[ 6] = false;
-	spu_muteChannels[ 7] = false;
-	spu_muteChannels[ 8] = false;
-	spu_muteChannels[ 9] = false;
-	spu_muteChannels[10] = false;
-	spu_muteChannels[11] = false;
-	spu_muteChannels[12] = false;
-	spu_muteChannels[13] = false;
-	spu_muteChannels[14] = false;
-	spu_muteChannels[15] = false;
+	spu_muteChannels = 0;
 	
 	spu_captureMuted = false;
-	spu_advanced = true;
 	
 	showGpu.main = true;
 	showGpu.sub = true;

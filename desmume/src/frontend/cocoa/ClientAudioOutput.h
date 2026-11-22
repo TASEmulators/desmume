@@ -72,7 +72,6 @@ protected:
 	SoundInterface_struct _spuCallbackStruct;
 	
 	float _volume;
-	bool _spuAdvancedLogic;
 	SPUInterpolationMode _interpolationModeID;
 	ESynchMode _syncModeID;
 	ESynchMethod _syncMethodID;
@@ -83,13 +82,11 @@ protected:
 	
 	slock_t *_mutexEngine;
 	slock_t *_mutexVolume;
-	slock_t *_mutexSpuAdvancedLogic;
 	slock_t *_mutexSpuInterpolationMode;
 	slock_t *_mutexSpuSyncMethod;
 	
 	bool _needUpdateAudioEngine;
 	bool _needUpdateVolume;
-	bool _needUpdateSPUAdvancedLogic;
 	bool _needUpdateSPUInterpolationMode;
 	bool _needUpdateSPUSyncMethod;
 	
@@ -103,9 +100,6 @@ public:
 	
 	void SetVolume(float vol);
 	float GetVolume();
-	
-	void SetSPUAdvancedLogic(bool theState);
-	bool GetSPUAdvancedLogic();
 	
 	void SetSPUInterpolationModeByID(SPUInterpolationMode interpModeID);
 	SPUInterpolationMode GetSPUInterpolationModeByID();
