@@ -239,6 +239,15 @@ static void traceStep(const char *what, u32 codeAdr, u32 cpsr)
 // This does not make a fault harmless: the machine state afterwards is
 // undefined, so the comparison is reported as a failure and the next vector
 // re-primes from scratch.
+//
+// The faulting host PC. Without it a POSIX fault report is one number, and the
+// two cases it has to tell apart look identical: emitted code touching a bad
+// address (si_addr != pc) versus a dispatch into a bad block pointer
+// (si_addr == pc). The arm64 backend's first real defect on device was the
+// second kind, and this is what named it. Declared outside the SEH/POSIX split
+// because both paths reset it per comparison; only POSIX fills it in.
+static uintptr_t gFaultPc = 0;
+
 #ifdef _MSC_VER
 #define HARNESS_HAVE_SEH 1
 static unsigned long gFaultCode = 0;
@@ -267,17 +276,64 @@ static uintptr_t gFaultOp = 0;
 #define HARNESS_HAVE_POSIX_GUARD 1
 #include <signal.h>
 #include <setjmp.h>
+#include <ucontext.h>
 
 static unsigned long gFaultCode = 0;
 static uintptr_t gFaultAddr = 0;
 static uintptr_t gFaultAccess = 0;
 static unsigned long gFaultOp = 0;
+// Guest-to-host: the emitted code's register file at the fault. Only printed
+// under --verbose, but it is the difference between "x11 was never set" and
+// "x11 was set from the wrong field" when the fault lands inside a block.
+static uintptr_t gFaultRegs[31];
+static uintptr_t gFaultSp = 0;
+static bool gFaultRegsValid = false;
 static sigjmp_buf gFaultJump;
 static volatile sig_atomic_t gFaultArmed = 0;
 
+static uintptr_t harnessFaultPc(void *ctx)
+{
+	ucontext_t *uc = (ucontext_t *)ctx;
+	// Darwin nests the register state one level deeper than Linux, and both
+	// differ per architecture. build_diff_macos.sh compiles this same file, so
+	// all four cases have to be spelled out.
+#if defined(__APPLE__) && defined(__aarch64__)
+	return (uintptr_t)uc->uc_mcontext->__ss.__pc;
+#elif defined(__APPLE__) && defined(__x86_64__)
+	return (uintptr_t)uc->uc_mcontext->__ss.__rip;
+#elif defined(__aarch64__)
+	return (uintptr_t)uc->uc_mcontext.pc;
+#elif defined(__x86_64__)
+	return (uintptr_t)uc->uc_mcontext.gregs[REG_RIP];
+#else
+	(void)uc;
+	return 0;
+#endif
+}
+
+static void harnessFaultRegs(void *ctx)
+{
+	ucontext_t *uc = (ucontext_t *)ctx;
+#if defined(__APPLE__) && defined(__aarch64__)
+	for (int i = 0; i < 31; i++)
+		gFaultRegs[i] = (uintptr_t)uc->uc_mcontext->__ss.__x[i];
+	gFaultSp = (uintptr_t)uc->uc_mcontext->__ss.__sp;
+	gFaultRegsValid = true;
+#elif defined(__aarch64__)
+	for (int i = 0; i < 31; i++)
+		gFaultRegs[i] = (uintptr_t)uc->uc_mcontext.regs[i];
+	gFaultSp = (uintptr_t)uc->uc_mcontext.sp;
+	gFaultRegsValid = true;
+#else
+	// Only the arm64 backend has been worth this much detail so far; the x86-64
+	// register file is a different spelling and nobody has needed it.
+	(void)uc;
+	gFaultRegsValid = false;
+#endif
+}
+
 static void harnessFaultHandler(int sig, siginfo_t *info, void *ctx)
 {
-	(void)ctx;
 	if (!gFaultArmed)
 	{
 		// Not inside a guarded engine call: this is a real crash, so restore the
@@ -291,6 +347,8 @@ static void harnessFaultHandler(int sig, siginfo_t *info, void *ctx)
 	gFaultAddr = (uintptr_t)info->si_addr;
 	gFaultAccess = (uintptr_t)info->si_addr;
 	gFaultOp = 0;
+	gFaultPc = harnessFaultPc(ctx);
+	harnessFaultRegs(ctx);
 	siglongjmp(gFaultJump, 1);
 }
 
@@ -325,6 +383,7 @@ static u32 execInterp(void)
 #if defined(HARNESS_HAVE_SEH)
 	u32 cycles = 0;
 	gFaultCode = 0;
+	gFaultPc = 0;
 	gFaultAddr = 0;
 	gFaultAccess = 0;
 	gFaultOp = 0;
@@ -334,6 +393,7 @@ static u32 execInterp(void)
 #elif defined(HARNESS_HAVE_POSIX_GUARD)
 	u32 cycles = 0;
 	gFaultCode = 0;
+	gFaultPc = 0;
 	if (sigsetjmp(gFaultJump, 1) == 0)
 	{
 		gFaultArmed = 1;
@@ -351,6 +411,7 @@ static u32 execJit(void)
 #if defined(HARNESS_HAVE_SEH)
 	u32 cycles = 0;
 	gFaultCode = 0;
+	gFaultPc = 0;
 	gFaultAddr = 0;
 	gFaultAccess = 0;
 	gFaultOp = 0;
@@ -360,6 +421,7 @@ static u32 execJit(void)
 #elif defined(HARNESS_HAVE_POSIX_GUARD)
 	u32 cycles = 0;
 	gFaultCode = 0;
+	gFaultPc = 0;
 	if (sigsetjmp(gFaultJump, 1) == 0)
 	{
 		gFaultArmed = 1;
@@ -384,8 +446,34 @@ static bool faulted(char *why, size_t whyLen, const char *engine)
 #elif defined(HARNESS_HAVE_POSIX_GUARD)
 	if (gFaultCode != 0)
 	{
-		snprintf(why, whyLen, "%s: %s at %p",
-			engine, harnessSignalName(gFaultCode), (void *)gFaultAddr);
+		snprintf(why, whyLen, "%s: %s at %p pc=%p",
+			engine, harnessSignalName(gFaultCode), (void *)gFaultAddr, (void *)gFaultPc);
+		if (gTrace && gFaultRegsValid)
+		{
+			printf("      fault regs x0..x8 : ");
+			for (int i = 0; i < 9; i++) printf(" %016lX", (unsigned long)gFaultRegs[i]);
+			printf("\n      fault regs x9..x17: ");
+			for (int i = 9; i < 18; i++) printf(" %016lX", (unsigned long)gFaultRegs[i]);
+			printf("\n      fault regs x18..x30: ");
+			for (int i = 18; i < 31; i++) printf(" %016lX", (unsigned long)gFaultRegs[i]);
+			printf("\n      fault sp=%016lX\n", (unsigned long)gFaultSp);
+			// The instructions leading up to the fault. A fault inside emitted
+			// code is only diagnosable from the sequence that set the register
+			// it dereferenced, and that sequence is not in the block's head.
+			if (gFaultPc)
+			{
+				const u8 *p = (const u8 *)((gFaultPc - 0x100) & ~(uintptr_t)3);
+				printf("      fault code (256 bytes before pc):\n");
+				for (int r = 0; r < 16; r++)
+				{
+					printf("        ");
+					for (int c = 0; c < 16; c++)
+						printf("%02X", p[r * 16 + c]);
+					printf("\n");
+				}
+			}
+			fflush(stdout);
+		}
 		return true;
 	}
 #endif
