@@ -826,6 +826,82 @@ static const Probe kProbes[] = {
 	{ "THUMB SUBS r0,#5",          0x3805u, true },
 };
 
+// ---------------------------------------------------------------------------
+// Multi-instruction block probes
+// ---------------------------------------------------------------------------
+//
+// The slot sweep plants one instruction per block (jit_max_block_size = 1), so
+// it never gives the register cache anything to hold across instructions. The
+// sequence sweep covers that, but its opcodes are `slot << 20`: every immediate,
+// register list and offset field is zero, and the condition field is shared by
+// every slot in the window. These fixed sequences are the shapes that exposed
+// the arm64 defects, and they stay here as regression tests.
+//
+// Each sequence keeps its only branch in the last slot. A block probe is run as
+// n interpreter steps and one compiled block of n instructions; a branch in the
+// middle would make those two runs execute different instruction streams.
+struct BlockProbe
+{
+	const char *name;
+	const u32 *seq;
+	int n;
+	const u32 *ops;   // r0-r7; R13 is always the default stack pointer
+};
+
+// The arm64 register cache used to be compile-time state across a conditional
+// instruction's guard: `mov r2,#0x1c` stayed in a slot, the false `suble` path
+// skipped the code that would have settled it, and the merge point wrote back
+// whatever the allocator left in the host register. r0=5 makes LE false, and
+// the second probe covers the taken path so the flush cannot hide there.
+static const u32 kSeqCondCache[] = {
+	0xE3A0201Cu,   // mov   r2,#0x1C
+	0xE3500000u,   // cmp   r0,#0
+	0xD2422010u,   // suble r2,r2,#0x10
+	0xE0800002u,   // add   r0,r2,r2
+};
+static const u32 kOpsCondFalse[8] = { 5, 0, 0, 0, 0, 0, 0, 0 };
+static const u32 kOpsCondTrue[8]  = { 0, 0, 0, 0, 0, 0, 0, 0 };
+
+// A dirty cache slot whose register is in an LDM list. The helper writes
+// armcpu_t.R[] directly, so the pending value has to be dropped before the
+// call; otherwise the block-end flush stores it over the loaded value.
+static const u32 kSeqLdmDirty[] = {
+	0xE3A02055u,   // mov   r2,#0x55
+	0xE8900006u,   // ldmia r0,{r1,r2}
+	0xE0813002u,   // add   r3,r1,r2
+};
+
+// S-bit LDM: the handler switches to SYS and back around the helper. The
+// switch-back mode used to live in x5, which call_ldm_stm() clobbers, so the
+// second armcpu_switchMode() received garbage and left CPSR in the wrong mode.
+static const u32 kSeqLdmUser[] = {
+	0xE3A02055u,   // mov   r2,#0x55
+	0xE8D00006u,   // ldmia^ r0,{r1,r2}
+	0xE0813002u,   // add   r3,r1,r2
+};
+
+// Base in the list with a PC load: the helper writes the loaded word to R0 and
+// the write-back has to win afterwards, as the interpreter's LDMIA_W does. The
+// address it is derived from lives in x4, which call_mem_r7() does not
+// preserve, so it has to be computed before the call.
+static const u32 kSeqLdmBasePc[] = {
+	0xE8B08003u,   // ldmia r0!,{r0,r1,pc}
+};
+
+// Data the memory probes load. Main RAM, far from both the planted code and
+// the stack. The third word is the PC value ldmia r0!,{r0,r1,pc} jumps to; it
+// is never executed, only compared.
+static const u32 kBlockData = 0x02300000u;
+static const u32 kOpsBlockData[8] = { kBlockData, 0, 0, 0, 0, 0, 0, 0 };
+
+static const BlockProbe kBlockProbes[] = {
+	{ "block cond cache (LE false)", kSeqCondCache,  4, kOpsCondFalse },
+	{ "block cond cache (LE true)",  kSeqCondCache,  4, kOpsCondTrue },
+	{ "block ldm dirty slot",        kSeqLdmDirty,   3, kOpsBlockData },
+	{ "block ldm^ mode switch",      kSeqLdmUser,    3, kOpsBlockData },
+	{ "block ldm base+pc",           kSeqLdmBasePc,  1, kOpsBlockData },
+};
+
 // CPSR variants. For ARM the condition field is part of the dispatch index
 // (opcode >> 20 includes bits 31..28), so sweeping slots already covers every
 // condition *encoding*; these two make the flags differ, forcing each condition
@@ -924,17 +1000,6 @@ static int runProbes(void)
 		probeCount, vectors, failures, cycleRecords);
 	return failures;
 }
-// The emulator's own mnemonic tables, so a report line names the same
-// instruction the worklist in documentation/jit-opcode-matrix.md does.
-static const char *mnemonic(bool thumb, u32 opcode)
-{
-	// The ARM dispatch table is indexed by INSTRUCTION_INDEX(), not by
-	// (opcode >> 20): the two agree only for the low four bits being zero, so
-	// naming a slot from `opcode >> 20` mislabels most of the sweep -- including
-	// every S-bit variant, which is exactly where the interesting failures are.
-	return thumb ? thumb_instruction_names[opcode >> 6]
-	             : arm_instruction_names[INSTRUCTION_INDEX(opcode)];
-}
 
 // Mismatch classification. "2127 mismatches" is not actionable on its own: two
 // thousand cycle differences caused by one encoder decision and three register
@@ -975,6 +1040,189 @@ struct FailureBuckets
 		printf("  interpreter not repeatable: %d\n", repeatable);
 	}
 };
+
+// Plants the LDM data words. Registers are reset per comparison but memory is
+// not, so this runs before every engine pass and both passes read the same
+// bytes.
+static void primeBlockData(void)
+{
+	_MMU_write32<0>(kBlockData + 0, 0x11111111u);
+	_MMU_write32<0>(kBlockData + 4, 0x22222222u);
+	_MMU_write32<0>(kBlockData + 8, 0x02000100u);
+}
+
+// Runs one block probe through both engines and compares the end state.
+//
+// Unlike compareSequence(), the stopping condition is "n interpreter steps and
+// one compiled block", not "PC reached the end of the sequence": an LDM with
+// the PC in its list leaves the sequence on the loaded address, and the JIT
+// block ends at that branch. The two runs still execute the same instructions
+// as long as the probe keeps every branch in its last slot.
+static bool compareBlockProbe(u32 codeAdr, const u32 *ops, const u32 *seq, int n,
+	u32 cpsr, char *why, size_t whyLen, u32 *jitCycles)
+{
+	*jitCycles = 0;
+
+	// The interpreter's first execution of an address pays a one-off cost.
+	// Cycles are recorded rather than arbitrated below, but the warm-up also
+	// leaves the prefetch state at the start of the sequence.
+	primeState(codeAdr, ops, seq[0], cpsr);
+	for (int k = 0; k < n; k++)
+	{
+		execInterp();
+		if (faulted(why, whyLen, "interpreter (warm-up)"))
+			return false;
+	}
+
+	// The first JIT call compiles the block. compile_basicblock() executes the
+	// instructions through op_decode[] while emitting, so the state has to be
+	// primed again before the measured call.
+	primeState(codeAdr, ops, seq[0], cpsr);
+	execJit();
+	if (faulted(why, whyLen, "jit (compile)"))
+		return false;
+
+	primeState(codeAdr, ops, seq[0], cpsr);
+	u32 total = 0;
+	for (int k = 0; k < n; k++)
+	{
+		total += execInterp();
+		if (faulted(why, whyLen, "interpreter"))
+			return false;
+	}
+	CpuSnapshot interp;
+	takeSnapshot(&interp, total);
+
+	// The block on this address is compiled by the call above; this run is
+	// emitted code from the first instruction on.
+	primeState(codeAdr, ops, seq[0], cpsr);
+	u32 cj = execJit();
+	if (faulted(why, whyLen, "jit"))
+		return false;
+	CpuSnapshot jit;
+	takeSnapshot(&jit, cj);
+	*jitCycles = cj;
+
+	if (gTrace)
+	{
+		printf("      interp pc=%08X cpsr=%08X R0=%08X R2=%08X cyc=%u | jit pc=%08X cpsr=%08X R0=%08X R2=%08X cyc=%u\n",
+			interp.instruct_adr, interp.cpsr, interp.r[0], interp.r[2], interp.cycles,
+			jit.instruct_adr, jit.cpsr, jit.r[0], jit.r[2], jit.cycles);
+		fflush(stdout);
+	}
+
+	if (!sameSnapshot(&interp, &jit, codeAdr + 4u * (u32)(n - 1), 4, false, why, whyLen))
+		return false;
+
+	// The interpreter re-primes its pipeline after every instruction, including
+	// a branch, so the post-prefetch relation holds for all of these sequences.
+	return interpInvariantHolds(&interp, 4, why, whyLen);
+}
+
+static int runBlockProbes(bool verbose, bool listAll)
+{
+	const int probeCount = (int)(sizeof(kBlockProbes) / sizeof(kBlockProbes[0]));
+	const int flagVariants = 2;
+	int failures = 0;
+	int cycleRecords = 0;
+	int shown = 0;
+	const int showCap = listAll ? 0x7FFFFFFF : 40;
+	FailureBuckets buckets = {0, 0, 0, 0, 0, 0, 0, 0};
+	u32 codeAdr = kCodeBase;
+
+	for (int p = 0; p < probeCount; p++)
+	{
+		const BlockProbe &probe = kBlockProbes[p];
+
+		// The block size is a compile-time property of the backend, so it has
+		// to be set before the block is built. Resetting between probes also
+		// keeps a block compiled at one length from being reused at another.
+		CommonSettings.jit_max_block_size = probe.n;
+		arm_jit_reset(true, true);
+
+		for (int k = 0; k < probe.n; k++)
+			_MMU_write32<0>(codeAdr + 4u * (u32)k, probe.seq[k]);
+
+		for (int f = 0; f < flagVariants; f++)
+		{
+			char why[128] = {0};
+			u32 jitCycles = 0;
+
+			if (verbose)
+			{
+				printf("  try %s flags=%d adr=%08X", probe.name, f, codeAdr);
+				for (int k = 0; k < probe.n; k++)
+					printf(" %s", mnemonic(false, probe.seq[k]));
+				printf("\n");
+				fflush(stdout);
+			}
+
+			primeBlockData();
+
+			if (!compareBlockProbe(codeAdr, probe.ops, probe.seq, probe.n,
+					kFlagVariants[f], why, sizeof(why), &jitCycles))
+			{
+				// Same arbitration as the sequence sweep: cycle counts are
+				// implementation defined, so a difference is recorded rather
+				// than counted as a defect.
+				if (strncmp(why, "cycles:", 7) == 0)
+				{
+					cycleRecords++;
+					if (verbose)
+					{
+						printf("  note cycles %s flags=%d %s\n", probe.name, f, why);
+						fflush(stdout);
+					}
+				}
+				else
+				{
+					failures++;
+					buckets.add(why, jitCycles);
+					if (shown < showCap)
+					{
+						printf("FAIL  %s flags=%d adr=%08X %s\n",
+							probe.name, f, codeAdr, why);
+						for (int k = 0; k < probe.n; k++)
+							printf("      [%d] %08X %s\n", k, probe.seq[k],
+								mnemonic(false, probe.seq[k]));
+						printf("      R0-R7 = %08X %08X %08X %08X %08X %08X %08X %08X\n",
+							probe.ops[0], probe.ops[1], probe.ops[2], probe.ops[3],
+							probe.ops[4], probe.ops[5], probe.ops[6], probe.ops[7]);
+						fflush(stdout);
+						shown++;
+					}
+				}
+			}
+		}
+
+		// One unique address per probe so the JIT never reuses a block
+		// compiled for a different sequence.
+		codeAdr += 4u * (u32)probe.n;
+	}
+
+	// Back to the single-instruction contract the rest of the harness assumes.
+	CommonSettings.jit_max_block_size = 1;
+	arm_jit_reset(true, true);
+
+	printf("\n%d block probe(s) x 2 flags: %d mismatch(es), %d cycle record(s)\n",
+		probeCount, failures, cycleRecords);
+	if (failures)
+		buckets.print();
+	if (failures > shown)
+		printf("(%d more not shown)\n", failures - shown);
+	return failures;
+}
+// The emulator's own mnemonic tables, so a report line names the same
+// instruction the worklist in documentation/jit-opcode-matrix.md does.
+static const char *mnemonic(bool thumb, u32 opcode)
+{
+	// The ARM dispatch table is indexed by INSTRUCTION_INDEX(), not by
+	// (opcode >> 20): the two agree only for the low four bits being zero, so
+	// naming a slot from `opcode >> 20` mislabels most of the sweep -- including
+	// every S-bit variant, which is exactly where the interesting failures are.
+	return thumb ? thumb_instruction_names[opcode >> 6]
+	             : arm_instruction_names[INSTRUCTION_INDEX(opcode)];
+}
 
 // Every dispatch slot of one instruction set.
 //
@@ -1724,7 +1972,19 @@ int main(int argc, char **argv)
 		return seqFailures == 0 ? 0 : 1;
 	}
 
-	int failures = sweep ? runSweep(full, onlySlot, verbose, listAll) : runProbes();
+	int failures = 0;
+	if (sweep)
+	{
+		failures = runSweep(full, onlySlot, verbose, listAll);
+	}
+	else
+	{
+		// Block probes run first: runProbes() compiles the single-instruction
+		// blocks that --dump is normally aimed at, and the block probes reset
+		// the JIT between their per-probe block sizes.
+		failures += runBlockProbes(verbose, listAll);
+		failures += runProbes();
+	}
 
 	// Reverse-engineering aid: dump the machine code a probe compiled to, so the
 	// host instruction sequence can be disassembled instead of assumed.
