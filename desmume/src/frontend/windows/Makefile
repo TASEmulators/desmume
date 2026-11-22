@@ -1,5 +1,9 @@
 # makefile for mingw.
 
+# Keep the full build as the default goal even when per-target rules are
+# declared above it.
+.DEFAULT_GOAL := all
+
 CROSS=i686-w64-mingw32-
 
 CXX = $(CROSS)g++
