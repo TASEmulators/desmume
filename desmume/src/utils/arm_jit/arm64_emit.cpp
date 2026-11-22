@@ -1166,7 +1166,11 @@ static void emit_smlawb(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) 
 }
 
 static void emit_smlawt(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) {
-	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs1), asmjit::Imm(0), asmjit::Imm(16)));
+	// 'T' takes the *top* halfword of the first operand; only the shift differs
+	// from emit_smlawb. It used to be a copy of the B form, so SMLAWT ran
+	// SMLAWB: the differential harness caught it as a 0x100-sized difference in
+	// bits 8..15 with a negative low halfword.
+	ASMJIT_ASSUME_OK(out->sbfx(gx(X18_REG), gx(rs1), asmjit::Imm(16), asmjit::Imm(16)));
 	ASMJIT_ASSUME_OK(out->smull(gx(14), gw(rs2), gw(X18_REG)));
 	emit_asr64(out, X14_REG, 16);
 	emit_adds(out, X14_REG, lo, hi); // sets carry flag - need to use in SET_Q
@@ -1240,11 +1244,15 @@ static void emit_umulls(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2) 
 	emit_mov(out, X17_REG, hi);
 }
 
-// UMADDL shares the shape with SMADDL; only the instruction differs.
+// UMADDL shares the shape with SMADDL; only the instruction differs -- and the
+// instruction is the whole point here. This used to emit smaddl, i.e. a signed
+// multiply-accumulate for an *unsigned* instruction: on device the differential
+// harness caught UMLAL returning the sign-extended product (0x80000000 *
+// 0x7FFFFFFF gave 0xC0000000_80000000 instead of 0x3FFFFFFF_80000000).
 static void emit_umlal_common(t_bytes *out, u_int hi, u_int lo, u_int rs1, u_int rs2, int with_flags) {
 	emit_mov(out, hi, X17_REG);
 	ASMJIT_ASSUME_OK(out->bfi(gx(X17_REG), gx(lo), asmjit::Imm(32), asmjit::Imm(32)));
-	ASMJIT_ASSUME_OK(out->smaddl(gx(X17_REG), gw(rs1), gw(rs2), gx(X17_REG)));
+	ASMJIT_ASSUME_OK(out->umaddl(gx(X17_REG), gw(rs1), gw(rs2), gx(X17_REG)));
 	if (with_flags) emit_cmpx64(out, X17_REG);
 	ASMJIT_ASSUME_OK(out->lsr(gx(lo), gx(X17_REG), asmjit::Imm(32)));
 	emit_mov(out, X17_REG, hi);

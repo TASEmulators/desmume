@@ -139,6 +139,13 @@ void jit_write() {
 #define printJIT(buf, val)
 #endif
 
+// The x86 back end's CACHED_PTR() re-emits the address expression and returns
+// the register holding it. Here it expands to PTR_STORE_REG and *discards* the
+// argument, which is only valid when an earlier VALUE access put the same
+// address there -- cpu_get_ptr()'s VALUE branch emits that `add x11, ...`.
+// Wrapping an ADDRESS expression in it is a bug in both directions: no
+// eviction, and no address. Four handlers did; the LDRD/STRD post-index ones
+// faulted on device with a stale x11.
 #define CACHED_PTR(exp) PTR_STORE_REG
 
 u32 saveBlockSizeJIT = 0;
@@ -2561,10 +2568,20 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 	}
 
 	// I bit - immediate or register
+	//
+	// The writeback goes through reg_pos_ptr(..., ADDRESS), which evicts the
+	// slot and leaves the address of cpu->R[n] in R1 -- so R1 is the operand.
+	// Wrapping that in CACHED_PTR() looks like the x86 idiom but is wrong here:
+	// CACHED_PTR() expands to PTR_STORE_REG and *discards* its argument, so it
+	// skipped both the eviction and the address computation and the add landed
+	// on whatever x11 happened to hold. On device that was the block's own
+	// halfword index, which is the SIGSEGV the differential harness reported
+	// for `ldrd r0,[r13],#8` / `strd r0,[r13],#8`.
 	if (BIT22(i))
 	{
 		IMM_OFF;
-		BIT23(i)?emit_add_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_ptr(16, R1, ADDRESS)), rhs):emit_sub_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_ptr(16, R1, ADDRESS)), rhs);
+		const int wb = reg_pos_ptr(16, R1, ADDRESS);
+		BIT23(i)?emit_add_ptr32_regptrTO_regFROM(g_out, wb, rhs):emit_sub_ptr32_regptrTO_regFROM(g_out, wb, rhs);
 	}
 	else
 	{
@@ -2573,7 +2590,8 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 		// reg_pos_ptr() would store the dirty slot and load it straight back.
 		#define idx R3
 		rc_read(REG_POS(i,0), idx);
-		BIT23(i)?emit_add_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_ptr(16, R1, ADDRESS)), idx):emit_sub_ptr32_regptrTO_regFROM(g_out, CACHED_PTR(reg_pos_ptr(16, R1, ADDRESS)), idx);
+		const int wb = reg_pos_ptr(16, R1, ADDRESS);
+		BIT23(i)?emit_add_ptr32_regptrTO_regFROM(g_out, wb, idx):emit_sub_ptr32_regptrTO_regFROM(g_out, wb, idx);
 		#undef idx
 	}
 	
@@ -3888,8 +3906,21 @@ static int OP_ADD_IMM3(const u32 i)
 
 	if (imm3 == 0)	// mov 2
 	{
-		int t = rc_t_write(0);
-		emit_mov(g_out, rc_t_read(3, R1), t);
+		// `adds Rd,Rs,#0` is the MOVS alias, and Rd may *be* Rs -- the slot
+		// sweep produces exactly that, because every 3-bit field is zero. Taking
+		// the destination slot first (rc_t_write has load=false) and then
+		// reading the source hands read_into() a slot that was never loaded, so
+		// it copies whatever the host register happened to hold: on device that
+		// was the block's own address. Same alias guard as OP_LSL_0 and
+		// OP_SHIFTS_IMM.
+		int t;
+		if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
+			t = rc_t_rw(0);
+		else
+		{
+			t = rc_t_write(0);
+			emit_mov(g_out, rc_t_read(3, R1), t);
+		}
 		emit_cmpimm(g_out, t,0);
 		SET_NZ(1);
 		
