@@ -400,6 +400,12 @@ void HK_LCDsSwap(int)
 	LCDsSwap(-1);
 }
 
+extern void ToggleFullscreen();
+void HK_Togglefullscreen(int, bool justPressed)
+{
+	ToggleFullscreen();
+}
+
 extern int sndvolume;
 void HK_IncreaseVolume(int, bool justPressed)
 {
@@ -820,6 +826,12 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->LCDsSwap.name = STRW(ID_LABEL_HK31);
 	keys->LCDsSwap.page = HOTKEY_PAGE_TOOLS;
 	keys->LCDsSwap.key = VK_NEXT;
+
+	keys->ToggleFullscreen.handleKeyDown = HK_Togglefullscreen;
+	keys->ToggleFullscreen.code = "ToggleFullscreen";
+	keys->ToggleFullscreen.name = STRW(ID_LABEL_HK77);
+	keys->ToggleFullscreen.page = HOTKEY_PAGE_TOOLS;
+	keys->ToggleFullscreen.key = VK_F11;
 
 	keys->ListCheats.handleKeyDown = HK_ListCheats;
 	keys->ListCheats.code = "ListCheats";
