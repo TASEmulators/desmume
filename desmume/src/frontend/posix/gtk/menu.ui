@@ -796,6 +796,10 @@
           <attribute name='label' translatable='yes'>R_AM Search</attribute>
           <attribute name='action'>app.ramsearch</attribute>
         </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Memory Viewer</attribute>
+          <attribute name='action'>app.memoryviewer</attribute>
+        </item>
         <submenu>
           <attribute name='label' translatable='yes'>_Lua Scripting</attribute>
           <section>

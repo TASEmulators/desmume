@@ -1284,6 +1284,10 @@ ramwatch 的 editor 两处 entry 已全部切过去。
 | `posix/gtk4/tools/memoryviewer.{h,cpp}` | `DesmumeTool`（tool index 4）：`GtkDrawingArea` + Cairo 等宽 hex dump（16 字节/行 + ASCII 列，字节/半字/字视图、大端、Full chars、断点红底、选中高亮、正在输入的位用 `.` 占位）；`GtkEventControllerKey` 处理方向键/Home/End/PageUp/PageDown + 十六进制原地编辑（写回 `MemoryViewerWrite*`，写完自动前进一格）；`GtkGestureClick` 定位选中；`GtkEventControllerScroll` 按行滚动；工具栏含区域 `GtkDropDown`、地址输入 + 历史下拉 + Go、视图模式 `GtkDropDown`、选中地址标签、`GtkMenuButton` 导出菜单；断点栏含地址输入、R+/W+/−/Clear、汇总、Full/BE 复选；`Update()` 每 150 ms 节流刷新、仅可见行读总线（4 GB Full 视图瞬时打开） |
 | `posix/gtk4/tools.cpp` / `menu.ui` / `meson.build` | 注册 tool index 4、Tools 菜单 `_Memory Viewer…`、编译 `memoryviewer.cpp` 与 `shared/memory_viewer_core.cpp` |
 
+GTK3 和 GTK4 的查看器共用字体与网格度量：优先使用桌面的等宽字体设置，
+无该设置时使用 GTK 的默认字号和 monospace 字体。表头高度随字体调整；
+垂直滚动条映射整个当前区域，滚轮和触控板按正常方向滚动，仍只读取可见行。
+
 **导出**：复用 macOS 的三种模式——Text Dump（追加，按当前视图宽度格式化 + ASCII）、
 Raw Dump（追加，可见窗口原始字节）、Dump All（整区二进制，CartROM/Full 无有效尺寸时提示改选区域）。
 全部走异步 `GtkFileDialog::save`，文件 I/O 在回调中进行，不阻塞主循环。

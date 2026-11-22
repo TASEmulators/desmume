@@ -19,6 +19,9 @@ desmume_src = [
   '../../shared/ram_debug_core.cpp',
   '../../shared/ramwatch_core.cpp',
   '../../shared/ram_search_core.cpp',
+  # Memory Viewer region/read/write/breakpoint layer, shared with GTK4,
+  # Windows and Cocoa.
+  '../../shared/memory_viewer_core.cpp',
   # Play/Record Movie dialogs: header parsing, desync assessment, comment
   # rewriting and name/RTC helpers, shared with Windows and Cocoa.
   '../../shared/movie_info_core.cpp',
@@ -28,6 +31,7 @@ desmume_src = [
   'tools/ioregsView.cpp',
   'tools/ramWatch.cpp',
   'tools/ramSearch.cpp',
+  'tools/memoryViewer.cpp',
   'tools/moviePlay.cpp',
   'tools/movieRecord.cpp',
   'utilsGTK.cpp',

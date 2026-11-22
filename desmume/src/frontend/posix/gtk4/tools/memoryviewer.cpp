@@ -25,6 +25,8 @@
 
 #include <string>
 
+#include "../../shared/memory_viewer_layout.h"
+
 #define TOOL_NAME "Memory Viewer"
 
 /* ------------------------------------------------------------------ constants */
@@ -47,7 +49,6 @@ static const int kBytesPerRow = 16;
 static const int kMaxRows = 256;                 /* bounded by sBuffer (0x1000) */
 static const int kDefaultRows = 16;
 static const int kOuterMargin = 8;
-static const int kHeaderHeight = 20;
 static const int kMaxHistory = 20;
 static const gint64 kRefreshIntervalUs = 150000; /* 150 ms, like the Cocoa timer */
 
@@ -57,6 +58,10 @@ typedef struct
 {
 	GtkWidget *window;
 	GtkWidget *drawing;
+	GtkAdjustment *adjustment;
+	GSettings *fontSettings;
+	gboolean updatingAdjustment;
+	double scrollRemainder;
 
 	GtkWidget *regionDrop;
 	GtkWidget *addressEntry;
@@ -240,6 +245,17 @@ reload_buffer(MemoryViewerState *st)
 {
 	clamp_viewport(st);
 	MemoryViewerRead(st->region, st->address, st->windowSize, st->buffer);
+	if (st->adjustment != NULL)
+	{
+		const MemoryViewerRegionInfo *info = MemoryViewerRegionGet(st->region);
+		const double totalRows = ceil((double)info->size / kBytesPerRow);
+		const double pageRows = MIN((double)st->visibleRows, totalRows);
+		st->updatingAdjustment = TRUE;
+		gtk_adjustment_configure(st->adjustment,
+		                         ((gint64)st->address - info->hardwareAddress) / kBytesPerRow,
+		                         0, totalRows, 1, MAX(pageRows - 1, 1), pageRows);
+		st->updatingAdjustment = FALSE;
+	}
 }
 
 static void
@@ -269,7 +285,7 @@ set_selection_address(MemoryViewerState *st, guint32 address, gboolean reveal)
 		{
 			st->address = st->selectionAddress & 0xFFFFFFF0;
 		}
-		else if (st->selectionAddress >= st->address + st->windowSize)
+		else if ((guint64)st->selectionAddress >= (guint64)st->address + st->windowSize)
 		{
 			st->address = (st->selectionAddress & 0xFFFFFFF0) -
 			              (st->windowSize - (guint32)kBytesPerRow);
@@ -293,17 +309,19 @@ scroll_by(MemoryViewerState *st, gint64 delta)
 {
 	const MemoryViewerRegionInfo *info = MemoryViewerRegionGet(st->region);
 	const gint64 base = (gint64)info->hardwareAddress;
-	const gint64 next = (gint64)st->address + delta;
-	st->address = (guint32)((next < base) ? base : next);
+	const gint64 end = MIN(base + (gint64)info->size, (gint64)G_MAXUINT32 + 1);
+	const gint64 next = CLAMP((gint64)st->address + delta, base, MAX(base, end - st->windowSize));
+	st->address = (guint32)next;
 	clamp_viewport(st);
 
 	if (st->selectionEnabled &&
 	    (st->selectionAddress < st->address ||
-	     st->selectionAddress >= st->address + st->windowSize))
+	     (guint64)st->selectionAddress >= (guint64)st->address + st->windowSize))
 	{
 		st->selectionEnabled = FALSE;
 		st->selectionPart = 0;
 		st->selectionNewValue = 0;
+		gtk_label_set_text(GTK_LABEL(st->selectionLabel), "--------h");
 	}
 
 	reload_buffer(st);
@@ -324,53 +342,61 @@ set_text_color(cairo_t *cr, GtkWidget *widget, double alpha)
 }
 
 static void
-draw_text(cairo_t *cr, PangoLayout *layout, const char *text, double x, double y)
+update_geometry(MemoryViewerState *st, int height)
 {
-	pango_layout_set_text(layout, text, -1);
-	cairo_move_to(cr, x, y);
-	pango_cairo_show_layout(cr, layout);
+	PangoLayout *layout = memory_viewer_layout_new(st->drawing, st->fontSettings);
+	double char_w, line_h, header_h;
+	memory_viewer_metrics(layout, &char_w, &line_h, &header_h);
+	g_object_unref(layout);
+	const int rows = CLAMP((int)floor((height - header_h - kOuterMargin) / line_h), 1, kMaxRows);
+	if (rows != st->visibleRows)
+	{
+		st->visibleRows = rows;
+		st->windowSize = (guint32)(rows * kBytesPerRow);
+		reload_buffer(st);
+	}
+}
+
+static void
+on_resize(GtkDrawingArea *area, int width, int height, gpointer data)
+{
+	(void)area;
+	(void)width;
+	update_geometry((MemoryViewerState *)data, height);
+}
+
+static void
+on_font_changed(GSettings *settings, gchar *key, gpointer data)
+{
+	(void)settings;
+	(void)key;
+	MemoryViewerState *st = (MemoryViewerState *)data;
+	memory_viewer_set_min_width(st->drawing, st->fontSettings);
+	update_geometry(st, gtk_widget_get_height(st->drawing));
+	gtk_widget_queue_draw(st->drawing);
+}
+
+static void
+on_adjustment_changed(GtkAdjustment *adjustment, gpointer data)
+{
+	MemoryViewerState *st = (MemoryViewerState *)data;
+	if (!st->updatingAdjustment)
+	{
+		const gint64 base = MemoryViewerRegionGet(st->region)->hardwareAddress;
+		const gint64 target = base + (gint64)round(gtk_adjustment_get_value(adjustment)) * kBytesPerRow;
+		scroll_by(st, target - st->address);
+	}
 }
 
 static void
 on_draw(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data)
 {
 	MemoryViewerState *st = (MemoryViewerState *)data;
-	(void)area;
-
-	PangoLayout *layout = gtk_widget_create_pango_layout(GTK_WIDGET(area), NULL);
-	PangoFontDescription *font = pango_font_description_from_string("Monospace 12");
-	pango_layout_set_font_description(layout, font);
-	pango_font_description_free(font);
-
-	pango_layout_set_text(layout, "0", -1);
-	int glyph_w = 0, glyph_h = 0;
-	pango_layout_get_pixel_size(layout, &glyph_w, &glyph_h);
-	if (glyph_w < 1)
-	{
-		glyph_w = 7;
-	}
-	if (glyph_h < 1)
-	{
-		glyph_h = 14;
-	}
-	const double char_w = (double)glyph_w;
-	const double line_h = (double)(glyph_h + 4);
-
-	/* Geometry depends on the current height, so a resized window simply shows
-	 * more (or fewer) rows; only that many bytes are ever read. */
-	const int avail = height - kHeaderHeight - kOuterMargin;
-	int rows = (int)floor((double)avail / line_h);
-	if (rows < 1)
-	{
-		rows = 1;
-	}
-	if (rows > kMaxRows)
-	{
-		rows = kMaxRows;
-	}
-	st->visibleRows = rows;
-	st->windowSize = (guint32)(rows * kBytesPerRow);
-	reload_buffer(st);
+	(void)height;
+	PangoLayout *layout = memory_viewer_layout_new(GTK_WIDGET(area), st->fontSettings);
+	double char_w, line_h, header_h;
+	memory_viewer_metrics(layout, &char_w, &line_h, &header_h);
+	const int rows = st->visibleRows;
 
 	const int step = bytes_per_unit(st->viewMode);
 	const int digits = digits_per_unit(st->viewMode);
@@ -386,13 +412,13 @@ on_draw(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data)
 	{
 		gchar text[8];
 		g_snprintf(text, sizeof(text), "%02X", unit * step);
-		draw_text(cr, layout, text, data_x + (double)unit * unit_w, 1.0);
+		memory_viewer_draw_cells(cr, layout, text, data_x + (double)unit * unit_w, 1.0, char_w, line_h);
 	}
-	draw_text(cr, layout, "0123456789ABCDEF", ascii_x, 1.0);
+	memory_viewer_draw_cells(cr, layout, "0123456789ABCDEF", ascii_x, 1.0, char_w, line_h);
 
 	cairo_set_line_width(cr, 1.0);
-	cairo_move_to(cr, kOuterMargin, kHeaderHeight - 2.0);
-	cairo_line_to(cr, width - kOuterMargin, kHeaderHeight - 2.0);
+	cairo_move_to(cr, kOuterMargin, header_h - 1.0);
+	cairo_line_to(cr, width - kOuterMargin, header_h - 1.0);
 	cairo_stroke(cr);
 
 	const gboolean has_breakpoints =
@@ -402,12 +428,12 @@ on_draw(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data)
 
 	for (int row = 0; row < rows; ++row)
 	{
-		const double y = kHeaderHeight + (double)row * line_h;
+		const double y = header_h + (double)row * line_h;
 		const guint32 rowAddress = st->address + (guint32)(row * kBytesPerRow);
 
 		set_text_color(cr, GTK_WIDGET(area), 0.65);
 		g_snprintf(text, sizeof(text), "%08X", (unsigned)rowAddress);
-		draw_text(cr, layout, text, kOuterMargin, y);
+		memory_viewer_draw_cells(cr, layout, text, kOuterMargin, y, char_w, line_h);
 
 		for (int unit = 0; unit < units; ++unit)
 		{
@@ -439,13 +465,13 @@ on_draw(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data)
 					}
 					typed[pos] = '\0';
 					set_text_color(cr, GTK_WIDGET(area), 1.0);
-					draw_text(cr, layout, typed, x, y);
+					memory_viewer_draw_cells(cr, layout, typed, x, y, char_w, line_h);
 				}
 				else
 				{
 					g_snprintf(text, sizeof(text), "%0*X", digits, (unsigned)value);
 					set_text_color(cr, GTK_WIDGET(area), 1.0);
-					draw_text(cr, layout, text, x, y);
+					memory_viewer_draw_cells(cr, layout, text, x, y, char_w, line_h);
 				}
 			}
 			else if (has_breakpoints && MemoryViewerIsBreakpoint(cellAddress))
@@ -455,13 +481,13 @@ on_draw(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data)
 				cairo_fill(cr);
 				g_snprintf(text, sizeof(text), "%0*X", digits, (unsigned)value);
 				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-				draw_text(cr, layout, text, x, y);
+				memory_viewer_draw_cells(cr, layout, text, x, y, char_w, line_h);
 			}
 			else
 			{
 				g_snprintf(text, sizeof(text), "%0*X", digits, (unsigned)value);
 				set_text_color(cr, GTK_WIDGET(area), 1.0);
-				draw_text(cr, layout, text, x, y);
+				memory_viewer_draw_cells(cr, layout, text, x, y, char_w, line_h);
 			}
 		}
 
@@ -469,8 +495,9 @@ on_draw(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data)
 		for (int i = 0; i < kBytesPerRow; ++i)
 		{
 			const guint8 value = st->buffer[row * kBytesPerRow + i];
-			const char c = (value >= 0x20 && value <= endChar) ? (char)value : '.';
-			gchar asciiText[2] = { c, '\0' };
+			const gunichar c = (value >= 0x20 && value <= endChar && g_unichar_isprint(value)) ? value : '.';
+			gchar asciiText[7] = { 0 };
+			g_unichar_to_utf8(c, asciiText);
 			const guint32 byteAddress = rowAddress + (guint32)i;
 			const gboolean selectedByte = st->selectionEnabled &&
 			                              (st->selectionAddress == byteAddress);
@@ -483,7 +510,7 @@ on_draw(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data)
 				cairo_fill(cr);
 			}
 			set_text_color(cr, GTK_WIDGET(area), 1.0);
-			draw_text(cr, layout, asciiText, x, y);
+			memory_viewer_draw_cells(cr, layout, asciiText, x, y, char_w, line_h);
 		}
 	}
 
@@ -623,30 +650,16 @@ on_click_pressed(GtkGestureClick *gesture, gint n_press, gdouble x, gdouble y, g
 
 	gtk_widget_grab_focus(st->drawing);
 
-	PangoLayout *layout = gtk_widget_create_pango_layout(GTK_WIDGET(st->drawing), NULL);
-	PangoFontDescription *font = pango_font_description_from_string("Monospace 12");
-	pango_layout_set_font_description(layout, font);
-	pango_font_description_free(font);
-	pango_layout_set_text(layout, "0", -1);
-	int glyph_w = 0, glyph_h = 0;
-	pango_layout_get_pixel_size(layout, &glyph_w, &glyph_h);
+	PangoLayout *layout = memory_viewer_layout_new(st->drawing, st->fontSettings);
+	double char_w, line_h, header_h;
+	memory_viewer_metrics(layout, &char_w, &line_h, &header_h);
 	g_object_unref(layout);
-	if (glyph_w < 1)
-	{
-		glyph_w = 7;
-	}
-	if (glyph_h < 1)
-	{
-		glyph_h = 14;
-	}
-	const double char_w = (double)glyph_w;
-	const double line_h = (double)(glyph_h + 4);
 
-	if (y < kHeaderHeight)
+	if (y < header_h)
 	{
 		return;
 	}
-	const int row = (int)floor((y - kHeaderHeight) / line_h);
+	const int row = (int)floor((y - header_h) / line_h);
 	if (row < 0 || row >= st->visibleRows)
 	{
 		return;
@@ -676,15 +689,25 @@ on_click_pressed(GtkGestureClick *gesture, gint n_press, gdouble x, gdouble y, g
 static gboolean
 on_scroll(GtkEventControllerScroll *controller, gdouble dx, gdouble dy, gpointer data)
 {
-	(void)controller;
 	(void)dx;
 	MemoryViewerState *st = (MemoryViewerState *)data;
 	if (dy == 0.0)
 	{
 		return FALSE;
 	}
-	const int rows = (int)dy;
-	scroll_by(st, -(gint64)rows * kBytesPerRow);
+	if (gtk_event_controller_scroll_get_unit(controller) == GDK_SCROLL_UNIT_SURFACE)
+	{
+		PangoLayout *layout = memory_viewer_layout_new(st->drawing, st->fontSettings);
+		double char_w, line_h, header_h;
+		memory_viewer_metrics(layout, &char_w, &line_h, &header_h);
+		g_object_unref(layout);
+		dy /= line_h;
+	}
+	st->scrollRemainder += dy;
+	const gint64 rows = (gint64)st->scrollRemainder;
+	st->scrollRemainder -= rows;
+	if (rows != 0)
+		scroll_by(st, rows * kBytesPerRow);
 	return TRUE;
 }
 
@@ -1106,8 +1129,10 @@ on_export_action(GSimpleAction *action, GVariant *parameter, gpointer data)
 static void
 clear_state(void)
 {
+	g_clear_object(&sView.fontSettings);
 	sView.window = NULL;
 	sView.drawing = NULL;
+	sView.adjustment = NULL;
 	sView.regionDrop = NULL;
 	sView.addressEntry = NULL;
 	sView.historyDrop = NULL;
@@ -1182,6 +1207,7 @@ Open(void)
 	st->windowSize = kDefaultRows * kBytesPerRow;
 	st->address = MemoryViewerRegionGet(st->region)->hardwareAddress;
 	st->lastRefresh = 0;
+	st->fontSettings = memory_viewer_font_settings();
 
 	MemoryViewerResetRegions();
 
@@ -1251,9 +1277,19 @@ Open(void)
 	gtk_widget_set_focusable(st->drawing, TRUE);
 	gtk_widget_set_hexpand(st->drawing, TRUE);
 	gtk_widget_set_vexpand(st->drawing, TRUE);
-	gtk_widget_set_size_request(st->drawing, 620, 280);
+	memory_viewer_set_min_width(st->drawing, st->fontSettings);
 	gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(st->drawing), on_draw, st, NULL);
-	gtk_box_append(GTK_BOX(root), st->drawing);
+	GtkWidget *dumpBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_widget_set_vexpand(dumpBox, TRUE);
+	gtk_box_append(GTK_BOX(root), dumpBox);
+	gtk_box_append(GTK_BOX(dumpBox), st->drawing);
+	st->adjustment = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 1, 1, 1, 1));
+	GtkWidget *scrollbar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, st->adjustment);
+	gtk_box_append(GTK_BOX(dumpBox), scrollbar);
+	g_signal_connect(st->adjustment, "value-changed", G_CALLBACK(on_adjustment_changed), st);
+	g_signal_connect(st->drawing, "resize", G_CALLBACK(on_resize), st);
+	if (st->fontSettings != NULL)
+		g_signal_connect(st->fontSettings, "changed::monospace-font-name", G_CALLBACK(on_font_changed), st);
 
 	GtkEventController *key = gtk_event_controller_key_new();
 	g_signal_connect(key, "key-pressed", G_CALLBACK(on_key_pressed), st);

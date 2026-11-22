@@ -5732,7 +5732,9 @@ BOOL *dTools_running;
 
 static void Start_dTool(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    int tool = g_variant_get_uint32(parameter);
+    (void)action;
+    (void)parameter;
+    int tool = GPOINTER_TO_INT(user_data);
 
     if(dTools_running == NULL || dTools_running[tool])
         return;
@@ -6529,18 +6531,15 @@ static void ToggleAutoFrameskip(GSimpleAction *action, GVariant *parameter, gpoi
 
 static void desmume_gtk_menu_tools(GtkApplication *app)
 {
-    std::vector<GActionEntry> entries;
-    std::vector<std::string> names;
-    // GActionEntry keeps a pointer to the parameter value, so the string
-    // vector must not reallocate while its entries are still referenced.
-    entries.reserve(dTools_list_size);
-    names.reserve(dTools_list_size);
+    // Each tool gets its own parameterless action. The old code registered
+    // parameterized "u" actions but menu.ui did not supply a target value,
+    // which made every Tools menu item permanently insensitive.
     for (int i = 0; i < dTools_list_size; i++) {
-        names.push_back(std::to_string(i));
-        GActionEntry entry = {dTools_list[i]->shortname, Start_dTool, "u", names.back().c_str(), NULL};
-        entries.push_back(entry);
+        GSimpleAction *action = g_simple_action_new(dTools_list[i]->shortname, NULL);
+        g_signal_connect(action, "activate", G_CALLBACK(Start_dTool), GINT_TO_POINTER(i));
+        g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(action));
+        g_object_unref(action);
     }
-    g_action_map_add_action_entries(G_ACTION_MAP(app), entries.data(), entries.size(), NULL);
 }
 
 static gboolean timeout_exit_cb(gpointer data)
