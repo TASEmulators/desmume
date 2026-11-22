@@ -91,7 +91,7 @@
 
 		<ClCompile>
 
-			<AdditionalIncludeDirectories>.;..\..;..\..\..;..\..\windows;.\SDL3\include;glib-2.20.1\build;..\..\windows\zlib128;..\..\windows\zziplib;..\..\windows\winpcap;userconfig;..\..\windows\agg\include;..\..\windows\agg\examples;..\..\..\libretro-common\include;..\..\..\..\3rdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\..;..\..\..;..\..\windows;.\SDL3\include;glib-2.20.1\build;..\..\..\..\3rdparty\zlib-1.4;..\..\windows\zziplib;..\..\windows\winpcap;userconfig;..\..\windows\agg\include;..\..\windows\agg\examples;..\..\..\libretro-common\include;..\..\..\..\3rdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 			
 			<!-- We are building the interface -->
 			<PreprocessorDefinitions>TARGET_INTERFACE;WIN_EXPORT</PreprocessorDefinitions>
@@ -167,11 +167,11 @@
 
 			<!-- deps config for x64 -->
 			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">..\..\windows\zlib128;..\..\windows\agg;.libs;.libs\x64;.\SDL3\lib\x64</AdditionalLibraryDirectories>
-			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">zlib-vc8-x64.lib;agg-2.5-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">agg-2.5-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- deps config for Win32 -->
 			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">..\..\windows\zlib128;..\..\windows\agg;.libs;.libs\win32;.\SDL3\lib\x86</AdditionalLibraryDirectories>
-			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">zlib-vc8-Win32.lib;agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- special deps config for newer VS -->
 			<AdditionalDependencies Label="Configuration" Condition="'$(NDS_VSVER)' &gt;= '14'">legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
