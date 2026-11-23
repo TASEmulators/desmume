@@ -36,7 +36,15 @@ message('wgpu platform: ' + wgpu_platform)
 
 dep_glib2 = dependency('glib-2.0')
 dep_sdl = dependency('sdl3')
-dep_pcap = dependency('pcap')
+# Distros disagree on the pkg-config name (libpcap.pc vs pcap.pc), and some
+# only ship the bare library, so try all three lookups before giving up.
+dep_pcap = dependency('libpcap', required: false)
+if not dep_pcap.found()
+  dep_pcap = dependency('pcap', required: false)
+endif
+if not dep_pcap.found()
+  dep_pcap = cxx.find_library('pcap', required: false)
+endif
 dep_zlib = dependency('zlib')
 dep_threads = dependency('threads')
 dep_gl = dependency('gl', required: false)
@@ -98,7 +106,19 @@ if get_option('wifi')
   add_global_arguments('-DEXPERIMENTAL_WIFI_COMM', language: ['c', 'cpp'])
 endif
 
-dependencies = [dep_glib2, dep_sdl, dep_pcap, dep_zlib, dep_threads]
+# libpcap only powers the Infrastructure (SoftAP) Wi-Fi bridge. Without it the
+# core still builds and Ad-hoc networking (plain sockets) keeps working.
+if dep_pcap.found()
+  add_global_arguments('-DHAVE_PCAP=1', language: ['c', 'cpp'])
+  message('libpcap: enabled (Infrastructure Wi-Fi bridging available)')
+else
+  message('libpcap: disabled (Infrastructure Wi-Fi bridging unavailable)')
+endif
+
+dependencies = [dep_glib2, dep_sdl, dep_zlib, dep_threads]
+if dep_pcap.found()
+  dependencies += dep_pcap
+endif
 
 # Determine the CPU architecture of the target.
 target_cpu_64bit = false

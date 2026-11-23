@@ -57,6 +57,7 @@
 #define BASEPORT 7000
 #define PACKET_SIZE 65535
 
+#ifdef DESMUME_WIFI_PCAP
 // Some platforms need HAVE_REMOTE to work with libpcap, but
 // Apple platforms are not among them.
 #ifndef __APPLE__
@@ -74,6 +75,7 @@ typedef struct pcap pcap_t;
 #ifndef PCAP_OPENFLAG_PROMISCUOUS
 #define PCAP_OPENFLAG_PROMISCUOUS 1
 #endif
+#endif // DESMUME_WIFI_PCAP
 
 // PCAP_ERRBUF_SIZE should 256 bytes according to POSIX libpcap and winpcap.
 // Define it if it isn't available.
@@ -3104,6 +3106,7 @@ static const u8 SoftAP_DeauthFrame[] = {
 	0x01, 0x00,											// Reason code (is "unspecified" ok?)
 };
 
+#ifdef DESMUME_WIFI_PCAP
 static void SoftAP_RXPacketGet_Callback(u_char* userData, const pcap_pkthdr* pktHeader, const u_char* pktData)
 {
 	const WIFI_IOREG_MAP& io = wifiHandler->GetWifiData().io;
@@ -3158,6 +3161,7 @@ static void SoftAP_RXPacketGet_Callback(u_char* userData, const pcap_pkthdr* pkt
 	rawPacket->writeLocation += emulatorHeader.emuPacketSize;
 	rawPacket->count++;
 }
+#endif // DESMUME_WIFI_PCAP
 
 static void* Adhoc_RXPacketGetOnThread(void* arg)
 {
@@ -3224,7 +3228,7 @@ void DummyPCapInterface::breakloop(void* dev)
 	// Do nothing.
 }
 
-#ifndef HOST_WINDOWS
+#ifdef DESMUME_WIFI_POSIX_PCAP
 
 int POSIXPCapInterface::findalldevs(void** alldevs, char* errbuf)
 {
@@ -3271,7 +3275,7 @@ void POSIXPCapInterface::breakloop(void* dev)
 	pcap_breakloop((pcap_t*)dev);
 }
 
-#endif
+#endif // DESMUME_WIFI_POSIX_PCAP
 
 WifiCommInterface::WifiCommInterface()
 {
@@ -3565,6 +3569,7 @@ SoftAPCommInterface::~SoftAPCommInterface()
 
 void* SoftAPCommInterface::_GetBridgeDeviceAtIndex(int deviceIndex, char* outErrorBuf)
 {
+#ifdef DESMUME_WIFI_PCAP
 	void* deviceList = NULL;
 	void* theDevice = NULL;
 	int result = this->_pcap->findalldevs((void**)&deviceList, outErrorBuf);
@@ -3595,6 +3600,11 @@ void* SoftAPCommInterface::_GetBridgeDeviceAtIndex(int deviceIndex, char* outErr
 	this->_pcap->freealldevs(deviceList);
 
 	return theDevice;
+#else
+	(void)deviceIndex;
+	(void)outErrorBuf;
+	return NULL;
+#endif // DESMUME_WIFI_PCAP
 }
 
 bool SoftAPCommInterface::_IsDNSRequestToWFC(u16 ethertype, const u8* body)
@@ -3767,7 +3777,11 @@ void SoftAPCommInterface::RXPacketGet()
 		this->_rawPacket->writeLocation = 0;
 		this->_rawPacket->count = 0;
 
+#ifdef DESMUME_WIFI_PCAP
 		int result = this->_pcap->dispatch(this->_bridgeDevice, 8, (void*)&SoftAP_RXPacketGet_Callback, (u_char*)this->_rawPacket);
+#else
+		int result = -1;
+#endif
 		if(result <= 0)
 		{
 			this->_rawPacket->count = 0;
@@ -3805,12 +3819,16 @@ WifiHandler::WifiHandler()
 
 	_packetCaptureFile = NULL;
 
-	#ifndef HOST_WINDOWS
+	#ifdef HOST_WINDOWS
+	_pcap = &dummyPCapInterface;
+	_isSocketsSupported = false; // Set by the frontend after WSAStartup().
+	#else
+	_isSocketsSupported = true; // Ad-hoc mode works without libpcap.
+	#ifdef DESMUME_WIFI_POSIX_PCAP
 	_pcap = new POSIXPCapInterface;
-	_isSocketsSupported = true;
 	#else
 	_pcap = &dummyPCapInterface;
-	_isSocketsSupported = false;
+	#endif
 	#endif
 
 	WIFI_initCRC32Table();
@@ -4504,6 +4522,7 @@ int WifiHandler::GetBridgeDeviceList(std::vector<std::string>* deviceStringList)
 		return result;
 	}
 
+#ifdef DESMUME_WIFI_PCAP
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t* deviceList;
 
@@ -4527,6 +4546,10 @@ int WifiHandler::GetBridgeDeviceList(std::vector<std::string>* deviceStringList)
 	}
 
 	return (int)deviceStringList->size();
+#else
+	(void)deviceStringList;
+	return result;
+#endif // DESMUME_WIFI_PCAP
 }
 
 int WifiHandler::GetSelectedBridgeDeviceIndex()

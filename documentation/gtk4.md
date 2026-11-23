@@ -862,6 +862,8 @@ build_gtk4:
 
 原来的 GTK3 job 显式写 `-Dfrontend-gtk=gtk3`，否则 runner 上装了 libgtk-4-dev 时会不知不觉改成构建 gtk4。
 
+libpcap 已是可选依赖：Meson 会依次尝试 `libpcap.pc`、`pcap.pc` 和裸 `-lpcap`；没找到时只关闭 Infrastructure（SoftAP）Wi-Fi 桥接，Ad-hoc 用的普通 socket 不受影响。CI 里仍安装 `libpcap-dev`，以保持 Wi-Fi 完整可用。
+
 ### 9.2 本地构建
 
 ```bash

@@ -48,8 +48,20 @@ AC_DEFINE_UNQUOTED([SVN_REV_STR], ["$REVISION"], [subversion revision number str
 dnl - Check for zlib
 AC_CHECK_LIB(z, gzopen, [AC_DEFINE([HAVE_LIBZ], [1], [Define to 1 if zlib is available])], [AC_MSG_ERROR([zlib was not found, we can't go further. Please install it or specify the location where it's installed.])])
 
-dnl - Check for libpcap
-AC_CHECK_LIB(pcap, main, [LIBS="$LIBS -lpcap"], [AC_MSG_ERROR([libpcap was not found, we can't go further. Please install it or specify the location where it's installed.])])
+dnl - Check for libpcap (optional: only the Infrastructure Wi-Fi bridge needs it)
+have_pcap=no
+AC_CHECK_HEADERS([pcap.h], [
+  AC_CHECK_LIB(pcap, pcap_open_live, [
+    LIBS="$LIBS -lpcap"
+    AC_DEFINE([HAVE_PCAP], [1], [Define to 1 if libpcap is available])
+    have_pcap=yes
+  ], [have_pcap=no])
+], [have_pcap=no])
+if test "x$have_pcap" = "xyes" ; then
+  AC_MSG_NOTICE([libpcap found: Infrastructure Wi-Fi bridging enabled])
+else
+  AC_MSG_WARN([libpcap not found: Infrastructure Wi-Fi bridging will be disabled])
+fi
 
 dnl - Check for X11
 AC_PATH_X

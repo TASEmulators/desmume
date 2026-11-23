@@ -3227,6 +3227,22 @@ typedef struct _FW_WFCProfile
 
 } FW_WFCProfile;
 
+// libpcap is an optional dependency on POSIX builds: when it is missing,
+// WifiHandler keeps using DummyPCapInterface and Infrastructure mode is disabled.
+// Windows compiles against the bundled WinPcap SDK headers and resolves
+// wpcap.dll at runtime; Apple platforms always ship libpcap in the SDK.
+// Define DESMUME_WIFI_NO_PCAP to force the fallback on non-Windows builds.
+#if defined(DESMUME_WIFI_NO_PCAP) && !defined(HOST_WINDOWS)
+	// Explicit opt-out, useful for minimal Linux builds and for testing the
+	// no-libpcap code path even on platforms that normally ship libpcap.
+#elif defined(HOST_WINDOWS) || defined(__APPLE__) || defined(HAVE_PCAP)
+	#define DESMUME_WIFI_PCAP 1
+#endif
+
+#if defined(DESMUME_WIFI_PCAP) && !defined(HOST_WINDOWS)
+	#define DESMUME_WIFI_POSIX_PCAP 1
+#endif
+
 class ClientPCapInterface
 {
 public:
@@ -3260,7 +3276,7 @@ public:
 	virtual void breakloop(void *dev);
 };
 
-#ifndef HOST_WINDOWS
+#ifdef DESMUME_WIFI_POSIX_PCAP
 
 class POSIXPCapInterface : public ClientPCapInterface
 {
