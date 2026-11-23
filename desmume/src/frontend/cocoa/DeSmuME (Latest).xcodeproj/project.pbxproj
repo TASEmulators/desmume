@@ -213,10 +213,7 @@
 		8C43E82227E3CD0100A35F65 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
 		8C43E82327E3CD0100A35F65 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
 		8C43E82427E3CD0100A35F65 /* ftgasp.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7801BB4EC1000B08C25 /* ftgasp.c */; };
-		8C43E82527E3CD0100A35F65 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
-		8C43E82627E3CD0100A35F65 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		8C43E82727E3CD0100A35F65 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
-		8C43E82827E3CD0100A35F65 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
+		8C43E82627E3CD0100A35F65 /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		8C43E82927E3CD0100A35F65 /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECE1345AC8400AF11D1 /* version.cpp */; };
 		8C43E82A27E3CD0100A35F65 /* ftinit.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7841BB4EC1000B08C25 /* ftinit.c */; };
 		8C43E82B27E3CD0100A35F65 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
@@ -512,11 +509,8 @@
 		8C43E98927E3CD4C00A35F65 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
 		8C43E98A27E3CD4C00A35F65 /* encoding_utf.c in Sources */ = {isa = PBXBuildFile; fileRef = AB35BD8E1DEBF40800844310 /* encoding_utf.c */; };
 		8C43E98B27E3CD4C00A35F65 /* macOS_driver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB28625320AE3E9E00EAED43 /* macOS_driver.cpp */; };
-		8C43E98C27E3CD4C00A35F65 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
 		8C43E98D27E3CD4C00A35F65 /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AB17C5ED2200F410BD /* slot1comp_mc.cpp */; };
-		8C43E98E27E3CD4C00A35F65 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		8C43E98F27E3CD4C00A35F65 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
-		8C43E99027E3CD4C00A35F65 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
+		8C43E98E27E3CD4C00A35F65 /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		8C43E99127E3CD4C00A35F65 /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECE1345AC8400AF11D1 /* version.cpp */; };
 		8C43E99227E3CD4C00A35F65 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
 		8C43E99327E3CD4C00A35F65 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
@@ -779,13 +773,10 @@
 		8CCD848327E40B730024BDD5 /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECD1345AC8400AF11D1 /* thumb_instructions.cpp */; };
 		8CCD848427E40B730024BDD5 /* ftmm.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7871BB4EC1000B08C25 /* ftmm.c */; };
 		8CCD848527E40B730024BDD5 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
-		8CCD848627E40B730024BDD5 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
 		8CCD848727E40B730024BDD5 /* ftgasp.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7801BB4EC1000B08C25 /* ftgasp.c */; };
 		8CCD848827E40B730024BDD5 /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AB17C5ED2200F410BD /* slot1comp_mc.cpp */; };
-		8CCD848927E40B730024BDD5 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		8CCD848A27E40B730024BDD5 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
+		8CCD848927E40B730024BDD5 /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		8CCD848B27E40B730024BDD5 /* psaux.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731661BB51FDC00B26147 /* psaux.c */; };
-		8CCD848C27E40B730024BDD5 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
 		8CCD848D27E40B730024BDD5 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
 		8CCD848E27E40B730024BDD5 /* psnames.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731591BB51A8D00B26147 /* psnames.c */; };
 		8CCD848F27E40B730024BDD5 /* ftpatent.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA78B1BB4EC1000B08C25 /* ftpatent.c */; };
@@ -1129,13 +1120,10 @@
 		AB36C80327F2C8AE00C763C8 /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECD1345AC8400AF11D1 /* thumb_instructions.cpp */; };
 		AB36C80427F2C8AE00C763C8 /* ftmm.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7871BB4EC1000B08C25 /* ftmm.c */; };
 		AB36C80527F2C8AE00C763C8 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
-		AB36C80627F2C8AE00C763C8 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
 		AB36C80727F2C8AE00C763C8 /* ftgasp.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7801BB4EC1000B08C25 /* ftgasp.c */; };
 		AB36C80827F2C8AE00C763C8 /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AB17C5ED2200F410BD /* slot1comp_mc.cpp */; };
-		AB36C80927F2C8AE00C763C8 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		AB36C80A27F2C8AE00C763C8 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
+		AB36C80927F2C8AE00C763C8 /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		AB36C80B27F2C8AE00C763C8 /* psaux.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731661BB51FDC00B26147 /* psaux.c */; };
-		AB36C80C27F2C8AE00C763C8 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
 		AB36C80D27F2C8AE00C763C8 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
 		AB36C80E27F2C8AE00C763C8 /* psnames.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731591BB51A8D00B26147 /* psnames.c */; };
 		AB36C80F27F2C8AE00C763C8 /* ftpatent.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA78B1BB4EC1000B08C25 /* ftpatent.c */; };
@@ -1685,11 +1673,8 @@
 		AB53B03D2F9D8AB400025334 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
 		AB53B03E2F9D8AB400025334 /* ftgasp.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7801BB4EC1000B08C25 /* ftgasp.c */; };
 		AB53B03F2F9D8AB400025334 /* ClientAudioOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB79913E2E712F510030C0A6 /* ClientAudioOutput.cpp */; };
-		AB53B0402F9D8AB400025334 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
 		AB53B0412F9D8AB400025334 /* CocoaAudioController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB79914B2E71EF050030C0A6 /* CocoaAudioController.mm */; };
-		AB53B0422F9D8AB400025334 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		AB53B0432F9D8AB400025334 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
-		AB53B0442F9D8AB400025334 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
+		AB53B0422F9D8AB400025334 /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		AB53B0452F9D8AB400025334 /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECE1345AC8400AF11D1 /* version.cpp */; };
 		AB53B0462F9D8AB400025334 /* ftinit.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7841BB4EC1000B08C25 /* ftinit.c */; };
 		AB53B0472F9D8AB400025334 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
@@ -2043,10 +2028,7 @@
 		AB7900C0215B84E50082AE82 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
 		AB7900C1215B84E50082AE82 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
 		AB7900C2215B84E50082AE82 /* ftgasp.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7801BB4EC1000B08C25 /* ftgasp.c */; };
-		AB7900C3215B84E50082AE82 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
-		AB7900C4215B84E50082AE82 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		AB7900C5215B84E50082AE82 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
-		AB7900C6215B84E50082AE82 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
+		AB7900C4215B84E50082AE82 /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		AB7900C7215B84E50082AE82 /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECE1345AC8400AF11D1 /* version.cpp */; };
 		AB7900C8215B84E50082AE82 /* ftinit.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7841BB4EC1000B08C25 /* ftinit.c */; };
 		AB7900C9215B84E50082AE82 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
@@ -2369,11 +2351,8 @@
 		AB790225215B84F20082AE82 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
 		AB790226215B84F20082AE82 /* encoding_utf.c in Sources */ = {isa = PBXBuildFile; fileRef = AB35BD8E1DEBF40800844310 /* encoding_utf.c */; };
 		AB790227215B84F20082AE82 /* macOS_driver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB28625320AE3E9E00EAED43 /* macOS_driver.cpp */; };
-		AB790228215B84F20082AE82 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
 		AB790229215B84F20082AE82 /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AB17C5ED2200F410BD /* slot1comp_mc.cpp */; };
-		AB79022A215B84F20082AE82 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		AB79022B215B84F20082AE82 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
-		AB79022C215B84F20082AE82 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
+		AB79022A215B84F20082AE82 /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		AB79022D215B84F20082AE82 /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECE1345AC8400AF11D1 /* version.cpp */; };
 		AB79022E215B84F20082AE82 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
 		AB79022F215B84F20082AE82 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
@@ -2608,10 +2587,7 @@
 		AB796D3C15CDCBA200C59155 /* texcache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECC1345AC8400AF11D1 /* texcache.cpp */; };
 		AB796D3D15CDCBA200C59155 /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECD1345AC8400AF11D1 /* thumb_instructions.cpp */; };
 		AB796D3E15CDCBA200C59155 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
-		AB796D3F15CDCBA200C59155 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
-		AB796D4015CDCBA200C59155 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		AB796D4115CDCBA200C59155 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
-		AB796D4215CDCBA200C59155 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
+		AB796D4015CDCBA200C59155 /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		AB796D4315CDCBA200C59155 /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECE1345AC8400AF11D1 /* version.cpp */; };
 		AB796D4415CDCBA200C59155 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
 		AB796D4515CDCBA200C59155 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
@@ -3129,11 +3105,8 @@
 		AB8F3CC61A53AC2600A80BF6 /* texcache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECC1345AC8400AF11D1 /* texcache.cpp */; };
 		AB8F3CC71A53AC2600A80BF6 /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECD1345AC8400AF11D1 /* thumb_instructions.cpp */; };
 		AB8F3CC81A53AC2600A80BF6 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
-		AB8F3CC91A53AC2600A80BF6 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
 		AB8F3CCA1A53AC2600A80BF6 /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AB17C5ED2200F410BD /* slot1comp_mc.cpp */; };
-		AB8F3CCB1A53AC2600A80BF6 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		AB8F3CCC1A53AC2600A80BF6 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
-		AB8F3CCD1A53AC2600A80BF6 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
+		AB8F3CCB1A53AC2600A80BF6 /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		AB8F3CCE1A53AC2600A80BF6 /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECE1345AC8400AF11D1 /* version.cpp */; };
 		AB8F3CCF1A53AC2600A80BF6 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
 		AB8F3CD01A53AC2600A80BF6 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
@@ -4084,10 +4057,7 @@
 		ABB3C6A31501C04F00E0C22E /* libfat_public_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF431345ACBF00AF11D1 /* libfat_public_api.cpp */; };
 		ABB3C6A41501C04F00E0C22E /* lock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF451345ACBF00AF11D1 /* lock.cpp */; };
 		ABB3C6A51501C04F00E0C22E /* partition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF481345ACBF00AF11D1 /* partition.cpp */; };
-		ABB3C6A61501C04F00E0C22E /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
-		ABB3C6A71501C04F00E0C22E /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		ABB3C6A81501C04F00E0C22E /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
-		ABB3C6A91501C04F00E0C22E /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
+		ABB3C6A71501C04F00E0C22E /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		ABB3C6AB1501C04F00E0C22E /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
 		ABB3C6AC1501C04F00E0C22E /* dlditool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF281345ACBF00AF11D1 /* dlditool.cpp */; };
 		ABB3C6AD1501C04F00E0C22E /* emufat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF291345ACBF00AF11D1 /* emufat.cpp */; };
@@ -4333,13 +4303,10 @@
 		ABC8590228273FEE00A03EA9 /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECD1345AC8400AF11D1 /* thumb_instructions.cpp */; };
 		ABC8590328273FEE00A03EA9 /* ftmm.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7871BB4EC1000B08C25 /* ftmm.c */; };
 		ABC8590428273FEE00A03EA9 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
-		ABC8590528273FEE00A03EA9 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
 		ABC8590628273FEE00A03EA9 /* ftgasp.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7801BB4EC1000B08C25 /* ftgasp.c */; };
 		ABC8590728273FEE00A03EA9 /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AB17C5ED2200F410BD /* slot1comp_mc.cpp */; };
-		ABC8590828273FEE00A03EA9 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		ABC8590928273FEE00A03EA9 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
+		ABC8590828273FEE00A03EA9 /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		ABC8590A28273FEE00A03EA9 /* psaux.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731661BB51FDC00B26147 /* psaux.c */; };
-		ABC8590B28273FEE00A03EA9 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
 		ABC8590C28273FEE00A03EA9 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
 		ABC8590D28273FEE00A03EA9 /* psnames.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731591BB51A8D00B26147 /* psnames.c */; };
 		ABC8590E28273FEE00A03EA9 /* ftpatent.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA78B1BB4EC1000B08C25 /* ftpatent.c */; };
@@ -4666,13 +4633,10 @@
 		ABD2CDB626E05CB000FB15F7 /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECD1345AC8400AF11D1 /* thumb_instructions.cpp */; };
 		ABD2CDB726E05CB000FB15F7 /* ftmm.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7871BB4EC1000B08C25 /* ftmm.c */; };
 		ABD2CDB826E05CB000FB15F7 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
-		ABD2CDB926E05CB000FB15F7 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
 		ABD2CDBA26E05CB000FB15F7 /* ftgasp.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7801BB4EC1000B08C25 /* ftgasp.c */; };
 		ABD2CDBB26E05CB000FB15F7 /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AB17C5ED2200F410BD /* slot1comp_mc.cpp */; };
-		ABD2CDBC26E05CB000FB15F7 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
-		ABD2CDBD26E05CB000FB15F7 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
+		ABD2CDBC26E05CB000FB15F7 /* tinyxml2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0020000000000000021 /* tinyxml2.cpp */; };
 		ABD2CDBE26E05CB000FB15F7 /* psaux.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731661BB51FDC00B26147 /* psaux.c */; };
-		ABD2CDBF26E05CB000FB15F7 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
 		ABD2CDC026E05CB000FB15F7 /* WifiSettingsPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3FBD7F2176DE95005722D0 /* WifiSettingsPanel.mm */; };
 		ABD2CDC126E05CB000FB15F7 /* psnames.c in Sources */ = {isa = PBXBuildFile; fileRef = ABA731591BB51A8D00B26147 /* psnames.c */; };
 		ABD2CDC226E05CB000FB15F7 /* ftpatent.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA78B1BB4EC1000B08C25 /* ftpatent.c */; };
@@ -6175,6 +6139,8 @@
 		AB9038A417C5ECFD00F410BD /* advanscene.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = advanscene.h; sourceTree = "<group>"; };
 		F5A9C0010000000000000002 /* ziparchive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ziparchive.h; sourceTree = "<group>"; };
 		AB9038A517C5ECFD00F410BD /* advanscene.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = advanscene.cpp; sourceTree = "<group>"; };
+		F5A9C0020000000000000021 /* tinyxml2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxml2.cpp; sourceTree = "<group>"; };
+		F5A9C0020000000000000022 /* tinyxml2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tinyxml2.h; sourceTree = "<group>"; };
 		F5A9C0010000000000000001 /* ziparchive.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ziparchive.cpp; sourceTree = "<group>"; };
 		AB9038A917C5ED2200F410BD /* slot1_retail_auto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_auto.cpp; sourceTree = "<group>"; };
 		AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_mcrom.cpp; sourceTree = "<group>"; };
@@ -6567,12 +6533,6 @@
 		ABDD89F02C30BE97003482B7 /* OGLRender_ES3.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = OGLRender_ES3.cpp; sourceTree = "<group>"; };
 		ABDE648E2E21068500C03E0B /* GPU_Operations_AltiVec.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GPU_Operations_AltiVec.h; sourceTree = "<group>"; };
 		ABDE648F2E21068500C03E0B /* GPU_Operations_AltiVec.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = GPU_Operations_AltiVec.cpp; sourceTree = "<group>"; };
-		ABE670251415DE6C00E8E4C9 /* tinystr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinystr.cpp; sourceTree = "<group>"; };
-		ABE670261415DE6C00E8E4C9 /* tinystr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tinystr.h; sourceTree = "<group>"; };
-		ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxml.cpp; sourceTree = "<group>"; };
-		ABE670281415DE6C00E8E4C9 /* tinyxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tinyxml.h; sourceTree = "<group>"; };
-		ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxmlerror.cpp; sourceTree = "<group>"; };
-		ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxmlparser.cpp; sourceTree = "<group>"; };
 		ABE6840B189E33BC007FD69C /* OGLDisplayOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OGLDisplayOutput.cpp; sourceTree = "<group>"; };
 		ABE6840E189E33D5007FD69C /* OGLDisplayOutput.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OGLDisplayOutput.h; sourceTree = "<group>"; };
 		ABE7F53C13EE1C7900FD3A71 /* cocoa_firmware.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_firmware.h; sourceTree = "<group>"; };
@@ -8238,6 +8198,8 @@
 				ABD1FF4D1345ACBF00AF11D1 /* task.h */,
 				F5A9C0010000000000000001 /* ziparchive.cpp */,
 				F5A9C0010000000000000002 /* ziparchive.h */,
+				F5A9C0020000000000000021 /* tinyxml2.cpp */,
+				F5A9C0020000000000000022 /* tinyxml2.h */,
 				ABD1FF501345ACBF00AF11D1 /* vfat.h */,
 				ABD1FF521345ACBF00AF11D1 /* xstring.h */,
 			);
@@ -8339,12 +8301,6 @@
 		ABE670241415DE6C00E8E4C9 /* tinyxml */ = {
 			isa = PBXGroup;
 			children = (
-				ABE670251415DE6C00E8E4C9 /* tinystr.cpp */,
-				ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */,
-				ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */,
-				ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */,
-				ABE670261415DE6C00E8E4C9 /* tinystr.h */,
-				ABE670281415DE6C00E8E4C9 /* tinyxml.h */,
 			);
 			path = tinyxml;
 			sourceTree = "<group>";
@@ -11400,11 +11356,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				8C43E82327E3CD0100A35F65 /* Timestretcher.cpp in Sources */,
 				8C43E82427E3CD0100A35F65 /* ftgasp.c in Sources */,
 				AB7991482E712F510030C0A6 /* ClientAudioOutput.cpp in Sources */,
-				8C43E82527E3CD0100A35F65 /* tinystr.cpp in Sources */,
 				AB79914C2E71EF050030C0A6 /* CocoaAudioController.mm in Sources */,
-				8C43E82627E3CD0100A35F65 /* tinyxml.cpp in Sources */,
-				8C43E82727E3CD0100A35F65 /* tinyxmlerror.cpp in Sources */,
-				8C43E82827E3CD0100A35F65 /* tinyxmlparser.cpp in Sources */,
+				8C43E82627E3CD0100A35F65 /* tinyxml2.cpp in Sources */,
 				8C43E82927E3CD0100A35F65 /* version.cpp in Sources */,
 				8C43E82A27E3CD0100A35F65 /* ftinit.c in Sources */,
 				8C43E82B27E3CD0100A35F65 /* vfat.cpp in Sources */,
@@ -11694,11 +11647,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				8C43E98927E3CD4C00A35F65 /* Timestretcher.cpp in Sources */,
 				8C43E98A27E3CD4C00A35F65 /* encoding_utf.c in Sources */,
 				8C43E98B27E3CD4C00A35F65 /* macOS_driver.cpp in Sources */,
-				8C43E98C27E3CD4C00A35F65 /* tinystr.cpp in Sources */,
 				8C43E98D27E3CD4C00A35F65 /* slot1comp_mc.cpp in Sources */,
-				8C43E98E27E3CD4C00A35F65 /* tinyxml.cpp in Sources */,
-				8C43E98F27E3CD4C00A35F65 /* tinyxmlerror.cpp in Sources */,
-				8C43E99027E3CD4C00A35F65 /* tinyxmlparser.cpp in Sources */,
+				8C43E98E27E3CD4C00A35F65 /* tinyxml2.cpp in Sources */,
 				AB1C3F532E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				8C43E99127E3CD4C00A35F65 /* version.cpp in Sources */,
 				8C43E99227E3CD4C00A35F65 /* vfat.cpp in Sources */,
@@ -11950,13 +11900,10 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				8CCD848327E40B730024BDD5 /* thumb_instructions.cpp in Sources */,
 				8CCD848427E40B730024BDD5 /* ftmm.c in Sources */,
 				8CCD848527E40B730024BDD5 /* Timestretcher.cpp in Sources */,
-				8CCD848627E40B730024BDD5 /* tinystr.cpp in Sources */,
 				8CCD848727E40B730024BDD5 /* ftgasp.c in Sources */,
 				8CCD848827E40B730024BDD5 /* slot1comp_mc.cpp in Sources */,
-				8CCD848927E40B730024BDD5 /* tinyxml.cpp in Sources */,
-				8CCD848A27E40B730024BDD5 /* tinyxmlerror.cpp in Sources */,
+				8CCD848927E40B730024BDD5 /* tinyxml2.cpp in Sources */,
 				8CCD848B27E40B730024BDD5 /* psaux.c in Sources */,
-				8CCD848C27E40B730024BDD5 /* tinyxmlparser.cpp in Sources */,
 				8CCD848D27E40B730024BDD5 /* WifiSettingsPanel.mm in Sources */,
 				8CCD848E27E40B730024BDD5 /* psnames.c in Sources */,
 				8CCD848F27E40B730024BDD5 /* ftpatent.c in Sources */,
@@ -12232,13 +12179,10 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB1C3F522E741AA40047F251 /* MacCoreAudioOutputEngine.cpp in Sources */,
 				AB36C80427F2C8AE00C763C8 /* ftmm.c in Sources */,
 				AB36C80527F2C8AE00C763C8 /* Timestretcher.cpp in Sources */,
-				AB36C80627F2C8AE00C763C8 /* tinystr.cpp in Sources */,
 				AB36C80727F2C8AE00C763C8 /* ftgasp.c in Sources */,
 				AB36C80827F2C8AE00C763C8 /* slot1comp_mc.cpp in Sources */,
-				AB36C80927F2C8AE00C763C8 /* tinyxml.cpp in Sources */,
-				AB36C80A27F2C8AE00C763C8 /* tinyxmlerror.cpp in Sources */,
+				AB36C80927F2C8AE00C763C8 /* tinyxml2.cpp in Sources */,
 				AB36C80B27F2C8AE00C763C8 /* psaux.c in Sources */,
-				AB36C80C27F2C8AE00C763C8 /* tinyxmlparser.cpp in Sources */,
 				AB36C80D27F2C8AE00C763C8 /* WifiSettingsPanel.mm in Sources */,
 				AB36C80E27F2C8AE00C763C8 /* psnames.c in Sources */,
 				AB36C80F27F2C8AE00C763C8 /* ftpatent.c in Sources */,
@@ -12559,11 +12503,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB53B03D2F9D8AB400025334 /* Timestretcher.cpp in Sources */,
 				AB53B03E2F9D8AB400025334 /* ftgasp.c in Sources */,
 				AB53B03F2F9D8AB400025334 /* ClientAudioOutput.cpp in Sources */,
-				AB53B0402F9D8AB400025334 /* tinystr.cpp in Sources */,
 				AB53B0412F9D8AB400025334 /* CocoaAudioController.mm in Sources */,
-				AB53B0422F9D8AB400025334 /* tinyxml.cpp in Sources */,
-				AB53B0432F9D8AB400025334 /* tinyxmlerror.cpp in Sources */,
-				AB53B0442F9D8AB400025334 /* tinyxmlparser.cpp in Sources */,
+				AB53B0422F9D8AB400025334 /* tinyxml2.cpp in Sources */,
 				AB53B0452F9D8AB400025334 /* version.cpp in Sources */,
 				AB53B0462F9D8AB400025334 /* ftinit.c in Sources */,
 				AB53B0472F9D8AB400025334 /* vfat.cpp in Sources */,
@@ -12844,10 +12785,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				ABDB1BF32E66486E002AD9AF /* ClientVideoOutput.cpp in Sources */,
 				AB7900C1215B84E50082AE82 /* Timestretcher.cpp in Sources */,
 				AB7900C2215B84E50082AE82 /* ftgasp.c in Sources */,
-				AB7900C3215B84E50082AE82 /* tinystr.cpp in Sources */,
-				AB7900C4215B84E50082AE82 /* tinyxml.cpp in Sources */,
-				AB7900C5215B84E50082AE82 /* tinyxmlerror.cpp in Sources */,
-				AB7900C6215B84E50082AE82 /* tinyxmlparser.cpp in Sources */,
+				AB7900C4215B84E50082AE82 /* tinyxml2.cpp in Sources */,
 				AB7900C7215B84E50082AE82 /* version.cpp in Sources */,
 				AB7900C8215B84E50082AE82 /* ftinit.c in Sources */,
 				AB7900C9215B84E50082AE82 /* vfat.cpp in Sources */,
@@ -13161,11 +13099,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB790225215B84F20082AE82 /* Timestretcher.cpp in Sources */,
 				AB790226215B84F20082AE82 /* encoding_utf.c in Sources */,
 				AB790227215B84F20082AE82 /* macOS_driver.cpp in Sources */,
-				AB790228215B84F20082AE82 /* tinystr.cpp in Sources */,
 				AB790229215B84F20082AE82 /* slot1comp_mc.cpp in Sources */,
-				AB79022A215B84F20082AE82 /* tinyxml.cpp in Sources */,
-				AB79022B215B84F20082AE82 /* tinyxmlerror.cpp in Sources */,
-				AB79022C215B84F20082AE82 /* tinyxmlparser.cpp in Sources */,
+				AB79022A215B84F20082AE82 /* tinyxml2.cpp in Sources */,
 				AB79022D215B84F20082AE82 /* version.cpp in Sources */,
 				AB79022E215B84F20082AE82 /* vfat.cpp in Sources */,
 				AB79022F215B84F20082AE82 /* videofilter.cpp in Sources */,
@@ -13463,10 +13398,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				ABDB1BF22E66486E002AD9AF /* ClientVideoOutput.cpp in Sources */,
 				AB796D3E15CDCBA200C59155 /* Timestretcher.cpp in Sources */,
 				ABFEA81F1BB4EC1000B08C25 /* ftgasp.c in Sources */,
-				AB796D3F15CDCBA200C59155 /* tinystr.cpp in Sources */,
-				AB796D4015CDCBA200C59155 /* tinyxml.cpp in Sources */,
-				AB796D4115CDCBA200C59155 /* tinyxmlerror.cpp in Sources */,
-				AB796D4215CDCBA200C59155 /* tinyxmlparser.cpp in Sources */,
+				AB796D4015CDCBA200C59155 /* tinyxml2.cpp in Sources */,
 				AB796D4315CDCBA200C59155 /* version.cpp in Sources */,
 				ABFEA82B1BB4EC1100B08C25 /* ftinit.c in Sources */,
 				AB796D4415CDCBA200C59155 /* vfat.cpp in Sources */,
@@ -13780,11 +13712,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB8F3CC81A53AC2600A80BF6 /* Timestretcher.cpp in Sources */,
 				AB35BD901DEBF41800844310 /* encoding_utf.c in Sources */,
 				AB28625A20AE3E9F00EAED43 /* macOS_driver.cpp in Sources */,
-				AB8F3CC91A53AC2600A80BF6 /* tinystr.cpp in Sources */,
 				AB8F3CCA1A53AC2600A80BF6 /* slot1comp_mc.cpp in Sources */,
-				AB8F3CCB1A53AC2600A80BF6 /* tinyxml.cpp in Sources */,
-				AB8F3CCC1A53AC2600A80BF6 /* tinyxmlerror.cpp in Sources */,
-				AB8F3CCD1A53AC2600A80BF6 /* tinyxmlparser.cpp in Sources */,
+				AB8F3CCB1A53AC2600A80BF6 /* tinyxml2.cpp in Sources */,
 				AB8F3CCE1A53AC2600A80BF6 /* version.cpp in Sources */,
 				AB8F3CCF1A53AC2600A80BF6 /* vfat.cpp in Sources */,
 				AB8F3CD01A53AC2600A80BF6 /* videofilter.cpp in Sources */,
@@ -14037,12 +13966,9 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				ABB3C6A31501C04F00E0C22E /* libfat_public_api.cpp in Sources */,
 				ABB3C6A41501C04F00E0C22E /* lock.cpp in Sources */,
 				ABB3C6A51501C04F00E0C22E /* partition.cpp in Sources */,
-				ABB3C6A61501C04F00E0C22E /* tinystr.cpp in Sources */,
 				AB49B554281687B90069F1D7 /* type1.c in Sources */,
-				ABB3C6A71501C04F00E0C22E /* tinyxml.cpp in Sources */,
-				ABB3C6A81501C04F00E0C22E /* tinyxmlerror.cpp in Sources */,
+				ABB3C6A71501C04F00E0C22E /* tinyxml2.cpp in Sources */,
 				AB49B552281687B90069F1D7 /* smooth.c in Sources */,
-				ABB3C6A91501C04F00E0C22E /* tinyxmlparser.cpp in Sources */,
 				AB6E3B572E73E7C80088075E /* ClientCheatManager.cpp in Sources */,
 				ABADF11E1DEA4CFC00A142B1 /* features_cpu.c in Sources */,
 				ABB3C6AB1501C04F00E0C22E /* datetime.cpp in Sources */,
@@ -14316,14 +14242,11 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				ABC8590228273FEE00A03EA9 /* thumb_instructions.cpp in Sources */,
 				ABC8590328273FEE00A03EA9 /* ftmm.c in Sources */,
 				ABC8590428273FEE00A03EA9 /* Timestretcher.cpp in Sources */,
-				ABC8590528273FEE00A03EA9 /* tinystr.cpp in Sources */,
 				ABC8590628273FEE00A03EA9 /* ftgasp.c in Sources */,
 				AB7991492E712F510030C0A6 /* ClientAudioOutput.cpp in Sources */,
 				ABC8590728273FEE00A03EA9 /* slot1comp_mc.cpp in Sources */,
-				ABC8590828273FEE00A03EA9 /* tinyxml.cpp in Sources */,
-				ABC8590928273FEE00A03EA9 /* tinyxmlerror.cpp in Sources */,
+				ABC8590828273FEE00A03EA9 /* tinyxml2.cpp in Sources */,
 				ABC8590A28273FEE00A03EA9 /* psaux.c in Sources */,
-				ABC8590B28273FEE00A03EA9 /* tinyxmlparser.cpp in Sources */,
 				ABC8590C28273FEE00A03EA9 /* WifiSettingsPanel.mm in Sources */,
 				ABC8590D28273FEE00A03EA9 /* psnames.c in Sources */,
 				ABC8590E28273FEE00A03EA9 /* ftpatent.c in Sources */,
@@ -14625,14 +14548,11 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				ABD2CDB626E05CB000FB15F7 /* thumb_instructions.cpp in Sources */,
 				ABD2CDB726E05CB000FB15F7 /* ftmm.c in Sources */,
 				ABD2CDB826E05CB000FB15F7 /* Timestretcher.cpp in Sources */,
-				ABD2CDB926E05CB000FB15F7 /* tinystr.cpp in Sources */,
 				ABD2CDBA26E05CB000FB15F7 /* ftgasp.c in Sources */,
 				AB7991402E712F510030C0A6 /* ClientAudioOutput.cpp in Sources */,
 				ABD2CDBB26E05CB000FB15F7 /* slot1comp_mc.cpp in Sources */,
-				ABD2CDBC26E05CB000FB15F7 /* tinyxml.cpp in Sources */,
-				ABD2CDBD26E05CB000FB15F7 /* tinyxmlerror.cpp in Sources */,
+				ABD2CDBC26E05CB000FB15F7 /* tinyxml2.cpp in Sources */,
 				ABD2CDBE26E05CB000FB15F7 /* psaux.c in Sources */,
-				ABD2CDBF26E05CB000FB15F7 /* tinyxmlparser.cpp in Sources */,
 				ABD2CDC026E05CB000FB15F7 /* WifiSettingsPanel.mm in Sources */,
 				ABD2CDC126E05CB000FB15F7 /* psnames.c in Sources */,
 				ABD2CDC226E05CB000FB15F7 /* ftpatent.c in Sources */,

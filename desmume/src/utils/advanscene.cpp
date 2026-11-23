@@ -18,8 +18,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define TIXML_USE_STL
-#include "tinyxml/tinyxml.h"
+#include "tinyxml2/tinyxml2.h"
 
 #include "advanscene.h"
 #include "../common.h"
@@ -122,27 +121,24 @@ u8 ADVANsCEne::checkDB(const char *ROMserial, u32 crc)
 
 bool ADVANsCEne::getXMLConfig(const char *in_filename)
 {
-	TiXmlDocument	*xml = NULL;
-	TiXmlElement	*el = NULL;
-	TiXmlElement	*el_configuration = NULL;
-	TiXmlElement	*el_newDat = NULL;
-	
-	xml = new TiXmlDocument();
-	if (!xml) return false;
-	if (!xml->LoadFile(in_filename)) return false;
-	el = xml->FirstChildElement("dat");
+	tinyxml2::XMLDocument xml;
+	tinyxml2::XMLElement* el = NULL;
+	tinyxml2::XMLElement* el_configuration = NULL;
+	tinyxml2::XMLElement* el_newDat = NULL;
+
+	if (xml.LoadFile(in_filename) != tinyxml2::XML_SUCCESS) return false;
+	el = xml.FirstChildElement("dat");
 	if (!el) return false;
 	el_configuration = el->FirstChildElement("configuration");
 	if (!el_configuration) return false;
 	el = el_configuration->FirstChildElement("datName"); if (el) { datName = el->GetText() ? el->GetText() : ""; }
 	el = el_configuration->FirstChildElement("datVersion"); if (el) { datVersion = el->GetText() ? el->GetText() : ""; }
-	
+
 	el_newDat = el_configuration->FirstChildElement("newDat");
 	if (!el_newDat) return false;
 	el = el_newDat->FirstChildElement("datVersionURL"); if (el) { urlVersion = el->GetText() ? el->GetText() : ""; }
 	el = el_newDat->FirstChildElement("datURL"); if (el) { urlDat = el->GetText() ? el->GetText() : ""; }
 
-	delete xml;
 	return true;
 }
 
@@ -166,12 +162,12 @@ u32 ADVANsCEne::convertDB(const char *in_filename, EMUFILE &output)
 		"Flash - 512 mbit"		// FLASH 512Mbit !
 	};
 
-	TiXmlDocument	*xml = NULL;
-	TiXmlElement	*el = NULL;
-	TiXmlElement	*el_serial = NULL;
-	TiXmlElement	*el_games = NULL;
-	TiXmlElement	*el_crc32 = NULL;
-	TiXmlElement	*el_saveType = NULL;
+	tinyxml2::XMLDocument xml;
+	tinyxml2::XMLElement* el = NULL;
+	tinyxml2::XMLElement* el_serial = NULL;
+	tinyxml2::XMLElement* el_games = NULL;
+	tinyxml2::XMLElement* el_crc32 = NULL;
+	tinyxml2::XMLElement* el_saveType = NULL;
 	u32				db_crc32 = 0;
 	u32				reserved = 0;
 
@@ -197,10 +193,8 @@ u32 ADVANsCEne::convertDB(const char *in_filename, EMUFILE &output)
 	time_t __time = time(NULL);
 	output.fwrite(&__time, sizeof(time_t));
 
-	xml = new TiXmlDocument();
-	if (!xml) return 0;
-	if (!xml->LoadFile(in_filename)) return 0;
-	el = xml->FirstChildElement("dat");
+	if (xml.LoadFile(in_filename) != tinyxml2::XML_SUCCESS) return 0;
+	el = xml.FirstChildElement("dat");
 	if (!el) return 0;
 	el_games = el->FirstChildElement("games");
 	if (!el_games) return 0;
@@ -210,7 +204,7 @@ u32 ADVANsCEne::convertDB(const char *in_filename, EMUFILE &output)
 	
 	while (el)
 	{
-		TiXmlElement *title = el->FirstChildElement("title");
+		tinyxml2::XMLElement* title = el->FirstChildElement("title");
 		if (title)
 		{
 			//just a little diagnostic
@@ -266,7 +260,6 @@ u32 ADVANsCEne::convertDB(const char *in_filename, EMUFILE &output)
 	}
 	
 	printf("\n");
-	delete xml;
 	
 	if (count > 0) 
 		printf("done\n");

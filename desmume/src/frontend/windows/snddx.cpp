@@ -25,8 +25,8 @@
 #include <dsound.h>
 #include <dxerr8.h>
 #else
-#include "directx/dsound.h"
-#include "directx/dxerr8.h"
+#include <dsound.h>
+#include "dxerr8_compat.h"
 #endif
 
 #include "SPU.h"

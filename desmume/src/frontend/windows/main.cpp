@@ -39,8 +39,8 @@
 #include <stdarg.h>
 
 #include <GL/gl.h>
-#include <GL/glext.h>
-#include <GL/wglext.h>
+#include <SDL3/SDL_opengl_glext.h>
+#include "wgl_ext.h"
 
 //emulator core
 #include "MMU.h"
@@ -88,7 +88,7 @@
 #include "7zip/7zip.h"
 #include "OpenArchive.h"
 #include "utils/xstring.h"
-#include "directx/ddraw.h"
+#include <ddraw.h>
 #include "video.h"
 #include "frontend/modules/osd/agg/agg_osd.h"
 #include "frontend/modules/osd/agg/aggdraw.h"

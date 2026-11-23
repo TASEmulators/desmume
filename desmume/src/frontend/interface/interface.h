@@ -29,7 +29,11 @@
 
 #ifdef INCLUDE_OPENGL_2D
 #include <GL/gl.h>
+#ifdef _WIN32
+#include <SDL3/SDL_opengl_glext.h>
+#else
 #include <GL/glext.h>
+#endif
 #endif
 
 // Define EXPORTED for any platform

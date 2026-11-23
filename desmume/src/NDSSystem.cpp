@@ -26,7 +26,6 @@
 #include <features/features_cpu.h>
 
 #include "utils/decrypt/decrypt.h"
-#include "utils/decrypt/crc.h"
 #include "utils/decrypt/header.h"
 #include "utils/advanscene.h"
 #include "utils/task.h"

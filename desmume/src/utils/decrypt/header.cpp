@@ -26,7 +26,6 @@
 //#include "ndstool.h"
 //#include "banner.h"
 //#include "sha1.h"
-#include "crc.h"
 //#include "bigint.h"
 //#include "arm7_sha1_homebrew.h"
 //#include "arm7_sha1_nintendo.h"
@@ -59,22 +58,6 @@
 // * CalcLogoCRC
 // */
 
-extern unsigned short crc16tab[];
-static short MyCalcCrc(unsigned char *data, unsigned int length)
-{
-	short crc = (short)~0;
-	for (unsigned int i=0; i<length; i++)
-	{
-		crc = (crc >> 8) ^ crc16tab[(crc ^ data[i]) & 0xFF];
-	}
-	return crc;
-}
-
-unsigned short CalcLogoCRC(Header &header)
-{
-	return MyCalcCrc((unsigned char *)&header + 0xC0, 156);
-}
-//
 /*
  * DetectRomType
  */
@@ -669,13 +652,6 @@ int DetectRomType(const Header &header, char *secure)
 //	fclose(fNDS);
 //}
 
-
-bool CheckLogoCRC(void* bytes512)
-{
-	Header* header = (Header*)bytes512;
-	unsigned short crc = CalcLogoCRC(*header); //this isn't working, don't know why
-	return header->logo_crc == crc;
-}
 
 bool DetectAnyRom(void* bytes512)
 {

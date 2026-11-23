@@ -23,8 +23,8 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "ogl.h"
 
 #include <GL/gl.h>
-#include <GL/glext.h>
-#include <GL/wglext.h>
+#include <SDL3/SDL_opengl_glext.h>
+#include "wgl_ext.h"
 
 
 struct GLDISPLAY

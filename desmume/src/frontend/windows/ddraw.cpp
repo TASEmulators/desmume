@@ -17,7 +17,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ddraw.h"
 
-#include "directx/ddraw.h"
+#include <ddraw.h>
 #include "GPU.h"
 #include "types.h"
 

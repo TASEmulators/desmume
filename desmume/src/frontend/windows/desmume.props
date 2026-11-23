@@ -97,7 +97,7 @@
 
 		<ClCompile>
 
-			<AdditionalIncludeDirectories>.;..\..;lua\include;..\..\..\3rdparty\zlib-1.4;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;..\..\libretro-common\include;..\..\..\3rdparty;..\..\..\3rdparty\wgpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\..;lua\include;..\..\..\3rdparty\zlib-1.4;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;..\interface\windows\SDL3\include;..\..\libretro-common\include;..\..\..\3rdparty;..\..\..\3rdparty\wgpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 
 			<!-- universal definitions -->
 			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;WIN32_FRONTEND;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>

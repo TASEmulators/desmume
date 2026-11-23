@@ -35,8 +35,8 @@
 #include <windows.h>
 #include <stdio.h>
 
-#include "directx/dsound.h"
-#include "directx/dxerr8.h"
+#include <dsound.h>
+#include "dxerr8_compat.h"
 
 namespace {
 

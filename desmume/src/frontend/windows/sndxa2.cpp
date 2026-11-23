@@ -16,7 +16,7 @@
 */
 
 #include "sndxa2.h"
-#include "directx/XAudio2.h"
+#include <xaudio2.h>
 #include <windows.h>
 
 #include "types.h"

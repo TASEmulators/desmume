@@ -141,9 +141,6 @@
     <ClCompile Include="..\..\..\utils\xstring.cpp">
       <Filter>utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\utils\decrypt\crc.cpp">
-      <Filter>utils\decrypt</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\utils\decrypt\decrypt.cpp">
       <Filter>utils\decrypt</Filter>
     </ClCompile>
@@ -365,9 +362,6 @@
     <ClCompile Include="..\..\..\libretro-common\formats\png\rpng_encode.c">
       <Filter>libretro-common\formats\png</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\libretro-common\formats\png\rpng.c">
-      <Filter>libretro-common\formats\png</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\libretro-common\formats\bmp\rbmp_encode.c">
       <Filter>libretro-common\formats\bmp</Filter>
     </ClCompile>
@@ -398,9 +392,6 @@
     <ClCompile Include="..\..\..\libretro-common\file\retro_dirent.c">
       <Filter>libretro-common\file</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\libretro-common\hash\rhash.c">
-      <Filter>libretro-common\hash</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\libretro-common\rthreads\rsemaphore.c">
       <Filter>libretro-common\rthreads</Filter>
     </ClCompile>
@@ -416,6 +407,9 @@
     <ClCompile Include="..\..\..\libretro-common\file\archive_file.c">
       <Filter>libretro-common\file</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\file\archive_file_zlib.c">
+      <Filter>libretro-common\file</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\libretro-common\lists\file_list.c">
       <Filter>libretro-common\lists</Filter>
     </ClCompile>
@@ -424,9 +418,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\libretro-common\lists\dir_list.c">
       <Filter>libretro-common\lists</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libretro-common\file\archive_file_zlib.c">
-      <Filter>libretro-common\file</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\utils\colorspacehandler\colorspacehandler.cpp">
       <Filter>utils\colorspacehandler</Filter>
@@ -527,9 +518,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\utils\task.h">
       <Filter>utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\utils\decrypt\crc.h">
-      <Filter>utils\decrypt</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\utils\decrypt\decrypt.h">
       <Filter>utils\decrypt</Filter>

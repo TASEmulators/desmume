@@ -58,7 +58,6 @@ libdesmume_a_SOURCES = \
 	../../utils/emufat.cpp ../../utils/emufat.h utils/emufat_types.h \
 	../../utils/fsnitro.cpp ../../utils/fsnitro.h \
 	../../utils/xstring.cpp ../../utils/xstring.h \
-	../../utils/decrypt/crc.cpp ../../utils/decrypt/crc.h ../../utils/decrypt/decrypt.cpp \
 	../../utils/decrypt/decrypt.h ../../utils/decrypt/header.cpp ../../utils/decrypt/header.h \
 	../../utils/task.cpp ../../utils/task.h \
 	../../utils/vfat.h ../../utils/vfat.cpp \
@@ -90,12 +89,7 @@ libdesmume_a_SOURCES = \
 	../../utils/libfat/mem_allocate.h \
 	../../utils/libfat/partition.cpp \
 	../../utils/libfat/partition.h \
-	../../utils/tinyxml/tinystr.cpp \
-	../../utils/tinyxml/tinystr.h \
-	../../utils/tinyxml/tinyxml.cpp \
-	../../utils/tinyxml/tinyxml.h \
-	../../utils/tinyxml/tinyxmlerror.cpp \
-	../../utils/tinyxml/tinyxmlparser.cpp \
+	../../utils/tinyxml2/tinyxml2.cpp ../../utils/tinyxml2/tinyxml2.h \
 	../../utils/glcorearb.h \
 	../../utils/colorspacehandler/colorspacehandler.cpp ../../utils/colorspacehandler/colorspacehandler.h \
 	../../addons/slot2_auto.cpp ../../addons/slot2_mpcf.cpp ../../addons/slot2_paddle.cpp ../../addons/slot2_gbagame.cpp ../../addons/slot2_none.cpp ../../addons/slot2_rumblepak.cpp ../../addons/slot2_guitarGrip.cpp ../../addons/slot2_hcv1000.cpp ../../addons/slot2_expMemory.cpp ../../addons/slot2_piano.cpp ../../addons/slot2_passme.cpp ../../addons/slot1_none.cpp ../../addons/slot1_r4.cpp ../../addons/slot1_retail_nand.cpp ../../addons/slot1_retail_auto.cpp ../../addons/slot1_retail_mcrom.cpp ../../addons/slot1_retail_mcrom_debug.cpp ../../addons/slot1comp_mc.cpp ../../addons/slot1comp_mc.h ../../addons/slot1comp_rom.h ../../addons/slot1comp_rom.cpp ../../addons/slot1comp_protocol.h ../../addons/slot1comp_protocol.cpp \

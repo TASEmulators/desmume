@@ -28,7 +28,11 @@
 #ifdef INCLUDE_OPENGL_2D
 	#include <GL/gl.h>
 	#include <GL/glu.h>
-	#include <GL/glext.h>
+	#ifdef _WIN32
+#include <SDL3/SDL_opengl_glext.h>
+#else
+#include <GL/glext.h>
+#endif
 #endif
 
 // SDL drawing & input processing

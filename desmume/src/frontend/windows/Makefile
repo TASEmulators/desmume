@@ -33,7 +33,7 @@ CPPFLAGS = -DMINGW_HAS_SECURE_API \
 # this port too: drop -I../../lua, drop the liblua.a rule/target, and link the
 # LuaJIT lua51.dll from .libs/<arch> instead.
 CXXFLAGS = -I. -I../.. -I../../frontend/modules/osd/agg \
-  -Iagg/include -Iwinpcap -Idirectx -I../../lua -I../../../3rdparty \
+  -Iagg/include -Iwinpcap -I../interface/windows/SDL3/include -I../../lua -I../../../3rdparty \
   -fpermissive -fms-extensions -Wno-write-strings -std=gnu++14 $(OPT)
 
 # AsmJit needs C++20 (std::endian, inline variables); the rest of the tree
@@ -288,10 +288,7 @@ SRCS = \
 	../../utils/libfat/libfat_public_api.cpp \
 	../../utils/libfat/lock.cpp \
 	../../utils/libfat/partition.cpp \
-	../../utils/tinyxml/tinystr.cpp \
-	../../utils/tinyxml/tinyxml.cpp \
-	../../utils/tinyxml/tinyxmlerror.cpp \
-	../../utils/tinyxml/tinyxmlparser.cpp \
+	../../utils/tinyxml2/tinyxml2.cpp ../../utils/tinyxml2/tinyxml2.h \
 	../../utils/vfat.cpp \
 	../../version.cpp \
 	../../wifi.cpp \
@@ -304,7 +301,6 @@ SRCS = \
 	../../utils/guid.cpp \
 	../../utils/task.cpp \
 	../../utils/xstring.cpp \
-	../../utils/decrypt/crc.cpp \
 	../../utils/decrypt/decrypt.cpp \
 	../../utils/decrypt/header.cpp \
 	../../metaspu/metaspu.cpp \
@@ -364,9 +360,7 @@ CSRCS = \
 	../../libretro-common/file/retro_dirent.c \
 	../../libretro-common/file/retro_stat.c \
 	../../libretro-common/formats/bmp/rbmp_encode.c \
-	../../libretro-common/formats/png/rpng.c \
 	../../libretro-common/formats/png/rpng_encode.c \
-	../../libretro-common/hash/rhash.c \
 	../../libretro-common/lists/dir_list.c \
 	../../libretro-common/lists/file_list.c \
 	../../libretro-common/lists/string_list.c \

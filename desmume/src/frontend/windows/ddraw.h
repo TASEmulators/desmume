@@ -19,7 +19,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #define _DDRAW_H_
 
 #include "types.h"
-#include "directx/ddraw.h"
+#include <ddraw.h>
 
 extern const char *DDerrors[];
 

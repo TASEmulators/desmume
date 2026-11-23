@@ -27,8 +27,8 @@
 #include <mmsystem.h>
 #define DIRECTINPUT_VERSION 0x0800
 #ifndef __MINGW32__
-#include "directx/dinput.h"
-#include "directx/XInput.h"
+#include <dinput.h>
+#include <XInput.h>
 #else
 /* use the directx headers mingw ships, microsoft's dont work with gcc */
 #define CINTERFACE

@@ -39,11 +39,7 @@
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <GL/gl.h>
-	#include <GL/glext.h>
-
-	#ifdef OGLRENDER_3_2_H
-		#include <GL/glcorearb.h>
-	#endif
+	#include <SDL3/SDL_opengl_glext.h>
 
 	#define OGLEXT(procPtr, func)       procPtr func = NULL;
 	#define INITOGLEXT(procPtr, func)   func = (procPtr)wglGetProcAddress(#func);

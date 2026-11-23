@@ -554,28 +554,10 @@
 		<Unit filename="../../../libretro-common/compat/compat_strl.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="../../../libretro-common/conversion/float_to_s16.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/conversion/float_to_s16_neon.S">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/conversion/s16_to_float.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/conversion/s16_to_float_neon.S">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
 		<Unit filename="../../../libretro-common/crt/include/string.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="../../../libretro-common/crt/string.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/dynamic/dylib.c">
 			<Option compilerVar="CC" />
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -626,90 +608,11 @@
 			<Option compilerVar="CC" />
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="../../../libretro-common/formats/jpeg/rjpeg.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/formats/json/jsonsax.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/formats/png/rpng.c">
-			<Option compilerVar="CC" />
-		</Unit>
 		<Unit filename="../../../libretro-common/formats/png/rpng_encode.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../../../libretro-common/formats/png/rpng_internal.h" />
 		<Unit filename="../../../libretro-common/formats/png/test/rpng_test.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/formats/tga/rtga.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/formats/xml/rxml.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/formats/xml/test/rxml_test.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/gfx/math/matrix_3x3.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/gfx/math/matrix_4x4.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/gfx/math/vector_2.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/gfx/math/vector_3.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/gfx/scaler/pixconv.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/gfx/scaler/scaler.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/gfx/scaler/scaler_filter.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/gfx/scaler/scaler_int.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/glsm/glsm.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/glsym/glsym_es2.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/glsym/glsym_es3.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/glsym/glsym_gl.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/glsym/rglgen.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/hash/rhash.c">
 			<Option compilerVar="CC" />
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -845,10 +748,6 @@
 		<Unit filename="../../../libretro-common/include/glsym/rglgen_headers.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="../../../libretro-common/include/hash/rhash.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
 		<Unit filename="../../../libretro-common/include/libco.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -947,42 +846,6 @@
 		<Unit filename="../../../libretro-common/include/vulkan/vulkan_symbol_wrapper.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="../../../libretro-common/libco/amd64.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/libco/armeabi.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/libco/fiber.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/libco/libco.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/libco/ppc.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/libco/psp2.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/libco/sjlj.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/libco/ucontext.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/libco/x86.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
 		<Unit filename="../../../libretro-common/lists/dir_list.c">
 			<Option compilerVar="CC" />
 			<Option target="&lt;{~None~}&gt;" />
@@ -993,50 +856,6 @@
 		</Unit>
 		<Unit filename="../../../libretro-common/lists/string_list.c">
 			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="../../../libretro-common/memmap/memalign.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/memmap/memmap.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/net/net_compat.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/net/net_http.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/net/net_ifinfo.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/net/net_socket.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/net/test/net_http_test.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/net/test/net_ifinfo_test.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/queues/fifo_queue.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/queues/message_queue.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/queues/task_queue.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="../../../libretro-common/rthreads/async_job.c">
 			<Option compilerVar="CC" />
@@ -1085,10 +904,6 @@
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="../../../libretro-common/utils/udp-test.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../libretro-common/vulkan/vulkan_symbol_wrapper.c">
 			<Option compilerVar="CC" />
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -1618,79 +1433,6 @@
 		</Unit>
 		<Unit filename="../../../utils/colorspacehandler/colorspacehandler_SSE2.h">
 			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="../../../utils/datetime.cpp" />
-		<Unit filename="../../../utils/datetime.h" />
-		<Unit filename="../../../utils/decrypt/crc.cpp" />
-		<Unit filename="../../../utils/decrypt/crc.h" />
-		<Unit filename="../../../utils/decrypt/decrypt.cpp" />
-		<Unit filename="../../../utils/decrypt/decrypt.h" />
-		<Unit filename="../../../utils/decrypt/header.cpp" />
-		<Unit filename="../../../utils/decrypt/header.h" />
-		<Unit filename="../../../utils/dlditool.cpp" />
-		<Unit filename="../../../utils/emufat.cpp" />
-		<Unit filename="../../../utils/emufat.h" />
-		<Unit filename="../../../utils/emufat_types.h" />
-		<Unit filename="../../../utils/fsnitro.cpp" />
-		<Unit filename="../../../utils/fsnitro.h" />
-		<Unit filename="../../../utils/glcorearb.h" />
-		<Unit filename="../../../utils/guid.cpp" />
-		<Unit filename="../../../utils/guid.h" />
-		<Unit filename="../../../utils/libfat/bit_ops.h" />
-		<Unit filename="../../../utils/libfat/cache.cpp" />
-		<Unit filename="../../../utils/libfat/cache.h" />
-		<Unit filename="../../../utils/libfat/common.h" />
-		<Unit filename="../../../utils/libfat/directory.cpp" />
-		<Unit filename="../../../utils/libfat/directory.h" />
-		<Unit filename="../../../utils/libfat/disc.cpp" />
-		<Unit filename="../../../utils/libfat/disc.h" />
-		<Unit filename="../../../utils/libfat/disc_io.h" />
-		<Unit filename="../../../utils/libfat/fat.h" />
-		<Unit filename="../../../utils/libfat/fatdir.cpp" />
-		<Unit filename="../../../utils/libfat/fatdir.h" />
-		<Unit filename="../../../utils/libfat/fatfile.cpp" />
-		<Unit filename="../../../utils/libfat/fatfile.h" />
-		<Unit filename="../../../utils/libfat/file_allocation_table.cpp" />
-		<Unit filename="../../../utils/libfat/file_allocation_table.h" />
-		<Unit filename="../../../utils/libfat/filetime.cpp" />
-		<Unit filename="../../../utils/libfat/filetime.h" />
-		<Unit filename="../../../utils/libfat/libfat.cpp" />
-		<Unit filename="../../../utils/libfat/libfat_pc.h" />
-		<Unit filename="../../../utils/libfat/libfat_public_api.cpp" />
-		<Unit filename="../../../utils/libfat/libfat_public_api.h" />
-		<Unit filename="../../../utils/libfat/lock.cpp" />
-		<Unit filename="../../../utils/libfat/lock.h" />
-		<Unit filename="../../../utils/libfat/mem_allocate.h" />
-		<Unit filename="../../../utils/libfat/partition.cpp" />
-		<Unit filename="../../../utils/libfat/partition.h" />
-		<Unit filename="../../../utils/task.cpp" />
-		<Unit filename="../../../utils/task.h" />
-		<Unit filename="../../../utils/tinyxml/tinystr.cpp" />
-		<Unit filename="../../../utils/tinyxml/tinystr.h" />
-		<Unit filename="../../../utils/tinyxml/tinyxml.cpp" />
-		<Unit filename="../../../utils/tinyxml/tinyxml.h" />
-		<Unit filename="../../../utils/tinyxml/tinyxmlerror.cpp" />
-		<Unit filename="../../../utils/tinyxml/tinyxmlparser.cpp" />
-		<Unit filename="../../../utils/vfat.cpp" />
-		<Unit filename="../../../utils/vfat.h" />
-		<Unit filename="../../../utils/xstring.cpp" />
-		<Unit filename="../../../utils/xstring.h" />
-		<Unit filename="../../../version.cpp" />
-		<Unit filename="../../../version.h" />
-		<Unit filename="../../../wifi.cpp" />
-		<Unit filename="../../../wifi.h" />
-		<Unit filename="../../modules/Disassembler.cpp" />
-		<Unit filename="../../modules/Disassembler.h" />
-		<Unit filename="../../modules/ImageOut.cpp" />
-		<Unit filename="../../modules/ImageOut.h" />
-		<Unit filename="../../modules/osd/agg/agg2d.h" />
-		<Unit filename="../../modules/osd/agg/agg_osd.cpp" />
-		<Unit filename="../../modules/osd/agg/agg_osd.h" />
-		<Unit filename="../../modules/osd/agg/aggdraw.cpp" />
-		<Unit filename="../../modules/osd/agg/aggdraw.h" />
-		<Unit filename="../cli/main.cpp">
-			<Option target="CLI_x64_Release" />
-			<Option target="CLI_AArch64_Release" />
 		</Unit>
 		<Unit filename="../gtk/cheatsGTK.cpp">
 			<Option target="GTK3_x64_Debug" />

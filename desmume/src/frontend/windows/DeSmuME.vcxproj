@@ -167,9 +167,7 @@
     <ClCompile Include="..\..\libretro-common\file\retro_dirent.c" />
     <ClCompile Include="..\..\libretro-common\file\retro_stat.c" />
     <ClCompile Include="..\..\libretro-common\formats\bmp\rbmp_encode.c" />
-    <ClCompile Include="..\..\libretro-common\formats\png\rpng.c" />
     <ClCompile Include="..\..\libretro-common\formats\png\rpng_encode.c" />
-    <ClCompile Include="..\..\libretro-common\hash\rhash.c" />
     <ClCompile Include="..\..\libretro-common\lists\dir_list.c" />
     <ClCompile Include="..\..\libretro-common\lists\file_list.c" />
     <ClCompile Include="..\..\libretro-common\lists\string_list.c" />
@@ -407,10 +405,7 @@
     <ClCompile Include="..\..\utils\libfat\libfat_public_api.cpp" />
     <ClCompile Include="..\..\utils\libfat\lock.cpp" />
     <ClCompile Include="..\..\utils\libfat\partition.cpp" />
-    <ClCompile Include="..\..\utils\tinyxml\tinystr.cpp" />
-    <ClCompile Include="..\..\utils\tinyxml\tinyxml.cpp" />
-    <ClCompile Include="..\..\utils\tinyxml\tinyxmlerror.cpp" />
-    <ClCompile Include="..\..\utils\tinyxml\tinyxmlparser.cpp" />
+    <ClCompile Include="..\..\utils\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="..\..\utils\vfat.cpp" />
     <ClCompile Include="..\..\version.cpp" />
     <ClCompile Include="..\..\wifi.cpp" />
@@ -423,7 +418,6 @@
     <ClCompile Include="..\..\utils\guid.cpp" />
     <ClCompile Include="..\..\utils\task.cpp" />
     <ClCompile Include="..\..\utils\xstring.cpp" />
-    <ClCompile Include="..\..\utils\decrypt\crc.cpp" />
     <ClCompile Include="..\..\utils\decrypt\decrypt.cpp" />
     <ClCompile Include="..\..\utils\decrypt\header.cpp" />
     <ClCompile Include="..\..\metaspu\metaspu.cpp" />
@@ -629,14 +623,11 @@
     <ClInclude Include="..\..\utils\libfat\lock.h" />
     <ClInclude Include="..\..\utils\libfat\mem_allocate.h" />
     <ClInclude Include="..\..\utils\libfat\partition.h" />
-    <ClInclude Include="..\..\utils\tinyxml\tinystr.h" />
-    <ClInclude Include="..\..\utils\tinyxml\tinyxml.h" />
     <ClInclude Include="..\..\utils\vfat.h" />
     <ClInclude Include="..\modules\Disassembler.h" />
     <ClInclude Include="..\..\wifi.h" />
     <ClInclude Include="..\..\utils\guid.h" />
     <ClInclude Include="..\..\utils\task.h" />
-    <ClInclude Include="..\..\utils\decrypt\crc.h" />
     <ClInclude Include="..\..\utils\decrypt\decrypt.h" />
     <ClInclude Include="..\..\utils\decrypt\header.h" />
     <ClInclude Include="..\..\metaspu\metaspu.h" />
@@ -684,6 +675,8 @@
     <ClInclude Include="console.h" />
     <ClInclude Include="CWindow.h" />
     <ClInclude Include="ddraw.h" />
+    <ClInclude Include="dxerr8_compat.h" />
+    <ClInclude Include="wgl_ext.h" />
     <ClInclude Include="display.h" />
     <ClInclude Include="dsmcsv.h" />
     <ClInclude Include="dsmeditor.h" />

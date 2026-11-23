@@ -116,15 +116,10 @@ extern int NumCountries;
 extern Maker makers[];
 extern int NumMakers;
 
-unsigned short CalcHeaderCRC(Header &header);
-unsigned short CalcLogoCRC(Header &header);
 void FixHeaderCRC(char *ndsfilename);
 void ShowInfo(char *ndsfilename);
 int HashAndCompareWithList(char *filename, unsigned char sha1[]);
 int DetectRomType(const Header& header, char* secure);
-unsigned short CalcSecureAreaCRC(bool encrypt);
-
-bool CheckLogoCRC(void* bytes512);
 bool DetectAnyRom(void* bytes512);
 
 #define ROMTYPE_HOMEBREW	0

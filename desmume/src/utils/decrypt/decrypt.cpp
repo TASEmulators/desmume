@@ -23,10 +23,10 @@
 
 #include "decrypt.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "crc.h"
 #include "header.h"
 
 //encr_data
