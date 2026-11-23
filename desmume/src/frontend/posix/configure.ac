@@ -46,7 +46,10 @@ AC_DEFINE_UNQUOTED([SVN_REV], [$REVISION], [subversion revision number])
 AC_DEFINE_UNQUOTED([SVN_REV_STR], ["$REVISION"], [subversion revision number string])
 
 dnl - Check for zlib
-AC_CHECK_LIB(z, gzopen, [AC_DEFINE([HAVE_LIBZ], [1], [Define to 1 if zlib is available])], [AC_MSG_ERROR([zlib was not found, we can't go further. Please install it or specify the location where it's installed.])])
+AC_CHECK_LIB(z, gzopen, [
+  LIBS="$LIBS -lz"
+  AC_DEFINE([HAVE_LIBZ], [1], [Define to 1 if zlib is available])
+], [AC_MSG_ERROR([zlib was not found, we can't go further. Please install it or specify the location where it's installed.])])
 
 dnl - Check for libpcap (optional: only the Infrastructure Wi-Fi bridge needs it)
 have_pcap=no
