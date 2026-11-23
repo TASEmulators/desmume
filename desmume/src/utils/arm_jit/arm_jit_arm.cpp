@@ -22,7 +22,7 @@
 // A Universal build registers both backends in one Sources phase. On an x86
 // slice this TU must compile as empty; the old #error made the Universal
 // target unbuildable even though the slice never executes this code.
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
 
 #define PTR_STORE_REG 11
 
@@ -675,7 +675,7 @@ static uintptr_t *JIT_MEM[2][32] = {
 		/* 3X*/	DUP2(JIT.SWIRAM),
 		/* 4X*/	DUP2(NULL),
 		/* 5X*/	DUP2(NULL),
-		/* 6X*/		 NULL, 
+		/* 6X*/		 NULL,
 					 JIT.ARM9_LCDC,	// Plain ARM9-CPU Access (LCDC mode) (max 656KB)
 		/* 7X*/	DUP2(NULL),
 		/* 8X*/	DUP2(NULL),
@@ -1816,7 +1816,7 @@ static void MUL_Mxx_END(int reg, bool sign, int cycles)
 		emit_xor(g_out, reg, y, reg);
 	}
 	emit_orimm(g_out, reg, 1, reg);
-	
+
 	emit_movimm(g_out, 31, R0);
 	emit_clz(g_out, reg, tmp);
 	emit_sub(g_out, R0, tmp, tmp);
@@ -1862,7 +1862,7 @@ static void MUL_Mxx_END(int reg, bool sign, int cycles)
 	if (flags) { SET_NZ(0); } \
 	MUL_Mxx_END(rhs, sign, 1+width+accum); \
 	return 1;\
-	
+
 #define hi R2
 
 static int OP_MUL(const u32 i) { OP_MUL_(emit_mul(g_out, lhs,rhs), 0, 1, 0, 0); }
@@ -1900,7 +1900,7 @@ static int OP_SMLAL_S(const u32 i) { OP_MUL_(emit_smlals(g_out, rc_read(REG_POS(
 	} \
 	if (flags) { SET_Q; } \
 	return 1;\
-	
+
 #define hi R2
 
 
@@ -1915,8 +1915,8 @@ static int OP_SMUL_T_T(const u32 i) { OP_MULxy_(emit_smultt(g_out, lhs, rhs), H,
 //-----------------------------------------------------------------------------
 //   SMLA
 //-----------------------------------------------------------------------------
-static int OP_SMLA_B_B(const u32 i) { 	
-	OP_MULxy_(emit_smlabb(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), L, L, 0, 1, 1); 
+static int OP_SMLA_B_B(const u32 i) {
+	OP_MULxy_(emit_smlabb(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), L, L, 0, 1, 1);
 }
 static int OP_SMLA_B_T(const u32 i) { OP_MULxy_(emit_smlabt(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), L, H, 0, 1, 1); }
 static int OP_SMLA_T_B(const u32 i) { OP_MULxy_(emit_smlatb(g_out, hi,rc_read(REG_POS(i,12), R0),lhs,rhs), H, L, 0, 1, 1); }
@@ -1965,7 +1965,7 @@ static int OP_MRS_CPSR(const u32 i)
 {
 	cpu_ptr(CPSR, x_reg, VALUE);
 	rc_store(REG_POS(i,12), x_reg);
-	
+
 	return 1;
 }
 
@@ -1973,7 +1973,7 @@ static int OP_MRS_SPSR(const u32 i)
 {
 	cpu_ptr(SPSR, x_reg, VALUE);
 	rc_store(REG_POS(i,12), x_reg);
-	
+
 	return 1;
 }
 
@@ -2087,11 +2087,11 @@ static int OP_MRS_SPSR(const u32 i)
 	emit_label(g_out, __done); \
 	changeCPSR; \
 	return 1;
-	
+
 #define operand R8
 #define mode R9
 #define xPSR R4
-#define xPSR_mem R3	
+#define xPSR_mem R3
 
 // The two `g_regs.flush()` calls inside OP_MSR_ are not about MSR itself: they
 // are the price of armcpu_switchMode(). It banks the *current* R13/R14/SPSR
@@ -2249,7 +2249,7 @@ static u32 sub(u32 lhst, u32 rhst) { return lhst - rhst; }
 		emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), tmp_reg); \
 	} \
 	return 1;
-	
+
 #define dst R8
 #define adr R9
 
@@ -2424,7 +2424,7 @@ static const OpSTR STRB_tab[2][3]  = { T(OP_STRB) };
 	call_mem(g_out); \
 	emit_st_counters(BB_CYCLES_FIELD, R0); \
 	return 1;
-	
+
 #define data R1
 #define adr R0
 
@@ -2517,28 +2517,28 @@ template<int PROCNUM, u8 Rnum>
 static u32 DESMUME_FASTCALL OP_LDRD_REG(u32 adr)
 {
 	cpu->R[Rnum] = READ32(cpu->mem_if->data, adr);
-	
+
 	// For even-numbered registers, we'll do a double-word load. Otherwise, we'll just do a single-word load.
 	if ((Rnum & 0x01) == 0)
 	{
 		cpu->R[(Rnum & 0xE) + 1] = READ32(cpu->mem_if->data, adr+4);
 		return (MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr) + MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr+4));
 	}
-	
+
 	return MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr);
 }
 template<int PROCNUM, u8 Rnum>
 static u32 DESMUME_FASTCALL OP_STRD_REG(u32 adr)
 {
 	WRITE32(cpu->mem_if->data, adr, cpu->R[Rnum]);
-	
+
 	// For even-numbered registers, we'll do a double-word store. Otherwise, we'll just do a single-word store.
 	if ((Rnum & 0x01) == 0)
 	{
 		WRITE32(cpu->mem_if->data, adr+4, cpu->R[(Rnum & 0xE) + 1]);
 		return (MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(adr) + MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(adr+4));
 	}
-	
+
 	return MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(adr);
 }
 #define T(op, proc) op<proc,0>, op<proc,1>, op<proc,2>, op<proc,3>, op<proc,4>, op<proc,5>, op<proc,6>, op<proc,7>, op<proc,8>, op<proc,9>, op<proc,10>, op<proc,11>, op<proc,12>, op<proc,13>, op<proc,14>, op<proc,15>
@@ -2546,14 +2546,14 @@ static const LDRD_STRD_REG op_ldrd_tab[2][16] = { {T(OP_LDRD_REG, 0)}, {T(OP_LDR
 static const LDRD_STRD_REG op_strd_tab[2][16] = { {T(OP_STRD_REG, 0)}, {T(OP_STRD_REG, 1)} };
 #undef T
 
-static int OP_LDRD_STRD_POST_INDEX(const u32 i) 
+static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 {
 	#define addr R2
 	#define Rd R4
 	#define Rs R5
-	
+
 	u8 Rd_num = REG_POS(i, 12);
-	
+
 	if (Rd_num == 14)
 	{
 		printf("OP_LDRD_STRD_POST_INDEX: use R14!!!!\n");
@@ -2564,7 +2564,7 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 		printf("OP_LDRD_STRD_POST_INDEX: ERROR!!!!\n");
 		return 0; // TODO: exception
 	}
-	
+
 	rc_read(REG_POS(i,16), Rd);
 	emit_mov(g_out, Rd, addr);
 
@@ -2610,7 +2610,7 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 		BIT23(i)?emit_add_ptr32_regptrTO_regFROM(g_out, wb, idx):emit_sub_ptr32_regptrTO_regFROM(g_out, wb, idx);
 		#undef idx
 	}
-	
+
 	// Setup args
 	emit_mov(g_out,addr, R0);
 	// Add function
@@ -2624,7 +2624,7 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 	#undef addr
 	#undef Rd
 	#undef Rs
-	
+
 	return 1;
 }
 
@@ -2633,9 +2633,9 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 	#define addr R2
 	#define Rd R4
 	#define Rs R5
-	
+
 	u8 Rd_num = REG_POS(i, 12);
-	
+
 	if (Rd_num == 14)
 	{
 		printf("OP_LDRD_STRD_OFFSET_PRE_INDEX: use R14!!!!\n");
@@ -2646,7 +2646,7 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		printf("OP_LDRD_STRD_OFFSET_PRE_INDEX: ERROR!!!!\n");
 		return 0; // TODO: exception
 	}
-	
+
 	rc_read(REG_POS(i,16), Rd);
 	emit_mov(g_out, Rd, addr);
 
@@ -2688,7 +2688,7 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		call_mem_r2(g_out);
 		// Return
 		emit_st_counters(BB_CYCLES_FIELD, R0);
-		
+
 		if (BIT21(i)) // W bit - writeback
 			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), addr);
 		emit_MMU_aluMemCycles(3, &bb_cycles, 0);
@@ -2697,7 +2697,7 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 	{
 		if (BIT21(i)) // W bit - writeback
 			emit_write_ptr32_regptrTO_regFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), addr);
-			
+
 		// Setup args
 		emit_mov(g_out,addr, R0);
 		// Add function
@@ -2705,15 +2705,15 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		// Call function: addr (x2) is live for the optional writeback below.
 		call_mem_r2(g_out);
 		// Return
-		emit_st_counters(BB_CYCLES_FIELD, R0);			
+		emit_st_counters(BB_CYCLES_FIELD, R0);
 
 		emit_MMU_aluMemCycles(3, &bb_cycles, 0);
 	}
-	
+
 	#undef addr
 	#undef Rd
 	#undef Rs
-	
+
 	return 1;
 }
 
@@ -2745,7 +2745,7 @@ static int op_swp_(const u32 i, int b)
 	#define addr R2
 	#define Rd R4
 	#define Rs R5
-	
+
 	// The base is a plain read: the helper takes the address by value, so a
 	// cached value can be copied out of its slot instead of being written back
 	// and reloaded. Rd stays on the memory path -- op_swp() writes through
@@ -2753,15 +2753,15 @@ static int op_swp_(const u32 i, int b)
 	// register, and it would otherwise turn the copy into a memory round trip.
 	rc_read(REG_POS(i,16), addr);
 	reg_pos_ptr(12, Rd, ADDRESS);
-	
+
 	// Rs is a plain source; SWPB's helper truncates to a byte itself, so the
 	// dword in the slot is just as good as the byte the memory path loaded.
 	rc_read(REG_POS(i,0), Rs);
-	
+
 	emit_mov(g_out, addr, R0);
 	emit_mov64(g_out, Rd, R1);
 	emit_mov(g_out, Rs, R2);
-	
+
 	// Add function
 	//emit_movimm(g_out, (uintptr_t)op_swp_tab[b][PROCNUM], R3);
 	emit_ptr(g_out, (uintptr_t)op_swp_tab[b][PROCNUM], R3);
@@ -2771,11 +2771,11 @@ static int op_swp_(const u32 i, int b)
 	emit_st_counters(BB_CYCLES_FIELD, R0);
 
 	emit_MMU_aluMemCycles(4, &bb_cycles, 0);
-	
+
 	#undef addr
 	#undef Rd
 	#undef Rs
-	
+
 	return 1;
 }
 
@@ -2902,7 +2902,7 @@ static u32 DESMUME_FASTCALL OP_LDM_STM(u32 adr, u32 regslo, u32 regshi, int n)
 	u32 cycles;
 	u8 *ptr;
 	u64 regs = (u64)regslo | (u64)((u64)regshi << 32);
-	
+
 	if((adr ^ (adr + (dir>0 ? (n-1)*4 : -15*4))) & ~0x3FFF) // a little conservative, but we don't want to run too many comparisons
 	{
 		// the memory region spans a page boundary, so we can't factor the address translation out of the loop
@@ -2956,13 +2956,13 @@ static void call_ldm_stm(int reg, u32 bitmask, bool store, int dir)
 		emit_movimm(g_out, (uintptr_t)popregcount(bitmask), R3);
 		emit_movimm(g_out, (uintptr_t)get_reg_list(bitmask, dir), R1);
 		emit_movimm(g_out, (uintptr_t)(get_reg_list(bitmask, dir) >> 32), R2);
-		
+
 	// Add function
 	emit_ptr(g_out, (uintptr_t)op_ldm_stm_tab[PROCNUM][store][dir>0], R7);
-	
+
 	// Call function: args are consumed by the helper, only cycles (R0) is live.
 	call_mem_r7(g_out);
-	
+
 	emit_st_counters(BB_CYCLES_FIELD, R0);
 
 	}
@@ -2977,10 +2977,10 @@ static int op_ldm_stm(u32 i, bool store, int dir, bool before, bool writeback)
 {
 	#define adr R4
 	#define oldmode R5
-	
+
 	u32 bitmask = i & 0xFFFF;
-	u32 pop = popregcount(bitmask);	
-	
+	u32 pop = popregcount(bitmask);
+
 	rc_read(REG_POS(i,16), adr);
 	if(before)
 		emit_addimm(g_out, adr, 4*dir, adr);
@@ -3028,10 +3028,10 @@ static int op_ldm_stm(u32 i, bool store, int dir, bool before, bool writeback)
 	}
 
 	emit_MMU_aluMemCycles(store ? 1 : 2, &bb_cycles, pop);
-	
+
 	#undef adr
 	#undef oldmode
-	
+
 	return 1;
 }
 
@@ -3070,7 +3070,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	// and leaves CPSR in mode 4. x19 is callee-saved, unused by this handler,
 	// and the block prologue already pushes it.
 	#define oldmode X19_REG
-	
+
 	reg_pos_ptr(16, adr, VALUE);
 
 	if(before)
@@ -3087,7 +3087,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 			store ? g_regs.evict((int)r) : g_regs.discard((int)r);
 
 	if (!bit15 || store)
-	{  
+	{
 		emit_ptr(g_out, (uintptr_t)&ARMPROC, R0);
 		emit_movimm(g_out, SYS, R1);
 		// The temporary SYS switch banks R13/R14 through memory (see the note
@@ -3116,12 +3116,12 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	call_ldm_stm(adr, bitmask, store, dir);
 
 	if(!bit15 || store)
-	{	
+	{
 		emit_ptr(g_out, (uintptr_t)&ARMPROC, R0);
 		emit_mov(g_out, oldmode, R1);
 		g_regs.flush();
 		emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3);
-		callR3(g_out);		
+		callR3(g_out);
 	}
 	else
 	{
@@ -3134,10 +3134,10 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 		emit_add_ptr32_regptrTO_immFROM(g_out, reg_pos_ptr(16, R1, ADDRESS), 4*dir*pop);
 
 	emit_MMU_aluMemCycles(store ? 1 : 2, &bb_cycles, pop);
-	
+
 	#undef adr
 	#undef oldmode
-	
+
 	return 1;
 }
 
@@ -3181,7 +3181,7 @@ static int op_b(u32 i, bool bl)
 		emit_write_ptr32_regptrTO_immFROM(g_out, reg_ptr(14, R1, ADDRESS), bb_next_instruction);
 
 	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(instruct_adr, R1, ADDRESS), dst);
-		
+
 	return 1;
 }
 
@@ -3193,20 +3193,20 @@ static int op_bx(/*Mem */int srcreg, bool blx, bool test_thumb)
 	#define thumb tmp2_reg
 	#define dst tmp_reg
 	#define mask R8
-		
+
 	emit_mov(g_out, srcreg, dst);
 
 	if(test_thumb)
 	{
 		emit_mov(g_out, dst, thumb);
-		
+
 		emit_andimm(g_out, thumb, 1, thumb);
 		emit_mov(g_out, thumb,R9);
 		emit_lea_ptr_reg(g_out, 0xFFFFFFFC, R9, 2, mask);
 		emit_lsl(g_out, thumb, 5);
-				
+
 		emit_or_ptr8_regptr_reg(g_out, cpu_ptr_byte(CPSR, 0, R1, ADDRESS), thumb);
-				
+
 		emit_and(g_out, dst, mask, dst);
 	}
 	else
@@ -3215,11 +3215,11 @@ static int op_bx(/*Mem */int srcreg, bool blx, bool test_thumb)
 	if(blx)
 		emit_write_ptr32_regptrTO_immFROM(g_out, reg_ptr(14, R1, ADDRESS), bb_next_instruction);
 	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(instruct_adr, R1, ADDRESS), dst);
-	
+
 	#undef thumb
 	#undef dst
 	#undef mask
-	
+
 	return 1;
 }
 
@@ -3238,11 +3238,11 @@ static int OP_BLX_REG(const u32 i) { return op_bx(rc_read(REG_POS(i,0), R1), 1, 
 static int OP_CLZ(const u32 i)
 {
 	g_regs.read_into(REG_POS(i,0), tmp2_reg);
-		
+
 	emit_clz(g_out, tmp2_reg, tmp_reg);
-	
+
 	rc_store(REG_POS(i,12), tmp_reg);
-	
+
 	return 1;
 }
 
@@ -3301,14 +3301,14 @@ static void maskPrecalc(u32 _num)
 static int OP_MCR(const u32 i)
 {
 	#define data tmp2_reg
-	
+
 	if (PROCNUM == ARMCPU_ARM7) return 0;
 
 	u32 cpnum = REG_POS(i, 8);
 	if(cpnum != 15)
 	{
 		// TODO - exception?
-		printf("JIT: MCR P%i, 0, R%i, C%i, C%i, %i, %i (don't allocated coprocessor)\n", 
+		printf("JIT: MCR P%i, 0, R%i, C%i, C%i, %i, %i (don't allocated coprocessor)\n",
 			cpnum, REG_POS(i, 12), REG_POS(i, 16), REG_POS(i, 0), (i>>21)&0x7, (i>>5)&0x7);
 		return 2;
 	}
@@ -3336,36 +3336,36 @@ static int OP_MCR(const u32 i)
 				static uintptr_t bb_mmu;
 				emit_write_ptr(g_out, (uintptr_t)&bb_mmu, (uintptr_t)&MMU);
 
-				
+
 				mmu_ptr_byte(ARM9_RW_MODE, R2, ADDRESS);
-					
+
 				emit_testimm(g_out, data, (1<<7));
 				emit_setnz(g_out, R1);
 				emit_strb(g_out, R2, R1);
-				
+
 				#define vec R6
 
 				emit_movimm(g_out, 0xFFFF0000, tmp);
 				emit_movimm(g_out, 0, vec);
 				emit_xor(g_out, vec, vec, vec);
 				emit_testimm(g_out, data, (1 << 13));
-				
+
 				emit_mov_cond(g_out, tmp, vec, 0x1);
 				emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(intVector, R1, ADDRESS), vec);
-				
+
 				cpu_ptr_byte(LDTBit, 0, R2, ADDRESS);
-				
-				emit_testimm(g_out, data, (1 << 15));	
+
+				emit_testimm(g_out, data, (1 << 15));
 				emit_setz(g_out, R1);
 				emit_strb(g_out, R2, R1);
-				
+
 				emit_andimm(g_out, data, 0x000FF085, data);
 				emit_orimm(g_out, data, 0x00000078, data);
 
 				emit_write_ptr32_regptrTO_regFROM(g_out, cp15_ptr(ctrl, R1, ADDRESS), data);
-				
+
 				#undef vec
-				
+
 				break;
 			}
 			bUnknown = true;
@@ -3500,7 +3500,7 @@ static int OP_MCR(const u32 i)
 		//printf("Unknown MCR command: MRC P15, 0, R%i, C%i, C%i, %i, %i\n", REG_POS(i, 12), CRn, CRm, opcode1, opcode2);
 		return 1;
 	}
-	
+
 	#undef data
 
 	return 1;
@@ -3520,12 +3520,12 @@ static int OP_MRC(const u32 i)
 	u8 CRm =  REG_POS(i, 0);		// Cm
 	u8 opcode1 = ((i>>21)&0x7);		// opcode1
 	u8 opcode2 = ((i>>5)&0x7);		// opcode2
-	
+
 	#define data tmp2_reg
 
 	static uintptr_t bb_cp15;
 	emit_write_ptr(g_out, (uintptr_t)&bb_cp15, (uintptr_t)&cp15);
-	
+
 	bool bUnknown = false;
 	switch(CRn)
 	{
@@ -3548,7 +3548,7 @@ static int OP_MRC(const u32 i)
 			}
 			bUnknown = true;
 			break;
-		
+
 		case 1:
 			if((opcode1==0) && (opcode2==0) && (CRm==0))
 			{
@@ -3557,7 +3557,7 @@ static int OP_MRC(const u32 i)
 			}
 			bUnknown = true;
 			break;
-		
+
 		case 2:
 			if((opcode1==0) && (CRm==0))
 			{
@@ -3577,7 +3577,7 @@ static int OP_MRC(const u32 i)
 			}
 			bUnknown = true;
 			break;
-			
+
 		case 3:
 			if((opcode1==0) && (opcode2==0) && (CRm==0))
 			{
@@ -3586,7 +3586,7 @@ static int OP_MRC(const u32 i)
 			}
 			bUnknown = true;
 			break;
-			
+
 		case 5:
 			if((opcode1==0) && (CRm==0))
 			{
@@ -3606,7 +3606,7 @@ static int OP_MRC(const u32 i)
 			}
 			bUnknown = true;
 			break;
-			
+
 		case 6:
 			if((opcode1==0) && (opcode2==0))
 			{
@@ -3618,7 +3618,7 @@ static int OP_MRC(const u32 i)
 			}
 			bUnknown = true;
 			break;
-			
+
 		case 7:
 			bUnknown = true;
 			break;
@@ -3661,11 +3661,11 @@ static int OP_MRC(const u32 i)
 			}
 			bUnknown = true;
 			break;
-			
+
 		case 13:
 			bUnknown = true;
 			break;
-			
+
 		case 15:
 			bUnknown = true;
 			break;
@@ -3690,9 +3690,9 @@ static int OP_MRC(const u32 i)
 		//if (REG_POS(i, 12) == 1) emit_brk(g_out);
 		rc_store(REG_POS(i, 12), data);
 	}
-		
+
 	#undef data
-	
+
 	return 1;
 }
 
@@ -3709,30 +3709,30 @@ u32 op_swi(u8 swinum)
 		emit_inc_ptr_imm(g_out, (uintptr_t)&bb_cycles, 3);
 		return 1;
 	}
-	
+
 	// Entering SVC mode banks R13/R14/SPSR by reading them out of armcpu_t, so
 	// any deferred write has to land first -- `add sp, sp, #-4` followed by an
 	// `swi` in the same block is the shape that breaks otherwise.
 	g_regs.flush();
 
 	cpu_ptr(CPSR.val, R4, VALUE);
-	
+
 	emit_ptr(g_out, (uintptr_t)&ARMPROC, R0);
 	emit_movimm(g_out, SVC, R1);
 	emit_ptr(g_out, (uintptr_t)armcpu_switchMode, R3);
 	callR3(g_out);
-		
+
 	emit_mov(g_out, R4, tmp2_reg);
-		
+
 	emit_write_ptr32_regptrTO_immFROM(g_out,reg_ptr(14, R1, ADDRESS), bb_next_instruction);
-		
+
 	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(SPSR.val, R1, ADDRESS), tmp2_reg);
-	
+
 	cpu_ptr(CPSR.val, tmp2_reg, VALUE);
 	emit_andimm(g_out, tmp2_reg, ~(1 << 5), tmp2_reg);
 	emit_orimm(g_out, tmp2_reg, (1 << 7), tmp2_reg);
 	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(CPSR.val, R1, ADDRESS), tmp2_reg);
-	
+
 	emit_movimm(g_out, cpu->intVector+0x08, R0);
 	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), R0);
 
@@ -3814,8 +3814,8 @@ static int OP_BKPT(const u32 i)
 //-----------------------------------------------------------------------------
 //   LSL / LSR / ASR / ROR
 //-----------------------------------------------------------------------------
-static int OP_LSL_0(const u32 i) 
-{	
+static int OP_LSL_0(const u32 i)
+{
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
 		emit_cmpimm(g_out, rc_t_read(0, R1), 0);
 	else
@@ -3825,7 +3825,7 @@ static int OP_LSL_0(const u32 i)
 		emit_cmpimm(g_out, t, 0);
 	}
 	SET_NZ(0);
-	
+
 	return 1;
 }
 
@@ -3833,7 +3833,7 @@ static int OP_LSL_0(const u32 i)
 static int OP_LSL(const u32 i) { OP_SHIFTS_IMM(emit_lsls); }
 static int OP_LSL_REG(const u32 i) { OP_SHIFTS_REG(emit_lsls_reg, 0); }
 
-static int OP_LSR_0(const u32 i) 
+static int OP_LSR_0(const u32 i)
 {
 	emit_testimm(g_out, rc_t_read(3, R1), (1 << 31));
 	emit_setnz(g_out, rcf);
@@ -3842,7 +3842,7 @@ static int OP_LSR_0(const u32 i)
 		int t = rc_t_write(0);
 		emit_zeroreg(g_out, t);
 	}
-	
+
 	return 1;
 }
 
@@ -3877,18 +3877,18 @@ static int OP_ASR_0(const u32 i)
 		emit_asrs(g_out, t, 32);
 	}
 	SET_NZC;
-	
+
 	return 1;
 }
 
 static int OP_ASR(const u32 i) { OP_SHIFTS_IMM(emit_asrs); }
-static int OP_ASR_REG(const u32 i) 
+static int OP_ASR_REG(const u32 i)
 {
 	u8 cf_change = 1;
 	GET_CARRY(0);
 	rc_t_read(3, imm_reg);
 	emit_asrs_reg(g_out, rc_t_rw(0), imm_reg);
-	SET_NZC;	
+	SET_NZC;
 	return 1;
 }
 
@@ -3929,14 +3929,14 @@ static int OP_NEG(const u32 i)
 	}
 	emit_negs(g_out, t, t);
 	SET_NZCV(1);
-	
+
 	return 1;
 }
 
 //-----------------------------------------------------------------------------
 //   ADD
 //-----------------------------------------------------------------------------
-static int OP_ADD_IMM3(const u32 i) 
+static int OP_ADD_IMM3(const u32 i)
 {
 	u32 imm3 = (i >> 6) & 0x07;
 
@@ -3959,7 +3959,7 @@ static int OP_ADD_IMM3(const u32 i)
 		}
 		emit_cmpimm(g_out, t,0);
 		SET_NZ(1);
-		
+
 		return 1;
 	}
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
@@ -3973,18 +3973,18 @@ static int OP_ADD_IMM3(const u32 i)
 		emit_addsimm(g_out, rc_t_read(3, R1), imm3, t);
 	}
 	SET_NZCV(0);
-	
+
 	return 1;
 }
-static int OP_ADD_IMM8(const u32 i) 
+static int OP_ADD_IMM8(const u32 i)
 {
 	int t = rc_t_rw(8);
 	emit_addsimm(g_out, t, (i & 0xFF), t);
 	SET_NZCV(0);
 
-	return 1; 
+	return 1;
 }
-static int OP_ADD_REG(const u32 i) 
+static int OP_ADD_REG(const u32 i)
 {
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))       // Rd == Rm: Rd += Rn
 	{
@@ -4002,10 +4002,10 @@ static int OP_ADD_REG(const u32 i)
 		int t = rc_t_write(0);
 		emit_adds(g_out, R1, rc_t_read(6, tmp), t);
 	}
-			
-	SET_NZCV(0);	
-	
-	return 1; 
+
+	SET_NZCV(0);
+
+	return 1;
 }
 static int OP_ADD_SPE(const u32 i)
 {
@@ -4016,10 +4016,10 @@ static int OP_ADD_SPE(const u32 i)
 		emit_write_ptr32_regptrTO_regFROM(g_out, reg_ptr(15, R1, ADDRESS), tmp);
 	else
 		rc_store(Rd, tmp);
-	
+
 	if(Rd==15)
 		emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), tmp);
-		
+
 	return 1;
 }
 
@@ -4028,7 +4028,7 @@ static int OP_ADD_2PC(const u32 i)
 	u32 imm = ((i&0xFF)<<2);
 	emit_movimm(g_out, (bb_r15 & 0xFFFFFFFC) + imm, R1);
 	rc_store(_T3(8), R1);
-	
+
 	return 1;
 }
 
@@ -4038,7 +4038,7 @@ static int OP_ADD_2SP(const u32 i)
 	rc_read(13, tmp);
 	if (imm) emit_addimm(g_out, tmp, imm, tmp);
 	rc_store(_T3(8), tmp);
-	
+
 	return 1;
 }
 
@@ -4061,7 +4061,7 @@ static int OP_SUB_IMM3(const u32 i)
 	}
 
 	SET_NZCV(1);
-		
+
 	return 1;
 }
 static int OP_SUB_IMM8(const u32 i)
@@ -4069,8 +4069,8 @@ static int OP_SUB_IMM8(const u32 i)
 	int t = rc_t_rw(8);
 	emit_subsimm(g_out, t, (i & 0xFF), t);
 	SET_NZCV(1);
-	
-	return 1; 
+
+	return 1;
 }
 static int OP_SUB_REG(const u32 i)
 {
@@ -4090,10 +4090,10 @@ static int OP_SUB_REG(const u32 i)
 		int t = rc_t_write(0);
 		emit_subs(g_out, R1, rc_t_read(6, tmp), t);
 	}
-	
+
 	SET_NZCV(1);
-	
-	return 1; 
+
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -4106,7 +4106,7 @@ static int OP_ADC_REG(const u32 i)
 	int t = rc_t_rw(0);
 	emit_adcs(g_out, t, tmp, t);
 	SET_NZCV(0);
-	
+
 	return 1;
 }
 
@@ -4120,7 +4120,7 @@ static int OP_SBC_REG(const u32 i)
 	int t = rc_t_rw(0);
 	emit_sbcs(g_out, t, tmp, t);
 	SET_NZCV(1);
-	
+
 	return 1;
 }
 
@@ -4132,7 +4132,7 @@ static int OP_MOV_IMM8(const u32 i)
 	int t = rc_t_write(8);
 	emit_movimms(g_out, i & 0xFF, t);
 	SET_NZ(0);
-	
+
 	return 1;
 }
 
@@ -4149,7 +4149,7 @@ static int OP_MOV_SPE(const u32 i)
 		emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), tmp);
 		bb_constant_cycles += 2;
 	}
-	
+
 	return 1;
 }
 
@@ -4159,14 +4159,14 @@ static int OP_MVN(const u32 i)
 	int t = rc_t_write(0);
 	emit_mvns(g_out, tmp, t);
 	SET_NZ(0);
-	
+
 	return 1;
 }
 
 //-----------------------------------------------------------------------------
 //   MUL
 //-----------------------------------------------------------------------------
-static int OP_MUL_REG(const u32 i) 
+static int OP_MUL_REG(const u32 i)
 {
 	// The result has to stay in a scratch register: the cycle tail below rewrites
 	// its argument in place to work out the operand width, so a cache slot would
@@ -4180,47 +4180,47 @@ static int OP_MUL_REG(const u32 i)
 		emit_write_ptr32(g_out, (uintptr_t)&bb_cycles, (uintptr_t)4);
 	else
 		MUL_Mxx_END(tmp, 0, 1);
-	
+
 	return 1;
 }
 
 //-----------------------------------------------------------------------------
 //   CMP / CMN
 //-----------------------------------------------------------------------------
-static int OP_CMP_IMM8(const u32 i) 
+static int OP_CMP_IMM8(const u32 i)
 {
 	emit_cmpimm(g_out, rc_t_read(8, tmp), (i & 0xFF));
 	SET_NZCV(1);
-	
-	return 1; 
+
+	return 1;
 }
 
-static int OP_CMP(const u32 i) 
+static int OP_CMP(const u32 i)
 {
 	rc_t_read(3, tmp2);
 	emit_cmp(g_out, rc_t_read(0, tmp), tmp2);
 	SET_NZCV(1);
-	
-	return 1; 
+
+	return 1;
 }
 
-static int OP_CMP_SPE(const u32 i) 
+static int OP_CMP_SPE(const u32 i)
 {
 	u32 Rn = (i&7) | ((i>>4)&8);
 	rc_read_at(REG_POS(i,3), tmp2);
 	emit_cmp(g_out, rc_read(Rn, tmp), tmp2);
 	SET_NZCV(1);
-	
+
 	return 1;
 }
 
-static int OP_CMN(const u32 i) 
+static int OP_CMN(const u32 i)
 {
 	rc_t_read(3, tmp2);
 	emit_adds(g_out, rc_t_read(0, tmp), tmp2, tmp); // MAY NEED TO SET FLAGS HERE
 	SET_NZCV(0);
-	
-	return 1; 
+
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -4231,7 +4231,7 @@ static int OP_TST(const u32 i)
 	rc_t_read(3, tmp);
 	emit_test(g_out, rc_t_read(0, tmp2), tmp);
 	SET_NZ(0);
-	
+
 	return 1;
 }
 
@@ -4298,7 +4298,7 @@ static int OP_STRH_IMM_OFF(const u32 i) { STR_THUMB(STRH, ((i>>5)&0x3E)); }
 static int OP_LDRH_IMM_OFF(const u32 i) { LDR_THUMB(LDRH, ((i>>5)&0x3E)); }
 static int OP_STRH_REG_OFF(const u32 i) { STR_THUMB(STRH, -1); }
 static int OP_LDRH_REG_OFF(const u32 i) { LDR_THUMB(LDRH, -1); }
-static int OP_LDRSH_REG_OFF(const u32 i) { LDR_THUMB(LDRSH, -1); } 
+static int OP_LDRSH_REG_OFF(const u32 i) { LDR_THUMB(LDRSH, -1); }
 
 static int OP_STR_IMM_OFF(const u32 i) { STR_THUMB(STR, ((i>>4)&0x7C)); }
 static int OP_LDR_IMM_OFF(const u32 i) { LDR_THUMB(LDR, ((i>>4)&0x7C)); } // FIXME: tempValue = (tempValue>>adr) | (tempValue<<(32-adr));
@@ -4309,24 +4309,24 @@ static int OP_STR_SPREL(const u32 i)
 {
 	#define addr R0
 	#define data R1
-	
+
 	u32 imm = ((i&0xFF)<<2);
 	u32 adr_first = cpu->R[13] + imm;
-	
+
 	rc_read(13, addr);
 	if (imm) emit_addimm(g_out, addr, imm, addr);
 	rc_t_read(8, data);
-	
+
 	// Add function
 	emit_ptr(g_out, (uintptr_t)STR_tab[PROCNUM][classify_adr(adr_first,1)], R3);
-	
+
 	// Call function: only cycles (R0) is live afterwards.
 	call_mem(g_out);
 	emit_st_counters(BB_CYCLES_FIELD, R0);
-	
+
 	#undef addr
 	#undef data
-	
+
 	return 1;
 }
 
@@ -4334,25 +4334,25 @@ static int OP_LDR_SPREL(const u32 i)
 {
 	#define addr R0
 	#define data R1
-	
+
 	u32 imm = ((i&0xFF)<<2);
 	u32 adr_first = cpu->R[13] + imm;
-	
+
 	rc_read(13, addr);
 	if (imm) emit_addimm(g_out, addr, imm, addr);
 	reg_pos_thumb_dst(8, data);
-	
+
 	// Add function
 	emit_ptr(g_out, (uintptr_t)LDR_tab[PROCNUM][classify_adr(adr_first,0)], R3);
-	
+
 	// Call function: only cycles (R0) is live afterwards.
 	call_mem(g_out);
-	
+
 	emit_st_counters(BB_CYCLES_FIELD, R0);
-	
+
 	#undef addr
 	#undef data
-	
+
 	return 1;
 }
 
@@ -4360,25 +4360,25 @@ static int OP_LDR_PCREL(const u32 i)
 {
 	#define addr R0
 	#define data R1
-	
+
 	u32 imm = ((i&0xFF)<<2);
 	u32 adr_first = (bb_r15 & 0xFFFFFFFC) + imm;
-	
+
 	emit_movimm(g_out, adr_first, addr);
 	reg_pos_thumb_dst(8, data);
 
 	// Add function
 	emit_ptr(g_out, (uintptr_t)LDR_tab[PROCNUM][classify_adr(adr_first,0)], R3);
-	
+
 	// Call function: only cycles (R0) is live afterwards.
 	call_mem(g_out);
-	
+
 	emit_st_counters(BB_CYCLES_FIELD, R0);
-	
+
 	#undef addr
 	#undef data
-	
-	
+
+
 	return 1;
 }
 
@@ -4418,10 +4418,10 @@ static int op_ldm_stm_thumb(u32 i, bool store)
 	call_ldm_stm(adr, bitmask, store, 1);
 
 	emit_MMU_aluMemCycles(store ? 2 : 3, &bb_cycles, pop);
-	
+
 	#undef adr
 	#undef thumb_base
-	
+
 	return 1;
 }
 
@@ -4440,14 +4440,14 @@ static int OP_ADJUST_M_SP(const u32 i) { emit_sub_ptr32_regptrTO_immFROM(g_out, 
 static int op_push_pop(u32 i, bool store, bool pc_lr)
 {
 	#define adr R4
-	
+
 	u32 bitmask = (i & 0xFF);
 	bitmask |= pc_lr << (store ? 14 : 15);
 	u32 pop = popregcount(bitmask);
 	int dir = store ? -1 : 1;
-	
+
 	rc_read(13, adr);
-	
+
 	if(store) emit_subimm(g_out, adr, 4, adr);
 
 	// Same invariant as op_ldm_stm: the helper walks cpu->R[], so a store needs
@@ -4466,9 +4466,9 @@ static int op_push_pop(u32 i, bool store, bool pc_lr)
 	}
 
 	emit_MMU_aluMemCycles(store ? (pc_lr?4:3) : (pc_lr?5:2), &bb_cycles, pop);
-	
+
 	#undef adr
-	
+
 	return 1;
 }
 
@@ -4484,13 +4484,13 @@ static int OP_B_COND(const u32 i)
 {
 	uint64_t skip=genlabel();
 	u32 dst = bb_r15 + ((u32)((s8)(i&0xFF))<<1);
-	
+
 	emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(instruct_adr, PTR_STORE_REG, ADDRESS), bb_next_instruction);
-	
+
 	emit_mov64(g_out, PTR_STORE_REG, 12);
 	emit_branch((i>>8)&0xF, skip);
 	emit_write_ptr32_regptrTO_immFROM(g_out,12/*cpu_ptr(instruct_adr, R1, ADDRESS)*/, dst);
-	
+
 	emit_add_counters_imm(BB_TOTAL_FIELD, 2);
 	emit_label(g_out, skip);
 
@@ -4501,14 +4501,14 @@ static int OP_B_UNCOND(const u32 i)
 {
 	u32 dst = bb_r15 + (SIGNEXTEND_11(i)<<1);
 	emit_write_ptr32_regptrTO_immFROM(g_out,cpu_ptr(instruct_adr, R1, ADDRESS), dst);
-	
+
 	return 1;
 }
 
 static int OP_BLX(const u32 i)
 {
 	#define dst R4
-	
+
 	rc_read(14, dst);
 	emit_addimm(g_out, dst, (i&0x7FF) << 1, dst);
 	emit_andimm(g_out, dst, 0xFFFFFFFC, dst);
@@ -4517,7 +4517,7 @@ static int OP_BLX(const u32 i)
 	cpu_ptr_byte(CPSR, 0, tmp, VALUE);
 	emit_andimm(g_out, tmp, ~(1<<5), tmp);
 	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, cpu_ptr_byte(CPSR, 0, R1, ADDRESS), tmp);
-	
+
 	#undef dst
 
 	return 1;
@@ -4530,17 +4530,17 @@ static int OP_BL_10(const u32 i)
 	return 1;
 }
 
-static int OP_BL_11(const u32 i) 
+static int OP_BL_11(const u32 i)
 {
 	#define dst R4
-	
+
 	rc_read(14, dst);
 	emit_addimm(g_out, dst, (i&0x7FF) << 1, dst);
 	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(instruct_adr, R1, ADDRESS), dst);
 	emit_write_ptr32_regptrTO_immFROM(g_out, reg_ptr(14, R1, ADDRESS), bb_next_instruction | 1);
-	
+
 	#undef dst
-	
+
 	return 1;
 }
 
@@ -4549,11 +4549,11 @@ static int op_bx_thumb(/*Mem*/int srcreg, bool blx, bool test_thumb)
 	#define thumb tmp2_reg
 	#define dst tmp_reg
 	#define mask R8
-	
+
 	emit_mov(g_out, srcreg, dst);
 	emit_mov(g_out, dst, thumb);
 	emit_andimm(g_out, thumb, 1, thumb);
-	
+
 	if (blx) emit_write_ptr32_regptrTO_immFROM(g_out, reg_ptr(14, R1, ADDRESS), bb_next_instruction | 1);
 	if(test_thumb)
 	{
@@ -4565,19 +4565,19 @@ static int op_bx_thumb(/*Mem*/int srcreg, bool blx, bool test_thumb)
 	{
 		emit_andimm(g_out, dst, 0xFFFFFFFE, dst);
 	}
-	
+
 	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(instruct_adr, R1, ADDRESS), dst);
-	
+
 	cpu_ptr_byte(CPSR, 0, tmp, VALUE);
 	emit_andimm(g_out, tmp, ~(1<< 5), tmp);
 	emit_lsl(g_out, thumb, 5);
-	emit_or(g_out, tmp, thumb, tmp);	
-	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, cpu_ptr_byte(CPSR, 0, R1, ADDRESS), tmp);	
-	
+	emit_or(g_out, tmp, thumb, tmp);
+	emit_writeBYTE_ptr32_regptrTO_regFROM(g_out, cpu_ptr_byte(CPSR, 0, R1, ADDRESS), tmp);
+
 	#undef dst
 	#undef thumb
 	#undef mask
-	
+
 	return 1;
 }
 
@@ -4590,7 +4590,7 @@ static int op_bx_thumbR15()
 	emit_movimm(g_out, (u32)~(1<< 5), R8);
 	emit_and(g_out, R7,R8,R7);
 	emit_write_ptr32_regptrTO_regFROM(g_out, cpu_ptr(CPSR, R1, ADDRESS), R7);
-	
+
 	return 1;
 }
 
@@ -4656,7 +4656,7 @@ static u32 instr_attributes(u32 opcode)
 static bool instr_is_branch(u32 opcode)
 {
 	u32 xt = instr_attributes(opcode);
-	
+
 	if(bb_thumb)
 	{
 		// merge OP_BL_10+OP_BL_11
@@ -4693,7 +4693,7 @@ static bool instr_uses_r15(u32 opcode)
 static bool instr_is_conditional(u32 opcode)
 {
 	if(bb_thumb) return false;
-	
+
 	return !(CONDITION(opcode) == 0xE
 	         || (CONDITION(opcode) == 0xF && CODE(opcode) == 5));
 }
@@ -4706,7 +4706,7 @@ static int instr_cycles(u32 opcode)
 	{
 		if ((xt & BRANCH_SWI) && !cpu->swi_tab)
 			return 3;
-		
+
 		return 0;
 	}
 	if(instr_is_branch(opcode) && !(instr_attributes(opcode) & (BRANCH_ALWAYS|BRANCH_LDM)))
@@ -4735,7 +4735,7 @@ static const char *disassemble(u32 opcode)
 		if (i >= 0 && i <= 4095) { strcpy(str, thumb_instruction_names[opcode>>6]); return str; }
 		else { strcpy(str, "bb Invalid"); return str; }
 	}
-	
+
 	int idx = INSTRUCTION_INDEX(opcode);
 	if (idx >= 0 && idx <= 4095) strcpy(str, arm_instruction_names[INSTRUCTION_INDEX(opcode)]);
 	else { strcpy(str, "Invalid"); return str; }
@@ -4761,7 +4761,7 @@ static void sync_r15(u32 opcode, bool is_last, bool force)
 	{
 		if(force || (instr_attributes(opcode) & JIT_BYPASS) || (instr_attributes(opcode) & BRANCH_SWI) || (is_last && !instr_is_branch(opcode)))
 		{
-			emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), bb_next_instruction);	
+			emit_write_ptr32_regptrTO_immFROM(g_out, cpu_ptr(next_instruction, R1, ADDRESS), bb_next_instruction);
 		}
 		if(instr_uses_r15(opcode))
 		{
@@ -4786,19 +4786,19 @@ static void emit_branch(int cond, uint64_t /*Label*/ to)
 	{
 		emit_movimm(g_out, 0, x);
 		flags_ptr(x, VALUE);
-		
+
 		emit_andimm(g_out, x, 0xF0, x);
-		
+
 		emit_ptr(g_out, (uintptr_t)(arm_cond_table + cond), tmp);
 		emit_add64(g_out, tmp, x, tmp);
-		
+
 		emit_movimm(g_out, 0, x);
-		
+
 		emit_ldrb(g_out, tmp, x);
-		
+
 		emit_testimm(g_out, x, 1);
 		emit_branch_label(g_out, to, 0x0);
-		
+
 	}
 }
 
@@ -4806,11 +4806,11 @@ static void emit_armop_call(u32 opcode)
 {
 	ArmOpCompiler fc = bb_thumb?	thumb_instruction_compilers[opcode>>6]:
 									arm_instruction_compilers[INSTRUCTION_INDEX(opcode)];
-		
+
 	if (fc && fc(opcode)) {
 		return;
 	}
-	
+
 	// Nothing inline: the interpreter function is about to read and write
 	// armcpu_t directly, so the cache has to be on disk first and is void
 	// afterwards (rules 2 and 3).
@@ -4818,16 +4818,16 @@ static void emit_armop_call(u32 opcode)
 
 	OpFunc f = bb_thumb ? thumb_instructions_set[PROCNUM][opcode>>6]
 	                     : arm_instructions_set[PROCNUM][INSTRUCTION_INDEX(opcode)];
-						 	
+
 	// Setup args
 	emit_movimm(g_out, opcode, R0);
 	// Add function
 	emit_ptr(g_out, (uintptr_t)f, R3);
-	
+
 	// Call function
 	callR3(g_out);
-	
-	emit_st_counters(BB_CYCLES_FIELD, R0);	
+
+	emit_st_counters(BB_CYCLES_FIELD, R0);
 }
 
 static void _armlog(u8 proc, u32 addr, u32 opcode)
@@ -4835,7 +4835,7 @@ static void _armlog(u8 proc, u32 addr, u32 opcode)
 #if 0
 #if 0
 	fprintf(stderr, "\t\t;R0:%08X R1:%08X R2:%08X R3:%08X R4:%08X R5:%08X R6:%08X R7:%08X R8:%08X R9:%08X\n\t\t;R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X| next %08X, N:%i Z:%i C:%i V:%i\n",
-		cpu->R[0],  cpu->R[1],  cpu->R[2],  cpu->R[3],  cpu->R[4],  cpu->R[5],  cpu->R[6],  cpu->R[7], 
+		cpu->R[0],  cpu->R[1],  cpu->R[2],  cpu->R[3],  cpu->R[4],  cpu->R[5],  cpu->R[6],  cpu->R[7],
 		cpu->R[8],  cpu->R[9],  cpu->R[10],  cpu->R[11],  cpu->R[12],  cpu->R[13],  cpu->R[14],  cpu->R[15],
 		cpu->next_instruction, cpu->CPSR.bits.N, cpu->CPSR.bits.Z, cpu->CPSR.bits.C, cpu->CPSR.bits.V);
 #endif
@@ -4846,7 +4846,7 @@ static void _armlog(u8 proc, u32 addr, u32 opcode)
 	else
 		des_arm_instructions_set[INDEX22(opcode)](addr, opcode, dasmbuf);
 	#undef INDEX22
-	fprintf(stderr, "%s%c %08X\t%08X \t%s\n", cpu->CPSR.bits.T?"THUMB":"ARM", proc?'7':'9', addr, opcode, dasmbuf); 
+	fprintf(stderr, "%s%c %08X\t%08X \t%s\n", cpu->CPSR.bits.T?"THUMB":"ARM", proc?'7':'9', addr, opcode, dasmbuf);
 #else
 	return;
 #endif
@@ -4931,11 +4931,11 @@ static u32 compile_basicblock()
 #if LOG_JIT
 	bool has_variable_cycles = FALSE;
 #endif
-	
+
 	u32 interpreted_cycles = 0;
 	u32 start_adr = cpu->instruct_adr;
 	u32 opcode = 0;
-	
+
 	bb_thumb = cpu->CPSR.bits.T;
 	bb_opcodesize = bb_thumb ? 2 : 4;
 
@@ -4951,11 +4951,11 @@ static u32 compile_basicblock()
 		releaseBytes(g_out);
 	}
 	g_out = allocBytes();
-	
+
 	emit_startfunc(g_out);
-	
+
 	JIT_COMMENT("CPU ptr");
-	
+
 	emit_write_ptr(g_out, (uintptr_t)&bb_cpu, (uintptr_t)&ARMPROC);
 
 	JIT_COMMENT("CPU base");
@@ -5001,7 +5001,7 @@ static u32 compile_basicblock()
 		u32 cycles = instr_cycles(opcode);
 
 		bEndBlock = instr_is_branch(opcode) || (i >= (CommonSettings.jit_max_block_size - 1));
-		
+
 #if LOG_JIT
 		if (instr_is_conditional(opcode) && (cycles > 1) || (cycles == 0))
 			has_variable_cycles = TRUE;
@@ -5035,15 +5035,15 @@ static u32 compile_basicblock()
 			if(bEndBlock) sync_r15(opcode, 1, 1);
 			uint64_t skip;
 			skip=genlabel();
-			
+
 			emit_branch(CONDITION(opcode), skip);
 
 			if(!bEndBlock) {
 				sync_r15(opcode, 0, 0);
 			}
-			
+
 			emit_armop_call(opcode);
-			
+
 			if(cycles == 0)
 			{
 				JIT_COMMENT("variable cycles");
@@ -5079,7 +5079,7 @@ static u32 compile_basicblock()
 		{
 			sync_r15(opcode, bEndBlock, 0);
 			emit_armop_call(opcode);
-			
+
 			if(cycles == 0)
 			{
 				JIT_COMMENT("variable cycles");
@@ -5115,29 +5115,29 @@ static u32 compile_basicblock()
 #if LOG_JIT
 	fprintf(stderr, "cycles %d%s\n", bb_constant_cycles, has_variable_cycles ? " + variable" : "");
 #endif
-	
+
 	emit_ld_counters(BB_TOTAL_FIELD, R0);
-	
+
 	emit_endfunc(g_out);
-	
+
 	ArmOpCompiled f;
 	f = createFunc(g_out);
 
 	jit_exec();
-		
+
 	if(! f)
 	{
 		f = op_decode[PROCNUM][bb_thumb];
 	}
-	
+
 #if LOG_JIT
 	uintptr_t baddr = (uintptr_t)f;
 	fprintf(stderr, "Block address %08lX\n\n", baddr);
 	fflush(stderr);
 #endif
-	
+
 	JIT_COMPILED_FUNC(start_adr, PROCNUM) = (uintptr_t)f;
-	
+
 	return interpreted_cycles;
 }
 
@@ -5241,7 +5241,7 @@ void arm_jit_close()
 		u16 last[2] = {0};
 		PROFILER_COUNTER_INFO *arm_info = NULL;
 		PROFILER_COUNTER_INFO *thumb_info = NULL;
-		
+
 		arm_info = new PROFILER_COUNTER_INFO[4096];
 		thumb_info = new PROFILER_COUNTER_INFO[1024];
 		memset(arm_info, 0, sizeof(PROFILER_COUNTER_INFO) * 4096);
@@ -5315,7 +5315,7 @@ void arm_jit_close()
 					fprintf(fp, "%30s: %20ld\n", arm_info[i].name, arm_info[i].count);
 				fprintf(fp, "\n");
 			}
-			
+
 			if (last[1])
 			{
 				fprintf(fp, "========================================== THUMB ==========================================\n");
@@ -5368,5 +5368,5 @@ void arm_jit_close()
 	printf(" done.\n");
 #endif
 }
-#endif // __aarch64__ host
+#endif // __aarch64__ / _M_ARM64 host
 #endif // HAVE_JIT

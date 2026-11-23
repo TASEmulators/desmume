@@ -42,7 +42,13 @@
 	#endif
 #endif
 
-#if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64) 
+#if defined(__aarch64__) || defined(_M_ARM64)
+    #if defined(__APPLE__) || defined(_MSC_VER)
+	#define DESMUME_PLATFORM_STRING " ARM64"
+    #else
+    #define DESMUME_PLATFORM_STRING " AArch64"
+    #endif
+#elif defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64)
 	#define DESMUME_PLATFORM_STRING " x64"
 #elif defined(__i386__) || defined(_M_IX86) || defined(_WIN32)
 	#define DESMUME_PLATFORM_STRING " x86"
@@ -50,12 +56,6 @@
 	#define DESMUME_PLATFORM_STRING " ARM"
 #elif defined(__thumb__)
 	#define DESMUME_PLATFORM_STRING " ARM-Thumb"
-#elif defined(__aarch64__) || defined(_M_ARM64)
-    #if defined(__APPLE__)
-	#define DESMUME_PLATFORM_STRING " ARM64"
-    #else
-    #define DESMUME_PLATFORM_STRING " AArch64"
-    #endif
 #elif defined(__ppc64__)
 	#define DESMUME_PLATFORM_STRING " PPC64"
 #elif defined(__ppc__) || defined(_M_PPC)
@@ -134,7 +134,7 @@
 	#define DESMUME_COMPILER_DETAIL " (LLVM)"
 #elif defined(__GNUC__) // Always make GCC the last check, since other compilers, such as Clang, may define __GNUC__ internally.
 	#define DESMUME_COMPILER " (GCC)"
-	
+
 	#if defined(__GNUC_PATCHLEVEL__)
 		#define DESMUME_COMPILER_DETAIL " (GCC v" TOSTRING(__GNUC__) "." TOSTRING(__GNUC_MINOR__) "." TOSTRING(__GNUC_PATCHLEVEL__) ")"
 	#else

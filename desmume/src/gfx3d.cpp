@@ -494,7 +494,7 @@ FORCEINLINE s64 GEM_Mul32x16To64(const s32 a, const s16 b)
 
 FORCEINLINE s64 GEM_Mul32x32To64(const s32 a, const s32 b)
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(_M_ARM64)
 	return __emul(a,b);
 #else
 	return ((s64)a)*((s64)b);

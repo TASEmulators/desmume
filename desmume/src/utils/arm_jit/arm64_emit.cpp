@@ -108,6 +108,13 @@ typedef uint32_t u_int;
 
 #include <asmjit/a64.h>
 
+// MSVC's arm64_neon.h defines a function-like `mvn` macro. asmjit saves and
+// restores it around its own headers, so it is still defined here and would
+// rewrite every `out->mvn(...)` call below into a NEON intrinsic invocation.
+#ifdef mvn
+#undef mvn
+#endif
+
 // The encoder used to be a linked list of raw byte chunks (`struct s_bytes`);
 // asmjit now owns it. Keeping the name `t_bytes` means the ~570 call sites in
 // arm_jit_arm.cpp (`emit_add(g_out, ...)`) did not have to change.
