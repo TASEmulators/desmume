@@ -428,6 +428,15 @@ bool ObtainFile(const char* Name, char *const & LogicalName, char *const & Physi
 			return true;
 
 		ArchiveFile archive (PhysicalName);
+		if(archive.IsUnsupportedArchive())
+		{
+			MessageBox(GetArchiveParentHWND(),
+				"This archive format is unavailable because 7z.dll could not be loaded.\n"
+				"ZIP is still supported through the built-in zlib reader.\n"
+				"Make sure 7z.dll is next to DeSmuME.exe.",
+				"Archive support unavailable", MB_OK | MB_ICONWARNING);
+			return false;
+		}
 		if(!archive.IsCompressed())
 		{
 			return archive.GetNumItems() > 0;

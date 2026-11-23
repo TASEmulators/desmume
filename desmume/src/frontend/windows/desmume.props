@@ -97,7 +97,7 @@
 
 		<ClCompile>
 
-			<AdditionalIncludeDirectories>.;..\..;lua\include;glib-2.20.1\build;..\..\..\3rdparty\zlib-1.4;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\..\libretro-common\include;..\..\..\3rdparty;..\..\..\3rdparty\wgpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\..;lua\include;..\..\..\3rdparty\zlib-1.4;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;..\..\libretro-common\include;..\..\..\3rdparty;..\..\..\3rdparty\wgpu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 
 			<!-- universal definitions -->
 			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;WIN32_FRONTEND;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -312,6 +312,15 @@
 			<WGPUNativeFiles Condition="'$(Platform)' == 'ARM64'" Include="$(MSBuildThisFileDirectory)..\..\..\3rdparty\libs\arm64\wgpu_native.dll" />
 		</ItemGroup>
 		<Copy SourceFiles="@(WGPUNativeFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="'@(WGPUNativeFiles)' != ''" />
+	</Target>
+
+	<!-- Ship the architecture-matching 7-Zip runtime used by the archive frontend. -->
+	<Target Name="CopySevenZip" AfterTargets="Build" Condition="'$(Platform)' == 'x64' Or '$(Platform)' == 'ARM64'">
+		<ItemGroup>
+			<SevenZipFiles Condition="'$(Platform)' == 'x64'" Include="$(MSBuildThisFileDirectory)..\..\..\3rdparty\libs\x64\7z.dll" />
+			<SevenZipFiles Condition="'$(Platform)' == 'ARM64'" Include="$(MSBuildThisFileDirectory)..\..\..\3rdparty\libs\arm64\7z.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(SevenZipFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="'@(SevenZipFiles)' != ''" />
 	</Target>
 
 </Project>

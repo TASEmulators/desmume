@@ -369,7 +369,7 @@
 	[panel setResolvesAliases:YES];
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTitle:NSSTRING_TITLE_OPEN_ROM_PANEL];
-	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_GBA, nil]; 
+	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_ZIP, @FILE_EXT_ROM_GZ, @FILE_EXT_ROM_GBA, nil]; 
 	
 	// While [NSOpenPanel setAllowedFileTypes:] and [NSOpenPanel runModal]
 	// are available in Leopard, the allowedFileTypes property is ignored on

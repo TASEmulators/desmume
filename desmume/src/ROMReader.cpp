@@ -21,11 +21,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
-#ifdef HAVE_LIBZZIP
-#include <zzip/zzip.h>
-#endif
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
 #include "utils/xstring.h"
+#include "utils/ziparchive.h"
 
 #ifdef WIN32
 #define stat(...) _stat(__VA_ARGS__)
@@ -35,20 +36,19 @@
 
 ROMReader_struct * ROMReaderInit(char ** filename)
 {
+	const size_t length = strlen(*filename);
 #ifdef HAVE_LIBZ
-	if(!strcasecmp(".gz", *filename + (strlen(*filename) - 3)))
+	if (length >= 3 && !strcasecmp(".gz", *filename + (length - 3)))
 	{
-		(*filename)[strlen(*filename) - 3] = '\0';
+		(*filename)[length - 3] = '\0';
 		return &GZIPROMReader;
 	}
 #endif
-#ifdef HAVE_LIBZZIP
-	if (!strcasecmp(".zip", *filename + (strlen(*filename) - 4)))
+	if (length >= 4 && !strcasecmp(".zip", *filename + (length - 4)))
 	{
-		(*filename)[strlen(*filename) - 4] = '\0';
+		(*filename)[length - 4] = '\0';
 		return &ZIPROMReader;
 	}
-#endif
 	return &STDROMReader;
 }
 
@@ -212,7 +212,29 @@ int GZIPROMReaderWrite(void *, void *, u32)
 }
 #endif
 
-#ifdef HAVE_LIBZZIP
+namespace
+{
+	struct ZIPROMReaderData
+	{
+		unsigned char* data;
+		u32 size;
+		u32 pos;
+	};
+
+	bool ZipNameEndsWith(const char* name, const char* suffix)
+	{
+		const size_t nameLength = strlen(name);
+		const size_t suffixLength = strlen(suffix);
+		if (nameLength < suffixLength) return false;
+		for (size_t i = 0; i < suffixLength; i++)
+		{
+			if (tolower((unsigned char)name[nameLength - suffixLength + i]) !=
+			    tolower((unsigned char)suffix[i])) return false;
+		}
+		return true;
+	}
+}
+
 void * ZIPROMReaderInit(const char * filename);
 void ZIPROMReaderDeInit(void *);
 u32 ZIPROMReaderSize(void *);
@@ -234,50 +256,82 @@ ROMReader_struct ZIPROMReader =
 
 void * ZIPROMReaderInit(const char * filename)
 {
-	ZZIP_DIR * dir = zzip_opendir(filename);
-	ZZIP_DIRENT * dirent = zzip_readdir(dir);
-	if (dir != NULL)
-	{
-		char *tmp1;
-		char tmp2[1024];
+	ZipArchive archive(filename);
+	if (!archive.IsValid()) return NULL;
 
-		memset(tmp2,0,sizeof(tmp2));
-		tmp1 = strndup(filename, strlen(filename) - 4);
-		sprintf(tmp2, "%s/%s", tmp1, dirent->d_name);
-		free(tmp1);
-		return zzip_fopen(tmp2, "rb");
+	int chosen = -1;
+	int bestScore = 0;
+	const int count = archive.GetEntryCount();
+	for (int i = 0; i < count; i++)
+	{
+		ZipEntryInfo info;
+		if (!archive.GetEntryInfo(i, &info)) continue;
+		if (info.uncompressedSize == 0 || ZipNameEndsWith(info.name, "/")) continue;
+
+		int score = 1;
+		if (ZipNameEndsWith(info.name, ".nds") || ZipNameEndsWith(info.name, ".srl")) score = 3;
+		else if (ZipNameEndsWith(info.name, ".ds.gba") || ZipNameEndsWith(info.name, ".gba")) score = 2;
+
+		if (score > bestScore)
+		{
+			bestScore = score;
+			chosen = i;
+			if (score == 3) break;
+		}
 	}
-	return NULL;
+	if (chosen < 0) return NULL;
+
+	ZipEntryInfo info;
+	if (!archive.GetEntryInfo(chosen, &info) || info.uncompressedSize == 0) return NULL;
+
+	ZIPROMReaderData* data = new ZIPROMReaderData;
+	data->data = new unsigned char[info.uncompressedSize];
+	data->size = info.uncompressedSize;
+	data->pos = 0;
+
+	const int extracted = archive.ExtractEntry(chosen, data->data, info.uncompressedSize);
+	if (extracted <= 0)
+	{
+		delete[] data->data;
+		delete data;
+		return NULL;
+	}
+	data->size = (u32)extracted;
+	return data;
 }
 
 void ZIPROMReaderDeInit(void * file)
 {
-	zzip_close((ZZIP_FILE*)file);
+	ZIPROMReaderData* data = (ZIPROMReaderData*)file;
+	if (!data) return;
+	delete[] data->data;
+	delete data;
 }
 
 u32 ZIPROMReaderSize(void * file)
 {
-	u32 size;
-
-	zzip_seek((ZZIP_FILE*)file, 0, SEEK_END);
-	size = zzip_tell((ZZIP_FILE*)file);
-	zzip_seek((ZZIP_FILE*)file, 0, SEEK_SET);
-
-	return size;
+	return ((ZIPROMReaderData*)file)->size;
 }
 
 int ZIPROMReaderSeek(void * file, int offset, int whence)
 {
-	return zzip_seek((ZZIP_FILE*)file, offset, whence);
+	ZIPROMReaderData* data = (ZIPROMReaderData*)file;
+	s64 base = (whence == SEEK_SET) ? 0 : (whence == SEEK_CUR) ? data->pos : data->size;
+	s64 position = base + offset;
+	if (position < 0) position = 0;
+	if (position > (s64)data->size) position = data->size;
+	data->pos = (u32)position;
+	return (int)data->pos;
 }
 
 int ZIPROMReaderRead(void * file, void * buffer, u32 size)
 {
-#ifdef ZZIP_OLD_READ
-	return zzip_read((ZZIP_FILE*)file, (char *) buffer, size);
-#else
-	return zzip_read((ZZIP_FILE*)file, buffer, size);
-#endif
+	ZIPROMReaderData* data = (ZIPROMReaderData*)file;
+	if (data->pos >= data->size) return 0;
+	if (size > data->size - data->pos) size = data->size - data->pos;
+	memcpy(buffer, data->data + data->pos, size);
+	data->pos += size;
+	return (int)size;
 }
 
 int ZIPROMReaderWrite(void *, void *, u32)
@@ -285,7 +339,6 @@ int ZIPROMReaderWrite(void *, void *, u32)
 	//not supported ever
 	return 0;
 }
-#endif
 
 struct {
 	void* buf;

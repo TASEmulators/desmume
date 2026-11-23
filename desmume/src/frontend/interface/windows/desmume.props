@@ -91,7 +91,7 @@
 
 		<ClCompile>
 
-			<AdditionalIncludeDirectories>.;..\..;..\..\..;..\..\windows;.\SDL3\include;glib-2.20.1\build;..\..\..\..\3rdparty\zlib-1.4;..\..\windows\zziplib;..\..\windows\winpcap;userconfig;..\..\windows\agg\include;..\..\windows\agg\examples;..\..\..\libretro-common\include;..\..\..\..\3rdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+			<AdditionalIncludeDirectories>.;..\..;..\..\..;..\..\windows;.\SDL3\include;..\..\..\..\3rdparty\zlib-1.4;..\..\windows\winpcap;userconfig;..\..\windows\agg\include;..\..\windows\agg\examples;..\..\..\libretro-common\include;..\..\..\..\3rdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
 			
 			<!-- We are building the interface -->
 			<PreprocessorDefinitions>TARGET_INTERFACE;WIN_EXPORT</PreprocessorDefinitions>

@@ -46,23 +46,10 @@ AC_DEFINE_UNQUOTED([SVN_REV], [$REVISION], [subversion revision number])
 AC_DEFINE_UNQUOTED([SVN_REV_STR], ["$REVISION"], [subversion revision number string])
 
 dnl - Check for zlib
-AC_CHECK_LIB(z, gzopen, [], [AC_MSG_ERROR([zlib was not found, we can't go further. Please install it or specify the location where it's installed.])])
+AC_CHECK_LIB(z, gzopen, [AC_DEFINE([HAVE_LIBZ], [1], [Define to 1 if zlib is available])], [AC_MSG_ERROR([zlib was not found, we can't go further. Please install it or specify the location where it's installed.])])
 
 dnl - Check for libpcap
 AC_CHECK_LIB(pcap, main, [LIBS="$LIBS -lpcap"], [AC_MSG_ERROR([libpcap was not found, we can't go further. Please install it or specify the location where it's installed.])])
-
-dnl - Check for zziplib
-AC_CHECK_LIB(zzip, zzip_open, [
-	LIBS="-lzzip $LIBS"
-	AC_DEFINE([HAVE_LIBZZIP])
-	AC_MSG_CHECKING([[whether zzip use void * as second parameter]])
-	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <zzip/lib.h>]], [[
-		void * v;
-		zzip_read(NULL, v, 0);]])],
-		AC_MSG_RESULT(yes),
-		AC_DEFINE([ZZIP_OLD_READ])
-		AC_MSG_RESULT(no))
-])
 
 dnl - Check for X11
 AC_PATH_X

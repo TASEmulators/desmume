@@ -198,6 +198,8 @@
 #define FILE_EXT_ACTION_REPLAY_SAVE					"dss"
 #define FILE_EXT_ACTION_REPLAY_MAX_SAVE				"duc"
 #define FILE_EXT_ROM_DS								"nds"
+#define FILE_EXT_ROM_ZIP							"zip"
+#define FILE_EXT_ROM_GZ								"gz"
 #define FILE_EXT_ROM_GBA							"ds.gba"
 #define FILE_EXT_HW_IMAGE_FILE						"bin"
 #define FILE_EXT_ADVANSCENE_DB						"xml"

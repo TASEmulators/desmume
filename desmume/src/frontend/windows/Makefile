@@ -154,7 +154,9 @@ SRCS = \
 	AboutBox.cpp \
 	CWindow.cpp \
 	DarkMode.cpp \
-	FEX_Interface.cpp \
+	7zip/7zapi.cpp \
+	7zip/7zip.cpp \
+	../../utils/ziparchive.cpp \
 	FirmConfig.cpp \
 	IORegView.cpp \
 	OpenArchive.cpp \
@@ -324,50 +326,6 @@ SRCS = \
 	../modules/Disassembler.cpp \
 	../modules/osd/agg/aggdraw.cpp \
 	../modules/osd/agg/agg_osd.cpp \
-	File_Extractor/fex/Binary_Extractor.cpp \
-	File_Extractor/fex/blargg_common.cpp \
-	File_Extractor/fex/blargg_errors.cpp \
-	File_Extractor/fex/Data_Reader.cpp \
-	File_Extractor/fex/fex.cpp \
-	File_Extractor/fex/File_Extractor.cpp \
-	File_Extractor/fex/Gzip_Extractor.cpp \
-	File_Extractor/fex/Gzip_Reader.cpp \
-	File_Extractor/fex/Rar_Extractor.cpp \
-	File_Extractor/fex/Zip7_Extractor.cpp \
-	File_Extractor/fex/Zip_Extractor.cpp \
-	File_Extractor/fex/Zlib_Inflater.cpp \
-	File_Extractor/unrar/archive.cpp \
-	File_Extractor/unrar/arcread.cpp \
-	File_Extractor/unrar/blake2s.cpp \
-	File_Extractor/unrar/blake2sp.cpp \
-	File_Extractor/unrar/blake2s_sse.cpp \
-	File_Extractor/unrar/coder.cpp \
-	File_Extractor/unrar/crc.cpp \
-	File_Extractor/unrar/encname.cpp \
-	File_Extractor/unrar/extract.cpp \
-	File_Extractor/unrar/getbits.cpp \
-	File_Extractor/unrar/hash.cpp \
-	File_Extractor/unrar/headers.cpp \
-	File_Extractor/unrar/model.cpp \
-	File_Extractor/unrar/pathfn.cpp \
-	File_Extractor/unrar/rarvm.cpp \
-	File_Extractor/unrar/rarvmtbl.cpp \
-	File_Extractor/unrar/rawread.cpp \
-	File_Extractor/unrar/secpassword.cpp \
-	File_Extractor/unrar/strfn.cpp \
-	File_Extractor/unrar/suballoc.cpp \
-	File_Extractor/unrar/timefn.cpp \
-	File_Extractor/unrar/unicode.cpp \
-	File_Extractor/unrar/unpack.cpp \
-	File_Extractor/unrar/unpack15.cpp \
-	File_Extractor/unrar/unpack20.cpp \
-	File_Extractor/unrar/unpack30.cpp \
-	File_Extractor/unrar/unpack50.cpp \
-	File_Extractor/unrar/unpack50frag.cpp \
-	File_Extractor/unrar/unpackinline.cpp \
-	File_Extractor/unrar/unrar.cpp \
-	File_Extractor/unrar/unrar_misc.cpp \
-	File_Extractor/unrar/unrar_open.cpp \
 	$(AGG_SRCS) \
 	$(ASMJIT_SRCS)
 
@@ -416,38 +374,6 @@ CSRCS = \
 	../../libretro-common/rthreads/rthreads.c \
 	../../libretro-common/streams/file_stream.c \
 	../../libretro-common/streams/memory_stream.c \
-	File_Extractor/7z_C/7zAlloc.c \
-	File_Extractor/7z_C/7zBuf.c \
-	File_Extractor/7z_C/7zBuf2.c \
-	File_Extractor/7z_C/7zCrc.c \
-	File_Extractor/7z_C/7zCrcOpt.c \
-	File_Extractor/7z_C/7zDec.c \
-	File_Extractor/7z_C/7zDecode.c \
-	File_Extractor/7z_C/7zExtract.c \
-	File_Extractor/7z_C/7zFile.c \
-	File_Extractor/7z_C/7zIn.c \
-	File_Extractor/7z_C/7zStream.c \
-	File_Extractor/7z_C/Alloc.c \
-	File_Extractor/7z_C/Bcj2.c \
-	File_Extractor/7z_C/Bra.c \
-	File_Extractor/7z_C/Bra86.c \
-	File_Extractor/7z_C/BraIA64.c \
-	File_Extractor/7z_C/CpuArch.c \
-	File_Extractor/7z_C/Delta.c \
-	File_Extractor/7z_C/LzFind.c \
-	File_Extractor/7z_C/LzFindMt.c \
-	File_Extractor/7z_C/Lzma2Dec.c \
-	File_Extractor/7z_C/Lzma2Enc.c \
-	File_Extractor/7z_C/Lzma86Dec.c \
-	File_Extractor/7z_C/Lzma86Enc.c \
-	File_Extractor/7z_C/LzmaDec.c \
-	File_Extractor/7z_C/LzmaEnc.c \
-	File_Extractor/7z_C/LzmaLib.c \
-	File_Extractor/7z_C/MtCoder.c \
-	File_Extractor/7z_C/Ppmd7.c \
-	File_Extractor/7z_C/Ppmd7Dec.c \
-	File_Extractor/7z_C/Ppmd7Enc.c \
-	File_Extractor/7z_C/win32/Threads.c \
 
 RESRCS = resources.rc
 

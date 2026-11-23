@@ -39,6 +39,7 @@ libdesmume_a_SOURCES = \
 	../../mic.h \
 	../../MMU.cpp ../../MMU.h ../../MMU_timing.h ../../NDSSystem.cpp ../../NDSSystem.h ../../registers.h \
 	../../ROMReader.cpp ../../ROMReader.h \
+	../../utils/ziparchive.cpp ../../utils/ziparchive.h \
 	../../render3D.cpp ../../render3D.h \
 	../../rtc.cpp ../../rtc.h \
 	../../saves.cpp ../../saves.h \

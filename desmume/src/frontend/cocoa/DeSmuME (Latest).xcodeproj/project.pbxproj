@@ -209,6 +209,7 @@
 		8C43E81F27E3CD0100A35F65 /* async_job.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2AB9251C9F9CFA00173B15 /* async_job.c */; };
 		8C43E82027E3CD0100A35F65 /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECD1345AC8400AF11D1 /* thumb_instructions.cpp */; };
 		8C43E82127E3CD0100A35F65 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		8C43E82227E3CD0100A35F65 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
 		8C43E82327E3CD0100A35F65 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
 		8C43E82427E3CD0100A35F65 /* ftgasp.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7801BB4EC1000B08C25 /* ftgasp.c */; };
@@ -545,6 +546,7 @@
 		8C43E9AE27E3CD4C00A35F65 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150014C92FF5005D6699 /* hq4x.cpp */; };
 		8C43E9AF27E3CD4C00A35F65 /* MacScreenshotCaptureTool.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FBF01F7B7E7E00B4F648 /* MacScreenshotCaptureTool.mm */; };
 		8C43E9B027E3CD4C00A35F65 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		8C43E9B127E3CD4C00A35F65 /* MacBaseCaptureTool.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB28624820AE3E7A00EAED43 /* MacBaseCaptureTool.mm */; };
 		8C43E9B227E3CD4C00A35F65 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
 		8C43E9B327E3CD4C00A35F65 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
@@ -824,6 +826,7 @@
 		8CCD84B527E40B730024BDD5 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FE14C92FF5005D6699 /* hq2x.cpp */; };
 		8CCD84B627E40B730024BDD5 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150014C92FF5005D6699 /* hq4x.cpp */; };
 		8CCD84B727E40B730024BDD5 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		8CCD84B827E40B730024BDD5 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
 		8CCD84B927E40B730024BDD5 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		8CCD84BA27E40B730024BDD5 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
@@ -1170,6 +1173,7 @@
 		AB36C83527F2C8AE00C763C8 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FE14C92FF5005D6699 /* hq2x.cpp */; };
 		AB36C83627F2C8AE00C763C8 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150014C92FF5005D6699 /* hq4x.cpp */; };
 		AB36C83727F2C8AE00C763C8 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		AB36C83827F2C8AE00C763C8 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
 		AB36C83927F2C8AE00C763C8 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		AB36C83A27F2C8AE00C763C8 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
@@ -1676,6 +1680,7 @@
 		AB53B0392F9D8AB400025334 /* ClientFirmwareControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6E3B452E7385710088075E /* ClientFirmwareControl.cpp */; };
 		AB53B03A2F9D8AB400025334 /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECD1345AC8400AF11D1 /* thumb_instructions.cpp */; };
 		AB53B03B2F9D8AB400025334 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		AB53B03C2F9D8AB400025334 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
 		AB53B03D2F9D8AB400025334 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
 		AB53B03E2F9D8AB400025334 /* ftgasp.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7801BB4EC1000B08C25 /* ftgasp.c */; };
@@ -2034,6 +2039,7 @@
 		AB7900BD215B84E50082AE82 /* async_job.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2AB9251C9F9CFA00173B15 /* async_job.c */; };
 		AB7900BE215B84E50082AE82 /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECD1345AC8400AF11D1 /* thumb_instructions.cpp */; };
 		AB7900BF215B84E50082AE82 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		AB7900C0215B84E50082AE82 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
 		AB7900C1215B84E50082AE82 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
 		AB7900C2215B84E50082AE82 /* ftgasp.c in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA7801BB4EC1000B08C25 /* ftgasp.c */; };
@@ -2397,6 +2403,7 @@
 		AB79024A215B84F20082AE82 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150014C92FF5005D6699 /* hq4x.cpp */; };
 		AB79024B215B84F20082AE82 /* MacScreenshotCaptureTool.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FBF01F7B7E7E00B4F648 /* MacScreenshotCaptureTool.mm */; };
 		AB79024C215B84F20082AE82 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		AB79024D215B84F20082AE82 /* MacBaseCaptureTool.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB28624820AE3E7A00EAED43 /* MacBaseCaptureTool.mm */; };
 		AB79024E215B84F20082AE82 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
 		AB79024F215B84F20082AE82 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
@@ -3154,6 +3161,7 @@
 		AB8F3CE91A53AC2600A80BF6 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FE14C92FF5005D6699 /* hq2x.cpp */; };
 		AB8F3CEA1A53AC2600A80BF6 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150014C92FF5005D6699 /* hq4x.cpp */; };
 		AB8F3CEB1A53AC2600A80BF6 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		AB8F3CEC1A53AC2600A80BF6 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
 		AB8F3CED1A53AC2600A80BF6 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		AB8F3CEE1A53AC2600A80BF6 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
@@ -3215,7 +3223,9 @@
 		AB8F3D271A53AC2600A80BF6 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		AB8F3D281A53AC2600A80BF6 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		AB9038A617C5ECFD00F410BD /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		AB9038A817C5ECFD00F410BD /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		AB9038AF17C5ED2200F410BD /* slot1_retail_auto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A917C5ED2200F410BD /* slot1_retail_auto.cpp */; };
 		AB9038B117C5ED2200F410BD /* slot1_retail_auto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A917C5ED2200F410BD /* slot1_retail_auto.cpp */; };
 		AB9038B217C5ED2200F410BD /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */; };
@@ -4370,6 +4380,7 @@
 		ABC8593428273FEE00A03EA9 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FE14C92FF5005D6699 /* hq2x.cpp */; };
 		ABC8593528273FEE00A03EA9 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150014C92FF5005D6699 /* hq4x.cpp */; };
 		ABC8593628273FEE00A03EA9 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		ABC8593728273FEE00A03EA9 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
 		ABC8593828273FEE00A03EA9 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		ABC8593928273FEE00A03EA9 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
@@ -4702,6 +4713,7 @@
 		ABD2CDE826E05CB000FB15F7 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FE14C92FF5005D6699 /* hq2x.cpp */; };
 		ABD2CDE926E05CB000FB15F7 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150014C92FF5005D6699 /* hq4x.cpp */; };
 		ABD2CDEA26E05CB000FB15F7 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
+		F5A9C0010000000000000011 /* ziparchive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A9C0010000000000000001 /* ziparchive.cpp */; };
 		ABD2CDEB26E05CB000FB15F7 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
 		ABD2CDEC26E05CB000FB15F7 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		ABD2CDED26E05CB000FB15F7 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
@@ -6161,7 +6173,9 @@
 		AB8B7AAB17CE8C440051CEBF /* slot1comp_protocol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_protocol.cpp; sourceTree = "<group>"; };
 		AB8F3D2E1A53AC2600A80BF6 /* DeSmuME (Debug, dev+).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug, dev+).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB9038A417C5ECFD00F410BD /* advanscene.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = advanscene.h; sourceTree = "<group>"; };
+		F5A9C0010000000000000002 /* ziparchive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ziparchive.h; sourceTree = "<group>"; };
 		AB9038A517C5ECFD00F410BD /* advanscene.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = advanscene.cpp; sourceTree = "<group>"; };
+		F5A9C0010000000000000001 /* ziparchive.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ziparchive.cpp; sourceTree = "<group>"; };
 		AB9038A917C5ED2200F410BD /* slot1_retail_auto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_auto.cpp; sourceTree = "<group>"; };
 		AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_mcrom.cpp; sourceTree = "<group>"; };
 		AB9038AB17C5ED2200F410BD /* slot1comp_mc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_mc.cpp; sourceTree = "<group>"; };
@@ -8222,6 +8236,8 @@
 				AB2EE12F17D57F5000F68622 /* fsnitro.h */,
 				ABD1FF2D1345ACBF00AF11D1 /* guid.h */,
 				ABD1FF4D1345ACBF00AF11D1 /* task.h */,
+				F5A9C0010000000000000001 /* ziparchive.cpp */,
+				F5A9C0010000000000000002 /* ziparchive.h */,
 				ABD1FF501345ACBF00AF11D1 /* vfat.h */,
 				ABD1FF521345ACBF00AF11D1 /* xstring.h */,
 			);
@@ -11379,6 +11395,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB6E3B462E7385710088075E /* ClientFirmwareControl.cpp in Sources */,
 				8C43E82027E3CD0100A35F65 /* thumb_instructions.cpp in Sources */,
 				8C43E82127E3CD0100A35F65 /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				8C43E82227E3CD0100A35F65 /* ClientInputHandler.cpp in Sources */,
 				8C43E82327E3CD0100A35F65 /* Timestretcher.cpp in Sources */,
 				8C43E82427E3CD0100A35F65 /* ftgasp.c in Sources */,
@@ -11712,6 +11729,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				8C43E9AE27E3CD4C00A35F65 /* hq4x.cpp in Sources */,
 				8C43E9AF27E3CD4C00A35F65 /* MacScreenshotCaptureTool.mm in Sources */,
 				8C43E9B027E3CD4C00A35F65 /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				8C43E9B127E3CD4C00A35F65 /* MacBaseCaptureTool.mm in Sources */,
 				8C43E9B227E3CD4C00A35F65 /* lq2x.cpp in Sources */,
 				8C43E9B327E3CD4C00A35F65 /* xbrz.cpp in Sources */,
@@ -11983,6 +12001,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				8CCD84B527E40B730024BDD5 /* hq2x.cpp in Sources */,
 				8CCD84B627E40B730024BDD5 /* hq4x.cpp in Sources */,
 				8CCD84B727E40B730024BDD5 /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				8CCD84B827E40B730024BDD5 /* lq2x.cpp in Sources */,
 				8CCD84B927E40B730024BDD5 /* xbrz.cpp in Sources */,
 				8CCD84BA27E40B730024BDD5 /* scanline.cpp in Sources */,
@@ -12259,6 +12278,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB36C83527F2C8AE00C763C8 /* hq2x.cpp in Sources */,
 				AB36C83627F2C8AE00C763C8 /* hq4x.cpp in Sources */,
 				AB36C83727F2C8AE00C763C8 /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				AB36C83827F2C8AE00C763C8 /* lq2x.cpp in Sources */,
 				AB36C83927F2C8AE00C763C8 /* xbrz.cpp in Sources */,
 				AB36C83A27F2C8AE00C763C8 /* scanline.cpp in Sources */,
@@ -12534,6 +12554,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB53B0392F9D8AB400025334 /* ClientFirmwareControl.cpp in Sources */,
 				AB53B03A2F9D8AB400025334 /* thumb_instructions.cpp in Sources */,
 				AB53B03B2F9D8AB400025334 /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				AB53B03C2F9D8AB400025334 /* ClientInputHandler.cpp in Sources */,
 				AB53B03D2F9D8AB400025334 /* Timestretcher.cpp in Sources */,
 				AB53B03E2F9D8AB400025334 /* ftgasp.c in Sources */,
@@ -12818,6 +12839,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB7900BD215B84E50082AE82 /* async_job.c in Sources */,
 				AB7900BE215B84E50082AE82 /* thumb_instructions.cpp in Sources */,
 				AB7900BF215B84E50082AE82 /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				AB7900C0215B84E50082AE82 /* ClientInputHandler.cpp in Sources */,
 				ABDB1BF32E66486E002AD9AF /* ClientVideoOutput.cpp in Sources */,
 				AB7900C1215B84E50082AE82 /* Timestretcher.cpp in Sources */,
@@ -13173,6 +13195,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB79024A215B84F20082AE82 /* hq4x.cpp in Sources */,
 				AB79024B215B84F20082AE82 /* MacScreenshotCaptureTool.mm in Sources */,
 				AB79024C215B84F20082AE82 /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				AB79024D215B84F20082AE82 /* MacBaseCaptureTool.mm in Sources */,
 				AB79024E215B84F20082AE82 /* lq2x.cpp in Sources */,
 				AB79914D2E71EF050030C0A6 /* CocoaAudioController.mm in Sources */,
@@ -13435,6 +13458,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB2ABA3B1C9F9CFA00173B15 /* async_job.c in Sources */,
 				AB796D3D15CDCBA200C59155 /* thumb_instructions.cpp in Sources */,
 				AB9038A617C5ECFD00F410BD /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				AB11AD891F6757F800CB298E /* ClientInputHandler.cpp in Sources */,
 				ABDB1BF22E66486E002AD9AF /* ClientVideoOutput.cpp in Sources */,
 				AB796D3E15CDCBA200C59155 /* Timestretcher.cpp in Sources */,
@@ -13790,6 +13814,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB8F3CEA1A53AC2600A80BF6 /* hq4x.cpp in Sources */,
 				ABD1FBF21F7B7E7E00B4F648 /* MacScreenshotCaptureTool.mm in Sources */,
 				AB8F3CEB1A53AC2600A80BF6 /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				AB28625020AE3E7B00EAED43 /* MacBaseCaptureTool.mm in Sources */,
 				AB8F3CEC1A53AC2600A80BF6 /* lq2x.cpp in Sources */,
 				AB7991532E71EF060030C0A6 /* CocoaAudioController.mm in Sources */,
@@ -13978,6 +14003,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				AB8044F22F0E4A2B00A6824E /* ClientAVCaptureObject.cpp in Sources */,
 				ABDB1BE62E6602A5002AD9AF /* ClientEmulationOutput.cpp in Sources */,
 				AB9038A817C5ECFD00F410BD /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				AB000DD61CCC6B3F00413F02 /* retro_dirent.c in Sources */,
 				ABB3C68E1501C04F00E0C22E /* FIRFilter.cpp in Sources */,
 				ABB3C68F1501C04F00E0C22E /* mmx_optimized.cpp in Sources */,
@@ -14340,6 +14366,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				ABC8593428273FEE00A03EA9 /* hq2x.cpp in Sources */,
 				ABC8593528273FEE00A03EA9 /* hq4x.cpp in Sources */,
 				ABC8593628273FEE00A03EA9 /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				ABC8593728273FEE00A03EA9 /* lq2x.cpp in Sources */,
 				ABC8593828273FEE00A03EA9 /* xbrz.cpp in Sources */,
 				ABC8593928273FEE00A03EA9 /* scanline.cpp in Sources */,
@@ -14648,6 +14675,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				ABD2CDE826E05CB000FB15F7 /* hq2x.cpp in Sources */,
 				ABD2CDE926E05CB000FB15F7 /* hq4x.cpp in Sources */,
 				ABD2CDEA26E05CB000FB15F7 /* advanscene.cpp in Sources */,
+				F5A9C0010000000000000011 /* ziparchive.cpp in Sources */,
 				ABD2CDEB26E05CB000FB15F7 /* lq2x.cpp in Sources */,
 				ABD2CDEC26E05CB000FB15F7 /* xbrz.cpp in Sources */,
 				ABD2CDED26E05CB000FB15F7 /* scanline.cpp in Sources */,

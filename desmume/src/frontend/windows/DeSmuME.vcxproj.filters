@@ -115,18 +115,6 @@
     <Filter Include="frontend\Windows\libs">
       <UniqueIdentifier>{42b6ff9b-c9ff-4006-b2f7-f3e3268b8c31}</UniqueIdentifier>
     </Filter>
-    <Filter Include="frontend\Windows\File_Extractor">
-      <UniqueIdentifier>{d2287daf-de85-4c64-8eef-2198f501904a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="frontend\Windows\File_Extractor\7z_C">
-      <UniqueIdentifier>{a6326bbe-afb7-4dd5-ae76-a7436bc8f7db}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="frontend\Windows\File_Extractor\fex">
-      <UniqueIdentifier>{5f6c8f8e-0d1d-41a6-bd1f-0c7e51175b0f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="frontend\Windows\File_Extractor\unrar">
-      <UniqueIdentifier>{6e0c9a80-56da-436a-a32d-d64cf6323ac7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="libretro-common\encodings">
       <UniqueIdentifier>{f411c88e-4cf5-43ea-9af7-96030fbb4839}</UniqueIdentifier>
     </Filter>
@@ -222,6 +210,9 @@
     <ClCompile Include="AboutBox.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="7zip\7zapi.cpp" />
+    <ClCompile Include="7zip\7zip.cpp" />
+    <ClCompile Include="..\..\utils\ziparchive.cpp" />
     <ClCompile Include="aviout.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -435,9 +426,6 @@
     <ClCompile Include="importSave.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
-    <ClCompile Include="FEX_Interface.cpp">
-      <Filter>frontend\Windows</Filter>
-    </ClCompile>
     <ClCompile Include="sndxa2.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
@@ -476,234 +464,6 @@
     </ClCompile>
     <ClCompile Include="..\..\filter\xbrz.cpp">
       <Filter>filter</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\win32\Threads.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zAlloc.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zBuf.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zBuf2.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zCrc.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zCrcOpt.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zDec.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zDecode.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zExtract.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zFile.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zIn.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zStream.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Alloc.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Bcj2.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Bra.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Bra86.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\BraIA64.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\CpuArch.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Delta.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\LzFind.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\LzFindMt.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Lzma2Dec.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Lzma2Enc.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Lzma86Dec.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Lzma86Enc.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\LzmaDec.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\LzmaEnc.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\LzmaLib.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\MtCoder.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Ppmd7.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Ppmd7Dec.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\Ppmd7Enc.c">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\blargg_common.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\blargg_errors.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\Data_Reader.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\fex.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\File_Extractor.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\Gzip_Extractor.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\Gzip_Reader.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\Rar_Extractor.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\Zip_Extractor.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\Zip7_Extractor.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\Zlib_Inflater.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\fex\Binary_Extractor.cpp">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\arcread.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\blake2s.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\blake2s_sse.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\blake2sp.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\coder.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\crc.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\encname.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\extract.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\getbits.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\hash.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\headers.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\model.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\pathfn.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\rarvm.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\rarvmtbl.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\rawread.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\secpassword.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\strfn.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\suballoc.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\timefn.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\unicode.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\unpack.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\unpack15.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\unpack20.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\unpack30.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\unpack50.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\unpack50frag.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\unpackinline.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\unrar.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\unrar_misc.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\unrar_open.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\unrar\archive.cpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libretro-common\rthreads\rthreads.c">
       <Filter>libretro-common\rthreads</Filter>
@@ -981,6 +741,28 @@
     <ClInclude Include="ImageWrite.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
+    <ClInclude Include="7zip\7zapi.h" />
+    <ClInclude Include="7zip\7zip.h" />
+    <ClInclude Include="7zip\7zipstreams.h" />
+    <ClInclude Include="..\..\utils\ziparchive.h" />
+    <ClInclude Include="7zip\7z\CPP\Common\Common0.h" />
+    <ClInclude Include="7zip\7z\CPP\Common\MyCom.h" />
+    <ClInclude Include="7zip\7z\CPP\Common\MyGuidDef.h" />
+    <ClInclude Include="7zip\7z\CPP\Common\MyInitGuid.h" />
+    <ClInclude Include="7zip\7z\CPP\Common\MyTypes.h" />
+    <ClInclude Include="7zip\7z\CPP\Common\MyUnknown.h" />
+    <ClInclude Include="7zip\7z\CPP\Common\MyWindows.h" />
+    <ClInclude Include="7zip\7z\CPP\Common\NewHandler.h" />
+    <ClInclude Include="7zip\7z\CPP\7zip\IDecl.h" />
+    <ClInclude Include="7zip\7z\CPP\7zip\IProgress.h" />
+    <ClInclude Include="7zip\7z\CPP\7zip\PropID.h" />
+    <ClInclude Include="7zip\7z\CPP\7zip\Archive\IArchive.h" />
+    <ClInclude Include="7zip\7z\CPP\7zip\IStream.h" />
+    <ClInclude Include="7zip\7z\C\7zTypes.h" />
+    <ClInclude Include="7zip\7z\C\7zVersion.h" />
+    <ClInclude Include="7zip\7z\C\7zWindows.h" />
+    <ClInclude Include="7zip\7z\C\Compiler.h" />
+    <ClInclude Include="7zip\7z\C\Threads.h" />
     <ClInclude Include="aviout.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
@@ -1170,9 +952,6 @@
     <ClInclude Include="importSave.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="FEX_Interface.h">
-      <Filter>frontend\Windows</Filter>
-    </ClInclude>
     <ClInclude Include="sndxa2.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
@@ -1184,207 +963,6 @@
     </ClInclude>
     <ClInclude Include="fsnitroView.h">
       <Filter>frontend\Windows\tools</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\win32\Threads.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\7z.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\7zAlloc.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\7zBuf.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\7zCrc.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\7zDecode.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\7zExtract.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\7zFile.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\7zIn.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\7zTypes.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\7zVersion.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\Alloc.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\Bcj2.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\Bra.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\CpuArch.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\Delta.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\LzFind.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\LzFindMt.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\LzHash.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\Lzma2Dec.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\Lzma2Enc.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\Lzma86.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\LzmaDec.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\LzmaEnc.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\LzmaLib.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\LzmaTypes.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\MtCoder.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\Ppmd.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\Ppmd7.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\RotateDefs.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\Threads.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\7z_C\Types.h">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\blargg_common.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\blargg_config.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\blargg_endian.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\blargg_errors.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\blargg_source.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\Data_Reader.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\fex.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\File_Extractor.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\Gzip_Extractor.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\Gzip_Reader.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\Rar_Extractor.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\Zip_Extractor.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\Zip7_Extractor.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\Zlib_Inflater.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\fex\Binary_Extractor.h">
-      <Filter>frontend\Windows\File_Extractor\fex</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\array.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\blake2s.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\coder.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\compress.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\encname.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\getbits.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\hash.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\headers.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\headers5.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\model.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\rar.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\rarvm.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\rawread.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\strfn.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\suballoc.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\timefn.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\unicode.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\unpack.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\unrar.h">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </ClInclude>
-    <ClInclude Include="File_Extractor\unrar\archive.hpp">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
     </ClInclude>
     <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler.h">
       <Filter>utils\colorspacehandler</Filter>
@@ -1588,36 +1166,6 @@
     <None Include="DeSmuME.ico">
       <Filter>frontend\Windows\resources</Filter>
     </None>
-    <None Include="File_Extractor\7z_C\7zC.txt">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </None>
-    <None Include="File_Extractor\7z_C\changes.txt">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </None>
-    <None Include="File_Extractor\7z_C\lzma.txt">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </None>
-    <None Include="File_Extractor\7z_C\readme.txt">
-      <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
-    </None>
-    <None Include="File_Extractor\unrar\changes.txt">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </None>
-    <None Include="File_Extractor\unrar\license.txt">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </None>
-    <None Include="File_Extractor\unrar\readme.txt">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </None>
-    <None Include="File_Extractor\unrar\technote.txt">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </None>
-    <None Include="File_Extractor\unrar\whatsnew.txt">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </None>
-    <None Include="File_Extractor\unrar\acknow.txt">
-      <Filter>frontend\Windows\File_Extractor\unrar</Filter>
-    </None>
     <None Include="bitmaps\FileBinary.ico">
       <Filter>frontend\Windows\resources</Filter>
     </None>
@@ -1660,6 +1208,8 @@
     <None Include="..\modules\osd\wgpu\hud_text.wgsl">
       <Filter>frontend\modules\osd\wgpu</Filter>
     </None>
+    <None Include="7zip\README.txt" />
+    <None Include="7zip\7z\README.txt" />
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\thumb_tabdef.inc" />
   </ItemGroup>

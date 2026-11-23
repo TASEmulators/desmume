@@ -755,6 +755,7 @@ static void ActionOpen(GSimpleAction *action, GVariant *parameter, gpointer user
 	gtk_file_filter_add_pattern(filter, "*.rom");
 	gtk_file_filter_add_pattern(filter, "*.ROM");
 	gtk_file_filter_add_pattern(filter, "*.zip");
+	gtk_file_filter_add_pattern(filter, "*.gz");
 
 	GListStore *filters = g_list_store_new(GTK_TYPE_FILE_FILTER);
 	g_list_store_append(filters, filter);

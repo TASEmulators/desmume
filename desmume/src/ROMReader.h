@@ -48,9 +48,9 @@ extern ROMReader_struct STDROMReader;
 #ifdef HAVE_LIBZ
 extern ROMReader_struct GZIPROMReader;
 #endif
-#ifdef HAVE_LIBZZIP
+// ZIP support is built on the shared zlib-backed utils/ziparchive reader on
+// every platform; it does not need zziplib or an external decoder.
 extern ROMReader_struct ZIPROMReader;
-#endif
 
 ROMReader_struct * ROMReaderInit(char ** filename);
 ROMReader_struct * MemROMReaderRead_TrueInit(void* buf, int length);

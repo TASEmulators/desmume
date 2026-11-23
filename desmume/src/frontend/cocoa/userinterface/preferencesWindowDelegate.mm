@@ -418,7 +418,7 @@
 	[panel setResolvesAliases:YES];
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTitle:NSSTRING_TITLE_SELECT_ROM_PANEL];
-	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_GBA, nil];
+	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_ZIP, @FILE_EXT_ROM_GZ, @FILE_EXT_ROM_GBA, nil];
 	
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	if (IsOSXVersionSupported(10, 6, 0))
