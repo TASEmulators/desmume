@@ -58,7 +58,7 @@ libdesmume_a_SOURCES = \
 	../../utils/emufat.cpp ../../utils/emufat.h utils/emufat_types.h \
 	../../utils/fsnitro.cpp ../../utils/fsnitro.h \
 	../../utils/xstring.cpp ../../utils/xstring.h \
-	../../utils/decrypt/decrypt.h ../../utils/decrypt/header.cpp ../../utils/decrypt/header.h \
+	../../utils/decrypt/decrypt.cpp ../../utils/decrypt/decrypt.h ../../utils/decrypt/header.cpp ../../utils/decrypt/header.h \
 	../../utils/task.cpp ../../utils/task.h \
 	../../utils/vfat.h ../../utils/vfat.cpp \
 	../../utils/dlditool.cpp \
