@@ -39,6 +39,43 @@ feature. Each entry says what you can do with it — not how it is built.
 - **Documented API** — type definitions for all 158 registered names, a
   completeness check, and smoke-test / macro / OSD examples for TAS authors.
 
+### Recompiler (JIT)
+- **Two maintained backends, one reference** — the x86-64 and AArch64
+  recompilers are both built on current asmjit, and all 571 compilable ARM and
+  Thumb opcode groups are checked against the interpreter. The 20 undefined or
+  intentionally uncompiled opcodes keep using the interpreter, and the dead
+  ARM32 backend is gone.
+- **Verified instruction by instruction** — generated blocks are compared with
+  the interpreter field by field (registers, flags and PC) on x86-64 and on
+  real AArch64 hardware. The defects those comparisons exposed were fixed in
+  the affected backends before the migration closed.
+- **Leaner code on ARM64** — emulated registers and hot state stay in host
+  registers, cutting the common ALU handlers' host instruction count roughly
+  in half. On-device microbenchmarks against the interpreter show 17.75× for
+  `add`, 3.55× for `ldr` and 2.05× for `str`; a whole-ROM frame-rate comparison
+  is still outstanding.
+- **Available in the ordinary builds** — the recompiler is wired into the
+  Windows, macOS Universal/OpenEmu and POSIX builds, including native Windows
+  ARM64.
+
+### Audio engine
+- **One SPU mixing path** — the rewritten mixer is now the only one; the old
+  "Advanced SPU Logic" option is gone from Windows, macOS and GTK settings
+  because there is no longer a second path to choose.
+- **Correct after reset and load-state** — states written by this build load
+  again, capture DMA resumes at the right ARM7 address, zero-length capture
+  loops no longer hang, and dual-SPU audio survives a reset.
+- **More interpolation choices** — GTK3 and GTK2 offer Catmull-Rom alongside
+  the existing interpolation modes.
+
+### ROM archives
+- **Open ROMs straight from archives** — Windows uses the official 7-Zip 26.04
+  DLL (x64 and ARM64) with a shared zlib ZIP reader as fallback; macOS and
+  Linux use that same reader for ZIP and gzip, and their ROM dialogs accept
+  `.zip` and `.gz` files.
+- **No stale extractors** — the bundled File_Extractor, unrar, old 7-Zip copies
+  and zziplib are gone.
+
 ### Image scaling, audio and builds
 - **xBRZ 1.9** — 2×–6× texture upscaling, faster than before and without the
   old 64 MB lookup table.
@@ -69,7 +106,8 @@ feature. Each entry says what you can do with it — not how it is built.
 - **Every frontend shows the same numbers** — ROM serial/CRC, author, comments,
   record date, core version, length, frame count and rerecord count come from
   one place; ROM/core mismatch and the "desync expected" wording agree with
-  Windows.
+  Windows. The stored ROM checksum is read from the movie itself instead of a
+  placeholder, so that warning reflects the ROM the movie was recorded with.
 - **Comments go back without touching the timeline** — only comment lines are
   rewritten; the author line, unknown keys and all frame bytes survive, with an
   atomic replace on both Windows and POSIX.
@@ -192,6 +230,13 @@ feature. Each entry says what you can do with it — not how it is built.
 - **Bundled and signed for both architectures** — WebGPU appears as a 3D engine
   choice in the Universal build, using the Metal backend.
 
+### Recompiler and build targets
+- **JIT in Universal and OpenEmu** — both targets now include the current
+  recompiler, with each architecture slice building its own x86-64 or AArch64
+  backend.
+- **One supported Xcode project** — the unmaintained Xcode 3 project is gone,
+  and stale source references in the current project have been cleaned up.
+
 ---
 
 ## Windows
@@ -289,9 +334,45 @@ feature. Each entry says what you can do with it — not how it is built.
   Search result now actually writes to emulated memory.
 
 ### Build and toolchain
-- **Current dependencies** — system DirectX libraries instead of a legacy
-  prebuilt blob, a vendored SDL3 SDK, no unused SDL 1.2 headers, and clean x64
-  builds (including a real Lua console bug).
+- **Native ARM64 build** — the solution has an ARM64 configuration beside x64,
+  with a matching manifest and ARM64 builds of the bundled 7-Zip, WebGPU and
+  Lua runtime libraries.
+- **Current dependencies** — system DirectX headers, vendored zlib 1.4 and
+  TinyXML2 11, LuaJIT headers only, and clean x64 builds (including a real Lua
+  console bug).
+- **Leaner tree** — the MinGW makefile, vendored Lua 5.1 sources, bundled
+  DirectX/GL headers and unused extractor code are gone.
+
+---
+
+## Linux / POSIX (GTK4, opt-in)
+
+### A native GTK4 frontend (WIP)
+- **Try it without leaving GTK3** — Meson builds it with
+  `-Dfrontend-gtk=gtk4`; GTK3 remains the default and GTK2 is still available.
+  It uses native GTK4 menus and CSS, adapts to server- or client-side
+  decorations, and needs GTK 4.10 or newer.
+- **A complete emulator window, not a shell** — background ROM loading,
+  ten instant-save slots (F1–F10 / Shift+F1–F10), screenshots, recent ROMs,
+  and emulation, graphics and sound settings in one dialog. LCD layouts
+  (including hybrid), screen swap, rotation and gap, plus keyboard, mouse and
+  stylus input, are restored from saved preferences.
+- **The familiar tools** — IO registers, RAM Watch, RAM Search, Memory Viewer,
+  Play/Record Movie dialogs, cheats with R4 database import, and a Lua console
+  with run/stop/edit, file watching and drag-and-drop. Watch and search rows
+  can become cheat entries or new watches.
+- **GPU presentation where available** — WGPU and OpenGL 3D backends, a Screen
+  presentation selector (WebGPU backends or software/Cairo), and the shared
+  GPU filter chains through an offscreen WebGPU path with a plain-blit fallback.
+- **A lean frame path** — pooled frames reach the display without a full-frame
+  copy; hidden windows stop presenting and inactive ones throttle to about
+  10 fps while emulation and audio continue. `DESMUME_GTK4_TIMING=1` reports
+  upload and snapshot timings for diagnosis.
+- **Installable beside GTK3** — its desktop entry and appdata use a separate
+  app-id, with a GTK4 man page and CI validation of the packaged assets.
+- **Current limits** — Lua popups, dynamic menus and input-state APIs still use
+  generic fallbacks, there is no GPU HUD yet, and real-ROM pixel comparison and
+  desktop-environment acceptance checks are still pending.
 
 ---
 
@@ -310,6 +391,9 @@ feature. Each entry says what you can do with it — not how it is built.
   greyed out during software presentation.
 - **GPU-composited HUD** — OSD and Lua drawing is layered over the frame, and
   screenshots include it, with a CPU fallback.
+- **Clean switching and shutdown** — HUD resources are released before the
+  WebGPU display is torn down, so switching presentation methods or quitting
+  no longer crashes.
 
 ### Lua scripting
 - **No development headers needed** — LuaJIT or Lua 5.1 is loaded at runtime;
@@ -359,6 +443,17 @@ feature. Each entry says what you can do with it — not how it is built.
 - **Tools > RAM Watch / RAM Search** — preferences live in the existing
   `config.cfg`, so Auto-load, window position and recent files survive restarts,
   and a new watch list is offered as `<ROM>.wch` next to the ROM.
+- **Readable results** — RAM Search results and the Memory Viewer use the
+  desktop's monospace font instead of a hard-coded fallback.
+
+### Memory Viewer
+- **A live hex dump of every region** — ARM9, ARM7, firmware, cartridge ROM and
+  the full address space, as bytes, halfwords or words with ASCII, optional
+  big-endian reads and text, raw or whole-region exports. Only visible rows are
+  read, so the 4 GB view opens immediately.
+- **Edited in place** — type hex to patch memory, move with the arrow keys,
+  Page Up/Down, Home/End or the scrollbar and trackpad, and set read/write
+  breakpoints; layout and scrolling share the same geometry on GTK3 and GTK4.
 
 ### Cheats
 - **One cheat list, edited properly** — internal cheats and Action Replay or
@@ -401,8 +496,11 @@ feature. Each entry says what you can do with it — not how it is built.
 - **SDL-based microphone** replaces the optional ALSA/OpenAL backends, removing
   two external dependencies; SDL3 then covers audio, gamepad and window handling
   for every POSIX frontend.
-- **Leaner tree** — AGG is built in-tree, and the bundled wgpu-native library
-  is found on both x86-64 and ARM64.
+- **Leaner tree** — AGG is built in-tree, the bundled wgpu-native library is
+  found on both x86-64 and ARM64, libpcap is optional, and autotools builds link
+  the shared zlib.
+- **Audio options** — Catmull-Rom is available in the interpolation menu; the
+  obsolete "Advanced SPU Logic" setting has been removed.
 - **HUD layout** saves and restores correctly even in builds without AGG.
 
 ### GTK2 frontend: maintenance status
