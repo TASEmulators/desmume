@@ -5676,13 +5676,38 @@ static void PresentationComboChanged(GtkComboBox *combo, gpointer user_data)
 }
 #endif
 
+// The 3D output color depth is the GPU event handler's framebuffer format.
+static NDSColorFormat ColorFormatFromDepth(int depth)
+{
+	switch (depth)
+	{
+		case 15:
+			return NDSColorFormat_BGR555_Rev;
+
+		case 24:
+			return NDSColorFormat_BGR888_Rev;
+
+		default:
+			return NDSColorFormat_BGR666_Rev;
+	}
+}
+
+// The Windows port's "Default" button next to the engine combo selects its
+// hard-coded default core, which is the software rasterizer.
+static void CoreDefaultClicked(GtkWidget *widget, gpointer data)
+{
+	gtk_combo_box_set_active(GTK_COMBO_BOX(data), RENDERID_SOFTRASTERIZER);
+}
+
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
 	GtkDialog *dialog;
-	GtkGrid *wGrid;
-	GtkComboBox *coreCombo, *wScale;
+	GtkComboBox *coreCombo, *wScale, *wColorDepth;
 	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
+	GtkToggleButton *wTxtHack, *wLineHack, *wEdgeMark, *wFog, *wTextures;
+	GtkToggleButton *wShadowPolygons, *wZeroAlpha, *wNDSDepth, *wDepthLEqual;
 	GtkSpinButton *wGPUScale;
 	GtkLabel *wMultisampleLabel;
+	GtkWidget *wCoreDefault, *wAccelFrame, *wAccuracyFrame, *wPresentationFrame;
 #if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
 	GtkComboBox *wMultisample;
 #endif
@@ -5694,13 +5719,17 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 
 	GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/graphics.ui");
 	dialog = GTK_DIALOG(gtk_builder_get_object(builder, "dialog"));
-	wGrid = GTK_GRID(gtk_builder_get_object(builder, "graphics_grid"));
 	coreCombo = GTK_COMBO_BOX(gtk_builder_get_object(builder, "core_combo"));
+	wCoreDefault = GTK_WIDGET(gtk_builder_get_object(builder, "core_default_button"));
 	wScale = GTK_COMBO_BOX(gtk_builder_get_object(builder, "scale"));
+	wColorDepth = GTK_COMBO_BOX(gtk_builder_get_object(builder, "color_depth_combo"));
 	wGPUScale = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "gpuscale"));
 	gtk_spin_button_set_range(wGPUScale, GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX);
 	gtk_spin_button_set_increments(wGPUScale, 0.5, 1.0);
 	wMultisampleLabel = GTK_LABEL(gtk_builder_get_object(builder, "multisample_label"));
+	wAccelFrame = GTK_WIDGET(gtk_builder_get_object(builder, "accel_frame"));
+	wAccuracyFrame = GTK_WIDGET(gtk_builder_get_object(builder, "accuracy_frame"));
+	wPresentationFrame = GTK_WIDGET(gtk_builder_get_object(builder, "presentation_frame"));
 	// Only name the backends that are actually compiled into this build.
 #if (defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)) && defined(ENABLE_WGPU)
 	gtk_label_set_text(wMultisampleLabel, "Multisample Antialiasing (OpenGL/WebGPU):");
@@ -5717,6 +5746,15 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	wPosterize = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "posterize"));
 	wSmoothing = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "smoothing"));
 	wHCInterpolate = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "hc_interpolate"));
+	wTxtHack = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "txt_hack"));
+	wLineHack = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "line_hack"));
+	wEdgeMark = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "edgemark"));
+	wFog = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "fog"));
+	wTextures = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "textures"));
+	wShadowPolygons = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "shadow_polygons"));
+	wZeroAlpha = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "zero_alpha_blending"));
+	wNDSDepth = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "nds_depth_calc"));
+	wDepthLEqual = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "depth_lequal_facing"));
 #if defined(ENABLE_WGPU)
 	wPresentation = GTK_COMBO_BOX(gtk_builder_get_object(builder, "presentation_combo"));
 	wGPUFilter = GTK_COMBO_BOX(gtk_builder_get_object(builder, "gpu_filter_combo"));
@@ -5732,14 +5770,8 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		gtk_combo_box_text_append_text(coreComboText, core3DList[i]->name);
 	}
 
-#if !defined(ENABLE_WGPU)
-	// Screen presentation and GPU filters only exist on the WebGPU path.
-	gtk_grid_remove_row(wGrid, 7);
-	gtk_grid_remove_row(wGrid, 6);
-#endif
-#if !defined(ENABLE_OPENGL_STANDARD) && !defined(ENABLE_OPENGL_ES) && !defined(ENABLE_WGPU)
-	gtk_grid_remove_row(wGrid, 5);
-#endif
+	g_signal_connect(G_OBJECT(wCoreDefault), "clicked", G_CALLBACK(CoreDefaultClicked), coreCombo);
+
 	gtk_combo_box_set_active(coreCombo, cur3DCore);
 
 #if defined(ENABLE_WGPU)
@@ -5822,8 +5854,18 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	// The shift it work for scale up to 4. For scaling more than 4, a mapping function is required
 	gtk_combo_box_set_active(wScale, CommonSettings.GFX3D_Renderer_TextureScalingFactor >> 1);
 
-	//GPU scaling factor
+	// GPU scaling factor
 	gtk_spin_button_set_value(wGPUScale, gpu_scale_factor);
+
+	// GPU color depth
+	{
+		char depthId[8];
+		g_snprintf(depthId, sizeof(depthId), "%d", config.gfx3dColorDepth.get());
+		if (!gtk_combo_box_set_active_id(wColorDepth, depthId))
+		{
+			gtk_combo_box_set_active_id(wColorDepth, "18");
+		}
+	}
 
 	// 3D Texture Deposterization
 	gtk_toggle_button_set_active(wPosterize, CommonSettings.GFX3D_Renderer_TextureDeposterize);
@@ -5841,14 +5883,37 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	gtk_combo_box_set_active(wMultisample, currentActive);
 #endif
 
-	// SoftRasterizer High Color Interpolation
+	// SoftRasterizer options
 	gtk_toggle_button_set_active(wHCInterpolate, CommonSettings.GFX3D_HighResolutionInterpolateColor);
+	gtk_toggle_button_set_active(wTxtHack, CommonSettings.GFX3D_TXTHack);
+	gtk_toggle_button_set_active(wLineHack, CommonSettings.GFX3D_LineHack);
+
+	// General options (read by every 3D renderer, per frame)
+	gtk_toggle_button_set_active(wEdgeMark, CommonSettings.GFX3D_EdgeMark);
+	gtk_toggle_button_set_active(wFog, CommonSettings.GFX3D_Fog);
+	gtk_toggle_button_set_active(wTextures, CommonSettings.GFX3D_Texture);
+
+	// Rendering accuracy options (OpenGL bakes these into its shaders)
+	gtk_toggle_button_set_active(wShadowPolygons, CommonSettings.OpenGL_Emulation_ShadowPolygon);
+	gtk_toggle_button_set_active(wZeroAlpha, CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending);
+	gtk_toggle_button_set_active(wNDSDepth, CommonSettings.OpenGL_Emulation_NDSDepthCalculation);
+	gtk_toggle_button_set_active(wDepthLEqual, CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing);
 
 	gtk_widget_show_all(gtk_dialog_get_content_area(dialog));
 
+	// Sections that only exist for some builds go away after show_all(), which
+	// would otherwise make them visible again.
+#if !defined(ENABLE_WGPU)
+	gtk_widget_set_visible(wPresentationFrame, FALSE);
+#endif
+#if !defined(ENABLE_OPENGL_STANDARD) && !defined(ENABLE_OPENGL_ES) && !defined(ENABLE_WGPU)
+	gtk_widget_set_visible(wAccelFrame, FALSE);
+	gtk_widget_set_visible(wAccuracyFrame, FALSE);
+#endif
+
     switch (gtk_dialog_run(dialog)) {
     case GTK_RESPONSE_OK:
-    // Start: OK Response block
+    // Start: OK Response Block
     {
     	int sel3DCore = gtk_combo_box_get_active(coreCombo);
 
@@ -5856,6 +5921,84 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 		{
 			sel3DCore = RENDERID_SOFTRASTERIZER;
 		}
+
+		size_t scale = 1;
+
+		switch (gtk_combo_box_get_active(wScale)){
+		case 1:
+			scale = 2;
+			break;
+		case 2:
+			scale = 4;
+			break;
+		default:
+			break;
+		}
+
+		// Read every widget before touching CommonSettings: a renderer that is
+		// rebuilt for a new 3D core reads these values while it initializes,
+		// so they must already be in place by then.
+		const bool bPosterize = gtk_toggle_button_get_active(wPosterize);
+		const bool bSmoothing = gtk_toggle_button_get_active(wSmoothing);
+		const bool bHCInterpolate = gtk_toggle_button_get_active(wHCInterpolate);
+		const bool bTxtHack = gtk_toggle_button_get_active(wTxtHack);
+		const bool bLineHack = gtk_toggle_button_get_active(wLineHack);
+		const bool bEdgeMark = gtk_toggle_button_get_active(wEdgeMark);
+		const bool bFog = gtk_toggle_button_get_active(wFog);
+		const bool bTextures = gtk_toggle_button_get_active(wTextures);
+		const bool bShadowPolygons = gtk_toggle_button_get_active(wShadowPolygons);
+		const bool bZeroAlpha = gtk_toggle_button_get_active(wZeroAlpha);
+		const bool bNDSDepth = gtk_toggle_button_get_active(wNDSDepth);
+		const bool bDepthLEqual = gtk_toggle_button_get_active(wDepthLEqual);
+
+		const char *colorDepthId = gtk_combo_box_get_active_id(wColorDepth);
+		const int colorDepth = (colorDepthId != NULL) ? (int)g_ascii_strtoll(colorDepthId, NULL, 10) : 18;
+
+		// The OpenGL renderer bakes the accuracy options into its shaders when
+		// it initializes, so it has to be rebuilt when they change. The WebGPU
+		// and software renderers read them every frame.
+		const bool accuracyChanged =
+			(CommonSettings.OpenGL_Emulation_ShadowPolygon != bShadowPolygons) ||
+			(CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending != bZeroAlpha) ||
+			(CommonSettings.OpenGL_Emulation_NDSDepthCalculation != bNDSDepth) ||
+			(CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing != bDepthLEqual);
+
+		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = bPosterize;
+		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = bSmoothing;
+		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
+		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = bHCInterpolate;
+		CommonSettings.GFX3D_TXTHack = config.gfx3dTxtHack = bTxtHack;
+		CommonSettings.GFX3D_LineHack = config.gfx3dLineHack = bLineHack;
+		CommonSettings.GFX3D_EdgeMark = config.gfx3dEdgeMark = bEdgeMark;
+		CommonSettings.GFX3D_Fog = config.gfx3dFog = bFog;
+		CommonSettings.GFX3D_Texture = config.gfx3dTexture = bTextures;
+		CommonSettings.OpenGL_Emulation_ShadowPolygon = config.gfx3dShadowPolygon = bShadowPolygons;
+		CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending = config.gfx3dZeroAlphaBlending = bZeroAlpha;
+		CommonSettings.OpenGL_Emulation_NDSDepthCalculation = config.gfx3dNdsDepthCalculation = bNDSDepth;
+		CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing = config.gfx3dDepthLEqualFacing = bDepthLEqual;
+		config.gfx3dColorDepth = colorDepth;
+		gtk3gpuEvent->SetColorFormat(ColorFormatFromDepth(colorDepth));
+
+#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
+		int selectedMultisample = gtk_combo_box_get_active(wMultisample);
+		if (selectedMultisample < 0)
+		{
+			selectedMultisample = 0;
+		}
+		config.multisamplingSize = multisampleSizes[selectedMultisample];
+		config.multisampling = selectedMultisample != 0;
+		CommonSettings.GFX3D_Renderer_MultisampleSize = multisampleSizes[selectedMultisample];
+#endif
+
+		gpu_scale_factor = gtk_spin_button_get_value(wGPUScale);
+		if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
+			gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
+		if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
+			gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
+		gtk_spin_button_set_value(wGPUScale, gpu_scale_factor);
+		config.gpuScaleFactor = gpu_scale_factor;
+
+		gtk3gpuEvent->SetFramebufferDimensions( (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor) + 0.5), (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor) + 0.5) );
 
     	// Change only if needed
 		if (sel3DCore != cur3DCore)
@@ -5917,44 +6060,11 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 				config.core3D = RENDERID_SOFTRASTERIZER;
 			}
 		}
-
-		size_t scale = 1;
-
-		switch (gtk_combo_box_get_active(wScale)){
-		case 1:
-			scale = 2;
-			break;
-		case 2:
-			scale = 4;
-			break;
-		default:
-			break;
-		}
-		
-		gpu_scale_factor = gtk_spin_button_get_value(wGPUScale);
-		if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
-			gpu_scale_factor = GPU_SCALE_FACTOR_MIN;
-		if(gpu_scale_factor > GPU_SCALE_FACTOR_MAX)
-			gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
-		gtk_spin_button_set_value(wGPUScale, gpu_scale_factor);
-		config.gpuScaleFactor = gpu_scale_factor;
-		
-		gtk3gpuEvent->SetFramebufferDimensions( (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor) + 0.5), (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor) + 0.5) );
-		
-		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = gtk_toggle_button_get_active(wPosterize);
-		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(wSmoothing);
-		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
-		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(wHCInterpolate);
-#if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
-		int selectedMultisample = gtk_combo_box_get_active(wMultisample);
-		if (selectedMultisample < 0)
+		else if (accuracyChanged)
 		{
-			selectedMultisample = 0;
+			// Same core, but the shaders were built with the old settings.
+			GPU->Change3DRendererByID(cur3DCore);
 		}
-		config.multisamplingSize = multisampleSizes[selectedMultisample];
-		config.multisampling = selectedMultisample != 0;
-		CommonSettings.GFX3D_Renderer_MultisampleSize = multisampleSizes[selectedMultisample];
-#endif
 
 #if defined(ENABLE_WGPU)
 		// GPU filter. It only runs when a frame goes through the WebGPU
@@ -6021,7 +6131,6 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 
 }
-
 static void ToggleLayerVisibility(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     guint Layer = GPOINTER_TO_UINT(user_data);
@@ -7947,12 +8056,8 @@ common_gtk_main(GApplication *app, gpointer user_data)
 	}
 #endif
 
-	if (!GPU->Change3DRendererByID(core)) {
-		GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
-		g_printerr("3D renderer initialization failed!\nFalling back to 3D core: %s\n", core3DList[RENDERID_SOFTRASTERIZER]->name);
-		my_config->engine_3d = RENDERID_SOFTRASTERIZER;
-	}
-
+	// Everything the 3D renderer reads while it initializes has to be set
+	// before it is created: the OpenGL one compiles these into its shaders.
     CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation;
 	CommonSettings.GFX3D_Renderer_MultisampleSize = (config.multisamplingSize > 0)
 														? config.multisamplingSize
@@ -7963,6 +8068,28 @@ common_gtk_main(GApplication *app, gpointer user_data)
 															config.textureUpscale == 4)
 															? config.textureUpscale : 1 ;
     CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing;
+
+	// The remaining 3D options of the Windows port's 3D Settings dialog.
+	CommonSettings.GFX3D_TXTHack = config.gfx3dTxtHack;
+	CommonSettings.GFX3D_LineHack = config.gfx3dLineHack;
+	CommonSettings.GFX3D_EdgeMark = config.gfx3dEdgeMark;
+	CommonSettings.GFX3D_Fog = config.gfx3dFog;
+	CommonSettings.GFX3D_Texture = config.gfx3dTexture;
+	CommonSettings.OpenGL_Emulation_ShadowPolygon = config.gfx3dShadowPolygon;
+	CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending = config.gfx3dZeroAlphaBlending;
+	CommonSettings.OpenGL_Emulation_NDSDepthCalculation = config.gfx3dNdsDepthCalculation;
+	CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing = config.gfx3dDepthLEqualFacing;
+
+	// Output color depth of the 3D renderer. The handler converts whatever
+	// format it gets to the 32-bit buffer the display and filters read.
+	if (gtk3gpuEvent != NULL)
+		gtk3gpuEvent->SetColorFormat(ColorFormatFromDepth(config.gfx3dColorDepth));
+
+	if (!GPU->Change3DRendererByID(core)) {
+		GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
+		g_printerr("3D renderer initialization failed!\nFalling back to 3D core: %s\n", core3DList[RENDERID_SOFTRASTERIZER]->name);
+		my_config->engine_3d = RENDERID_SOFTRASTERIZER;
+	}
 
     backup_setManualBackupType(my_config->savetype);
 

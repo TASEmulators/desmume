@@ -4,7 +4,7 @@
   <requires lib="gtk+" version="3.24"/>
   <object class="GtkDialog" id="dialog">
     <property name="can-focus">False</property>
-    <property name="title" translatable="yes">Emulation Settings</property>
+    <property name="title" translatable="yes">3D Settings</property>
     <property name="modal">True</property>
     <property name="type-hint">dialog</property>
     <child internal-child="vbox">
@@ -50,206 +50,523 @@
           </packing>
         </child>
         <child>
-          <!-- n-columns=3 n-rows=8 -->
-          <object class="GtkGrid" id="graphics_grid">
+          <object class="GtkBox" id="settings_box">
             <property name="can-focus">False</property>
+            <property name="border-width">12</property>
+            <property name="orientation">horizontal</property>
+            <property name="spacing">12</property>
             <child>
-              <object class="GtkLabel">
+              <object class="GtkBox" id="left_column">
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">3D Core:</property>
+                <property name="orientation">vertical</property>
+                <property name="spacing">12</property>
+                <child>
+                  <object class="GtkFrame" id="engine_frame">
+                    <property name="can-focus">False</property>
+                    <property name="label-xalign">0</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="can-focus">False</property>
+                        <property name="border-width">8</property>
+                        <property name="orientation">horizontal</property>
+                        <property name="spacing">8</property>
+                        <child>
+                          <object class="GtkComboBoxText" id="core_combo">
+                            <property name="can-focus">False</property>
+                            <property name="hexpand">True</property>
+                            <items>
+                              <item translatable="yes">Null</item>
+                              <item translatable="yes">SoftRasterizer</item>
+                              <item translatable="yes">OpenGL (Auto)</item>
+                              <item translatable="yes">OpenGL (Legacy)</item>
+                              <item translatable="yes">OpenGL 3.2</item>
+                              <item translatable="yes">OpenGL ES 3.0</item>
+                            </items>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="core_default_button">
+                            <property name="label" translatable="yes">Default</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">False</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">3D Rendering Engine</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFrame" id="softrasterizer_frame">
+                    <property name="can-focus">False</property>
+                    <property name="label-xalign">0</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="can-focus">False</property>
+                        <property name="border-width">8</property>
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">4</property>
+                        <child>
+                          <object class="GtkCheckButton" id="hc_interpolate">
+                            <property name="label" translatable="yes">High-Precision Color Interpolation</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Interpolate vertex colors at higher precision before writing them to a 32-bit framebuffer. Only applies to SoftRasterizer.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="txt_hack">
+                            <property name="label" translatable="yes">Enable TXT Hack</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Fixes text bugs in some games (e.g. Etrian Odyssey). May need to be toggled on/off per scene.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="line_hack">
+                            <property name="label" translatable="yes">Enable Line Hack</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Fixes some graphical bugs involving lines, but causes other bugs. Not many games use lines.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">SoftRasterizer Options</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFrame" id="accel_frame">
+                    <property name="can-focus">False</property>
+                    <property name="label-xalign">0</property>
+                    <child>
+                      <object class="GtkGrid">
+                        <property name="can-focus">False</property>
+                        <property name="border-width">8</property>
+                        <property name="row-spacing">6</property>
+                        <property name="column-spacing">8</property>
+                        <child>
+                          <object class="GtkLabel" id="multisample_label">
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">Multisample Antialiasing:</property>
+                            <property name="xalign">0</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkComboBoxText" id="multisample">
+                            <property name="can-focus">False</property>
+                            <items>
+                              <item translatable="yes">Disabled</item>
+                              <item translatable="yes">2x</item>
+                              <item translatable="yes">4x</item>
+                              <item translatable="yes">8x</item>
+                              <item translatable="yes">16x</item>
+                              <item translatable="yes">32x</item>
+                            </items>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="smoothing">
+                            <property name="label" translatable="yes">Smooth Textures</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Smooth texels with the nearest neighbours instead of only the four surrounding ones.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">1</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">OpenGL / WebGPU Options</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFrame" id="accuracy_frame">
+                    <property name="can-focus">False</property>
+                    <property name="label-xalign">0.5</property>
+                    <child>
+                      <object class="GtkGrid">
+                        <property name="can-focus">False</property>
+                        <property name="border-width">8</property>
+                        <property name="row-spacing">6</property>
+                        <property name="column-spacing">12</property>
+                        <child>
+                          <object class="GtkCheckButton" id="shadow_polygons">
+                            <property name="label" translatable="yes">Enable Shadow Polygons</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Disabling this option may cause some shadows to disappear.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="zero_alpha_blending">
+                            <property name="label" translatable="yes">Enable Special Zero Alpha Blending</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Disabling this option may cause some colors to look darker than normal.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="nds_depth_calc">
+                            <property name="label" translatable="yes">Enable NDS-Style Depth Calculation</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Disabling this option may cause certain polygons to render incorrectly or disappear completely.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="depth_lequal_facing">
+                            <property name="label" translatable="yes">Enable Depth L-Equal Polygon Facing</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Disabling this option may cause some fragments to disappear. Disabled by default due to performance impact.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">Rendering Accuracy Options</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
               </object>
               <packing>
-                <property name="left-attach">0</property>
-                <property name="top-attach">0</property>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
               </packing>
             </child>
             <child>
-              <object class="GtkComboBoxText" id="core_combo">
+              <object class="GtkBox" id="right_column">
                 <property name="can-focus">False</property>
-                <items>
-                  <item translatable="yes">Null</item>
-                  <item translatable="yes">SoftRasterizer</item>
-                  <item translatable="yes">OpenGL (Auto)</item>
-                  <item translatable="yes">OpenGL (Legacy)</item>
-                  <item translatable="yes">OpenGL 3.2</item>
-                  <item translatable="yes">OpenGL ES 3.0</item>
-                </items>
+                <property name="orientation">vertical</property>
+                <property name="spacing">12</property>
+                <child>
+                  <object class="GtkFrame" id="general_frame">
+                    <property name="can-focus">False</property>
+                    <property name="label-xalign">0</property>
+                    <child>
+                      <object class="GtkGrid">
+                        <property name="can-focus">False</property>
+                        <property name="border-width">8</property>
+                        <property name="row-spacing">6</property>
+                        <property name="column-spacing">8</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">GPU Scaling Factor:</property>
+                            <property name="xalign">0</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton" id="gpuscale">
+                            <property name="can-focus">False</property>
+                            <property name="numeric">True</property>
+                            <property name="digits">1</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">GPU Color Depth:</property>
+                            <property name="xalign">0</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkComboBoxText" id="color_depth_combo">
+                            <property name="can-focus">False</property>
+                            <items>
+                              <item id="15" translatable="yes">15 bit</item>
+                              <item id="18" translatable="yes">18 bit</item>
+                              <item id="24" translatable="yes">24 bit</item>
+                            </items>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">Texture Scaling:</property>
+                            <property name="xalign">0</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkComboBoxText" id="scale">
+                            <property name="can-focus">False</property>
+                            <items>
+                              <item translatable="yes">1x</item>
+                              <item translatable="yes">2x</item>
+                              <item translatable="yes">4x</item>
+                            </items>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="posterize">
+                            <property name="label" translatable="yes">Deposterize Textures</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Smooth away banding artifacts introduced by texture scaling.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">3</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="edgemark">
+                            <property name="label" translatable="yes">Enable Edge Marking</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Draw the dark outlines a game asks the 3D core for.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">4</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="fog">
+                            <property name="label" translatable="yes">Enable Fog</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Apply the fog the game's 3D engine asks for.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">5</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="textures">
+                            <property name="label" translatable="yes">Enable Textures</property>
+                            <property name="can-focus">False</property>
+                            <property name="receives-default">False</property>
+                            <property name="tooltip-text" translatable="yes">Sample textures instead of drawing flat polygons. Turning this off is a debugging aid.</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">6</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">General Options</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFrame" id="presentation_frame">
+                    <property name="can-focus">False</property>
+                    <property name="label-xalign">0</property>
+                    <child>
+                      <object class="GtkGrid">
+                        <property name="can-focus">False</property>
+                        <property name="border-width">8</property>
+                        <property name="row-spacing">6</property>
+                        <property name="column-spacing">8</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">Screen presentation:</property>
+                            <property name="xalign">0</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkComboBoxText" id="presentation_combo">
+                            <property name="can-focus">False</property>
+                            <items>
+                              <item translatable="yes">WebGPU</item>
+                              <item translatable="yes">Software (Cairo)</item>
+                            </items>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">GPU filter:</property>
+                            <property name="xalign">0</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkComboBoxText" id="gpu_filter_combo">
+                            <property name="can-focus">False</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">Screen Output</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
               </object>
               <packing>
-                <property name="left-attach">1</property>
-                <property name="top-attach">0</property>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
               </packing>
-            </child>
-            <child>
-              <object class="GtkLabel">
-                <property name="can-focus">False</property>
-                <property name="label" translatable="yes">3D Texture Upscaling:</property>
-              </object>
-              <packing>
-                <property name="left-attach">0</property>
-                <property name="top-attach">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkComboBoxText" id="scale">
-                <property name="can-focus">False</property>
-                <items>
-                  <item translatable="yes">×1</item>
-                  <item translatable="yes">×2</item>
-                  <item translatable="yes">×4</item>
-                </items>
-              </object>
-              <packing>
-                <property name="left-attach">1</property>
-                <property name="top-attach">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel">
-                <property name="can-focus">False</property>
-                <property name="label" translatable="yes">GPU scale factor:</property>
-              </object>
-              <packing>
-                <property name="left-attach">0</property>
-                <property name="top-attach">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSpinButton" id="gpuscale">
-                <property name="can-focus">False</property>
-                <property name="numeric">True</property>
-                <property name="digits">1</property>
-              </object>
-              <packing>
-                <property name="left-attach">1</property>
-                <property name="top-attach">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkCheckButton" id="posterize">
-                <property name="label" translatable="yes">3D Texture Deposterization</property>
-                <property name="can-focus">False</property>
-                <property name="receives-default">False</property>
-                <property name="draw-indicator">True</property>
-              </object>
-              <packing>
-                <property name="left-attach">0</property>
-                <property name="top-attach">3</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkCheckButton" id="smoothing">
-                <property name="label" translatable="yes">3D Texture Smoothing</property>
-                <property name="can-focus">False</property>
-                <property name="receives-default">False</property>
-                <property name="draw-indicator">True</property>
-              </object>
-              <packing>
-                <property name="left-attach">0</property>
-                <property name="top-attach">4</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkCheckButton" id="hc_interpolate">
-                <property name="label" translatable="yes">High Resolution Color Interpolation (SoftRasterizer)</property>
-                <property name="can-focus">False</property>
-                <property name="receives-default">False</property>
-                <property name="draw-indicator">True</property>
-              </object>
-              <packing>
-                <property name="left-attach">1</property>
-                <property name="top-attach">4</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="multisample_label">
-                <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Multisample Antialiasing:</property>
-              </object>
-              <packing>
-                <property name="left-attach">0</property>
-                <property name="top-attach">5</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkComboBoxText" id="multisample">
-                <property name="can-focus">False</property>
-                <items>
-                  <item translatable="yes">None</item>
-                  <item translatable="yes">2</item>
-                  <item translatable="yes">4</item>
-                  <item translatable="yes">8</item>
-                  <item translatable="yes">16</item>
-                  <item translatable="yes">32</item>
-                </items>
-              </object>
-              <packing>
-                <property name="left-attach">1</property>
-                <property name="top-attach">5</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel">
-                <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Screen presentation:</property>
-              </object>
-              <packing>
-                <property name="left-attach">0</property>
-                <property name="top-attach">6</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkComboBoxText" id="presentation_combo">
-                <property name="can-focus">False</property>
-                <items>
-                  <item translatable="yes">WebGPU</item>
-                  <item translatable="yes">Software (Cairo)</item>
-                </items>
-              </object>
-              <packing>
-                <property name="left-attach">1</property>
-                <property name="top-attach">6</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel">
-                <property name="can-focus">False</property>
-                <property name="label" translatable="yes">GPU filter:</property>
-              </object>
-              <packing>
-                <property name="left-attach">0</property>
-                <property name="top-attach">7</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkComboBoxText" id="gpu_filter_combo">
-                <property name="can-focus">False</property>
-              </object>
-              <packing>
-                <property name="left-attach">1</property>
-                <property name="top-attach">7</property>
-              </packing>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
             </child>
           </object>
           <packing>

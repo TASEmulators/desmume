@@ -80,6 +80,23 @@ OPT(savetype, int, 0, Config, SaveType)
  * switch in its control config dialog. */
 OPT(allow_up_down, bool, false, Config, AllowUpAndDown)
 
+/* 3D renderer options, stored with the same section and key names the Windows
+ * port writes into its [3D] section.  The defaults mirror CommonSettings, so a
+ * config file written before these options existed keeps the core defaults
+ * instead of overriding them. */
+OPT(gfx3dEdgeMark, bool, true, 3D, EnableEdgeMark)
+OPT(gfx3dFog, bool, true, 3D, EnableFog)
+OPT(gfx3dTexture, bool, true, 3D, EnableTexture)
+OPT(gfx3dLineHack, bool, true, 3D, EnableLineHack)
+OPT(gfx3dTxtHack, bool, false, 3D, EnableTXTHack)
+OPT(gfx3dShadowPolygon, bool, true, 3D, EnableShadowPolygon)
+OPT(gfx3dZeroAlphaBlending, bool, true, 3D, EnableSpecialZeroAlphaBlending)
+OPT(gfx3dNdsDepthCalculation, bool, true, 3D, EnableNDSDepthCalculation)
+OPT(gfx3dDepthLEqualFacing, bool, false, 3D, EnableDepthLEqualPolygonFacing)
+/* Output color depth of the 3D renderer: 15 = BGR555, 18 = BGR666 (packed as
+ * 32-bit), 24 = BGR888.  18 is the Windows port's default as well. */
+OPT(gfx3dColorDepth, int, 18, 3D, GpuBpp)
+
 /* Firmware
  *
  * Settings written into the internal firmware image. The section and key
