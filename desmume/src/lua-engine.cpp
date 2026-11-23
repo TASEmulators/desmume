@@ -108,11 +108,9 @@ static bool IsHardwareAddressValid(u32 address) {
 //
 // The Cocoa build has to spell the path out.  Xcode generates a header map from
 // every header file that is referenced by the project and consults it before
-// the -I paths, so a plain #include "lua.h" resolved to the vendored Lua 5.1.5
-// sources that are still in the tree for the MinGW makefile - the dialog
-// reported "Headers: Lua 5.1.5" while the Windows build compiles against
-// LuaJIT.  Naming the LuaJIT headers here keeps the two front ends on the same
-// declarations and makes LUAJIT_VERSION visible below.
+// the -I paths, so a plain #include "lua.h" could resolve to an unrelated copy.
+// Naming the LuaJIT headers here keeps all front ends on the same declarations
+// and makes LUAJIT_VERSION visible below.
 extern "C" {
 #ifdef DESMUME_LUA_DYNAMIC
 	#include "frontend/windows/lua/include/lua.h"

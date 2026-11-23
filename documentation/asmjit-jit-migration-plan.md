@@ -755,7 +755,7 @@ build_core/jit_diff.exe --full --all           # 5120 槽 × 8 向量 × 2 组�
   另外核实了那 3 个 `arm_jit_arm.cpp in Sources` 条目同属一个 phase，
   而该 phase 属于 **"DeSmuME (macOS App; AppleSilicon -- Latest Xcode)"**，即 arm64-only target——
   所以删除 ARM32 不影响任何 x86_64 macOS 目标；
-- `DeSmuME (XCode 3).xcodeproj` 本来就没有这两个文件，不用改。
+- `DeSmuME (XCode 3).xcodeproj` 本来就没有这两个文件；该工程已删除，不用改。
 
 **删除安全性怎么验证的**（没有 ARM 机器，所以做的是静态闭合）：
 

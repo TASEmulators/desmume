@@ -24,8 +24,8 @@
 // long ago along with the legacy DirectX SDK. This file supplies them so the
 // project can link %(WindowsSdkDir) import libraries directly.
 //
-// Only the Visual Studio project compiles this file. The MinGW build gets the
-// same API from its own libdxerr8.a (see snddx.cpp's __MINGW32__ branch).
+// Only the Visual Studio project compiles this file; it provides the DXGetError*
+// family that the Windows SDK no longer ships.
 //
 // The only callers are the DirectSound start-up diagnostics in snddx.cpp, so the
 // tables cover the DSERR_* codes plus the generic COM HRESULTs those calls can

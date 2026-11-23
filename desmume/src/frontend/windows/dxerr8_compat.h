@@ -2,8 +2,7 @@
 #define DESMUME_DXERR8_COMPAT_H
 
 // Local declarations for the DXGetErrorString8 family. Modern Windows SDKs
-// no longer ship dxerr8.h; dxerr8_compat.cpp supplies the implementation,
-// and MinGW links the same symbols from libdxerr8.a.
+// no longer ship dxerr8.h; dxerr8_compat.cpp supplies the implementation.
 
 #include <windows.h>
 

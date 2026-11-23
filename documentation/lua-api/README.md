@@ -50,10 +50,9 @@ were resolved from. That is usually faster than reading `runtime.version` back
 out of a failing script.
 
 Two things in that dialog are easy to misread. `Headers` names the headers the
-binary was compiled against - for the MSVC and Cocoa builds that is the in-tree
-LuaJIT copy under `frontend/windows/lua/include`, and the line repeats its
-`LuaJIT 2.1.<date>` so it cannot be confused with the runtime one; the MinGW
-makefile still compiles the vendored Lua 5.1.5 and will say so. `Engine` comes
+binary was compiled against - every build uses the in-tree LuaJIT copy under
+`frontend/windows/lua/include`, and the line repeats its `LuaJIT 2.1.<date>` so
+it cannot be confused with the runtime one. `Engine` comes
 from the engine actually answering, so a Homebrew dylib built on a different day
 shows a different `LuaJIT 2.1.<date>` number - same 2.1 ABI, so that is
 expected. And `Library` pointing at `/opt/homebrew/...` merely means the app

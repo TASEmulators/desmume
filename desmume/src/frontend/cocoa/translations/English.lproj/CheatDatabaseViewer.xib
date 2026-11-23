@@ -3269,7 +3269,7 @@
       <integer value="3200" key="NS.object.0"/>
     </object>
     <bool key="IBDocument.PluginDeclaredDependenciesTrackSystemTargetVersion">YES</bool>
-    <string key="IBDocument.LastKnownRelativeProjectPath">../../DeSmuME (XCode 3).xcodeproj</string>
+    <string key="IBDocument.LastKnownRelativeProjectPath">../../DeSmuME (Latest).xcodeproj</string>
     <int key="IBDocument.defaultPropertyAccessControl">3</int>
     <dictionary class="NSMutableDictionary" key="IBDocument.LastKnownImageSizes">
       <string key="NSActionTemplate">{14, 14}</string>

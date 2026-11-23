@@ -5,7 +5,6 @@
 /desmume/src/frontend/windows/__bins
 /desmume/src/frontend/windows/*.tlog
 /desmume/src/frontend/windows/*.aps
-/desmume/src/frontend/windows/config.mak
 /desmume/src/frontend/windows/desmume.exe
 .vs/
 *.user

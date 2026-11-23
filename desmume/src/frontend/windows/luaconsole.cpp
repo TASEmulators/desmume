@@ -408,7 +408,7 @@ static int Change_File_L(char *Dest, char *Dir, char *Titre, char *Filter, char 
 
 // "About" support, modelled on vba-rerecording's LuaOpenDialog.cpp.
 // version.dll is not linked by this project, so its entry points are resolved
-// at runtime instead of changing the MSVC/MinGW build files.  A stock Lua 5.1
+// at runtime instead of changing the build files.  A stock Lua 5.1
 // DLL carries a FileVersion resource ("5.1.4" for the old shipped build),
 // while LuaJIT has none, so the line is simply omitted when there is nothing
 // to report.
