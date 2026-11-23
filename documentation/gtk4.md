@@ -850,7 +850,7 @@ build_gtk4:
   name: Build DeSmuME (Linux/GTK4)
   runs-on: ubuntu-26.04
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - run: sudo apt update && sudo apt install meson libgtk-4-dev libsdl3-dev libpcap-dev
     # 不传 -Dfrontend-gtk：默认 auto，必须优先挑 gtk4
     - run: |
