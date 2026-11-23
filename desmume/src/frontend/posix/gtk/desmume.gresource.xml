@@ -6,6 +6,7 @@
     <file preprocess="xml-stripblanks" compressed="true">menu.ui</file>
     <file preprocess="xml-stripblanks" compressed="true">emulation_settings.ui</file>
     <file preprocess="xml-stripblanks" compressed="true">graphics.ui</file>
+    <file preprocess="xml-stripblanks" compressed="true">sound_settings.ui</file>
 
     <!--
       GPU filters: the WGSL of the libretro upscaler chains, shared with the

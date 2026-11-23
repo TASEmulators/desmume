@@ -298,7 +298,7 @@ static void ResetSaveStateTimes();
 static void LoadSaveStateInfo();
 static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Reset(GSimpleAction *action, GVariant *parameter, gpointer user_data);
-static void SetAudioVolume(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void SoundSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void FirmwareSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HotkeyConfigDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -312,7 +312,6 @@ static void ToggleMenuVisible(GSimpleAction *action, GVariant *parameter, gpoint
 static void ToggleStatusbarVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ToggleToolbarVisible(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ToggleFullscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data);
-static void ToggleAudio(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void ToggleCheatsDisabled(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Modify_SPUMode(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Modify_SPUInterpolation(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -347,11 +346,7 @@ static void HudLoadLayout();
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 #endif
-#ifdef HAVE_JIT
 static void EmulationSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
-static void ToggleJIT();
-static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void *);
-#endif
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 
 #ifdef HAVE_LUA
@@ -422,13 +417,11 @@ static const GActionEntry app_entries[] = {
     { "enablefpslimiter",  ToggleFpsLimiter,    NULL, "true" },
     { "frameskipA",        ToggleAutoFrameskip, NULL, "true" },
     { "frameskip",         Modify_Frameskip,    "s",  "\"0\"" },
-    { "enableaudio",       ToggleAudio,         NULL, "true" },
+    { "soundsettings",     SoundSettingsDialog },
 #ifdef FAKE_MIC
     { "micnoise",          ToggleMicNoise,      NULL, "false" },
 #endif
-#ifdef HAVE_JIT
     { "emulationsettings",   EmulationSettingsDialog },
-#endif
     { "graphics-settings",   GraphicsSettingsDialog },
     { "spu-mode",            Modify_SPUMode,          "s", "\"dual-async\"" },
     { "spu-interpolation",   Modify_SPUInterpolation, "s", "\"linear\"" },
@@ -436,7 +429,6 @@ static const GActionEntry app_entries[] = {
     { "cheatlist",           CheatList },
     { "cheatsdisable",       ToggleCheatsDisabled, NULL, "false" },
     { "savetype",            changesavetype,          "s", "\"autodetect\"" },
-    { "setaudiovolume",      SetAudioVolume },
     { "firmwaresettings",    FirmwareSettingsDialog },
     { "editctrls",           Edit_Controls },
     { "hotkeys",             HotkeyConfigDialog },
@@ -505,6 +497,9 @@ SoundInterface_struct *SNDCoreList[] = {
 &SNDSDL,
 NULL
 };
+
+static void ApplySPUMode(spumode_enum mode);
+static void ApplySPUInterpolation(SPUInterpolationMode mode);
 
 // Filled by Build3DRendererList(). The first entries are fixed, but WebGPU
 // contributes one entry per usable backend, so the tail is dynamic.
@@ -4584,47 +4579,149 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 }
 
-/////////////////////////////// SET AUDIO VOLUME //////////////////////////////////////
+/////////////////////////////// SOUND SETTINGS //////////////////////////////////////
 
-static int ConvertSDLVolumeToSPU(int sdl_volume)
+// SPU volume is a percentage; older configs stored the SDL core's 0..128 range
+// in the same key.
+static int ClampSoundVolume(int volume)
 {
-	int tmp = sdl_volume * 100;
-	if (tmp % SNDSDL_MAX_VOLUME == 0)
-	{
-		return tmp/SNDSDL_MAX_VOLUME;
-	}
-	return (tmp/SNDSDL_MAX_VOLUME)+1;
+	if (volume < 0)
+		return 0;
+	if (volume > 100)
+		return 100;
+	return volume;
 }
 
-static void CallbackSetAudioVolume(GtkWidget *scale, gpointer data)
+static void SoundVolumeChanged(GtkRange *range, gpointer data)
 {
-	SPU_SetVolume(gtk_range_get_value(GTK_RANGE(scale)));
-	config.audio_volume = ConvertSDLVolumeToSPU(SNDSDLGetAudioVolume());
+	const int volume = (int)(gtk_range_get_value(range) + 0.5);
+	gchar *text = g_strdup_printf("%d", volume);
+
+	gtk_label_set_text(GTK_LABEL(data), text);
+	// Audible while the dialog is open, like the Windows sound dialog.
+	SPU_SetVolume(volume);
+
+	g_free(text);
 }
 
-static void SetAudioVolume(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+// The synchronizer method frame is only meaningful in synchronous mode.  Both
+// radios carry the frame and are connected with the synchronous one as user
+// data, so the frame follows the group state whichever radio was clicked.
+static void SoundSyncModeToggled(GtkToggleButton *button, gpointer data)
 {
-	GtkWidget *dialog = NULL;
-	GtkWidget *scale = NULL;
-	int audio_volume = ConvertSDLVolumeToSPU(SNDSDLGetAudioVolume());
-	dialog = gtk_dialog_new_with_buttons("Set audio volume", GTK_WINDOW(pWindow), GTK_DIALOG_MODAL, "_OK", GTK_RESPONSE_OK, "_Cancel", GTK_RESPONSE_CANCEL, NULL);
-	scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 100, 1);
-	gtk_range_set_value(GTK_RANGE(scale), audio_volume);
-	g_signal_connect(G_OBJECT(scale), "value-changed", G_CALLBACK(CallbackSetAudioVolume), NULL);
-	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), scale, TRUE, FALSE, 0);
-	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(dialog)));
-	switch(gtk_dialog_run(GTK_DIALOG(dialog)))
-	{
-		case GTK_RESPONSE_OK:
-			break;
-		case GTK_RESPONSE_CANCEL:
-		case GTK_RESPONSE_DELETE_EVENT:
-		case GTK_RESPONSE_NONE:
-			SPU_SetVolume(audio_volume);
-			config.audio_volume = audio_volume;
-			break;
+	GtkWidget *frame = GTK_WIDGET(g_object_get_data(G_OBJECT(button), "method-frame"));
+
+	if (frame != NULL)
+		gtk_widget_set_sensitive(frame, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data)));
+}
+
+static void SoundSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/sound_settings.ui");
+	GtkDialog *dialog = GTK_DIALOG(gtk_builder_get_object(builder, "dialog"));
+	GtkToggleButton *wDual = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "dual_radio"));
+	GtkToggleButton *wSync = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "sync_radio"));
+	GtkWidget *wMethodFrame = GTK_WIDGET(gtk_builder_get_object(builder, "sync_method_frame"));
+	GtkToggleButton *wMethodN = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "method_n"));
+	GtkToggleButton *wMethodZ = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "method_z"));
+	GtkToggleButton *wMethodP = GTK_TOGGLE_BUTTON(gtk_builder_get_object(builder, "method_p"));
+	GtkComboBoxText *wCoreCombo = GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "sound_core_combo"));
+	GtkComboBox *wInterpolation = GTK_COMBO_BOX(gtk_builder_get_object(builder, "interpolation_combo"));
+	GtkWidget *wVolume = GTK_WIDGET(gtk_builder_get_object(builder, "volume_scale"));
+	GtkWidget *wVolumeValue = GTK_WIDGET(gtk_builder_get_object(builder, "volume_value"));
+	g_object_unref(builder);
+
+	const int previousVolume = ClampSoundVolume(config.audio_volume);
+
+	// Sound core list: "None" plus the cores this build actually links, which
+	// in this frontend is the SDL one. Same shape as the Windows combo, which
+	// also starts at index 1 so the dummy core is not listed twice.
+	gtk_combo_box_text_remove_all(wCoreCombo);
+	gtk_combo_box_text_append(wCoreCombo, "0", "None");
+	for (int i = 1; SNDCoreList[i] != NULL; i++) {
+		char id[16];
+		g_snprintf(id, sizeof(id), "%d", SNDCoreList[i]->id);
+		gtk_combo_box_text_append(wCoreCombo, id, SNDCoreList[i]->Name);
 	}
-	gtk_widget_destroy(dialog);
+
+	char coreId[16];
+	g_snprintf(coreId, sizeof(coreId), "%d", config.audio_enabled ? config.audio_core.get() : 0);
+	if (!gtk_combo_box_set_active_id(GTK_COMBO_BOX(wCoreCombo), coreId))
+		gtk_combo_box_set_active_id(GTK_COMBO_BOX(wCoreCombo), "0");
+
+	// Synchronization mode and method. The method only applies in synchronous
+	// mode, so the frame is greyed out in dual mode, as on Windows.
+	gtk_toggle_button_set_active(wSync, SPUMode != SPUMODE_DUALASYNC);
+	gtk_toggle_button_set_active(wDual, SPUMode == SPUMODE_DUALASYNC);
+	gtk_toggle_button_set_active(wMethodN, config.audio_sync == SPUMODE_SYNCN);
+	gtk_toggle_button_set_active(wMethodZ, config.audio_sync == SPUMODE_SYNCZ);
+#ifdef HAVE_LIBSOUNDTOUCH
+	gtk_toggle_button_set_active(wMethodP, config.audio_sync == SPUMODE_SYNCP);
+#endif
+
+	g_object_set_data(G_OBJECT(wDual), "method-frame", wMethodFrame);
+	g_object_set_data(G_OBJECT(wSync), "method-frame", wMethodFrame);
+	g_signal_connect(G_OBJECT(wDual), "toggled", G_CALLBACK(SoundSyncModeToggled), wSync);
+	g_signal_connect(G_OBJECT(wSync), "toggled", G_CALLBACK(SoundSyncModeToggled), wSync);
+	gtk_widget_set_sensitive(wMethodFrame, SPUMode != SPUMODE_DUALASYNC);
+
+	gtk_combo_box_set_active(wInterpolation, (int)CommonSettings.spuInterpolationMode);
+
+	// Volume: a percentage, applied while the dialog is open so it can be
+	// dialled in by ear; Cancel puts the old value back.
+	gtk_range_set_range(GTK_RANGE(wVolume), 0, 100);
+	gtk_range_set_increments(GTK_RANGE(wVolume), 1, 10);
+	g_signal_connect(G_OBJECT(wVolume), "value-changed", G_CALLBACK(SoundVolumeChanged), wVolumeValue);
+	gtk_range_set_value(GTK_RANGE(wVolume), previousVolume);
+
+	gtk_widget_show_all(gtk_dialog_get_content_area(dialog));
+
+#ifndef HAVE_LIBSOUNDTOUCH
+	// The time-stretch method needs libsoundtouch, which this build has not got.
+	gtk_widget_set_visible(GTK_WIDGET(wMethodP), FALSE);
+#endif
+
+	switch (gtk_dialog_run(dialog)) {
+	case GTK_RESPONSE_OK:
+	{
+		const gchar *selectedCoreId = gtk_combo_box_get_active_id(GTK_COMBO_BOX(wCoreCombo));
+		const int core = (selectedCoreId != NULL) ? (int)g_ascii_strtoll(selectedCoreId, NULL, 10) : SNDCORE_DUMMY;
+
+		config.audio_core = core;
+		config.audio_enabled = (core != SNDCORE_DUMMY);
+
+		if (core != SPU_currentCoreNum)
+			SPU_ChangeSoundCore(core, 735 * 4);
+
+		spumode_enum mode = SPUMODE_DUALASYNC;
+		if (gtk_toggle_button_get_active(wSync)) {
+			if (gtk_toggle_button_get_active(wMethodZ))
+				mode = SPUMODE_SYNCZ;
+#ifdef HAVE_LIBSOUNDTOUCH
+			else if (gtk_toggle_button_get_active(wMethodP))
+				mode = SPUMODE_SYNCP;
+#endif
+			else
+				mode = SPUMODE_SYNCN;
+		}
+		ApplySPUMode(mode);
+
+		const int interpolation = gtk_combo_box_get_active(wInterpolation);
+		if (interpolation >= SPUInterpolation_None && interpolation <= SPUInterpolation_CatmullRom)
+			ApplySPUInterpolation((SPUInterpolationMode)interpolation);
+
+		const int volume = (int)(gtk_range_get_value(GTK_RANGE(wVolume)) + 0.5);
+		config.audio_volume = volume;
+		SPU_SetVolume(volume);
+		break;
+	}
+	case GTK_RESPONSE_CANCEL:
+	case GTK_RESPONSE_NONE:
+		SPU_SetVolume(previousVolume);
+		break;
+	}
+
+	gtk_widget_destroy(GTK_WIDGET(dialog));
 }
 
 /////////////////////////////// FIRMWARE SETTINGS //////////////////////////////////////
@@ -5535,53 +5632,273 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
 
 }
 
-#ifdef HAVE_JIT
+/////////////////////////////// EMULATION SETTINGS //////////////////////////////////////
 
-static void EmulationSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
-    GtkDialog *dialog;
-    GtkCheckButton *use_dynarec;
-    GtkAdjustment *block_size;
+// Signature of the settings that are only read while the NDS is reset (BIOS
+// and firmware images, timing and game hacks).  Comparing it before and after
+// the dialog tells whether a reset is needed for the changes to take effect.
+static std::string EmulationResetSignature()
+{
+	std::string signature;
 
-    GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/emulation_settings.ui");
-    dialog = GTK_DIALOG(gtk_builder_get_object(builder, "dialog"));
-    use_dynarec = GTK_CHECK_BUTTON(gtk_builder_get_object(builder, "use-dynarec"));
-    block_size = GTK_ADJUSTMENT(gtk_builder_get_object(builder, "block-size"));
-    g_object_unref(builder);
+	signature += CommonSettings.advanced_timing ? "1" : "0";
+	signature += CommonSettings.gamehacks.en ? "1" : "0";
+	signature += CommonSettings.DebugConsole ? "1" : "0";
+	signature += CommonSettings.EnsataEmulation ? "1" : "0";
+	signature += '|';
+	signature += CommonSettings.UseExtBIOS ? "1" : "0";
+	signature += CommonSettings.ARM9BIOS;
+	signature += '|';
+	signature += CommonSettings.ARM7BIOS;
+	signature += '|';
+	signature += CommonSettings.SWIFromBIOS ? "1" : "0";
+	signature += CommonSettings.PatchSWI3 ? "1" : "0";
+	signature += '|';
+	signature += CommonSettings.UseExtFirmware ? "1" : "0";
+	signature += CommonSettings.ExtFirmwarePath;
+	signature += '|';
+	signature += CommonSettings.BootFromFirmware ? "1" : "0";
+	signature += CommonSettings.UseExtFirmwareSettings ? "1" : "0";
 
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(use_dynarec), config.use_jit);
-    g_signal_connect(G_OBJECT(use_dynarec), "clicked", G_CALLBACK(ToggleJIT), GINT_TO_POINTER(0));
-
-    gtk_adjustment_set_value(block_size, config.jit_max_block_size);
-    g_signal_connect(G_OBJECT(block_size), "value_changed", G_CALLBACK(JITMaxBlockSizeChanged), NULL);
-
-    bool prev_use_jit = config.use_jit;
-    int prev_jit_max_block_size = config.jit_max_block_size;
-
-    switch (gtk_dialog_run(dialog)) {
-    case GTK_RESPONSE_OK:
-        CommonSettings.jit_max_block_size = config.jit_max_block_size;
-        arm_jit_sync();
-        arm_jit_reset(CommonSettings.use_jit = config.use_jit);
-        break;
-    case GTK_RESPONSE_CANCEL:
-    case GTK_RESPONSE_NONE:
-        config.use_jit = prev_use_jit;
-        config.jit_max_block_size = prev_jit_max_block_size;
-        break;
-    }
-    gtk_widget_destroy(GTK_WIDGET(dialog));
-
+	return signature;
 }
 
-static void JITMaxBlockSizeChanged(GtkAdjustment* adj, gpointer data) {
-    config.jit_max_block_size = (int)gtk_adjustment_get_value(adj);
+// Push the persisted emulation settings into the core.  Runs right after
+// config.load(), before the first reset.
+static void ApplyEmulationSettingsConfig()
+{
+	CommonSettings.advanced_timing = config.emu_advanced_timing;
+	CommonSettings.gamehacks.en = config.emu_game_hacks;
+	CommonSettings.DebugConsole = config.emu_debug_console;
+	CommonSettings.EnsataEmulation = config.emu_ensata;
+
+	CommonSettings.UseExtBIOS = config.bios_use_external;
+	g_snprintf(CommonSettings.ARM9BIOS, MAX_PATH, "%s", config.bios_arm9_path.get().c_str());
+	g_snprintf(CommonSettings.ARM7BIOS, MAX_PATH, "%s", config.bios_arm7_path.get().c_str());
+	CommonSettings.SWIFromBIOS = config.bios_swi_from_bios;
+	CommonSettings.PatchSWI3 = config.bios_patch_swi3;
+
+	CommonSettings.UseExtFirmware = config.fw_use_external;
+	g_snprintf(CommonSettings.ExtFirmwarePath, MAX_PATH, "%s", config.fw_image_path.get().c_str());
+	CommonSettings.BootFromFirmware = config.fw_boot_from;
+	CommonSettings.UseExtFirmwareSettings = config.fw_use_ext_settings;
 }
 
-static void ToggleJIT() {
-    config.use_jit = !config.use_jit;
+struct emu_settings_widgets {
+	GtkWidget *use_ext_bios;
+	GtkWidget *bios9, *bios9_browse;
+	GtkWidget *bios7, *bios7_browse;
+	GtkWidget *swi_from_bios, *patch_swi3;
+	GtkWidget *use_ext_firmware;
+	GtkWidget *firmware, *firmware_browse;
+	GtkWidget *boot_from_firmware, *use_ext_firmware_settings;
+};
+
+// Mirrors the Windows dialog: the image paths follow their "use external"
+// switch, and booting from firmware needs both an external BIOS and an
+// external firmware image.
+static void EmulationSettingsSync(emu_settings_widgets *w)
+{
+	const gboolean useBios = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w->use_ext_bios));
+	const gboolean useFirmware = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w->use_ext_firmware));
+
+	gtk_widget_set_sensitive(w->bios9, useBios);
+	gtk_widget_set_sensitive(w->bios9_browse, useBios);
+	gtk_widget_set_sensitive(w->bios7, useBios);
+	gtk_widget_set_sensitive(w->bios7_browse, useBios);
+	gtk_widget_set_sensitive(w->swi_from_bios, useBios);
+	gtk_widget_set_sensitive(w->patch_swi3, useBios);
+
+	gtk_widget_set_sensitive(w->firmware, useFirmware);
+	gtk_widget_set_sensitive(w->firmware_browse, useFirmware);
+	gtk_widget_set_sensitive(w->use_ext_firmware_settings, useFirmware);
+
+	gtk_widget_set_sensitive(w->boot_from_firmware, useBios && useFirmware);
 }
 
+static void EmulationSettingsToggled(GtkToggleButton *button, gpointer data)
+{
+	EmulationSettingsSync((emu_settings_widgets *)data);
+}
+
+// The block size only matters while the recompiler is on.
+static void EmulationSettingsDynarecToggled(GtkToggleButton *button, gpointer data)
+{
+	gtk_widget_set_sensitive(GTK_WIDGET(data), gtk_toggle_button_get_active(button));
+}
+
+// Pick a BIOS or firmware image and put its path in the matching entry.
+static void EmulationSettingsBrowse(GtkWidget *button, gpointer data)
+{
+	GtkWidget *entry = GTK_WIDGET(data);
+
+	GtkFileFilter *filter_image = gtk_file_filter_new();
+	gtk_file_filter_add_pattern(filter_image, "*.bin");
+	gtk_file_filter_add_pattern(filter_image, "*.rom");
+	gtk_file_filter_add_pattern(filter_image, "*.fw");
+	gtk_file_filter_set_name(filter_image, "BIOS and firmware images");
+
+	GtkFileFilter *filter_any = gtk_file_filter_new();
+	gtk_file_filter_add_pattern(filter_any, "*");
+	gtk_file_filter_set_name(filter_any, "All files");
+
+	GtkFileChooserNative *chooser = gtk_file_chooser_native_new(
+		"Select image...", GTK_WINDOW(pWindow),
+		GTK_FILE_CHOOSER_ACTION_OPEN, "_Open", "_Cancel");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), filter_image);
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), filter_any);
+
+	const char *current = gtk_entry_get_text(GTK_ENTRY(entry));
+	if (current != NULL && g_path_is_absolute(current))
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(chooser), current);
+
+	if (gtk_native_dialog_run(GTK_NATIVE_DIALOG(chooser)) == GTK_RESPONSE_ACCEPT) {
+		GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(chooser));
+		gchar *path = g_file_get_path(file);
+
+		if (path != NULL) {
+			gtk_entry_set_text(GTK_ENTRY(entry), path);
+			g_free(path);
+		}
+
+		g_object_unref(file);
+	}
+
+	g_object_unref(chooser);
+}
+
+// The settings above only take effect on the next reset, so offer to do it now
+// rather than leaving the user wondering why nothing changed.
+static void EmulationSettingsOfferReset()
+{
+	GtkWidget *message = gtk_message_dialog_new(GTK_WINDOW(pWindow), GTK_DIALOG_MODAL,
+	                                            GTK_MESSAGE_QUESTION, GTK_BUTTONS_NONE,
+	                                            "These settings are applied when the emulation is reset.");
+	gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(message),
+	                                         "Reset the emulation now? Unsaved progress will be lost.");
+	gtk_dialog_add_buttons(GTK_DIALOG(message),
+	                       "_Cancel", GTK_RESPONSE_CANCEL,
+	                       "_Reset", GTK_RESPONSE_ACCEPT,
+	                       NULL);
+	gtk_dialog_set_default_response(GTK_DIALOG(message), GTK_RESPONSE_CANCEL);
+
+	if (gtk_dialog_run(GTK_DIALOG(message)) == GTK_RESPONSE_ACCEPT)
+		Reset(NULL, NULL, NULL);
+
+	gtk_widget_destroy(message);
+}
+
+static void EmulationSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	GtkBuilder *builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/emulation_settings.ui");
+	GtkDialog *dialog = GTK_DIALOG(gtk_builder_get_object(builder, "dialog"));
+	emu_settings_widgets w;
+
+	GtkWidget *wAdvancedTiming = GTK_WIDGET(gtk_builder_get_object(builder, "advanced_timing"));
+	GtkWidget *wGameHacks = GTK_WIDGET(gtk_builder_get_object(builder, "game_hacks"));
+	GtkWidget *wDebugConsole = GTK_WIDGET(gtk_builder_get_object(builder, "debug_console"));
+	GtkWidget *wEnsata = GTK_WIDGET(gtk_builder_get_object(builder, "ensata"));
+	GtkWidget *wCpuFrame = GTK_WIDGET(gtk_builder_get_object(builder, "cpu_frame"));
+	GtkWidget *wDynarec = GTK_WIDGET(gtk_builder_get_object(builder, "use_dynarec"));
+	GtkWidget *wBlockSize = GTK_WIDGET(gtk_builder_get_object(builder, "block_size_spin"));
+
+	w.use_ext_bios = GTK_WIDGET(gtk_builder_get_object(builder, "use_ext_bios"));
+	w.bios9 = GTK_WIDGET(gtk_builder_get_object(builder, "bios9_entry"));
+	w.bios9_browse = GTK_WIDGET(gtk_builder_get_object(builder, "bios9_browse"));
+	w.bios7 = GTK_WIDGET(gtk_builder_get_object(builder, "bios7_entry"));
+	w.bios7_browse = GTK_WIDGET(gtk_builder_get_object(builder, "bios7_browse"));
+	w.swi_from_bios = GTK_WIDGET(gtk_builder_get_object(builder, "swi_from_bios"));
+	w.patch_swi3 = GTK_WIDGET(gtk_builder_get_object(builder, "patch_swi3"));
+	w.use_ext_firmware = GTK_WIDGET(gtk_builder_get_object(builder, "use_ext_firmware"));
+	w.firmware = GTK_WIDGET(gtk_builder_get_object(builder, "firmware_entry"));
+	w.firmware_browse = GTK_WIDGET(gtk_builder_get_object(builder, "firmware_browse"));
+	w.boot_from_firmware = GTK_WIDGET(gtk_builder_get_object(builder, "boot_from_firmware"));
+	w.use_ext_firmware_settings = GTK_WIDGET(gtk_builder_get_object(builder, "use_ext_firmware_settings"));
+	g_object_unref(builder);
+
+	const std::string previousSignature = EmulationResetSignature();
+
+	// General
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wAdvancedTiming), CommonSettings.advanced_timing);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wGameHacks), CommonSettings.gamehacks.en);
+
+	// Debug
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wDebugConsole), CommonSettings.DebugConsole);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wEnsata), CommonSettings.EnsataEmulation);
+
+	// CPU emulation mode
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wDynarec), config.use_jit);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(wBlockSize), config.jit_max_block_size.get());
+	gtk_widget_set_sensitive(wBlockSize, config.use_jit);
+	g_signal_connect(G_OBJECT(wDynarec), "toggled", G_CALLBACK(EmulationSettingsDynarecToggled), wBlockSize);
+
+	// BIOS
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w.use_ext_bios), CommonSettings.UseExtBIOS);
+	gtk_entry_set_text(GTK_ENTRY(w.bios9), CommonSettings.ARM9BIOS);
+	gtk_entry_set_text(GTK_ENTRY(w.bios7), CommonSettings.ARM7BIOS);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w.swi_from_bios), CommonSettings.SWIFromBIOS);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w.patch_swi3), CommonSettings.PatchSWI3);
+
+	// Firmware
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w.use_ext_firmware), CommonSettings.UseExtFirmware);
+	gtk_entry_set_text(GTK_ENTRY(w.firmware), CommonSettings.ExtFirmwarePath);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w.boot_from_firmware), CommonSettings.BootFromFirmware);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w.use_ext_firmware_settings), CommonSettings.UseExtFirmwareSettings);
+
+	g_signal_connect(G_OBJECT(w.use_ext_bios), "toggled", G_CALLBACK(EmulationSettingsToggled), &w);
+	g_signal_connect(G_OBJECT(w.use_ext_firmware), "toggled", G_CALLBACK(EmulationSettingsToggled), &w);
+	g_signal_connect(G_OBJECT(w.bios9_browse), "clicked", G_CALLBACK(EmulationSettingsBrowse), w.bios9);
+	g_signal_connect(G_OBJECT(w.bios7_browse), "clicked", G_CALLBACK(EmulationSettingsBrowse), w.bios7);
+	g_signal_connect(G_OBJECT(w.firmware_browse), "clicked", G_CALLBACK(EmulationSettingsBrowse), w.firmware);
+
+	EmulationSettingsSync(&w);
+
+	gtk_widget_show_all(gtk_dialog_get_content_area(dialog));
+
+#ifndef HAVE_JIT
+	// No dynamic recompiler in this build, so the whole section is moot.
+	gtk_widget_set_visible(wCpuFrame, FALSE);
 #endif
+
+	switch (gtk_dialog_run(dialog)) {
+	case GTK_RESPONSE_OK:
+		CommonSettings.advanced_timing = config.emu_advanced_timing = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wAdvancedTiming));
+		CommonSettings.gamehacks.en = config.emu_game_hacks = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wGameHacks));
+		CommonSettings.DebugConsole = config.emu_debug_console = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wDebugConsole));
+		CommonSettings.EnsataEmulation = config.emu_ensata = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wEnsata));
+
+		CommonSettings.UseExtBIOS = config.bios_use_external = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w.use_ext_bios));
+		g_snprintf(CommonSettings.ARM9BIOS, MAX_PATH, "%s", gtk_entry_get_text(GTK_ENTRY(w.bios9)));
+		config.bios_arm9_path = CommonSettings.ARM9BIOS;
+		g_snprintf(CommonSettings.ARM7BIOS, MAX_PATH, "%s", gtk_entry_get_text(GTK_ENTRY(w.bios7)));
+		config.bios_arm7_path = CommonSettings.ARM7BIOS;
+		CommonSettings.SWIFromBIOS = config.bios_swi_from_bios = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w.swi_from_bios));
+		CommonSettings.PatchSWI3 = config.bios_patch_swi3 = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w.patch_swi3));
+
+		CommonSettings.UseExtFirmware = config.fw_use_external = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w.use_ext_firmware));
+		g_snprintf(CommonSettings.ExtFirmwarePath, MAX_PATH, "%s", gtk_entry_get_text(GTK_ENTRY(w.firmware)));
+		config.fw_image_path = CommonSettings.ExtFirmwarePath;
+		CommonSettings.BootFromFirmware = config.fw_boot_from = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w.boot_from_firmware));
+		CommonSettings.UseExtFirmwareSettings = config.fw_use_ext_settings = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w.use_ext_firmware_settings));
+
+#ifdef HAVE_JIT
+		config.use_jit = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wDynarec));
+		config.jit_max_block_size = (int)gtk_spin_button_get_value(GTK_SPIN_BUTTON(wBlockSize));
+		CommonSettings.jit_max_block_size = config.jit_max_block_size;
+		arm_jit_sync();
+		arm_jit_reset(CommonSettings.use_jit = config.use_jit);
+#endif
+
+		if (gameInfo.fROM != NULL && EmulationResetSignature() != previousSignature)
+			EmulationSettingsOfferReset();
+		break;
+	case GTK_RESPONSE_CANCEL:
+	case GTK_RESPONSE_NONE:
+		break;
+	}
+
+	gtk_widget_destroy(GTK_WIDGET(dialog));
+}
 
 static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
@@ -6357,21 +6674,9 @@ static void Modify_Interpolation(GSimpleAction *action, GVariant *parameter, gpo
     g_simple_action_set_state(action, parameter);
 }
 
-static void Modify_SPUMode(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+// Shared by the (now menu-less) spu-mode action and the sound settings dialog.
+static void ApplySPUMode(spumode_enum mode)
 {
-    const char *string = g_variant_get_string(parameter, NULL);
-    spumode_enum mode;
-    if (strcmp(string, "dual-async") == 0)
-        mode = SPUMODE_DUALASYNC;
-    else if (strcmp(string, "sync-n") == 0)
-        mode = SPUMODE_SYNCN;
-    else if (strcmp(string, "sync-z") == 0)
-        mode = SPUMODE_SYNCZ;
-#ifdef HAVE_LIBSOUNDTOUCH
-    else if (strcmp(string, "sync-p") == 0)
-        mode = SPUMODE_SYNCP;
-#endif
-
     switch (mode) {
     case SPUMODE_SYNCN:
     case SPUMODE_SYNCZ:
@@ -6389,6 +6694,29 @@ static void Modify_SPUMode(GSimpleAction *action, GVariant *parameter, gpointer 
         break;
     }
     config.audio_sync = SPUMode;
+}
+
+static void ApplySPUInterpolation(SPUInterpolationMode mode)
+{
+    CommonSettings.spuInterpolationMode = mode;
+    config.audio_interpolation = CommonSettings.spuInterpolationMode;
+}
+
+static void Modify_SPUMode(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    const char *string = g_variant_get_string(parameter, NULL);
+    spumode_enum mode = SPUMODE_DUALASYNC;
+
+    if (strcmp(string, "sync-n") == 0)
+        mode = SPUMODE_SYNCN;
+    else if (strcmp(string, "sync-z") == 0)
+        mode = SPUMODE_SYNCZ;
+#ifdef HAVE_LIBSOUNDTOUCH
+    else if (strcmp(string, "sync-p") == 0)
+        mode = SPUMODE_SYNCP;
+#endif
+
+    ApplySPUMode(mode);
     g_simple_action_set_state(action, parameter);
 }
 
@@ -6396,6 +6724,7 @@ static void Modify_SPUInterpolation(GSimpleAction *action, GVariant *parameter, 
 {
     const char *string = g_variant_get_string(parameter, NULL);
     SPUInterpolationMode mode = (SPUInterpolationMode)CommonSettings.spuInterpolationMode;
+
     if (strcmp(string, "none") == 0)
         mode = SPUInterpolation_None;
     else if (strcmp(string, "linear") == 0)
@@ -6404,8 +6733,8 @@ static void Modify_SPUInterpolation(GSimpleAction *action, GVariant *parameter, 
         mode = SPUInterpolation_Cosine;
     else if (strcmp(string, "catmullrom") == 0)
         mode = SPUInterpolation_CatmullRom;
-    CommonSettings.spuInterpolationMode = mode;
-    config.audio_interpolation = CommonSettings.spuInterpolationMode;
+
+    ApplySPUInterpolation(mode);
     g_simple_action_set_state(action, parameter);
 }
 
@@ -7149,22 +7478,6 @@ static void desmume_gtk_menu_view_hud(GtkApplication *app)
 }
 #endif
 
-static void ToggleAudio(GSimpleAction *action, GVariant *parameter, gpointer user_data)
-{
-    GVariant *variant = g_action_get_state(G_ACTION(action));
-    gboolean value = !g_variant_get_boolean(variant);
-    config.audio_enabled = value;
-    if (config.audio_enabled) {
-        SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
-        driver->AddLine("Audio enabled");
-    } else {
-        SPU_ChangeSoundCore(0, 0);
-        driver->AddLine("Audio disabled");
-    }
-    RedrawScreen();
-    g_simple_action_set_state(action, g_variant_new_boolean(value));
-}
-
 /* Cheats are applied by the core, so this only stops it from doing so. The
  * list is left untouched, which is what makes it a useful debugging switch: a
  * cheat that breaks a game can be turned off without losing the entry. */
@@ -7264,6 +7577,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 	config.load();
 	ApplyFirmwareSettingsConfig();
+	ApplyEmulationSettingsConfig();
 
 #if !defined(ENABLE_WGPU)
 	// A config written by a WebGPU build may still request the WebGPU
@@ -7371,6 +7685,14 @@ common_gtk_main(GApplication *app, gpointer user_data)
     }
 	
     desmume_init( my_config->disable_sound || !config.audio_enabled);
+
+	// desmume_init() always brings up the SDL core, so honour a different one
+	// from the sound settings dialog here.
+	if (!my_config->disable_sound && config.audio_enabled &&
+	    config.audio_core.get() != SNDCORE_SDL)
+	{
+		SPU_ChangeSoundCore(config.audio_core.get(), 735 * 4);
+	}
 	
     gpu_scale_factor = config.gpuScaleFactor;
     if(gpu_scale_factor < GPU_SCALE_FACTOR_MIN)
@@ -7819,16 +8141,11 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_menu_insert_item(config_menu, 3, mic_noise);
 #endif
 
-#ifdef HAVE_JIT
     GMenuItem *emulation_settings = g_menu_item_new("Em_ulation Settings", "app.emulationsettings");
     g_menu_insert_item(config_menu, 1, emulation_settings);
-#endif
 
-#ifdef HAVE_LIBSOUNDTOUCH
-    GMenu *audio_sync_menu = G_MENU(gtk_builder_get_object(builder, "audio-synchronisation"));
-    GMenuItem *sync_p = g_menu_item_new("_P: Time-stretch (keeps pitch)", "app.spu-mode(\"sync-p\")");
-    g_menu_append_item(audio_sync_menu, sync_p);
-#endif
+    // The synchronizer methods (including the libsoundtouch one) are chosen in
+    // the sound settings dialog, so there is no submenu to extend here.
 
     GMenu *view_menu = G_MENU(gtk_builder_get_object(builder, "view"));
     GMenuModel *hud = G_MENU_MODEL(gtk_builder_get_object(builder,

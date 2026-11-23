@@ -97,6 +97,25 @@ OPT(gfx3dDepthLEqualFacing, bool, false, 3D, EnableDepthLEqualPolygonFacing)
  * 32-bit), 24 = BGR888.  18 is the Windows port's default as well. */
 OPT(gfx3dColorDepth, int, 18, 3D, GpuBpp)
 
+/* Emulation
+ *
+ * The Windows port's Emulation Settings dialog keeps these in [Emulation],
+ * [BIOS] and [Firmware]; the same names are used here so the values mean the
+ * same thing.  Defaults mirror CommonSettings. */
+OPT(emu_advanced_timing, bool, true, Emulation, AdvancedTiming)
+OPT(emu_game_hacks, bool, true, Emulation, GameHacks)
+OPT(emu_debug_console, bool, false, Emulation, DebugConsole)
+OPT(emu_ensata, bool, false, Emulation, EnsataEmulation)
+OPT(bios_use_external, bool, false, BIOS, UseExtBIOS)
+OPT(bios_arm9_path, std::string, "biosnds9.bin", BIOS, ARM9BIOSFile)
+OPT(bios_arm7_path, std::string, "biosnds7.bin", BIOS, ARM7BIOSFile)
+OPT(bios_swi_from_bios, bool, false, BIOS, SWIFromBIOS)
+OPT(bios_patch_swi3, bool, false, BIOS, PatchSWI3)
+OPT(fw_use_external, bool, false, Firmware, UseExtFirmware)
+OPT(fw_image_path, std::string, "firmware.bin", Firmware, FirmwareFile)
+OPT(fw_boot_from, bool, false, Firmware, BootFromFirmware)
+OPT(fw_use_ext_settings, bool, false, Firmware, UseExtFirmwareSettings)
+
 /* Firmware
  *
  * Settings written into the internal firmware image. The section and key
@@ -143,6 +162,10 @@ OPT(audio_enabled, bool, true, Audio, Enabled)
 OPT(audio_sync, int, 0, Audio, Synchronization)
 OPT(audio_interpolation, int, 1, Audio, Interpolation)
 OPT(audio_volume, int, 128, Audio, Volume)
+/* Sound core id from SNDCORE_*: 0 = None/dummy, 2 = SDL (the only real core
+ * this frontend links).  desmume_init() always starts with SDL, so a different
+ * core is selected right after it. */
+OPT(audio_core, int, 2, Audio, SoundCore)
 
 /* Recording */
 OPT(record_video_encoder, std::string, "libx264", Recording, VideoEncoder)

@@ -631,8 +631,8 @@
           <attribute name='action'>app.graphics-settings</attribute>
         </item>
         <item>
-          <attribute name='label' translatable='yes'>_Enable audio</attribute>
-          <attribute name='action'>app.enableaudio</attribute>
+          <attribute name='label' translatable='yes'>_Sound settings…</attribute>
+          <attribute name='action'>app.soundsettings</attribute>
         </item>
 <!-- #ifdef FAKE_MIC
         <item>
@@ -640,58 +640,6 @@
           <attribute name='action'>app.micnoise</attribute>
         </item>
 #endif -->
-        <submenu>
-          <attribute name='label' translatable='yes'>Audio _Synchronization</attribute>
-          <section id='audio-synchronisation'>
-            <item>
-              <attribute name='label' translatable='yes'>_Dual Asynchronous</attribute>
-              <attribute name='action'>app.spu-mode</attribute>
-              <attribute name='target'>dual-async</attribute>
-            </item>
-            <item>
-              <attribute name='label' translatable='yes'>_N: Crossfade resampler (low CPU)</attribute>
-              <attribute name='action'>app.spu-mode</attribute>
-              <attribute name='target'>sync-n</attribute>
-            </item>
-            <item>
-              <attribute name='label' translatable='yes'>_Z: Micro-resampler (low latency)</attribute>
-              <attribute name='action'>app.spu-mode</attribute>
-              <attribute name='target'>sync-z</attribute>
-            </item>
-<!-- #ifdef HAVE_LIBSOUNDTOUCH
-            <item>
-              <attribute name='label' translatable='yes'>_P: Time-stretch (keeps pitch)</attribute>
-              <attribute name='action'>app.spu-mode</attribute>
-              <attribute name='target'>sync-p</attribute>
-            </item>
-#endif -->
-          </section>
-        </submenu>
-        <submenu>
-          <attribute name='label' translatable='yes'>Audio _Interpolation</attribute>
-          <section>
-            <item>
-              <attribute name='label' translatable='yes'>_None</attribute>
-              <attribute name='action'>app.spu-interpolation</attribute>
-              <attribute name='target'>none</attribute>
-            </item>
-            <item>
-              <attribute name='label' translatable='yes'>_Linear</attribute>
-              <attribute name='action'>app.spu-interpolation</attribute>
-              <attribute name='target'>linear</attribute>
-            </item>
-            <item>
-              <attribute name='label' translatable='yes'>_Cosine</attribute>
-              <attribute name='action'>app.spu-interpolation</attribute>
-              <attribute name='target'>cosine</attribute>
-            </item>
-            <item>
-              <attribute name='label' translatable='yes'>_CatmullRom</attribute>
-              <attribute name='action'>app.spu-interpolation</attribute>
-              <attribute name='target'>catmullrom</attribute>
-            </item>
-          </section>
-        </submenu>
         <submenu>
           <attribute name='label' translatable='yes'>_Cheat</attribute>
           <section>
@@ -751,10 +699,6 @@
             </item>
           </section>
         </submenu>
-        <item>
-          <attribute name='label' translatable='yes'>Set audio _volume</attribute>
-          <attribute name='action'>app.setaudiovolume</attribute>
-        </item>
         <item>
           <attribute name='label' translatable='yes'>Firmware _settings…</attribute>
           <attribute name='action'>app.firmwaresettings</attribute>
