@@ -108,6 +108,7 @@ libdesmume_src += [
   '../../movie.cpp',
   '../../frontend/modules/Disassembler.cpp',
   '../../utils/advanscene.cpp',
+  '../../utils/ziparchive.cpp',
   '../../utils/datetime.cpp',
   '../../utils/guid.cpp',
   '../../utils/emufat.cpp',

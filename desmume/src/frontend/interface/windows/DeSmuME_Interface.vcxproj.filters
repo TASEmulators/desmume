@@ -258,6 +258,9 @@
     <ClCompile Include="..\..\..\addons\slot2_paddle.cpp">
       <Filter>addons</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\utils\ziparchive.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\utils\tinyxml\tinystr.cpp">
       <Filter>utils\tinyxml</Filter>
     </ClCompile>
@@ -628,6 +631,9 @@
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\utils\emufat_types.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\utils\ziparchive.h">
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\utils\tinyxml\tinystr.h">
