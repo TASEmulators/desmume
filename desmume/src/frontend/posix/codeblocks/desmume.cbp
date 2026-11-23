@@ -1385,6 +1385,8 @@
 		</Unit>
 		<Unit filename="../../../utils/advanscene.cpp" />
 		<Unit filename="../../../utils/advanscene.h" />
+		<Unit filename="../../../utils/ziparchive.cpp" />
+		<Unit filename="../../../utils/ziparchive.h" />
 		<Unit filename="../../../utils/arm_jit/arm64_emit.cpp">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>

@@ -251,6 +251,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../utils/valuearray.h" />
 		<Unit filename="../utils/xstring.cpp" />
 		<Unit filename="../utils/xstring.h" />
+		<Unit filename="../utils/ziparchive.cpp" />
+		<Unit filename="../utils/ziparchive.h" />
 		<Unit filename="../wifi.cpp" />
 		<Unit filename="../wifi.h" />
 		<Extensions>
