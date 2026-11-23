@@ -393,12 +393,30 @@ static void set_mouse_coord(signed long x,signed long y)
 static bool allowUpAndDown = false;
 static buttonstruct<int> cardinalHeldTime = {};
 
-/* Per-button autofire, the POSIX counterpart of the Windows port's
-   Turbo/TurboTime and the macOS port's per-input turbo flag: while a button
-   whose turbo_cfg[] entry is set is held, it is pressed and released on
-   alternate frames instead of staying held.  Same pattern and phase as the
-   Windows port, so autofire feels identical across the ports. */
-u8 turbo_cfg[NB_KEYS] = {0};
+void ctrls_set_allow_up_down(bool allow)
+{
+	allowUpAndDown = allow;
+}
+
+bool ctrls_get_allow_up_down(void)
+{
+	return allowUpAndDown;
+}
+
+/* Per-button autofire keys, the POSIX counterpart of the Windows port's
+   Turbo/TurboTime and the macOS port's per-input turbo flag.  Each entry holds
+   the key that auto-fires that DS button; it does not have to be the button's
+   own key, so a pad can have both a plain and an auto-fire press. */
+u32 turbo_keys[NB_KEYS] = {0};
+
+/* Buttons currently held through their turbo key, as a keypad bitmask.  The
+   frontend sets this from its keyboard handler. */
+static u16 turboHeld = 0;
+
+void ctrls_set_turbo_held(u16 mask)
+{
+	turboHeld = mask;
+}
 
 static u32 turboTime[NB_KEYS] = {0};
 static const bool turboPattern[] = {true, false};
@@ -424,16 +442,18 @@ static const u8 padPositionToKey[] =
     14, /* F - lid            */
 };
 
-static void ApplyTurbo(buttonstruct<bool>& pad)
+/* Auto-fire only the buttons that are currently held through their turbo key;
+   a plain press keeps the button held for as long as it is pressed. */
+static void ApplyTurbo(buttonstruct<bool>& pad, u16 turboMask)
 {
     for (size_t pos = 0; pos < sizeof(padPositionToKey) / sizeof(padPositionToKey[0]); pos++)
     {
         const int key = padPositionToKey[pos];
 
-        if (!turbo_cfg[key] || !pad.array[pos])
+        if (!(turboMask & KEYMASK_(key)) || !pad.array[pos])
         {
-            // Not configured, or nothing to auto-fire right now: start the
-            // next press on a "pressed" frame so the first frame registers.
+            // Not held through a turbo key, or nothing to auto-fire right now:
+            // start the next press on a "pressed" frame so it registers.
             turboTime[key] = 0;
             continue;
         }
@@ -478,23 +498,27 @@ void update_keypad(u16 keys)
 {
 	// Set raw inputs
 	{
+		// A button can also be pressed through its turbo key, which is an
+		// extra key that does not have to match the button's own key.
+		const u16 held = keys | turboHeld;
+
 		buttonstruct<bool> input = {};
-		input.G = (keys>>12)&1;
-		input.E = (keys>>8)&1;
-		input.W = (keys>>9)&1;
-		input.X = (keys>>10)&1;
-		input.Y = (keys>>11)&1;
-		input.A = (keys>>0)&1;
-		input.B = (keys>>1)&1;
-		input.S = (keys>>3)&1;
-		input.T = (keys>>2)&1;
-		input.U = (keys>>6)&1;
-		input.D = (keys>>7)&1;
-		input.L = (keys>>5)&1;
-		input.R = (keys>>4)&1;
-		input.F = (keys>>14)&1;
+		input.G = (held>>12)&1;
+		input.E = (held>>8)&1;
+		input.W = (held>>9)&1;
+		input.X = (held>>10)&1;
+		input.Y = (held>>11)&1;
+		input.A = (held>>0)&1;
+		input.B = (held>>1)&1;
+		input.S = (held>>3)&1;
+		input.T = (held>>2)&1;
+		input.U = (held>>6)&1;
+		input.D = (held>>7)&1;
+		input.L = (held>>5)&1;
+		input.R = (held>>4)&1;
+		input.F = (held>>14)&1;
 		RunAntipodalRestriction(input);
-		ApplyTurbo(input);
+		ApplyTurbo(input, turboHeld);
 		NDS_setPad(
 			input.R, input.L, input.D, input.U,
 			input.T, input.S, input.B, input.A,

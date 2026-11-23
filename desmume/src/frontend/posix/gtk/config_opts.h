@@ -75,6 +75,10 @@ OPT(multisampling, bool, false, Config, OpenGLMultisampling)
 OPT(multisamplingSize, int, 0, Config, OpenGLMultisamplingSize)
 OPT(firmware_language, int, 1, Config, FirmwareLanguage)
 OPT(savetype, int, 0, Config, SaveType)
+/* Keep Up+Down / Left+Right usable at the same time instead of letting the
+ * most recently pressed direction win.  The Windows port exposes the same
+ * switch in its control config dialog. */
+OPT(allow_up_down, bool, false, Config, AllowUpAndDown)
 
 /* Firmware
  *

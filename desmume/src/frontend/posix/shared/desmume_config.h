@@ -32,10 +32,15 @@ gboolean desmume_config_read_keys(GKeyFile*, const char *section = "KEYS");
 gboolean desmume_config_update_joykeys(GKeyFile*);
 gboolean desmume_config_read_joykeys(GKeyFile*);
 
-/* Per-button autofire flags, stored as one 0/1 entry per NDS button in the
-   "TURBO" group.  Older config files simply have no group, which means "no
-   button auto-fires". */
-gboolean desmume_config_update_turbo(GKeyFile*);
-gboolean desmume_config_read_turbo(GKeyFile*);
+/* Per-button autofire keys, stored as one key symbol per NDS button in the
+   "TURBOKEYS" group (0 = the button has no turbo key).  The older "TURBO"
+   group only held 0/1 flags and is still read to migrate those configs: a
+   button that was ticked there gets its own key as turbo key. */
+gboolean desmume_config_update_turbokeys(GKeyFile*);
+gboolean desmume_config_read_turbokeys(GKeyFile*);
+
+/* Write the in-memory key file back to disk.  The update_* helpers above do
+   this themselves; this is for callers that edit the key file directly. */
+gboolean desmume_config_flush(GKeyFile*);
 
 #endif

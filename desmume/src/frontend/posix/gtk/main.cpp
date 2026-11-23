@@ -301,6 +301,8 @@ static void Reset(GSimpleAction *action, GVariant *parameter, gpointer user_data
 static void SetAudioVolume(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void FirmwareSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void HotkeyConfigDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void TogglePause(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void MenuSave(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void changesavetype(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -366,6 +368,7 @@ static const GActionEntry app_entries[] = {
     { "recent",        OpenRecent, "s" },
     { "run",           Launch },
     { "pause",         Pause },
+    { "toggle-pause",  TogglePause },
     { "frame-advance", FrameAdvance },
     { "reset",         Reset },
     { "save-state-to",   SaveStateDialog },
@@ -436,6 +439,7 @@ static const GActionEntry app_entries[] = {
     { "setaudiovolume",      SetAudioVolume },
     { "firmwaresettings",    FirmwareSettingsDialog },
     { "editctrls",           Edit_Controls },
+    { "hotkeys",             HotkeyConfigDialog },
     { "editjoyctrls",        Edit_Joystick_Controls },
 
     // Tools
@@ -622,6 +626,25 @@ struct modify_key_ctx {
 };
 
 static u16 keys_latch = 0;
+
+/* Buttons currently held through their turbo key.  A turbo key is an extra
+   binding that belongs to a DS button but may be a different key, so it is
+   tracked apart from keys_latch and merged in by the input core. */
+static u16 turbo_latch = 0;
+
+/* Keypad mask of the button whose turbo key is this keyval, or 0. */
+static u16 lookup_turbo_key(u32 keyval)
+{
+    if (keyval == 0)
+        return 0;
+
+    for (int i = 0; i < NB_KEYS; i++) {
+        if (turbo_keys[i] != 0 && turbo_keys[i] == keyval)
+            return KEYMASK_(i);
+    }
+
+    return 0;
+}
 u32 Keypad_Temp[NB_KEYS];
 
 class configured_features : public CommandLine
@@ -4521,8 +4544,16 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
   mask = gtk_accelerator_get_default_mod_mask ();
   if( (e->state & mask) == 0){
     u16 Key = lookup_key(e->keyval);
-    if(Key){
-      ADD_KEY( keys_latch, Key );
+    u16 TurboKey = lookup_turbo_key(e->keyval);
+
+    if(TurboKey){
+      ADD_KEY( turbo_latch, TurboKey );
+      ctrls_set_turbo_held( turbo_latch );
+    }
+
+    if(Key || TurboKey){
+      if(Key)
+        ADD_KEY( keys_latch, Key );
       return 1;
     }
   }
@@ -4541,6 +4572,12 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 #ifdef HAVE_LUA
   sLuaPressedKeys.erase(e->keyval);
 #endif
+  u16 TurboKey = lookup_turbo_key(e->keyval);
+  if(TurboKey){
+    RM_KEY( turbo_latch, TurboKey );
+    ctrls_set_turbo_held( turbo_latch );
+  }
+
   u16 Key = lookup_key(e->keyval);
   RM_KEY( keys_latch, Key );
   return 1;
@@ -4774,133 +4811,649 @@ static void FirmwareSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 
 /////////////////////////////// CONTROLS EDIT //////////////////////////////////////
 
-static void AcceptNewInputKey(GtkWidget *w, GdkEventKey *e, struct modify_key_ctx *ctx)
+/* Pause/Resume has no single menu entry (Run and Pause are separate actions
+   whose enabled state flips), so the hotkey table needs an action of its own. */
+static void TogglePause(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    gchar *YouPressed;
+    if (gameInfo.fROM == NULL)
+        return;
 
-    ctx->mk_key_chosen = e->keyval;
-    YouPressed = g_strdup_printf("You pressed : %s\nClick OK to keep this key.", gdk_keyval_name(e->keyval));
-    gtk_label_set_text(GTK_LABEL(ctx->label), YouPressed);
-    g_free(YouPressed);
+    GAction *run = g_action_map_lookup_action(G_ACTION_MAP(pApp), "run");
+    if (run != NULL && g_action_get_enabled(run))
+        Launch(NULL, NULL, NULL);
+    else
+        Pause(NULL, NULL, NULL);
 }
 
-static void Modify_Key(GtkWidget* widget, gpointer data)
+/* Menu shortcuts that can be rebound.  The strings are detailed action names,
+   so the layout entries can carry their target.  These deliberately live here
+   instead of as "accel" attributes in menu.ui: an accel attribute is what
+   gtk_application_set_menubar() installs *and* what the menu displays, so a
+   rebound key would neither take effect nor show up.  Setting the accelerator
+   on the action instead updates both. */
+struct hotkey_def {
+    const char *slug;
+    const char *label;
+    const char *action;
+    const char *def_accel;  /* NULL when the action starts unbound */
+};
+
+static const hotkey_def hotkey_defs[] = {
+    { "open",             "Open ROM",              "app.open",                   "<Primary>o" },
+    { "pause",            "Pause / Resume",        "app.toggle-pause",           "Pause" },
+    { "reset",            "Reset",                 "app.reset",                  NULL },
+    { "frame-advance",    "Frame Advance",         "app.frame-advance",          "<Primary>n" },
+    { "screenshot",       "Take a Screenshot",     "app.printscreen",            "<Primary>s" },
+    { "fullscreen",       "Toggle Fullscreen",     "app.fullscreen",             "F11" },
+    { "swap-screens",     "Swap Screens",          "app.swapscreens",            "space" },
+    { "view-menu",        "Toggle Menu Bar",       "app.view-menu",              NULL },
+
+    { "fps-limiter",      "Toggle Speed Limiter",  "app.enablefpslimiter",       NULL },
+    { "audio",            "Toggle Audio",          "app.enableaudio",            NULL },
+    { "view-statusbar",   "Toggle Status Bar",     "app.view-statusbar",         NULL },
+    { "view-toolbar",     "Toggle Toolbar",        "app.view-toolbar",           NULL },
+    { "layout-vertical",  "Layout: Vertical",      "app.orient('vertical')",     "<Primary>1" },
+    { "layout-horizontal","Layout: Horizontal",    "app.orient('horizontal')",   "<Primary>2" },
+    { "layout-single",    "Layout: Single Screen", "app.orient('single')",       "<Primary>0" },
+    { "layout-hybrid",    "Layout: Hybrid",        "app.orient('hybrid_equal')", "<Primary>3" },
+};
+
+#define HOTKEY_COUNT ((int)(sizeof(hotkey_defs) / sizeof(hotkey_defs[0])))
+
+/* Accelerator strings as last read from (or written to) the config file.  An
+   empty string means "no shortcut"; NULL only until HotkeysLoad() has run. */
+static gchar *sHotkeyAccel[HOTKEY_COUNT];
+
+static void ParseAccelString(const char *accel, guint *keyval, GdkModifierType *mods)
 {
-    struct modify_key_ctx ctx;
-    GtkWidget *mkDialog;
-    gchar *Key_Label;
-    gchar *Title;
-    gint Key;
+    *keyval = 0;
+    *mods = (GdkModifierType)0;
 
-    Key = GPOINTER_TO_INT(data);
-    ctx.mk_key_chosen = 0;
-    Title = g_strdup_printf("Press \"%s\" key ...\n", key_names[Key]);
-    mkDialog = gtk_dialog_new_with_buttons(Title,
-        GTK_WINDOW(pWindow),
-        GTK_DIALOG_MODAL,
-        "_OK",GTK_RESPONSE_OK,
-        "_Cancel",GTK_RESPONSE_CANCEL,
-        NULL);
+    if (accel == NULL || accel[0] == '\0')
+        return;
 
-    ctx.label = gtk_label_new(Title);
-    g_free(Title);
-    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(mkDialog))), ctx.label, TRUE, FALSE, 0);
+    gtk_accelerator_parse(accel, keyval, mods);
+    if (*keyval == 0)
+        *mods = (GdkModifierType)0;
+}
 
-    g_signal_connect(G_OBJECT(mkDialog), "key_press_event", G_CALLBACK(AcceptNewInputKey), &ctx);
+static void HotkeysLoad(void)
+{
+    for (int i = 0; i < HOTKEY_COUNT; i++) {
+        gchar *value = NULL;
 
-    gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(mkDialog)));
+        if (keyfile != NULL)
+            value = g_key_file_get_string(keyfile, "HOTKEYS", hotkey_defs[i].slug, NULL);
+        if (value == NULL)
+            value = g_strdup(hotkey_defs[i].def_accel != NULL ? hotkey_defs[i].def_accel : "");
 
-    switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
-    case GTK_RESPONSE_OK:
-        Keypad_Temp[Key] = ctx.mk_key_chosen;
-        Key_Label = g_strdup_printf("%s (%s)", key_names[Key], gdk_keyval_name(Keypad_Temp[Key]));
-        gtk_button_set_label(GTK_BUTTON(widget), Key_Label);
-        g_free(Key_Label);
-        break;
-    case GTK_RESPONSE_CANCEL:
-    case GTK_RESPONSE_NONE:
-        ctx.mk_key_chosen = 0;
-        break;
+        g_free(sHotkeyAccel[i]);
+        sHotkeyAccel[i] = value;
+    }
+}
+
+static void HotkeysSave(void)
+{
+    if (keyfile == NULL)
+        return;
+
+    for (int i = 0; i < HOTKEY_COUNT; i++) {
+        g_key_file_set_string(keyfile, "HOTKEYS", hotkey_defs[i].slug,
+                              sHotkeyAccel[i] != NULL ? sHotkeyAccel[i] : "");
     }
 
-    gtk_widget_destroy(mkDialog);
+    desmume_config_flush(keyfile);
+}
 
+/* Install the configured shortcuts.  Must run after gtk_application_set_menubar(),
+   which installs the accelerators it finds in the model. */
+static void HotkeysApply(void)
+{
+    if (pApp == NULL)
+        return;
+
+    static const gchar *none[] = { NULL };
+
+    for (int i = 0; i < HOTKEY_COUNT; i++) {
+        const gchar *accel = sHotkeyAccel[i];
+
+        if (accel != NULL && accel[0] != '\0') {
+            const gchar *list[] = { accel, NULL };
+            gtk_application_set_accels_for_action(pApp, hotkey_defs[i].action, list);
+        } else {
+            gtk_application_set_accels_for_action(pApp, hotkey_defs[i].action, none);
+        }
+    }
+}
+
+/* Which key tables a dialog owns (live) and which ones it only has to check
+   its keys against (taken from the saved configuration). */
+enum key_group {
+    KEYGROUP_CONTROL = 1 << 0,
+    KEYGROUP_TURBO   = 1 << 1,
+    KEYGROUP_HOTKEY  = 1 << 2,
+};
+
+enum key_slot_kind {
+    KEY_SLOT_CONTROL,
+    KEY_SLOT_TURBO,
+    KEY_SLOT_HOTKEY,
+};
+
+struct key_slot {
+    GtkWidget *button;
+    GtkWidget *label;
+    guint keyval;
+    GdkModifierType mods;
+    key_slot_kind kind;
+    int index;      /* key_names index, or hotkey_defs index for hotkeys */
+};
+
+struct key_dialog {
+    GtkWidget *dialog;
+    GtkWidget *hint;            /* transient message line, may be NULL */
+    std::vector<key_slot> slots;
+    int capturing;              /* index into slots, -1 when idle */
+    guint live_groups;
+    guint ext_groups;
+};
+
+struct key_binding {
+    guint keyval;
+    GdkModifierType mods;
+};
+
+/* Grid order for the control dialog, Windows-style: D-pad and face buttons on
+   the left, Start/Select/shoulders plus the frontend extras on the right. */
+static const int control_grid[2][8] = {
+    {  6, 5,  7,  4, 1, 0, 11, 10 },   /* Up, Left, Down, Right, B, A, Y, X */
+    {  3, 2,  9,  8, 12, 13, 14, -1 }, /* Start, Select, L, R, Debug, Boost, Lid */
+};
+
+/* Turbo keys are offered for the buttons a player would auto-fire. */
+static const int turbo_grid[2][6] = {
+    { 0, 1, 10, 11, 9, 8 },   /* A, B, X, Y, L, R */
+    { 6, 7,  5,  4, 3, 2 },   /* Up, Down, Left, Right, Start, Select */
+};
+
+static void KeyDialogSetHint(key_dialog *state, const char *text)
+{
+    if (state->hint != NULL)
+        gtk_label_set_text(GTK_LABEL(state->hint), text);
+}
+
+/* Readable name of a bare key symbol, e.g. "Backspace" or "Up".  Returns a
+   pointer to a static buffer for the fallback path. */
+static const char *KeySymbolLabel(guint keyval)
+{
+    static char buffer[64];
+    static const struct { const char *symbol; const char *text; } renames[] = {
+        { "BackSpace", "Backspace" }, { "Return", "Enter" }, { "Escape", "Esc" },
+        { "space", "Space" }, { "Print", "Print Screen" },
+        { "Scroll_Lock", "Scroll Lock" }, { "Caps_Lock", "Caps Lock" },
+        { "Num_Lock", "Num Lock" }, { "Page_Up", "Page Up" }, { "Page_Down", "Page Down" },
+    };
+
+    const char *name = gdk_keyval_name(keyval);
+    if (name == NULL) {
+        g_snprintf(buffer, sizeof(buffer), "0x%04X", keyval);
+        return buffer;
+    }
+
+    for (size_t i = 0; i < sizeof(renames) / sizeof(renames[0]); i++) {
+        if (strcmp(name, renames[i].symbol) == 0)
+            return renames[i].text;
+    }
+
+    size_t n = 0;
+    for (const char *p = name; *p != '\0' && n < sizeof(buffer) - 1; p++)
+        buffer[n++] = (*p == '_') ? ' ' : *p;
+    buffer[n] = '\0';
+    return buffer;
+}
+
+static bool KeyIsModifierKey(guint keyval)
+{
+    switch (keyval) {
+    case GDK_KEY_Shift_L: case GDK_KEY_Shift_R:
+    case GDK_KEY_Control_L: case GDK_KEY_Control_R:
+    case GDK_KEY_Alt_L: case GDK_KEY_Alt_R:
+    case GDK_KEY_Meta_L: case GDK_KEY_Meta_R:
+    case GDK_KEY_Super_L: case GDK_KEY_Super_R:
+    case GDK_KEY_Hyper_L: case GDK_KEY_Hyper_R:
+    case GDK_KEY_Caps_Lock: case GDK_KEY_Num_Lock: case GDK_KEY_Shift_Lock:
+    case GDK_KEY_ISO_Level3_Shift: case GDK_KEY_ISO_Level5_Shift:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static void EnsureKeyDialogStyle(void)
+{
+    static bool done = false;
+    if (done)
+        return;
+    done = true;
+
+    GtkCssProvider *provider = gtk_css_provider_new();
+    /* Conflicts are drawn in red on a faint red fill so they stay readable on
+       both light and dark themes. */
+    gtk_css_provider_load_from_data(provider,
+        "button.keyfield.conflict, button.keyfield.conflict label { color: #e01b24; }\n"
+        "button.keyfield.conflict { background-image: none; background-color: alpha(#e01b24, 0.16);"
+        " border-color: alpha(#e01b24, 0.70); }\n"
+        "button.keyfield.capturing { background-image: none; background-color: alpha(#3584e4, 0.20); }\n"
+        "label.keyhint { font-size: 92%; }\n",
+        -1, NULL);
+    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
+                                              GTK_STYLE_PROVIDER(provider),
+                                              GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(provider);
+}
+
+static void KeySlotRefresh(key_dialog *state, int index)
+{
+    key_slot *slot = &state->slots[index];
+    gchar *text;
+
+    if (state->capturing == index)
+        text = g_strdup("Press a key...");
+    else if (slot->keyval == 0)
+        text = g_strdup("Disabled");
+    else if (slot->kind == KEY_SLOT_HOTKEY)
+        text = gtk_accelerator_get_label(slot->keyval, slot->mods);
+    else
+        text = g_strdup(KeySymbolLabel(slot->keyval));
+
+    gtk_label_set_text(GTK_LABEL(slot->label), text);
+    g_free(text);
+}
+
+/* Bindings of the groups this dialog does not own, so an assignment that
+   clashes with the other dialog is flagged as well. */
+static void KeyDialogCollectExternal(const key_dialog *state, std::vector<key_binding> &out)
+{
+    out.clear();
+
+    if (state->ext_groups & KEYGROUP_CONTROL) {
+        for (int i = 0; i < NB_KEYS; i++) {
+            if (keyboard_cfg[i] == 0)
+                continue;
+            key_binding binding = { keyboard_cfg[i], (GdkModifierType)0 };
+            out.push_back(binding);
+        }
+    }
+
+    if (state->ext_groups & KEYGROUP_TURBO) {
+        for (int i = 0; i < NB_KEYS; i++) {
+            if (turbo_keys[i] == 0)
+                continue;
+            key_binding binding = { turbo_keys[i], (GdkModifierType)0 };
+            out.push_back(binding);
+        }
+    }
+
+    if (state->ext_groups & KEYGROUP_HOTKEY) {
+        for (int i = 0; i < HOTKEY_COUNT; i++) {
+            guint keyval;
+            GdkModifierType mods;
+            ParseAccelString(sHotkeyAccel[i], &keyval, &mods);
+            if (keyval == 0)
+                continue;
+            key_binding binding = { keyval, mods };
+            out.push_back(binding);
+        }
+    }
+}
+
+/* Two entries clash when they use the same key with the same modifiers.  A
+   modified hotkey (Ctrl+X) does not clash with a bare game button (X): the
+   accelerator consumes the key before the emulator sees it. */
+static void KeyDialogUpdateConflicts(key_dialog *state)
+{
+    std::vector<key_binding> external;
+    KeyDialogCollectExternal(state, external);
+
+    for (size_t i = 0; i < state->slots.size(); i++) {
+        const key_slot &slot = state->slots[i];
+        bool conflict = false;
+
+        if (slot.keyval != 0) {
+            for (size_t j = 0; j < external.size() && !conflict; j++)
+                conflict = (external[j].keyval == slot.keyval && external[j].mods == slot.mods);
+
+            for (size_t j = 0; j < state->slots.size() && !conflict; j++) {
+                if (j == i)
+                    continue;
+                const key_slot &other = state->slots[j];
+                conflict = (other.keyval == slot.keyval && other.mods == slot.mods);
+            }
+        }
+
+        GtkStyleContext *context = gtk_widget_get_style_context(slot.button);
+        if (conflict)
+            gtk_style_context_add_class(context, "conflict");
+        else
+            gtk_style_context_remove_class(context, "conflict");
+    }
+}
+
+static void KeyDialogEndCapture(key_dialog *state)
+{
+    const int index = state->capturing;
+    state->capturing = -1;
+
+    if (index >= 0) {
+        gtk_style_context_remove_class(gtk_widget_get_style_context(state->slots[index].button), "capturing");
+        KeySlotRefresh(state, index);
+        gtk_window_set_focus(GTK_WINDOW(state->dialog), state->slots[index].button);
+    }
+
+    KeyDialogUpdateConflicts(state);
+}
+
+static void KeyDialogStartCapture(key_dialog *state, int index)
+{
+    if (state->capturing == index)
+        return;
+
+    state->capturing = index;
+    for (size_t i = 0; i < state->slots.size(); i++)
+        KeySlotRefresh(state, (int)i);
+    gtk_style_context_add_class(gtk_widget_get_style_context(state->slots[index].button), "capturing");
+
+    /* Move the focus off the buttons: otherwise Space or Return would activate
+       the focused button instead of being captured. */
+    gtk_window_set_focus(GTK_WINDOW(state->dialog), NULL);
+    KeyDialogSetHint(state, "Press the key to use, or Escape to disable it.");
+}
+
+static void KeySlotClicked(GtkWidget *widget, gpointer data)
+{
+    key_dialog *state = (key_dialog *)data;
+    const gint index = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "key-slot-index"));
+
+    KeyDialogStartCapture(state, index);
+}
+
+static gboolean KeyDialogKeyPress(GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+    key_dialog *state = (key_dialog *)data;
+
+    if (state->capturing < 0)
+        return FALSE;
+
+    key_slot *slot = &state->slots[state->capturing];
+    const GdkModifierType mods = (GdkModifierType)(event->state & gtk_accelerator_get_default_mod_mask());
+
+    if (event->keyval == GDK_KEY_Escape && mods == 0) {
+        slot->keyval = 0;
+        slot->mods = (GdkModifierType)0;
+        KeyDialogEndCapture(state);
+        return TRUE;
+    }
+
+    if (event->keyval == 0 || KeyIsModifierKey(event->keyval))
+        return TRUE;
+
+    if (slot->kind != KEY_SLOT_HOTKEY && mods != 0) {
+        KeyDialogSetHint(state, "Game and turbo buttons are single keys: press it without Shift/Ctrl/Alt.");
+        return TRUE;
+    }
+
+    slot->keyval = event->keyval;
+    slot->mods = (slot->kind == KEY_SLOT_HOTKEY) ? mods : (GdkModifierType)0;
+    KeyDialogEndCapture(state);
+    return TRUE;
+}
+
+static void KeyDialogAttachSlot(key_dialog *state, GtkGrid *grid, int row, int col,
+                                const char *labelText, key_slot_kind kind, int index,
+                                guint keyval, GdkModifierType mods)
+{
+    GtkWidget *label = gtk_label_new(labelText);
+    gtk_label_set_xalign(GTK_LABEL(label), 1.0);
+    gtk_grid_attach(grid, label, col, row, 1, 1);
+
+    GtkWidget *button = gtk_button_new();
+    GtkWidget *text = gtk_label_new(NULL);
+    gtk_container_add(GTK_CONTAINER(button), text);
+    gtk_widget_set_size_request(button, 150, -1);
+    gtk_style_context_add_class(gtk_widget_get_style_context(button), "keyfield");
+    gtk_grid_attach(grid, button, col + 1, row, 1, 1);
+
+    key_slot slot;
+    slot.button = button;
+    slot.label = text;
+    slot.keyval = keyval;
+    slot.mods = mods;
+    slot.kind = kind;
+    slot.index = index;
+    state->slots.push_back(slot);
+
+    g_object_set_data(G_OBJECT(button), "key-slot-index", GINT_TO_POINTER((gint)(state->slots.size() - 1)));
+    g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(KeySlotClicked), state);
+
+    KeySlotRefresh(state, (int)(state->slots.size() - 1));
+}
+
+static void KeyDialogInit(key_dialog *state, const char *title, guint live_groups, guint ext_groups)
+{
+    EnsureKeyDialogStyle();
+
+    state->dialog = gtk_dialog_new_with_buttons(title, GTK_WINDOW(pWindow), GTK_DIALOG_MODAL,
+                                                "_Cancel", GTK_RESPONSE_CANCEL,
+                                                "_OK", GTK_RESPONSE_OK,
+                                                NULL);
+    state->hint = NULL;
+    state->capturing = -1;
+    state->live_groups = live_groups;
+    state->ext_groups = ext_groups;
+
+    gtk_widget_add_events(state->dialog, GDK_KEY_PRESS_MASK);
+    g_signal_connect(G_OBJECT(state->dialog), "key-press-event", G_CALLBACK(KeyDialogKeyPress), state);
+}
+
+static GtkWidget *KeyDialogContent(key_dialog *state)
+{
+    GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(state->dialog));
+    gtk_container_set_border_width(GTK_CONTAINER(content), 12);
+
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 18);
+    gtk_box_pack_start(GTK_BOX(content), box, TRUE, TRUE, 0);
+
+    return box;
+}
+
+static GtkWidget *KeyDialogGridFrame(const char *title, GtkWidget *parent, GtkWidget **outGrid)
+{
+    GtkWidget *frame = gtk_frame_new(title);
+    gtk_box_pack_start(GTK_BOX(parent), frame, FALSE, FALSE, 0);
+
+    GtkWidget *grid = gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 8);
+    gtk_container_set_border_width(GTK_CONTAINER(grid), 10);
+    gtk_container_add(GTK_CONTAINER(frame), grid);
+
+    *outGrid = grid;
+    return frame;
+}
+
+static GtkWidget *KeyDialogSidePanel(key_dialog *state, GtkWidget *parent, const char *legend)
+{
+    GtkWidget *side = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_widget_set_valign(side, GTK_ALIGN_START);
+    gtk_box_pack_start(GTK_BOX(parent), side, FALSE, FALSE, 0);
+
+    GtkWidget *text = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(text), legend);
+    gtk_label_set_xalign(GTK_LABEL(text), 0.0);
+    gtk_label_set_line_wrap(GTK_LABEL(text), TRUE);
+    gtk_label_set_max_width_chars(GTK_LABEL(text), 24);
+    gtk_box_pack_start(GTK_BOX(side), text, FALSE, FALSE, 0);
+
+    state->hint = gtk_label_new(NULL);
+    gtk_label_set_xalign(GTK_LABEL(state->hint), 0.0);
+    gtk_label_set_line_wrap(GTK_LABEL(state->hint), TRUE);
+    gtk_label_set_max_width_chars(GTK_LABEL(state->hint), 24);
+    gtk_style_context_add_class(gtk_widget_get_style_context(state->hint), "keyhint");
+    gtk_box_pack_start(GTK_BOX(side), state->hint, FALSE, FALSE, 0);
+
+    return side;
+}
+
+static void SaveKeyboardConfigIni(void)
+{
+    /* The CLI frontend has no config menu, so it reads SDL keycodes from
+       SDLKEYS; write that view of the same table as well as the GDK one. */
+    u32 gdk_cfg[NB_KEYS];
+    u32 sdl_cfg[NB_KEYS];
+
+    memcpy(gdk_cfg, keyboard_cfg, sizeof(gdk_cfg));
+    for (int i = 0; i < NB_KEYS; i++) {
+        int sk = gdk_to_sdl_keycode(keyboard_cfg[i]);
+        /* if we don't know the keycode, chances are that SDL knows it anyways */
+        if (sk == -1)
+            sk = (int)keyboard_cfg[i];
+        sdl_cfg[i] = (u32)sk;
+    }
+
+    memcpy(keyboard_cfg, sdl_cfg, sizeof(keyboard_cfg));
+    desmume_config_update_keys(keyfile, "SDLKEYS");
+    memcpy(keyboard_cfg, gdk_cfg, sizeof(keyboard_cfg));
+    desmume_config_update_keys(keyfile, "KEYS");
 }
 
 static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
-    GtkWidget *ecDialog;
-    GtkWidget *ecKey;
-    GtkWidget *turboToggle[NB_KEYS];
-    GtkWidget *ecRow;
-    gchar *Key_Label;
-    u32 keyboard_cfg_sdl[NB_KEYS];
-    int i;
-    
-    g_assert(sizeof(Keypad_Temp) == sizeof(keyboard_cfg) &&
-        sizeof(keyboard_cfg) == sizeof(keyboard_cfg_sdl));
+    key_dialog state;
 
     memcpy(&Keypad_Temp, &keyboard_cfg, sizeof(keyboard_cfg));
 
-    ecDialog = gtk_dialog_new_with_buttons("Edit controls",
-                        GTK_WINDOW(pWindow),
-                        GTK_DIALOG_MODAL,
-                        "_OK",GTK_RESPONSE_OK,
-                        "_Cancel",GTK_RESPONSE_CANCEL,
-                        NULL);
+    KeyDialogInit(&state, "Control Config", KEYGROUP_CONTROL, KEYGROUP_TURBO | KEYGROUP_HOTKEY);
 
-    for(i = 0; i < NB_KEYS; i++) {
-        ecRow = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    GtkWidget *box = KeyDialogContent(&state);
 
-        Key_Label = g_strdup_printf("%s (%s)", key_names[i], gdk_keyval_name(Keypad_Temp[i]));
-        ecKey = gtk_button_new_with_label(Key_Label);
-        g_free(Key_Label);
-        g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_Key), GINT_TO_POINTER(i));
-        gtk_box_pack_start(GTK_BOX(ecRow), ecKey, TRUE, TRUE, 0);
+    GtkWidget *grid = NULL;
+    KeyDialogGridFrame("Buttons", box, &grid);
+    for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 2; col++) {
+            const int key = control_grid[col][row];
+            if (key < 0)
+                continue;
 
-        /* One autofire switch per DS button: it follows the button, not the
-           physical key, so joystick and keyboard input are covered alike.
-           "Boost" is a frontend-only key and has no DS button behind it. */
-        turboToggle[i] = NULL;
-        if (i != 13) {
-            turboToggle[i] = gtk_check_button_new_with_label("Turbo");
-            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(turboToggle[i]), turbo_cfg[i] != 0);
-            gtk_widget_set_tooltip_text(turboToggle[i],
-                "Auto-fire this button while it is held (pressed and released on alternate frames).");
-            gtk_box_pack_start(GTK_BOX(ecRow), turboToggle[i], FALSE, FALSE, 0);
+            gchar *name = g_ascii_strup(key_names[key], -1);
+            KeyDialogAttachSlot(&state, GTK_GRID(grid), row, col * 2, name,
+                                KEY_SLOT_CONTROL, key, Keypad_Temp[key], (GdkModifierType)0);
+            g_free(name);
         }
-
-        gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(ecDialog))), ecRow, FALSE, FALSE, 0);
     }
 
-    gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(ecDialog)));
+    GtkWidget *side = KeyDialogSidePanel(&state, box,
+        "<b>Red</b> means the key is used by another action.\n"
+        "A button can be disabled using <b>Escape</b>.");
 
-    switch (gtk_dialog_run(GTK_DIALOG(ecDialog))) {
+    GtkWidget *allow = gtk_check_button_new_with_label("Allow Left+Right / Up+Down");
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(allow), ctrls_get_allow_up_down());
+    gtk_box_pack_start(GTK_BOX(side), allow, FALSE, FALSE, 0);
+
+    KeyDialogUpdateConflicts(&state);
+    gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(state.dialog)));
+
+    switch (gtk_dialog_run(GTK_DIALOG(state.dialog))) {
     case GTK_RESPONSE_OK:
-        for (i = 0; i < NB_KEYS; i++) {
-            if (turboToggle[i] != NULL)
-                turbo_cfg[i] = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(turboToggle[i])) ? 1 : 0;
+        for (size_t i = 0; i < state.slots.size(); i++) {
+            const key_slot &slot = state.slots[i];
+            if (slot.kind == KEY_SLOT_CONTROL)
+                Keypad_Temp[slot.index] = slot.keyval;
         }
-        desmume_config_update_turbo(keyfile);
 
-        /* convert keycodes to SDL for the cli frontend, since it has no config menu */
-        for (i = 0; i < NB_KEYS; ++i) {
-            int sk = gdk_to_sdl_keycode(Keypad_Temp[i]);
-            /* if we don't know the keycode, chances are that SDL knows it anyways */
-            if (sk == -1) sk = (u32) Keypad_Temp[i];
-            keyboard_cfg_sdl[i] = sk;
-        }
-        memcpy(keyboard_cfg, keyboard_cfg_sdl, sizeof(keyboard_cfg));
-        desmume_config_update_keys(keyfile, "SDLKEYS");
+        ctrls_set_allow_up_down(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(allow)));
+        config.allow_up_down = ctrls_get_allow_up_down();
+
         memcpy(keyboard_cfg, Keypad_Temp, sizeof(keyboard_cfg));
-        desmume_config_update_keys(keyfile, "KEYS");
+        SaveKeyboardConfigIni();
         break;
     case GTK_RESPONSE_CANCEL:
     case GTK_RESPONSE_NONE:
         break;
     }
-    gtk_widget_destroy(ecDialog);
 
+    gtk_widget_destroy(state.dialog);
+}
+
+static void HotkeyConfigDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    key_dialog state;
+
+    KeyDialogInit(&state, "Hotkey Configuration", KEYGROUP_TURBO | KEYGROUP_HOTKEY, KEYGROUP_CONTROL);
+
+    GtkWidget *box = KeyDialogContent(&state);
+
+    GtkWidget *column = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
+    gtk_box_pack_start(GTK_BOX(box), column, FALSE, FALSE, 0);
+
+    GtkWidget *hotkeyGrid = NULL;
+    KeyDialogGridFrame("Hotkeys", column, &hotkeyGrid);
+    for (int i = 0; i < HOTKEY_COUNT; i++) {
+        guint keyval;
+        GdkModifierType mods;
+        ParseAccelString(sHotkeyAccel[i], &keyval, &mods);
+
+        KeyDialogAttachSlot(&state, GTK_GRID(hotkeyGrid), i % 8, (i < 8) ? 0 : 2,
+                            hotkey_defs[i].label, KEY_SLOT_HOTKEY, i, keyval, mods);
+    }
+
+    GtkWidget *turboGrid = NULL;
+    KeyDialogGridFrame("Turbo Keys", column, &turboGrid);
+    for (int row = 0; row < 6; row++) {
+        for (int col = 0; col < 2; col++) {
+            const int key = turbo_grid[col][row];
+
+            gchar *name = g_ascii_strup(key_names[key], -1);
+            KeyDialogAttachSlot(&state, GTK_GRID(turboGrid), row, col * 2, name,
+                                KEY_SLOT_TURBO, key, turbo_keys[key], (GdkModifierType)0);
+            g_free(name);
+        }
+    }
+
+    KeyDialogSidePanel(&state, box,
+        "<b>Red</b> means the key is used by another action.\n"
+        "A shortcut can be disabled using <b>Escape</b>.\n"
+        "Holding a turbo key auto-fires that button, and it does not have to be "
+        "the button's own key.");
+
+    KeyDialogUpdateConflicts(&state);
+    gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(state.dialog)));
+
+    switch (gtk_dialog_run(GTK_DIALOG(state.dialog))) {
+    case GTK_RESPONSE_OK:
+        for (size_t i = 0; i < state.slots.size(); i++) {
+            const key_slot &slot = state.slots[i];
+
+            if (slot.kind == KEY_SLOT_TURBO) {
+                turbo_keys[slot.index] = slot.keyval;
+            } else if (slot.kind == KEY_SLOT_HOTKEY) {
+                gchar *accel = (slot.keyval != 0)
+                    ? gtk_accelerator_name(slot.keyval, slot.mods)
+                    : g_strdup("");
+                g_free(sHotkeyAccel[slot.index]);
+                sHotkeyAccel[slot.index] = accel;
+            }
+        }
+
+        desmume_config_update_turbokeys(keyfile);
+        HotkeysSave();
+        HotkeysApply();
+        break;
+    case GTK_RESPONSE_CANCEL:
+    case GTK_RESPONSE_NONE:
+        break;
+    }
+
+    gtk_widget_destroy(state.dialog);
 }
 
 static gboolean JoyKeyAcceptTimerFunc(gpointer data)
@@ -4926,15 +5479,13 @@ static void JoyKeyAcceptTimerStart(GtkWidget *w, GdkEventFocus *e, struct modify
     g_timeout_add(200, JoyKeyAcceptTimerFunc, ctx);
 }
 
-static void AcceptNewJoyKey(GtkWidget *w, GdkEventFocus *e, struct modify_key_ctx *ctx)
+/* Text for a joystick binding field: 0xFFFF (and 0) mean "not bound". */
+static gchar *JoyKeyLabel(int key)
 {
-    gchar *YouPressed;
+    if (Keypad_Temp[key] == 0xFFFF || Keypad_Temp[key] == 0)
+        return g_strdup("Disabled");
 
-    ctx->mk_key_chosen = get_joy_key(ctx->key_id);
-
-    YouPressed = g_strdup_printf("You pressed : %d\nClick OK to keep this key.", ctx->mk_key_chosen);
-    gtk_label_set_text(GTK_LABEL(ctx->label), YouPressed);
-    g_free(YouPressed);
+    return g_strdup_printf("%d", Keypad_Temp[key]);
 }
 
 static void Modify_JoyKey(GtkWidget* widget, gpointer data)
@@ -4949,7 +5500,7 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
     /* Joypad keys start at 1 */
     ctx.key_id = Key+1;
     ctx.mk_key_chosen = Keypad_Temp[Key];
-    Title = g_strdup_printf("Press \"%s\" key ...\n", key_names[Key]);
+    Title = g_strdup_printf("Press \"%s\" button ...\n", key_names[Key]);
     mkDialog = gtk_dialog_new_with_buttons(Title,
         GTK_WINDOW(pWindow),
         GTK_DIALOG_MODAL,
@@ -4969,7 +5520,7 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
     switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
     case GTK_RESPONSE_OK:
         Keypad_Temp[Key] = ctx.mk_key_chosen;
-        Key_Label = g_strdup_printf("%s (%d)", key_names[Key], Keypad_Temp[Key]);
+        Key_Label = JoyKeyLabel(Key);
         gtk_button_set_label(GTK_BUTTON(widget), Key_Label);
         g_free(Key_Label);
         break;
@@ -5036,27 +5587,69 @@ static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, g
 {
     GtkWidget *ecDialog;
     GtkWidget *ecKey;
+    GtkWidget *grid;
     gchar *Key_Label;
-    int i;
 
     memcpy(&Keypad_Temp, &joypad_cfg, sizeof(joypad_cfg));
 
-    ecDialog = gtk_dialog_new_with_buttons("Edit controls",
+    ecDialog = gtk_dialog_new_with_buttons("Joystick Config",
                         GTK_WINDOW(pWindow),
                         GTK_DIALOG_MODAL,
-                        "_OK",GTK_RESPONSE_OK,
                         "_Cancel",GTK_RESPONSE_CANCEL,
+                        "_OK",GTK_RESPONSE_OK,
                         NULL);
 
-    for(i = 0; i < NB_KEYS; i++) {
-        Key_Label = g_strdup_printf("%s (%d)", key_names[i], Keypad_Temp[i]);
-        ecKey = gtk_button_new_with_label(Key_Label);
-        g_free(Key_Label);
-        g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_JoyKey), GINT_TO_POINTER(i));
-        gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(ecDialog))), ecKey,TRUE, FALSE, 0);
+    GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(ecDialog));
+    gtk_container_set_border_width(GTK_CONTAINER(content), 12);
+
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 18);
+    gtk_box_pack_start(GTK_BOX(content), box, TRUE, TRUE, 0);
+
+    GtkWidget *frame = gtk_frame_new("Buttons");
+    gtk_box_pack_start(GTK_BOX(box), frame, FALSE, FALSE, 0);
+
+    grid = gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 8);
+    gtk_container_set_border_width(GTK_CONTAINER(grid), 10);
+    gtk_container_add(GTK_CONTAINER(frame), grid);
+
+    /* Same layout as the keyboard config: the button names the action, the
+       field next to it holds the binding. */
+    for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 2; col++) {
+            const int key = control_grid[col][row];
+            if (key < 0)
+                continue;
+
+            gchar *name = g_ascii_strup(key_names[key], -1);
+            GtkWidget *label = gtk_label_new(name);
+            g_free(name);
+            gtk_label_set_xalign(GTK_LABEL(label), 1.0);
+            gtk_grid_attach(GTK_GRID(grid), label, col * 2, row, 1, 1);
+
+            Key_Label = JoyKeyLabel(key);
+            ecKey = gtk_button_new_with_label(Key_Label);
+            g_free(Key_Label);
+            gtk_widget_set_size_request(ecKey, 150, -1);
+            gtk_grid_attach(GTK_GRID(grid), ecKey, col * 2 + 1, row, 1, 1);
+            g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_JoyKey), GINT_TO_POINTER(key));
+        }
     }
 
-    gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(ecDialog)));
+    GtkWidget *side = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_widget_set_valign(side, GTK_ALIGN_START);
+    gtk_box_pack_start(GTK_BOX(box), side, FALSE, FALSE, 0);
+
+    GtkWidget *hint = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(hint),
+        "Click a button, then press the pad button or move the axis to bind it.");
+    gtk_label_set_xalign(GTK_LABEL(hint), 0.0);
+    gtk_label_set_line_wrap(GTK_LABEL(hint), TRUE);
+    gtk_label_set_max_width_chars(GTK_LABEL(hint), 24);
+    gtk_box_pack_start(GTK_BOX(side), hint, FALSE, FALSE, 0);
+
+    gtk_widget_show_all(content);
 
     switch (gtk_dialog_run(GTK_DIALOG(ecDialog))) {
     case GTK_RESPONSE_OK:
@@ -6763,6 +7356,9 @@ common_gtk_main(GApplication *app, gpointer user_data)
       memset(dTools_running, FALSE, sizeof(BOOL) * dTools_list_size);
 
     keyfile = desmume_config_read_file(gtk_kb_cfg);
+    // Menu shortcuts live in the same config file, but outside the KEYS group.
+    HotkeysLoad();
+    ctrls_set_allow_up_down(config.allow_up_down);
 
     memset(&nds_screen, 0, sizeof(nds_screen));
     nds_screen.orientation = ORIENT_VERTICAL;
@@ -7136,6 +7732,11 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_menu_append_submenu(view_menu, "_HUD", hud);
 
     gtk_application_set_menubar(GTK_APPLICATION(app), menubar);
+
+    // After set_menubar(): that call installs the accelerators found in the
+    // model, and the user's own shortcuts have to win over them.
+    pApp = GTK_APPLICATION(app);
+    HotkeysApply();
 
     GMenu *popup_menu = G_MENU(gtk_builder_get_object(builder, "popup"));
     pPopupMenu = (GtkMenu *) gtk_menu_new_from_model(G_MENU_MODEL(popup_menu));

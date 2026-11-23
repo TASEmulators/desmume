@@ -7,7 +7,6 @@
         <item>
           <attribute name='label' translatable='yes'>_Open</attribute>
           <attribute name='action'>app.open</attribute>
-          <attribute name='accel'>&lt;Control&gt;o</attribute>
         </item>
         <submenu id='open_recent'>
           <attribute name='label' translatable='yes'>Open _recent</attribute>
@@ -17,17 +16,14 @@
         <item>
           <attribute name='label' translatable='yes'>_Run</attribute>
           <attribute name='action'>app.run</attribute>
-          <attribute name='accel'>Pause</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>_Pause</attribute>
           <attribute name='action'>app.pause</attribute>
-          <attribute name='accel'>Pause</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>_Frame advance</attribute>
           <attribute name='action'>app.frame-advance</attribute>
-          <attribute name='accel'>&lt;Control&gt;n</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>Re_set</attribute>
@@ -234,7 +230,6 @@
         <item>
           <attribute name='label' translatable='yes'>Take a screenshot</attribute>
           <attribute name='action'>app.printscreen</attribute>
-          <attribute name='accel'>&lt;Control&gt;s</attribute>
         </item>
       </section>
       <section>
@@ -255,38 +250,32 @@
               <attribute name='label' translatable='yes'>_Vertical</attribute>
               <attribute name='action'>app.orient</attribute>
               <attribute name='target'>vertical</attribute>
-              <attribute name='accel'>&lt;Control&gt;1</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_Horizontal</attribute>
               <attribute name='action'>app.orient</attribute>
               <attribute name='target'>horizontal</attribute>
-              <attribute name='accel'>&lt;Control&gt;2</attribute>
             </item>
             <item>
               <attribute name='label' translatable='yes'>_Single screen</attribute>
               <attribute name='action'>app.orient</attribute>
               <attribute name='target'>single</attribute>
-              <attribute name='accel'>&lt;Control&gt;0</attribute>
             </item>
 			<item>
               <attribute name='label' translatable='yes'>Hybrid (_equal height)</attribute>
               <attribute name='action'>app.orient</attribute>
               <attribute name='target'>hybrid_equal</attribute>
-              <attribute name='accel'>&lt;Control&gt;3</attribute>
             </item>
 			<item>
               <attribute name='label' translatable='yes'>Hybrid (e_mphasize vertical)</attribute>
               <attribute name='action'>app.orient</attribute>
               <attribute name='target'>hybrid_vertical</attribute>
-              <attribute name='accel'>&lt;Control&gt;4</attribute>
             </item>
           </section>
           <section>
             <item>
               <attribute name='label' translatable='yes'>S_wap screens</attribute>
               <attribute name='action'>app.swapscreens</attribute>
-              <attribute name='accel'>space</attribute>
             </item>
           </section>
         </submenu>
@@ -378,7 +367,6 @@
             <item>
               <attribute name='label' translatable='yes'>_Fullscreen</attribute>
               <attribute name='action'>app.fullscreen</attribute>
-              <attribute name='accel'>F11</attribute>
             </item>
           </section>
         </submenu>
@@ -774,6 +762,10 @@
         <item>
           <attribute name='label' translatable='yes'>_Edit controls</attribute>
           <attribute name='action'>app.editctrls</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Edit _Hotkeys</attribute>
+          <attribute name='action'>app.hotkeys</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>Edit _Joystick controls</attribute>

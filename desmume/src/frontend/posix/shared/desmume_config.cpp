@@ -58,7 +58,9 @@ GKeyFile *desmume_config_read_file(const u32 *kb_cfg, const char* keysection)
     load_default_config(kb_cfg);
     desmume_config_read_keys(keyfile, keysection);
     desmume_config_read_joykeys(keyfile);
-    desmume_config_read_turbo(keyfile);
+    // Must run after read_keys: the "TURBO" migration copies the key that the
+    // button itself is bound to.
+    desmume_config_read_turbokeys(keyfile);
 
     return keyfile;
 }
@@ -147,34 +149,53 @@ gboolean desmume_config_read_joykeys(GKeyFile *keyfile)
     return TRUE;
 }
 
-gboolean desmume_config_update_turbo(GKeyFile *keyfile)
+gboolean desmume_config_update_turbokeys(GKeyFile *keyfile)
 {
     for (int i = 0; i < NB_KEYS; i++) {
-        g_key_file_set_integer(keyfile, "TURBO", key_names[i], turbo_cfg[i] ? 1 : 0);
+        g_key_file_set_integer(keyfile, "TURBOKEYS", key_names[i], (gint)turbo_keys[i]);
     }
 
     return desmume_config_write_file(keyfile);
 }
 
-gboolean desmume_config_read_turbo(GKeyFile *keyfile)
+gboolean desmume_config_read_turbokeys(GKeyFile *keyfile)
 {
     for (int i = 0; i < NB_KEYS; i++)
-        turbo_cfg[i] = 0;
+        turbo_keys[i] = 0;
 
-    if (!g_key_file_has_group(keyfile, "TURBO"))
-        return TRUE;
-
-    // Missing entries are not an error: a config written by an older build
-    // only has the buttons that were ticked at the time.
-    for (int i = 0; i < NB_KEYS; i++) {
-        GError *error = NULL;
-        gint value = g_key_file_get_integer(keyfile, "TURBO", key_names[i], &error);
-        if (error != NULL) {
-            g_error_free(error);
-            continue;
+    if (g_key_file_has_group(keyfile, "TURBOKEYS")) {
+        // Missing entries are not an error here either.
+        for (int i = 0; i < NB_KEYS; i++) {
+            GError *error = NULL;
+            gint value = g_key_file_get_integer(keyfile, "TURBOKEYS", key_names[i], &error);
+            if (error != NULL) {
+                g_error_free(error);
+                continue;
+            }
+            turbo_keys[i] = (value > 0) ? (u32)value : 0;
         }
-        turbo_cfg[i] = (value != 0) ? 1 : 0;
+    }
+
+    // Migrate configs written before turbo keys existed: back then a 0/1 flag
+    // in "TURBO" meant "auto-fire this button while its own key is held", so
+    // point the turbo key at that same key to keep the old behaviour.
+    if (g_key_file_has_group(keyfile, "TURBO")) {
+        for (int i = 0; i < NB_KEYS; i++) {
+            GError *error = NULL;
+            gint value = g_key_file_get_integer(keyfile, "TURBO", key_names[i], &error);
+            if (error != NULL) {
+                g_error_free(error);
+                continue;
+            }
+            if (value != 0 && turbo_keys[i] == 0)
+                turbo_keys[i] = keyboard_cfg[i];
+        }
     }
 
     return TRUE;
+}
+
+gboolean desmume_config_flush(GKeyFile *keyfile)
+{
+    return desmume_config_write_file(keyfile);
 }

@@ -69,9 +69,21 @@ extern const char *key_names[NB_KEYS];
 extern u32 keyboard_cfg[NB_KEYS];
 /* Current joypad configuration */
 extern u32 joypad_cfg[NB_KEYS];
-/* Per-button autofire ("turbo"), indexed like keyboard_cfg/joypad_cfg.
-   A non-zero entry makes that DS button auto-fire while it is held. */
-extern u8 turbo_cfg[NB_KEYS];
+/* Per-button autofire ("turbo") key, indexed like keyboard_cfg/joypad_cfg.
+   The key stored here may be a different one than the button's own key: while
+   it is held, that DS button auto-fires (pressed and released on alternate
+   frames).  0 means the button has no turbo key. */
+extern u32 turbo_keys[NB_KEYS];
+
+/* Tell the input core which DS buttons are currently held through their turbo
+   key.  The GTK frontend owns the keyboard and keeps the mask up to date; it
+   defaults to 0 so the other frontends keep their plain behaviour. */
+void ctrls_set_turbo_held(u16 mask);
+
+/* When false (the default), pressing Up+Down or Left+Right at the same time is
+   resolved to the direction pressed most recently. */
+void ctrls_set_allow_up_down(bool allow);
+bool ctrls_get_allow_up_down(void);
 
 #ifndef GTK_UI
 struct mouse_status
