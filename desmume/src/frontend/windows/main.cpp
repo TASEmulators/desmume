@@ -88,7 +88,7 @@
 #include "7zip/7zip.h"
 #include "OpenArchive.h"
 #include "utils/xstring.h"
-#include <ddraw.h>
+#include "directdraw.h"
 #include "video.h"
 #include "frontend/modules/osd/agg/agg_osd.h"
 #include "frontend/modules/osd/agg/aggdraw.h"

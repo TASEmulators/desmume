@@ -27,7 +27,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "video.h"
 #include "frontend/modules/osd/agg/agg_osd.h"
 #include "rthreads/rthreads.h"
-#include "ddraw.h"
+#include "directdraw.h"
 #include "ogl_display.h"
 #include "wgpu_display.h"
 

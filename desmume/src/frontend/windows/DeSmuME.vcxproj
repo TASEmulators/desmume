@@ -452,7 +452,7 @@
     <ClCompile Include="console.cpp" />
     <ClCompile Include="CWindow.cpp" />
     <ClCompile Include="DarkMode.cpp" />
-    <ClCompile Include="ddraw.cpp" />
+    <ClCompile Include="directdraw.cpp" />
     <ClCompile Include="dxerr8_compat.cpp" />
     <ClCompile Include="display.cpp" />
     <ClCompile Include="dsmcsv.cpp" />
@@ -674,7 +674,7 @@
     <ClInclude Include="colorctrl.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="CWindow.h" />
-    <ClInclude Include="ddraw.h" />
+    <ClInclude Include="directdraw.h" />
     <ClInclude Include="dxerr8_compat.h" />
     <ClInclude Include="wgl_ext.h" />
     <ClInclude Include="display.h" />

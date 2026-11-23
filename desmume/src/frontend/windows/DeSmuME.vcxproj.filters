@@ -601,7 +601,7 @@
     <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AltiVec.cpp">
       <Filter>utils\colorspacehandler</Filter>
     </ClCompile>
-    <ClCompile Include="ddraw.cpp">
+    <ClCompile Include="directdraw.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
     <ClCompile Include="dxerr8_compat.cpp">
@@ -653,6 +653,76 @@
       <Filter>addons</Filter>
     </ClCompile>
     <ClCompile Include="..\..\WGPURender.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\adler32.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\compress.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\crc32.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\deflate.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\gzclose.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\gzlib.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\gzread.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\gzwrite.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\infback.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\inffast.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\inflate.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\inftrees.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\trees.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\uncompr.c" />
+    <ClCompile Include="..\..\..\3rdparty\zlib-1.4\zutil.c" />
+    <ClCompile Include="..\..\utils\arm_jit\arm_jit_arm.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\arm\a64_assembler.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\arm\a64_builder.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\arm\a64_compiler.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\arm\a64_emit_helper.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\arm\a64_formatter.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\arm\a64_func.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\arm\a64_inst_api.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\arm\a64_inst_db.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\arm\a64_ra_pass.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\arm\arm_formatter.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\axl\arena.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\axl\arena_bit_set.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\axl\arena_hash.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\axl\arena_vector.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\arch_traits.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\assembler.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\builder.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\code_holder.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\code_writer.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\compiler.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\const_pool.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\cpu_info.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\debug_utils.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\emit_helper.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\emitter.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\emitter_utils.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\environment.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\error.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\error_handler.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\formatter.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\func.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\func_args_context.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\inst.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\inst_db.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\jit_allocator.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\jit_runtime.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\logger.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\pauth.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\ra_local.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\ra_pass.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\ra_stack.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\string.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\target.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\type.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\core\virt_mem.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\x86\x86_assembler.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\x86\x86_builder.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\x86\x86_compiler.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\x86\x86_emit_helper.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\x86\x86_formatter.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\x86\x86_func.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\x86\x86_inst_api.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\x86\x86_inst_db.cpp" />
+    <ClCompile Include="..\..\..\3rdparty\asmjit\x86\x86_ra_pass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\utils\guid.h">
@@ -721,7 +791,6 @@
     <ClInclude Include="7zip\7zapi.h" />
     <ClInclude Include="7zip\7zip.h" />
     <ClInclude Include="7zip\7zipstreams.h" />
-    <ClInclude Include="..\..\utils\tinyxml2\tinyxml2.h" />
     <ClInclude Include="..\..\utils\ziparchive.h" />
     <ClInclude Include="7zip\7z\CPP\Common\Common0.h" />
     <ClInclude Include="7zip\7z\CPP\Common\MyCom.h" />
@@ -1077,12 +1146,11 @@
     <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_SSE2.h">
       <Filter>utils\colorspacehandler</Filter>
     </ClInclude>
-    <ClInclude Include="ddraw.h">
+    <ClInclude Include="directdraw.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="dxerr8_compat.h" />
     <ClInclude Include="wgl_ext.h" />
-
     <ClInclude Include="ogl_display.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
@@ -1187,6 +1255,29 @@
     <None Include="7zip\7z\README.txt" />
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\thumb_tabdef.inc" />
+    <None Include="..\shared\upscalers\libretro\Bicubic.wgsl" />
+    <None Include="..\shared\upscalers\libretro\Lanczos3.wgsl" />
+    <None Include="..\shared\upscalers\libretro\PT_SkyWalker541.wgsl" />
+    <None Include="..\shared\upscalers\libretro\ScaleFxPass0.wgsl" />
+    <None Include="..\shared\upscalers\libretro\ScaleFxPass1.wgsl" />
+    <None Include="..\shared\upscalers\libretro\ScaleFxPass2.wgsl" />
+    <None Include="..\shared\upscalers\libretro\ScaleFxPass3.wgsl" />
+    <None Include="..\shared\upscalers\libretro\ScaleFxPass4.wgsl" />
+    <None Include="..\shared\upscalers\libretro\SuperXbrJinc2.wgsl" />
+    <None Include="..\shared\upscalers\libretro\SuperXbrPass0.wgsl" />
+    <None Include="..\shared\upscalers\libretro\SuperXbrPass1.wgsl" />
+    <None Include="..\shared\upscalers\libretro\Xbr2xPass0.wgsl" />
+    <None Include="..\shared\upscalers\libretro\Xbr2xPass1.wgsl" />
+    <None Include="..\shared\upscalers\libretro\XbrLv2.wgsl" />
+    <None Include="..\shared\upscalers\libretro\XbrLv2NoBlend.wgsl" />
+    <None Include="..\shared\upscalers\libretro\XbrLv3.wgsl" />
+    <None Include="..\shared\upscalers\libretro\XbrLv3Multipass0.wgsl" />
+    <None Include="..\shared\upscalers\libretro\XbrLv3Multipass1.wgsl" />
+    <None Include="..\shared\upscalers\libretro\XbrMlv4Pass1.wgsl" />
+    <None Include="..\shared\upscalers\libretro\XbrMlv4Pass2.wgsl" />
+    <None Include="..\shared\upscalers\libretro\XbrMlv4Pass3.wgsl" />
+    <None Include="..\shared\upscalers\libretro\XbrMlv4Pass4.wgsl" />
+    <None Include="..\shared\upscalers\libretro\XbrzFreescale.wgsl" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc">
