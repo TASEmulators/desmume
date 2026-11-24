@@ -33,10 +33,13 @@
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <vector>
 
 #include "types.h"
 #include "mic.h"
+#include "NDSSystem.h"
 #include "readwrite.h"
 #include "emufile.h"
 
@@ -60,6 +63,8 @@ static SDL_AudioStream *mic_stream = NULL;
 static u32 mic_write_offset = 0;
 /* SDL_InitSubSystem(SDL_INIT_AUDIO) is ref-counted; only release our own ref */
 static BOOL mic_audio_ref_held = FALSE;
+static std::vector<u8> mic_samples;
+static size_t mic_sample_read_position = 0;
 
 static void Mic_Error(const char *what)
 {
@@ -82,7 +87,7 @@ static void Mic_CloseDevice()
 	mic_write_offset = 0;
 }
 
-BOOL Mic_Init()
+static BOOL Mic_OpenDevice()
 {
 	SDL_AudioSpec want;
 
@@ -117,12 +122,62 @@ BOOL Mic_Init()
 	return TRUE;
 }
 
+BOOL Mic_Init()
+{
+	Mic_BufPos = 0;
+	Mic_PlayBuf = 1;
+	Mic_WriteBuf = 0;
+	mic_sample_read_position = 0;
+
+	if (CommonSettings.micMode == MicMode_Physical)
+		return Mic_OpenDevice();
+
+	return TRUE;
+}
+
+BOOL Mic_ApplySettings(const char *sampleFile)
+{
+	Mic_Inited = FALSE;
+	Mic_CloseDevice();
+	mic_samples.clear();
+	mic_sample_read_position = 0;
+
+	if (CommonSettings.micMode == MicMode_Sample) {
+		if (sampleFile == NULL || sampleFile[0] == '\0') {
+			fprintf(stderr, "Mic: no microphone sample file selected\n");
+			return FALSE;
+		}
+
+		SDL_AudioSpec spec;
+		Uint8 *data = NULL;
+		Uint32 length = 0;
+		if (!SDL_LoadWAV(sampleFile, &spec, &data, &length)) {
+			Mic_Error("microphone sample load failed");
+			return FALSE;
+		}
+
+		if (spec.format != SDL_AUDIO_U8 || spec.channels != 1 || length == 0) {
+			fprintf(stderr, "Mic: sample must be a non-empty 8-bit mono PCM WAV file\n");
+			SDL_free(data);
+			return FALSE;
+		}
+
+		mic_samples.assign(data, data + length);
+		SDL_free(data);
+	}
+
+	if (CommonSettings.micMode == MicMode_Physical)
+		return Mic_OpenDevice();
+
+	Mic_Reset();
+	return TRUE;
+}
+
 void Mic_Reset()
 {
-	if (!Mic_Inited)
-		return;
+	mic_sample_read_position = 0;
 
-	if (mic_stream != NULL)
+	if (Mic_Inited && mic_stream != NULL)
 		SDL_ClearAudioStream(mic_stream);
 
 	/* SDL_AUDIO_S8 is signed, so 0 really is silence here.  (The old OpenAL
@@ -136,11 +191,10 @@ void Mic_Reset()
 
 void Mic_DeInit()
 {
-	if (!Mic_Inited)
-		return;
-
 	Mic_Inited = FALSE;
 	Mic_CloseDevice();
+	mic_samples.clear();
+	mic_sample_read_position = 0;
 }
 
 /* Pull whatever the driver has captured so far into the current write buffer.
@@ -162,36 +216,76 @@ static void Mic_Dequeue()
 		mic_write_offset += (u32)got;
 }
 
-u8 Mic_ReadSample()
+static bool Mic_GetActivate()
 {
-	u8 tmp;
+	return NDS_getFinalUserInput().mic.micButtonPressed;
+}
+
+static u8 Mic_ConvertSample(u8 sample)
+{
 	u8 ret;
-
-	if (!Mic_Inited)
-		return 0;
-
-	tmp = Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
-
-	if (Mic_BufPos & 0x1) {
-		ret = ((tmp & 0x1) << 7);
-	} else {
-		ret = ((tmp & 0xFE) >> 1);
-		Mic_Dequeue(); /* same prefetch point as snd_pcm_read() in mic_alsa */
-	}
+	if (Mic_BufPos & 0x1)
+		ret = ((sample & 0x1) << 7);
+	else
+		ret = ((sample & 0xFE) >> 1);
 
 	Mic_BufPos++;
 	if (Mic_BufPos >= (MIC_BUFSIZE << 1)) {
-		Mic_Dequeue(); /* top up the buffer that is about to become the play buffer */
-		Mic_BufPos = 0;
-		Mic_PlayBuf ^= 1;
-		Mic_WriteBuf ^= 1;
-		mic_write_offset = 0;
-		/* Unfilled tail of the new write buffer would otherwise replay the
-		   previous cycle; make it silence instead. */
-		memset(Mic_Buffer[Mic_WriteBuf], 0, MIC_BUFSIZE);
+		if (CommonSettings.micMode == MicMode_Physical) {
+			Mic_Dequeue();
+			Mic_BufPos = 0;
+			Mic_PlayBuf ^= 1;
+			Mic_WriteBuf ^= 1;
+			mic_write_offset = 0;
+			memset(Mic_Buffer[Mic_WriteBuf], 0, MIC_BUFSIZE);
+		} else {
+			Mic_BufPos = 0;
+		}
 	}
 
 	return ret;
+}
+
+u8 Mic_ReadSample()
+{
+	u8 sample = 0x80;
+	const MicMode mode = CommonSettings.micMode;
+
+	if (mode == MicMode_Physical) {
+		if (!Mic_Inited)
+			return 0;
+
+		sample = Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
+		if (!(Mic_BufPos & 0x1))
+			Mic_Dequeue();
+	} else if (!Mic_GetActivate()) {
+		mic_sample_read_position = 0;
+	} else if (mode == MicMode_InternalNoise) {
+		static const u8 noise[] = {
+			0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xF5, 0xFF, 0xFF, 0xFF, 0xFF, 0x8E, 0xFF,
+			0xF4, 0xE1, 0xBF, 0x9A, 0x71, 0x58, 0x5B, 0x5F,
+			0x62, 0xC2, 0x25, 0x05, 0x01, 0x01, 0x01, 0x01
+		};
+		sample = noise[(mic_sample_read_position >> 1) % (sizeof(noise) / sizeof(noise[0]))];
+		mic_sample_read_position++;
+	} else if (mode == MicMode_Random) {
+		sample = (u8)(rand() & 0xFF);
+		mic_sample_read_position++;
+	} else if (mode == MicMode_Sample) {
+		if (mic_sample_read_position < mic_samples.size() * 2) {
+			sample = mic_samples[mic_sample_read_position >> 1];
+			if (sample == 0)
+				sample = 1;
+			else if (sample == 255)
+				sample = 254;
+			mic_sample_read_position++;
+		}
+	} else {
+		mic_sample_read_position = 0;
+	}
+
+	return Mic_ConvertSample(sample);
 }
 
 /* FIXME: stub! */

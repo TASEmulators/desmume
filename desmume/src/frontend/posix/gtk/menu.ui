@@ -635,6 +635,10 @@
           <attribute name='action'>app.soundsettings</attribute>
         </item>
         <item>
+          <attribute name='label' translatable='yes'>_Microphone settings…</attribute>
+          <attribute name='action'>app.microphone-settings</attribute>
+        </item>
+        <item>
           <attribute name='label' translatable='yes'>_Wi-Fi settings…</attribute>
           <attribute name='action'>app.wifi-settings</attribute>
         </item>

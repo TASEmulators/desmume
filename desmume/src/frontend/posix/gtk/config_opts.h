@@ -137,6 +137,10 @@ OPT(wifi_enabled, bool, false, Wifi, Enabled)
 OPT(wifi_compatibility_mode, bool, false, Wifi, Compatibility Mode)
 OPT(wifi_bridge_adapter, int, 0, Wifi, BridgeAdapter)
 
+/* Microphone input mode and the optional WAV sample file. */
+OPT(mic_mode, int, 0, MicSettings, MicMode)
+OPT(mic_sample_file, std::string, "micsample.raw", MicSettings, MicSampleFile)
+
 /* RAM Watch
  *
  * The watch list itself is a document handled by shared/ramwatch_core.cpp;

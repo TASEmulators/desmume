@@ -121,6 +121,8 @@
 
 #include "config.h"
 
+BOOL Mic_ApplySettings(const char *sampleFile);
+
 #undef GPOINTER_TO_INT
 #define GPOINTER_TO_INT(p) ((gint)  (glong) (p))
 
@@ -300,6 +302,7 @@ static void LoadSaveStateInfo();
 static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Reset(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void SoundSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void MicrophoneSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void WifiSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void FirmwareSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -419,6 +422,7 @@ static const GActionEntry app_entries[] = {
     { "frameskipA",        ToggleAutoFrameskip, NULL, "true" },
     { "frameskip",         Modify_Frameskip,    "s",  "\"0\"" },
     { "soundsettings",     SoundSettingsDialog },
+    { "microphone-settings", MicrophoneSettingsDialog },
     { "wifi-settings",     WifiSettingsDialog },
 #ifdef FAKE_MIC
     { "micnoise",          ToggleMicNoise,      NULL, "false" },
@@ -4725,6 +4729,137 @@ static void SoundSettingsDialog(GSimpleAction *action, GVariant *parameter, gpoi
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 }
 
+static void MicrophoneSampleModeToggled(GtkToggleButton *button, gpointer data)
+{
+	gtk_widget_set_sensitive(GTK_WIDGET(data), gtk_toggle_button_get_active(button));
+}
+
+static void MicrophoneSampleBrowse(GtkWidget *button, gpointer data)
+{
+	GtkWidget *entry = GTK_WIDGET(data);
+	GtkFileFilter *filter = gtk_file_filter_new();
+	gtk_file_filter_add_pattern(filter, "*.wav");
+	gtk_file_filter_set_name(filter, "8-bit mono PCM WAV files");
+
+	GtkFileChooserNative *chooser = gtk_file_chooser_native_new(
+		"Select microphone sample...", GTK_WINDOW(pWindow),
+		GTK_FILE_CHOOSER_ACTION_OPEN, "_Open", "_Cancel");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), filter);
+
+	const char *current = gtk_entry_get_text(GTK_ENTRY(entry));
+	if (current != NULL && g_path_is_absolute(current))
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(chooser), current);
+
+	if (gtk_native_dialog_run(GTK_NATIVE_DIALOG(chooser)) == GTK_RESPONSE_ACCEPT) {
+		GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(chooser));
+		if (file != NULL) {
+			gchar *path = g_file_get_path(file);
+			if (path != NULL) {
+				gtk_entry_set_text(GTK_ENTRY(entry), path);
+				g_free(path);
+			}
+			g_object_unref(file);
+		}
+	}
+
+	g_object_unref(filter);
+	g_object_unref(chooser);
+}
+
+static void MicrophoneSettingsReportError(GtkWindow *parent)
+{
+	GtkWidget *message = gtk_message_dialog_new(parent, GTK_DIALOG_MODAL,
+	                                            GTK_MESSAGE_WARNING, GTK_BUTTONS_OK,
+	                                            "Unable to initialize the selected microphone source.");
+	gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(message),
+	                                         "Check the terminal for details.");
+	gtk_dialog_run(GTK_DIALOG(message));
+	gtk_widget_destroy(message);
+}
+
+static void MicrophoneSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Microphone Settings",
+	                        GTK_WINDOW(pWindow), GTK_DIALOG_MODAL,
+	                        "_OK", GTK_RESPONSE_OK,
+	                        "_Cancel", GTK_RESPONSE_CANCEL,
+	                        NULL);
+	gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
+
+	GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	gtk_container_set_border_width(GTK_CONTAINER(content), 12);
+
+	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_box_pack_start(GTK_BOX(content), box, TRUE, TRUE, 0);
+
+	GtkWidget *frame = gtk_frame_new("Microphone");
+	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, FALSE, 0);
+
+	GtkWidget *modes = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+	gtk_container_set_border_width(GTK_CONTAINER(modes), 10);
+	gtk_container_add(GTK_CONTAINER(frame), modes);
+
+	GtkWidget *physical = gtk_radio_button_new_with_label(NULL,
+		"Use connected physical microphone (not suitable for TAS)");
+	GtkWidget *noise = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(physical),
+		"Use internal noise sample");
+	GtkWidget *random = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(physical),
+		"Use rand() white noise (not suitable for TAS)");
+	GtkWidget *sample = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(physical),
+		"Use microphone samples");
+	gtk_box_pack_start(GTK_BOX(modes), physical, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(modes), noise, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(modes), random, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(modes), sample, FALSE, FALSE, 0);
+
+	GtkWidget *sampleBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+	gtk_widget_set_margin_start(sampleBox, 24);
+	gtk_box_pack_start(GTK_BOX(modes), sampleBox, FALSE, FALSE, 0);
+	GtkWidget *sampleLabel = gtk_label_new_with_mnemonic("_Sample:");
+	GtkWidget *sampleEntry = gtk_entry_new();
+	gtk_widget_set_hexpand(sampleEntry, TRUE);
+	gtk_entry_set_text(GTK_ENTRY(sampleEntry), config.mic_sample_file.get().c_str());
+	gtk_label_set_mnemonic_widget(GTK_LABEL(sampleLabel), sampleEntry);
+	gtk_box_pack_start(GTK_BOX(sampleBox), sampleLabel, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(sampleBox), sampleEntry, TRUE, TRUE, 0);
+	GtkWidget *browse = gtk_button_new_with_mnemonic("_Browse…");
+	gtk_box_pack_start(GTK_BOX(sampleBox), browse, FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(browse), "clicked", G_CALLBACK(MicrophoneSampleBrowse), sampleEntry);
+	g_signal_connect(G_OBJECT(sample), "toggled", G_CALLBACK(MicrophoneSampleModeToggled), sampleBox);
+
+	GtkWidget *hint = gtk_label_new("The noise and sample modes require the microphone hotkey.");
+	gtk_label_set_xalign(GTK_LABEL(hint), 0.0f);
+	gtk_box_pack_start(GTK_BOX(box), hint, FALSE, FALSE, 0);
+
+	const int mode = CLAMP((int)CommonSettings.micMode, (int)MicMode_InternalNoise, (int)MicMode_Physical);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(physical), mode == MicMode_Physical);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(noise), mode == MicMode_InternalNoise);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(random), mode == MicMode_Random);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(sample), mode == MicMode_Sample);
+	gtk_widget_set_sensitive(sampleBox, mode == MicMode_Sample);
+
+	gtk_widget_show_all(content);
+
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK)
+	{
+		MicMode selectedMode = MicMode_InternalNoise;
+		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(physical)))
+			selectedMode = MicMode_Physical;
+		else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(random)))
+			selectedMode = MicMode_Random;
+		else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sample)))
+			selectedMode = MicMode_Sample;
+
+		CommonSettings.micMode = selectedMode;
+		config.mic_mode = selectedMode;
+		config.mic_sample_file = gtk_entry_get_text(GTK_ENTRY(sampleEntry));
+		if (!Mic_ApplySettings(config.mic_sample_file.get().c_str()))
+			MicrophoneSettingsReportError(GTK_WINDOW(dialog));
+	}
+
+	gtk_widget_destroy(dialog);
+}
+
 static void WifiCompatibilityToggled(GtkToggleButton *button, gpointer data)
 {
 	gtk_widget_set_sensitive(GTK_WIDGET(data), gtk_toggle_button_get_active(button));
@@ -4925,6 +5060,14 @@ static void ApplyWifiSettingsConfig()
 #else
 	wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
 #endif
+}
+
+static void ApplyMicrophoneSettingsConfig()
+{
+	const int mode = CLAMP((int)config.mic_mode, (int)MicMode_InternalNoise, (int)MicMode_Physical);
+	CommonSettings.micMode = (MicMode)mode;
+	if (!Mic_ApplySettings(config.mic_sample_file.get().c_str()))
+		fprintf(stderr, "Unable to apply the configured microphone source.\n");
 }
 
 static GtkWidget *FirmwareCombo(const char *const *items, int count, int active)
@@ -7697,6 +7840,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 	config.load();
 	ApplyFirmwareSettingsConfig();
+	ApplyMicrophoneSettingsConfig();
 	ApplyWifiSettingsConfig();
 	ApplyEmulationSettingsConfig();
 
