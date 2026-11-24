@@ -50475,46 +50475,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isDeveloperPlusBuild</string>
-						<reference key="source" ref="306737379"/>
-						<reference key="destination" ref="976324537"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="306737379"/>
-							<reference key="NSDestination" ref="976324537"/>
-							<string key="NSLabel">hidden: isDeveloperPlusBuild</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isDeveloperPlusBuild</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">9413</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isDeveloperPlusBuild</string>
-						<reference key="source" ref="1030632434"/>
-						<reference key="destination" ref="976324537"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="1030632434"/>
-							<reference key="NSDestination" ref="976324537"/>
-							<string key="NSLabel">hidden: isDeveloperPlusBuild</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isDeveloperPlusBuild</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">9415</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
 						<string key="label">value: selection.enableGdbStubARM9</string>
 						<reference key="source" ref="472523461"/>
 						<reference key="destination" ref="582168938"/>
@@ -52371,46 +52331,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isDeveloperPlusBuild</string>
-						<reference key="source" ref="628276370"/>
-						<reference key="destination" ref="976324537"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="628276370"/>
-							<reference key="NSDestination" ref="976324537"/>
-							<string key="NSLabel">hidden: isDeveloperPlusBuild</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isDeveloperPlusBuild</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">10271</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isDeveloperPlusBuild</string>
-						<reference key="source" ref="469346871"/>
-						<reference key="destination" ref="976324537"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="469346871"/>
-							<reference key="NSDestination" ref="976324537"/>
-							<string key="NSLabel">hidden: isDeveloperPlusBuild</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isDeveloperPlusBuild</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">10274</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
 						<string key="label">value: values.Debug_DisableMetal</string>
 						<reference key="source" ref="469346871"/>
 						<reference key="destination" ref="178548672"/>
@@ -53276,26 +53196,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 						<reference key="destination" ref="329110847"/>
 					</object>
 					<int key="connectionID">10537</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isDeveloperPlusBuild</string>
-						<reference key="source" ref="329110847"/>
-						<reference key="destination" ref="976324537"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="329110847"/>
-							<reference key="NSDestination" ref="976324537"/>
-							<string key="NSLabel">hidden: isDeveloperPlusBuild</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isDeveloperPlusBuild</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">10539</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBOutletConnection" key="connection">
@@ -57447,26 +57347,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isDeveloperPlusBuild</string>
-						<reference key="source" ref="16591577"/>
-						<reference key="destination" ref="976324537"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="16591577"/>
-							<reference key="NSDestination" ref="976324537"/>
-							<string key="NSLabel">hidden: isDeveloperPlusBuild</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isDeveloperPlusBuild</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">12246</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
 						<string key="label">attributedString: selection.finalFormText</string>
 						<reference key="source" ref="1061178666"/>
 						<reference key="destination" ref="387914757"/>
@@ -57485,26 +57365,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 						</object>
 					</object>
 					<int key="connectionID">12250</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isDeveloperPlusBuild</string>
-						<reference key="source" ref="549016400"/>
-						<reference key="destination" ref="976324537"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="549016400"/>
-							<reference key="NSDestination" ref="976324537"/>
-							<string key="NSLabel">hidden: isDeveloperPlusBuild</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isDeveloperPlusBuild</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">12254</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBBindingConnection" key="connection">
@@ -58386,46 +58246,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 						</object>
 					</object>
 					<int key="connectionID">12556</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isDeveloperPlusBuild</string>
-						<reference key="source" ref="664321378"/>
-						<reference key="destination" ref="976324537"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="664321378"/>
-							<reference key="NSDestination" ref="976324537"/>
-							<string key="NSLabel">hidden: isDeveloperPlusBuild</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isDeveloperPlusBuild</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">12560</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isDeveloperPlusBuild</string>
-						<reference key="source" ref="724518988"/>
-						<reference key="destination" ref="976324537"/>
-						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="724518988"/>
-							<reference key="NSDestination" ref="976324537"/>
-							<string key="NSLabel">hidden: isDeveloperPlusBuild</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isDeveloperPlusBuild</string>
-							<object class="NSDictionary" key="NSOptions">
-								<string key="NS.key.0">NSValueTransformerName</string>
-								<string key="NS.object.0">NSNegateBoolean</string>
-							</object>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
-					</object>
-					<int key="connectionID">12562</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBBindingConnection" key="connection">
@@ -85055,7 +84875,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 					<object class="IBToolTipAttribute" key="NS.object.0">
 						<string key="name">ToolTip</string>
 						<reference key="object" ref="664321378"/>
-						<string key="toolTip">OpenGL-based 3D rendering engine, forced to run in Legacy mode. The OpenGL version is limited to v2.1. (This option is only available in dev+ builds for testing purposes.)</string>
+						<string key="toolTip">OpenGL-based 3D rendering engine, forced to run in Legacy mode. The OpenGL version is limited to v2.1.</string>
 					</object>
 				</object>
 				<string key="12554.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -85064,7 +84884,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 					<object class="IBToolTipAttribute" key="NS.object.0">
 						<string key="name">ToolTip</string>
 						<reference key="object" ref="724518988"/>
-						<string key="toolTip">OpenGL-based 3D rendering engine, forced to run in 3.2 Core Profile mode. The OpenGL version is guaranteed to be at least v3.2, and the context will be a Core Profile context. (This option is only available in dev+ builds for testing purposes.</string>
+						<string key="toolTip">OpenGL-based 3D rendering engine, forced to run in 3.2 Core Profile mode. The OpenGL version is guaranteed to be at least v3.2, and the context will be a Core Profile context.</string>
 					</object>
 				</object>
 				<string key="12555.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>

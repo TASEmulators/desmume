@@ -61,7 +61,6 @@
 @synthesize isAppRunningOnPowerPC;
 @synthesize isAppRunningOnIntel;
 @synthesize isAppRunningOnARM64;
-@synthesize isDeveloperPlusBuild;
 @synthesize didApplicationFinishLaunching;
 @synthesize delayedROMFileName;
 
@@ -90,12 +89,6 @@
 	isAppRunningOnARM64 = YES;
 #else
 	isAppRunningOnARM64 = NO;
-#endif
-    
-#if defined(GDB_STUB)
-    isDeveloperPlusBuild = YES;
-#else
-    isDeveloperPlusBuild = NO;
 #endif
 	
 	didApplicationFinishLaunching = NO;
@@ -492,12 +485,10 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore framesToSkipSetting] forKey:@"CoreControl_FramesToSkipSetting"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isCheatingEnabled] forKey:@"CoreControl_EnableCheats"];
 	
-#ifdef GDB_STUB
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore enableGdbStubARM9] forKey:@"Debug_GDBStubEnableARM9"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore enableGdbStubARM7] forKey:@"Debug_GDBStubEnableARM7"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore gdbStubPortARM9] forKey:@"Debug_GDBStubPortARM9"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore gdbStubPortARM7] forKey:@"Debug_GDBStubPortARM7"];
-#endif
 	
 	[cdsCoreController setContent:nil];
 	[self setDelayedROMFileName:nil];
@@ -763,17 +754,10 @@
 	[emuControl setCdsFirmware:newFirmware];
 	
 	// Set up GDB stub settings per user preferences.
-#ifdef GDB_STUB
 	[cdsCore setEnableGdbStubARM9:[[NSUserDefaults standardUserDefaults] boolForKey:@"Debug_GDBStubEnableARM9"]];
 	[cdsCore setEnableGdbStubARM7:[[NSUserDefaults standardUserDefaults] boolForKey:@"Debug_GDBStubEnableARM7"]];
 	[cdsCore setGdbStubPortARM9:[[NSUserDefaults standardUserDefaults] integerForKey:@"Debug_GDBStubPortARM9"]];
 	[cdsCore setGdbStubPortARM7:[[NSUserDefaults standardUserDefaults] integerForKey:@"Debug_GDBStubPortARM7"]];
-#else
-	[cdsCore setEnableGdbStubARM9:NO];
-	[cdsCore setEnableGdbStubARM7:NO];
-	[cdsCore setGdbStubPortARM9:0];
-	[cdsCore setGdbStubPortARM7:0];
-#endif
 	
 	// Set up the rest of the emulation-related user defaults.
 	[emuControl readUserDefaults];

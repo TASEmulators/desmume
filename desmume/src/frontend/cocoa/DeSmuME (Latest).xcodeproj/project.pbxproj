@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D3D0E0000000000000000001 /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		D3D0E0000000000000000002 /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		D3D0E0000000000000000003 /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		D3D0E0000000000000000004 /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		D3D0E0000000000000000005 /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		D3D0E0000000000000000006 /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		D3D0E0000000000000000007 /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		D3D0E0000000000000000008 /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		D3D0E0000000000000000009 /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
 		8C43E74627E3CD0100A35F65 /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
 		8C43E74727E3CD0100A35F65 /* Icon_MicrophoneGray_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB0FBD81A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png */; };
 		8C43E74827E3CD0100A35F65 /* DefaultKeyMappings.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */; };
@@ -11367,6 +11376,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F00000000000000000006A /* x86_inst_api.cpp in Sources */,
 				A5F00000000000000000006B /* x86_inst_db.cpp in Sources */,
 				A5F00000000000000000006C /* x86_ra_pass.cpp in Sources */,
+				D3D0E0000000000000000002 /* gdbstub.cpp in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11928,6 +11938,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F0000000000000000000D6 /* x86_inst_api.cpp in Sources */,
 				A5F0000000000000000000D7 /* x86_inst_db.cpp in Sources */,
 				A5F0000000000000000000D8 /* x86_ra_pass.cpp in Sources */,
+				D3D0E0000000000000000003 /* gdbstub.cpp in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12228,6 +12239,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F00000000000000000010C /* x86_inst_api.cpp in Sources */,
 				A5F00000000000000000010D /* x86_inst_db.cpp in Sources */,
 				A5F00000000000000000010E /* x86_ra_pass.cpp in Sources */,
+				D3D0E0000000000000000008 /* gdbstub.cpp in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12511,6 +12523,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F000000000000000000289 /* x86_ra_pass.cpp in Sources */,
 				A5F00000000000000000028A /* arm_jit.cpp in Sources */,
 				A5F00000000000000000028B /* arm_jit_arm.cpp in Sources */,
+				D3D0E0000000000000000007 /* gdbstub.cpp in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -12816,6 +12829,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F0000000000000000001AE /* x86_inst_api.cpp in Sources */,
 				A5F0000000000000000001AF /* x86_inst_db.cpp in Sources */,
 				A5F0000000000000000001B0 /* x86_ra_pass.cpp in Sources */,
+				D3D0E0000000000000000009 /* gdbstub.cpp in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -13427,6 +13441,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F000000000000000000178 /* x86_inst_api.cpp in Sources */,
 				A5F000000000000000000179 /* x86_inst_db.cpp in Sources */,
 				A5F00000000000000000017A /* x86_ra_pass.cpp in Sources */,
+				D3D0E0000000000000000004 /* gdbstub.cpp in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -13982,6 +13997,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F0000000000000000002C1 /* x86_ra_pass.cpp in Sources */,
 				A5F0000000000000000002C2 /* arm_jit.cpp in Sources */,
 				A5F0000000000000000002C3 /* arm_jit_arm.cpp in Sources */,
+				D3D0E0000000000000000005 /* gdbstub.cpp in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -14287,6 +14303,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F00000000000000000021A /* x86_inst_api.cpp in Sources */,
 				A5F00000000000000000021B /* x86_inst_db.cpp in Sources */,
 				A5F00000000000000000021C /* x86_ra_pass.cpp in Sources */,
+				D3D0E0000000000000000001 /* gdbstub.cpp in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -14592,6 +14609,7 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F000000000000000000250 /* x86_inst_api.cpp in Sources */,
 				A5F000000000000000000251 /* x86_inst_db.cpp in Sources */,
 				A5F000000000000000000252 /* x86_ra_pass.cpp in Sources */,
+				D3D0E0000000000000000006 /* gdbstub.cpp in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};

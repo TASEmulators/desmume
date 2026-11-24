@@ -940,7 +940,6 @@ bool ClientExecutionControl::IsGDBStubStarted()
 
 void ClientExecutionControl::SetIsGDBStubStarted(bool theState)
 {
-#ifdef GDB_STUB
 	if (theState)
 	{
         gdbstub_mutex_init();
@@ -999,7 +998,6 @@ void ClientExecutionControl::SetIsGDBStubStarted(bool theState)
 
         gdbstub_mutex_destroy();
 	}
-#endif
 	if ( (this->_gdbStubHandleARM9 == NULL) && (this->_gdbStubHandleARM7 == NULL) )
 	{
 		theState = false;
