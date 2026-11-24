@@ -23,7 +23,7 @@
 |---|---|---|---|---|
 | ROM 载入 / 最近列表 | ☑ | ☑ | ☑ | |
 | 卸载（Close/Unload ROM） | ☑ | ☑ | ☐ | GTK 只能换 ROM 或退出 |
-| ROM Info 对话框 | ☑ | ☑ | ☐ | |
+| ROM Info 对话框 | ☑ | ☑ | ☑ | GTK 显示 ROM 标识、容量、CRC、存档类型及 CPU/3D 引擎 |
 | 载入策略（全部读入 RAM / 从磁盘流式） | ☑ | ☐ | ☐ | |
 | 存档导入 / 导出 | ☑ | ☑ | ☑ | |
 | 存档类型选择 | ☑ | ☑ | ☑ | |
@@ -51,10 +51,10 @@
 | 帧步进 / 帧跳跃 | ☑ 热键 | ☑ 菜单 | ☑ 步进已补，帧跳跃仍缺 | |
 | 后台输入 / 后台暂停 | ☑ | ☐ | ☐ | |
 | 热键自定义 | ☑ 热键配置窗 | ☑ 输入映射 + 配置档 | ☐ 仅固定加速键 | |
-| Slot 1 配置 / Slot 2 选择 | ☑ | ☑ | ☐ 只能改 config.cfg | |
+| Slot 1 配置 / Slot 2 选择 | ☑ | ☑ | ☑ | GTK 支持设备选择及 R4/Debug、GBA 卡、CompactFlash 常用路径 |
 | 固件设置（语言、MAC、子网等） | ☑ | ☑ | ◐ 仅语言 | |
-| 麦克风设置（设备/电平） | ☑ | ☑ | ◐ 仅 Fake mic noise | |
-| Wi-Fi 设置 | ☑ | ☑ | ☐ | |
+| 麦克风设置（设备/电平） | ☑ | ☑ | ◐ | GTK 有物理/噪声/WAV 输入模式，缺设备选择与输入电平 |
+| Wi-Fi 设置 | ☑ | ☑ | ◐ | GTK 已有启用/兼容模式和 PCAP 网卡选择，缺 MAC/AP 子网等高级项 |
 | 3D 设置（含 Edge Marking/Fog/Line Hack 等） | ☑ | ☑ | ◐ 仅基础项 | |
 | 音频设置 | ☑ 对话框 | ☑ 首选项 | ◐ 菜单项拼装 | |
 | 路径设置（每类文件独立目录） | ☑ | ◐ | ☐ | |
@@ -166,17 +166,19 @@ GTK3 这半年补得很快（RAM Watch/Search、金手指重写、FFmpeg 录制�
 
 ### P1 — 文件与 ROM 生命周期
 
-- ☐ ROM Info 对话框（标题、代号、容量、CRC、存档类型、当前引擎）
+- ☑ ROM Info 对话框（标题、代号、容量、CRC、存档类型、CPU/3D 引擎）
 - ☐ 卸载 ROM（Close ROM），现在只能重新打开一个 ROM
 - ☐ 路径设置：截图 / 存档 / 录像 / 金手指 / 电影各自独立目录（现在写死在 XDG 目录）
 - ☐ ADVANsCEne 数据库导入 + "从数据库自动判定存档类型"
 
 ### P1 — 配置对话框
 
-- ☐ Slot 1（零售卡 / 自制卡 / 下载播放）配置
-- ☐ Slot 2（GBA 卡带、RAM 扩展、Rumble、PassMe…）选择界面；现在只能手改 `config.cfg`
-- ☐ 麦克风：设备选择与输入电平（`mic_sdl.cpp` 已用默认设备）
-- ☐ Wi-Fi 设置（MAC、AP 子网掩码、模拟 AP 数量）
+- ☑ Slot 1 设备选择与配置（零售卡 / R4 / NAND / Debug；R4 FAT 与 Debug 目录可设置）
+- ☑ Slot 2 设备选择（含 GBA 卡带、CompactFlash）；GBA ROM 与 CompactFlash 路径可设置
+- ☐ Slot 2 Guitar Grip / Easy Piano / Paddle / HCV-1000 的专用按键、条码配置
+- ◐ 麦克风模式（物理输入、内部/随机噪声、单个 WAV 样本）已可设置；缺录音设备选择、
+  输入电平及 Windows 的 `_0.wav` 系列样本切换
+- ◐ Wi-Fi 启用/兼容模式与 PCAP 网卡选择已移植；缺 MAC、AP 子网掩码和模拟 AP 数量
 - ☐ 固件设置补全：现在只有语言，缺 MAC/子网/用户信息等
 - ☐ 热键自定义：现在所有命令是写死的 `GtkAccel`，用户改不了
 - ☐ 3D 设置的实验性开关：Edge Marking、Fog、Enable Textures、Line Hack、
@@ -244,8 +246,8 @@ RAM 工具的三端一致性就是这么来的 —— 新工具沿用同一模�
    同时验证"core + 两种宿主"的模式。
 3. **调试视图族**：按 图块 → 调色板 → OAM → 地图 → 其余 的顺序推；每个视图独立可交付。
 4. **DSM 编辑器**：core 先行，macOS 与 GTK3 各自接网格控件。
-5. **配置类对话框**：GTK3 的 Slot 1/2、麦克风、Wi-Fi、热键、路径（数量多但都很小）。
-6. **细节**：截图设置、ROM Info、卸载 ROM、Always On Top、屏幕比例。
+5. **配置类对话框**：补齐 GTK3 的 Slot 2 专用控制、麦克风设备/电平、Wi-Fi 高级项，再做热键与路径。
+6. **细节**：截图设置、卸载 ROM、Always On Top、屏幕比例。
 
 每完成一项，同步更新 `documentation/FEATURES.md` 对应段落，并在此文件把 `☐` 改成 `☑`。
 

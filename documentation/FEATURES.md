@@ -492,6 +492,16 @@ feature. Each entry says what you can do with it — not how it is built.
 - **Not to be confused with Boost** — the Boost key (default `O`) is the
   unthrottled fast-forward; autofire is the per-button one.
 
+### ROM and Slot configuration
+- **ROM Info** — File > ROM Info shows the loaded ROM title, game and maker
+  codes, cartridge capacity, loaded size, CRC32, save type, and active CPU/3D
+  engines. The action is unavailable until a ROM has been loaded.
+- **Slot 1 and Slot 2** — Config offers device selection with descriptions.
+  Slot 1 also configures the R4 FAT directory (or the loaded ROM directory) and
+  debug filesystem directory; Slot 2 configures a GBA cartridge ROM and
+  CompactFlash directory/image. These selections and paths persist in
+  `config.cfg`.
+
 ### Input, audio and build simplification
 - **SDL-based microphone** replaces the optional ALSA/OpenAL backends, removing
   two external dependencies; SDL3 then covers audio, gamepad and window handling

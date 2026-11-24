@@ -11,6 +11,10 @@
         <submenu id='open_recent'>
           <attribute name='label' translatable='yes'>Open _recent</attribute>
         </submenu>
+        <item>
+          <attribute name='label' translatable='yes'>ROM _Info…</attribute>
+          <attribute name='action'>app.rom-info</attribute>
+        </item>
       </section>
       <section>
         <item>
@@ -641,6 +645,14 @@
         <item>
           <attribute name='label' translatable='yes'>_Wi-Fi settings…</attribute>
           <attribute name='action'>app.wifi-settings</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Slot 1 settings…</attribute>
+          <attribute name='action'>app.slot1-settings</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Slot _2 settings…</attribute>
+          <attribute name='action'>app.slot2-settings</attribute>
         </item>
 <!-- #ifdef FAKE_MIC
         <item>

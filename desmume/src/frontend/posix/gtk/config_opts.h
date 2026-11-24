@@ -137,6 +137,16 @@ OPT(wifi_enabled, bool, false, Wifi, Enabled)
 OPT(wifi_compatibility_mode, bool, false, Wifi, Compatibility Mode)
 OPT(wifi_bridge_adapter, int, 0, Wifi, BridgeAdapter)
 
+/* Slot 1/2 device selection and the paths used by configurable addons. */
+OPT(slot1_id, int, 254, Slot1, id)
+OPT(slot1_fat_path, std::string, std::string(), Slot1, fat_path)
+OPT(slot1_fat_path_type, bool, false, Slot1, fat_path_type)
+OPT(slot1_debug_path, std::string, std::string(), Paths, Slot1D)
+OPT(slot2_id, int, 254, Slot2, id)
+OPT(slot2_cflash_mode, int, 2, Slot2.CFlash, fileMode)
+OPT(slot2_cflash_path, std::string, std::string(), Slot2.CFlash, path)
+OPT(slot2_gba_rom, std::string, std::string(), Slot2.GBAgame, filename)
+
 /* Microphone input mode and the optional WAV sample file. */
 OPT(mic_mode, int, 0, MicSettings, MicMode)
 OPT(mic_sample_file, std::string, "micsample.raw", MicSettings, MicSampleFile)

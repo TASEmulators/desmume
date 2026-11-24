@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <cstdio>
 #include <string.h>
 #include <gtk/gtk.h>
 #include <gio/gapplication.h>
@@ -56,6 +57,8 @@
 #include "../shared/sndsdl.h"
 #include "../shared/ctrlssdl.h"
 #include "MMU.h"
+#include "Database.h"
+#include "mc.h"
 #include "render3D.h"
 #include "desmume.h"
 #include "debug.h"
@@ -88,6 +91,8 @@
 #include "commandline.h"
 
 #include "slot2.h"
+#include "slot1.h"
+#include "path.h"
 
 #include "utils/xstring.h"
 
@@ -304,6 +309,9 @@ static void Reset(GSimpleAction *action, GVariant *parameter, gpointer user_data
 static void SoundSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void MicrophoneSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void WifiSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void Slot1SettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void Slot2SettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void RomInfoDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void FirmwareSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HotkeyConfigDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -424,6 +432,9 @@ static const GActionEntry app_entries[] = {
     { "soundsettings",     SoundSettingsDialog },
     { "microphone-settings", MicrophoneSettingsDialog },
     { "wifi-settings",     WifiSettingsDialog },
+    { "slot1-settings",    Slot1SettingsDialog },
+    { "slot2-settings",    Slot2SettingsDialog },
+    { "rom-info",          RomInfoDialog },
 #ifdef FAKE_MIC
     { "micnoise",          ToggleMicNoise,      NULL, "false" },
 #endif
@@ -1054,6 +1065,7 @@ static int Open(const char *filename)
         g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "cheatlist")), TRUE);
         g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "cheatsearch")), TRUE);
         g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "frame-advance")), TRUE);
+        g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(pApp), "rom-info")), TRUE);
     }
     return res;
 }
@@ -4986,6 +4998,438 @@ static void WifiSettingsDialog(GSimpleAction *action, GVariant *parameter, gpoin
 	gtk_widget_destroy(dialog);
 }
 
+static void SelectAddonPath(GtkButton *button, gpointer user_data)
+{
+	GtkWidget *entry = GTK_WIDGET(g_object_get_data(G_OBJECT(button), "path-entry"));
+	const GtkFileChooserAction chooserAction =
+		(GtkFileChooserAction)GPOINTER_TO_INT(g_object_get_data(G_OBJECT(button), "chooser-action"));
+	const char *title = (const char *)g_object_get_data(G_OBJECT(button), "chooser-title");
+	GtkWidget *chooser = gtk_file_chooser_dialog_new(title, GTK_WINDOW(pWindow), chooserAction,
+	                                                "_Cancel", GTK_RESPONSE_CANCEL,
+	                                                "_Select", GTK_RESPONSE_ACCEPT, NULL);
+	const char *currentPath = gtk_entry_get_text(GTK_ENTRY(entry));
+	if (currentPath[0] != '\0')
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(chooser), currentPath);
+
+	if (gtk_dialog_run(GTK_DIALOG(chooser)) == GTK_RESPONSE_ACCEPT)
+	{
+		char *selectedPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(chooser));
+		if (selectedPath != NULL)
+		{
+			gtk_entry_set_text(GTK_ENTRY(entry), selectedPath);
+			g_free(selectedPath);
+		}
+	}
+	gtk_widget_destroy(chooser);
+}
+
+static GtkWidget *CreateAddonPathRow(GtkGrid *grid, int row, const char *labelText,
+                                     const std::string &initialPath, GtkFileChooserAction action,
+                                     const char *chooserTitle)
+{
+	GtkWidget *label = gtk_label_new_with_mnemonic(labelText);
+	gtk_label_set_xalign(GTK_LABEL(label), 1.0f);
+	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+	GtkWidget *entry = gtk_entry_new();
+	gtk_entry_set_text(GTK_ENTRY(entry), initialPath.c_str());
+	gtk_widget_set_hexpand(entry, TRUE);
+	GtkWidget *browse = gtk_button_new_with_label("Browse…");
+	g_object_set_data(G_OBJECT(browse), "path-entry", entry);
+	g_object_set_data(G_OBJECT(browse), "chooser-action", GINT_TO_POINTER(action));
+	g_object_set_data(G_OBJECT(browse), "chooser-title", (gpointer)chooserTitle);
+	g_signal_connect(browse, "clicked", G_CALLBACK(SelectAddonPath), NULL);
+	gtk_box_pack_start(GTK_BOX(box), entry, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(box), browse, FALSE, FALSE, 0);
+	g_object_set_data(G_OBJECT(box), "path-entry", entry);
+	gtk_grid_attach(grid, label, 0, row, 1, 1);
+	gtk_grid_attach(grid, box, 1, row, 1, 1);
+	gtk_label_set_mnemonic_widget(GTK_LABEL(label), entry);
+	return box;
+}
+
+struct Slot1DialogControls
+{
+	GtkWidget *description;
+	GtkWidget *r4Controls;
+	GtkWidget *debugControls;
+	GtkWidget *typeCombo;
+	GtkWidget *useRomPath;
+};
+
+static void Slot1RomPathToggled(GtkToggleButton *button, gpointer user_data)
+{
+	Slot1DialogControls *controls = (Slot1DialogControls *)user_data;
+	const bool isR4 = gtk_combo_box_get_active(GTK_COMBO_BOX(controls->typeCombo)) == NDS_SLOT1_R4;
+	gtk_widget_set_sensitive(controls->r4Controls,
+	                         isR4 && !gtk_toggle_button_get_active(button));
+}
+
+static void Slot1TypeChanged(GtkComboBox *combo, gpointer user_data)
+{
+	Slot1DialogControls *controls = (Slot1DialogControls *)user_data;
+	const int type = gtk_combo_box_get_active(combo);
+	if (type < 0 || type >= NDS_SLOT1_COUNT)
+		return;
+
+	gtk_label_set_text(GTK_LABEL(controls->description), slot1_List[type]->info()->descr());
+	gtk_widget_set_sensitive(controls->r4Controls,
+	                         type == NDS_SLOT1_R4 &&
+	                         !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(controls->useRomPath)));
+	gtk_widget_set_sensitive(controls->useRomPath, type == NDS_SLOT1_R4);
+	gtk_widget_set_sensitive(controls->debugControls, type == NDS_SLOT1_RETAIL_DEBUG);
+}
+
+static void Slot1SettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	slot1_Init();
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Slot 1 Settings", GTK_WINDOW(pWindow),
+	                                                GTK_DIALOG_MODAL, "_Cancel", GTK_RESPONSE_CANCEL,
+	                                                "_OK", GTK_RESPONSE_OK, NULL);
+	gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
+	GtkWidget *grid = gtk_grid_new();
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+	gtk_container_set_border_width(GTK_CONTAINER(grid), 12);
+	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), grid, TRUE, TRUE, 0);
+
+	GtkWidget *typeLabel = gtk_label_new_with_mnemonic("_Device:");
+	gtk_label_set_xalign(GTK_LABEL(typeLabel), 1.0f);
+	GtkWidget *typeCombo = gtk_combo_box_text_new();
+	for (int i = 0; i < NDS_SLOT1_COUNT; i++)
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(typeCombo), slot1_List[i]->info()->name());
+	gtk_grid_attach(GTK_GRID(grid), typeLabel, 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), typeCombo, 1, 0, 1, 1);
+	gtk_label_set_mnemonic_widget(GTK_LABEL(typeLabel), typeCombo);
+
+	GtkWidget *description = gtk_label_new("");
+	gtk_label_set_xalign(GTK_LABEL(description), 0.0f);
+	gtk_label_set_line_wrap(GTK_LABEL(description), TRUE);
+	gtk_grid_attach(GTK_GRID(grid), description, 0, 1, 2, 1);
+
+	GtkWidget *r4Controls = CreateAddonPathRow(GTK_GRID(grid), 2, "_FAT directory:",
+	                                          config.slot1_fat_path.get(),
+	                                          GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
+	                                          "Select the R4 FAT directory");
+	GtkWidget *useRomPath = gtk_check_button_new_with_mnemonic("Use the loaded _ROM directory");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(useRomPath), config.slot1_fat_path_type);
+	gtk_grid_attach(GTK_GRID(grid), useRomPath, 1, 3, 1, 1);
+	std::string initialDebugPath = config.slot1_debug_path.get();
+	if (initialDebugPath.empty())
+		initialDebugPath = path.getpath(path.SLOT1D);
+	GtkWidget *debugControls = CreateAddonPathRow(GTK_GRID(grid), 4, "_Debug filesystem:",
+	                                              initialDebugPath,
+	                                              GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
+	                                              "Select the Slot 1 debug filesystem directory");
+
+	int currentType = (int)slot1_GetCurrentType();
+	if (currentType < 0 || currentType >= NDS_SLOT1_COUNT)
+		currentType = NDS_SLOT1_RETAIL_AUTO;
+	gtk_combo_box_set_active(GTK_COMBO_BOX(typeCombo), currentType);
+	Slot1DialogControls controls = { description, r4Controls, debugControls, typeCombo, useRomPath };
+	g_signal_connect(typeCombo, "changed", G_CALLBACK(Slot1TypeChanged), &controls);
+	g_signal_connect(useRomPath, "toggled", G_CALLBACK(Slot1RomPathToggled), &controls);
+	Slot1TypeChanged(GTK_COMBO_BOX(typeCombo), &controls);
+	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(dialog)));
+
+	while (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK)
+	{
+		const int type = gtk_combo_box_get_active(GTK_COMBO_BOX(typeCombo));
+		const std::string fatPath = gtk_entry_get_text(GTK_ENTRY(
+			g_object_get_data(G_OBJECT(r4Controls), "path-entry")));
+		const bool useRomDirectory = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(useRomPath));
+		GtkWidget *debugEntry = GTK_WIDGET(g_object_get_data(G_OBJECT(debugControls), "path-entry"));
+		const std::string debugPath = gtk_entry_get_text(GTK_ENTRY(debugEntry));
+
+		if (type < 0 || type >= NDS_SLOT1_COUNT ||
+		    (type == NDS_SLOT1_R4 && !useRomDirectory && fatPath.empty()) ||
+		    (type == NDS_SLOT1_R4 && !useRomDirectory &&
+		     !g_file_test(fatPath.c_str(), G_FILE_TEST_IS_DIR)) ||
+		    (type == NDS_SLOT1_RETAIL_DEBUG &&
+		     (debugPath.empty() || !g_file_test(debugPath.c_str(), G_FILE_TEST_IS_DIR))))
+		{
+			GtkWidget *error = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL,
+			                                          GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
+			                                          "Choose a directory for the selected Slot 1 device.");
+			gtk_dialog_run(GTK_DIALOG(error));
+			gtk_widget_destroy(error);
+			continue;
+		}
+
+		config.slot1_fat_path = fatPath;
+		config.slot1_fat_path_type = useRomDirectory;
+		config.slot1_debug_path = debugPath;
+		slot1_SetFatDir(fatPath, useRomDirectory);
+		if (!debugPath.empty())
+			path.setpath(path.SLOT1D, debugPath);
+		if (!slot1_Change((NDS_SLOT1_TYPE)type))
+			slot1_Reset();
+		config.slot1_id = slot1_List[type]->info()->id();
+		break;
+	}
+	gtk_widget_destroy(dialog);
+}
+
+struct Slot2DialogControls
+{
+	GtkWidget *description;
+	GtkWidget *gbaControls;
+	GtkWidget *cflashMode;
+	GtkWidget *cflashPathControls;
+	GtkWidget *typeCombo;
+};
+
+static void Slot2TypeChanged(GtkComboBox *combo, gpointer user_data)
+{
+	Slot2DialogControls *controls = (Slot2DialogControls *)user_data;
+	const int type = gtk_combo_box_get_active(combo);
+	if (type < 0 || type >= NDS_SLOT2_COUNT)
+		return;
+
+	gtk_label_set_text(GTK_LABEL(controls->description), slot2_List[type]->info()->descr());
+	gtk_widget_set_sensitive(controls->gbaControls, type == NDS_SLOT2_GBACART);
+	gtk_widget_set_sensitive(controls->cflashMode, type == NDS_SLOT2_CFLASH);
+	gtk_widget_set_sensitive(controls->cflashPathControls,
+	                         type == NDS_SLOT2_CFLASH &&
+	                         gtk_combo_box_get_active(GTK_COMBO_BOX(controls->cflashMode)) !=
+	                             ADDON_CFLASH_MODE_RomPath);
+}
+
+static void Slot2CFlashModeChanged(GtkComboBox *combo, gpointer user_data)
+{
+	Slot2DialogControls *controls = (Slot2DialogControls *)user_data;
+	const int type = gtk_combo_box_get_active(GTK_COMBO_BOX(controls->typeCombo));
+	GList *children = gtk_container_get_children(GTK_CONTAINER(controls->cflashPathControls));
+	if (children != NULL && children->next != NULL)
+	{
+		GtkWidget *browse = GTK_WIDGET(children->next->data);
+		if (gtk_combo_box_get_active(combo) == ADDON_CFLASH_MODE_File)
+		{
+			g_object_set_data(G_OBJECT(browse), "chooser-action",
+			                  GINT_TO_POINTER(GTK_FILE_CHOOSER_ACTION_OPEN));
+			g_object_set_data(G_OBJECT(browse), "chooser-title", (gpointer)"Select a CompactFlash image file");
+		}
+		else
+		{
+			g_object_set_data(G_OBJECT(browse), "chooser-action",
+			                  GINT_TO_POINTER(GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER));
+			g_object_set_data(G_OBJECT(browse), "chooser-title", (gpointer)"Select a CompactFlash directory");
+		}
+	}
+	g_list_free(children);
+	gtk_widget_set_sensitive(controls->cflashPathControls,
+	                         type == NDS_SLOT2_CFLASH &&
+	                         gtk_combo_box_get_active(combo) != ADDON_CFLASH_MODE_RomPath);
+}
+
+static void Slot2SettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	slot2_Init();
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Slot 2 Settings", GTK_WINDOW(pWindow),
+	                                                GTK_DIALOG_MODAL, "_Cancel", GTK_RESPONSE_CANCEL,
+	                                                "_OK", GTK_RESPONSE_OK, NULL);
+	gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
+	GtkWidget *grid = gtk_grid_new();
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+	gtk_container_set_border_width(GTK_CONTAINER(grid), 12);
+	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), grid, TRUE, TRUE, 0);
+
+	GtkWidget *typeLabel = gtk_label_new_with_mnemonic("_Device:");
+	gtk_label_set_xalign(GTK_LABEL(typeLabel), 1.0f);
+	GtkWidget *typeCombo = gtk_combo_box_text_new();
+	for (int i = 0; i < NDS_SLOT2_COUNT; i++)
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(typeCombo), slot2_List[i]->info()->name());
+	gtk_grid_attach(GTK_GRID(grid), typeLabel, 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), typeCombo, 1, 0, 1, 1);
+	gtk_label_set_mnemonic_widget(GTK_LABEL(typeLabel), typeCombo);
+
+	GtkWidget *description = gtk_label_new("");
+	gtk_label_set_xalign(GTK_LABEL(description), 0.0f);
+	gtk_label_set_line_wrap(GTK_LABEL(description), TRUE);
+	gtk_grid_attach(GTK_GRID(grid), description, 0, 1, 2, 1);
+
+	GtkWidget *gbaControls = CreateAddonPathRow(GTK_GRID(grid), 2, "_GBA cartridge ROM:",
+	                                            config.slot2_gba_rom.get(),
+	                                            GTK_FILE_CHOOSER_ACTION_OPEN,
+	                                            "Select a GBA cartridge ROM");
+	GtkWidget *cflashModeLabel = gtk_label_new_with_mnemonic("_CompactFlash mode:");
+	gtk_label_set_xalign(GTK_LABEL(cflashModeLabel), 1.0f);
+	GtkWidget *cflashMode = gtk_combo_box_text_new();
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(cflashMode), "Directory");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(cflashMode), "Image file");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(cflashMode), "Loaded ROM directory");
+	int savedCFlashMode = CLAMP((int)config.slot2_cflash_mode, ADDON_CFLASH_MODE_Path,
+	                            ADDON_CFLASH_MODE_RomPath);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(cflashMode), savedCFlashMode);
+	gtk_grid_attach(GTK_GRID(grid), cflashModeLabel, 0, 3, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), cflashMode, 1, 3, 1, 1);
+	gtk_label_set_mnemonic_widget(GTK_LABEL(cflashModeLabel), cflashMode);
+	GtkWidget *cflashPathControls = CreateAddonPathRow(GTK_GRID(grid), 4, "_CompactFlash path:",
+	                                                   config.slot2_cflash_path.get(),
+	                                                   GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
+	                                                   "Select a CompactFlash directory or image");
+
+	int currentType = (int)slot2_GetCurrentType();
+	if (currentType < 0 || currentType >= NDS_SLOT2_COUNT)
+		currentType = NDS_SLOT2_AUTO;
+	gtk_combo_box_set_active(GTK_COMBO_BOX(typeCombo), currentType);
+	Slot2DialogControls controls = { description, gbaControls, cflashMode, cflashPathControls,
+	                                 typeCombo };
+	g_signal_connect(typeCombo, "changed", G_CALLBACK(Slot2TypeChanged), &controls);
+	g_signal_connect(cflashMode, "changed", G_CALLBACK(Slot2CFlashModeChanged), &controls);
+	Slot2TypeChanged(GTK_COMBO_BOX(typeCombo), &controls);
+	Slot2CFlashModeChanged(GTK_COMBO_BOX(cflashMode), &controls);
+	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(dialog)));
+	Slot2TypeChanged(GTK_COMBO_BOX(typeCombo), &controls);
+	Slot2CFlashModeChanged(GTK_COMBO_BOX(cflashMode), &controls);
+
+	while (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK)
+	{
+		const int type = gtk_combo_box_get_active(GTK_COMBO_BOX(typeCombo));
+		GtkWidget *gbaEntry = GTK_WIDGET(g_object_get_data(G_OBJECT(gbaControls), "path-entry"));
+		const std::string gbaRom = gtk_entry_get_text(GTK_ENTRY(gbaEntry));
+		GtkWidget *cflashEntry = GTK_WIDGET(g_object_get_data(G_OBJECT(cflashPathControls), "path-entry"));
+		const std::string cflashPath = gtk_entry_get_text(GTK_ENTRY(cflashEntry));
+		const int cflashModeValue = gtk_combo_box_get_active(GTK_COMBO_BOX(cflashMode));
+
+		if (type < 0 || type >= NDS_SLOT2_COUNT ||
+		    (type == NDS_SLOT2_GBACART && gbaRom.empty()) ||
+		    (type == NDS_SLOT2_CFLASH && cflashModeValue != ADDON_CFLASH_MODE_RomPath && cflashPath.empty()))
+		{
+			GtkWidget *error = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL,
+			                                          GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
+			                                          "Choose a path for the selected Slot 2 device.");
+			gtk_dialog_run(GTK_DIALOG(error));
+			gtk_widget_destroy(error);
+			continue;
+		}
+		if (type == NDS_SLOT2_GBACART)
+		{
+			FILE *test = fopen(gbaRom.c_str(), "rb");
+			if (test == NULL)
+			{
+				GtkWidget *error = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL,
+				                                          GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
+				                                          "The selected GBA ROM cannot be opened.");
+				gtk_dialog_run(GTK_DIALOG(error));
+				gtk_widget_destroy(error);
+				continue;
+			}
+			fclose(test);
+		}
+		if (type == NDS_SLOT2_CFLASH && cflashModeValue == ADDON_CFLASH_MODE_Path &&
+		    !g_file_test(cflashPath.c_str(), G_FILE_TEST_IS_DIR))
+		{
+			GtkWidget *error = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL,
+			                                          GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
+			                                          "The selected CompactFlash directory does not exist.");
+			gtk_dialog_run(GTK_DIALOG(error));
+			gtk_widget_destroy(error);
+			continue;
+		}
+		if (type == NDS_SLOT2_CFLASH && cflashModeValue == ADDON_CFLASH_MODE_File)
+		{
+			FILE *image = fopen(cflashPath.c_str(), "rb+");
+			if (image == NULL)
+			{
+				GtkWidget *error = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL,
+				                                          GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
+				                                          "The CompactFlash image cannot be opened for writing.");
+				gtk_dialog_run(GTK_DIALOG(error));
+				gtk_widget_destroy(error);
+				continue;
+			}
+			fclose(image);
+		}
+
+		config.slot2_gba_rom = gbaRom;
+		config.slot2_cflash_mode = cflashModeValue;
+		config.slot2_cflash_path = cflashPath;
+		if (type == NDS_SLOT2_GBACART)
+		{
+			GBACartridge_RomPath = gbaRom;
+			const size_t extension = gbaRom.find_last_of('.');
+			const size_t separator = gbaRom.find_last_of("/\\");
+			GBACartridge_SRAMPath = extension == std::string::npos ||
+			                        (separator != std::string::npos && extension < separator)
+			                        ? gbaRom + ".sav" : gbaRom.substr(0, extension) + ".sav";
+		}
+		if (type == NDS_SLOT2_CFLASH)
+		{
+			CFlash_Mode = (ADDON_CFLASH_MODE)cflashModeValue;
+			CFlash_Path = cflashPath;
+		}
+
+		const NDS_SLOT2_TYPE selectedType = (NDS_SLOT2_TYPE)type;
+		const bool changed = slot2_Change(selectedType);
+		if (!changed)
+			slot2_Reset();
+		config.slot2_id = slot2_List[type]->info()->id();
+		break;
+	}
+	gtk_widget_destroy(dialog);
+}
+
+static void AddRomInfoRow(GtkGrid *grid, int row, const char *title, const std::string &value)
+{
+	GtkWidget *titleLabel = gtk_label_new(title);
+	gtk_label_set_xalign(GTK_LABEL(titleLabel), 1.0f);
+	GtkWidget *valueLabel = gtk_label_new(value.c_str());
+	gtk_label_set_xalign(GTK_LABEL(valueLabel), 0.0f);
+	gtk_label_set_selectable(GTK_LABEL(valueLabel), TRUE);
+	gtk_grid_attach(grid, titleLabel, 0, row, 1, 1);
+	gtk_grid_attach(grid, valueLabel, 1, row, 1, 1);
+}
+
+static void RomInfoDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	if (gameInfo.fROM == NULL)
+		return;
+
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("ROM Info", GTK_WINDOW(pWindow),
+	                                                GTK_DIALOG_MODAL, "_Close", GTK_RESPONSE_CLOSE, NULL);
+	GtkWidget *grid = gtk_grid_new();
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+	gtk_container_set_border_width(GTK_CONTAINER(grid), 12);
+	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), grid, TRUE, TRUE, 0);
+
+	AddRomInfoRow(GTK_GRID(grid), 0, "Internal title:", gameInfo.ROMname);
+	AddRomInfoRow(GTK_GRID(grid), 1, "Game code:", gameInfo.ROMserial);
+	char value[128];
+	const u16 makerCode = T1ReadWord((u8 *)&gameInfo.header, 0x10);
+	std::snprintf(value, sizeof(value), "%c%c (%s)",
+	              ((u8 *)&gameInfo.header)[0x10], ((u8 *)&gameInfo.header)[0x11],
+	              Database::MakerNameForMakerCode(makerCode, true));
+	AddRomInfoRow(GTK_GRID(grid), 2, "Maker:", value);
+	if (gameInfo.header.cardSize < 48)
+		std::snprintf(value, sizeof(value), "%llu KiB",
+		              (unsigned long long)(0x80ull << gameInfo.header.cardSize));
+	else
+		std::snprintf(value, sizeof(value), "Unknown");
+	AddRomInfoRow(GTK_GRID(grid), 3, "Cartridge capacity:", value);
+	std::snprintf(value, sizeof(value), "%u bytes", gameInfo.romsize);
+	AddRomInfoRow(GTK_GRID(grid), 4, "Loaded ROM size:", value);
+	std::snprintf(value, sizeof(value), "0x%08X", gameInfo.crc);
+	AddRomInfoRow(GTK_GRID(grid), 5, "CRC32:", value);
+	const int saveType = CommonSettings.manualBackupType;
+	AddRomInfoRow(GTK_GRID(grid), 6, "Save type:",
+	              saveType >= 0 && saveType <= 6
+	                  ? save_types[saveType].descr : "Unknown");
+#ifdef HAVE_JIT
+	AddRomInfoRow(GTK_GRID(grid), 7, "CPU engine:", CommonSettings.use_jit ? "JIT recompiler" : "Interpreter");
+#else
+	AddRomInfoRow(GTK_GRID(grid), 7, "CPU engine:", "Interpreter");
+#endif
+	const int renderer = config.core3D;
+	if (renderer >= 0 && renderer < GPU3D_MAX_COUNT && core3DList[renderer] != NULL)
+		AddRomInfoRow(GTK_GRID(grid), 8, "3D engine:", core3DList[renderer]->name);
+
+	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(dialog)));
+	gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+}
+
 /////////////////////////////// FIRMWARE SETTINGS //////////////////////////////////////
 
 // The firmware stores text as UTF-16 code units. GLib's gunichar2 is exactly
@@ -7884,9 +8328,41 @@ common_gtk_main(GApplication *app, gpointer user_data)
     }
 
     //------------------addons----------
+    slot1_Init();
+    slot2_Init();
+
+    slot1_SetFatDir(config.slot1_fat_path.get(), config.slot1_fat_path_type);
+    if (!config.slot1_debug_path.get().empty())
+        path.setpath(path.SLOT1D, config.slot1_debug_path.get());
+    int slot1Id = config.slot1_id;
+    if (slot1Id < 0 || slot1Id > 0xFF)
+        slot1Id = 0xFE;
+    NDS_SLOT1_TYPE slot1_device_type = NDS_SLOT1_RETAIL_AUTO;
+    slot1_getTypeByID((u8)slot1Id, slot1_device_type);
+    slot1_Change(slot1_device_type);
+
+    const int configuredCFlashMode = CLAMP((int)config.slot2_cflash_mode,
+                                           ADDON_CFLASH_MODE_Path, ADDON_CFLASH_MODE_RomPath);
+    CFlash_Mode = (ADDON_CFLASH_MODE)configuredCFlashMode;
+    CFlash_Path = config.slot2_cflash_path.get();
+    GBACartridge_RomPath = config.slot2_gba_rom.get();
+    if (!GBACartridge_RomPath.empty())
+    {
+        const size_t extension = GBACartridge_RomPath.find_last_of('.');
+        const size_t separator = GBACartridge_RomPath.find_last_of("/\\");
+        GBACartridge_SRAMPath = extension == std::string::npos ||
+                                (separator != std::string::npos && extension < separator)
+                                ? GBACartridge_RomPath + ".sav"
+                                : GBACartridge_RomPath.substr(0, extension) + ".sav";
+    }
+
     my_config->process_addonCommands();
 
-    int slot2_device_type = NDS_SLOT2_AUTO;
+    int slot2Id = config.slot2_id;
+    if (slot2Id < 0 || slot2Id > 0xFF)
+        slot2Id = 0xFE;
+    NDS_SLOT2_TYPE slot2_device_type = NDS_SLOT2_AUTO;
+    slot2_getTypeByID((u8)slot2Id, slot2_device_type);
 
     if (my_config->is_cflash_configured)
         slot2_device_type = NDS_SLOT2_CFLASH;
@@ -7895,18 +8371,21 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
         //set the GBA rom and sav paths
         GBACartridge_RomPath = my_config->gbaslot_rom.c_str();
-        if(toupper(strright(GBACartridge_RomPath,4)) == ".GBA")
-          GBACartridge_SRAMPath = strright(GBACartridge_RomPath,4) + ".sav";
-        else
-          //what to do? lets just do the same thing for now
-          GBACartridge_SRAMPath = strright(GBACartridge_RomPath,4) + ".sav";
-
-        // Check if the file exists and can be opened
-        FILE * test = fopen(GBACartridge_RomPath.c_str(), "rb");
-        if (test) {
-            slot2_device_type = NDS_SLOT2_GBACART;
+        const size_t extension = GBACartridge_RomPath.find_last_of('.');
+        const size_t separator = GBACartridge_RomPath.find_last_of("/\\");
+        GBACartridge_SRAMPath = extension == std::string::npos ||
+                                (separator != std::string::npos && extension < separator)
+                                ? GBACartridge_RomPath + ".sav"
+                                : GBACartridge_RomPath.substr(0, extension) + ".sav";
+        slot2_device_type = NDS_SLOT2_GBACART;
+    }
+    else if (slot2_device_type == NDS_SLOT2_GBACART)
+    {
+        FILE *test = fopen(GBACartridge_RomPath.c_str(), "rb");
+        if (test != NULL)
             fclose(test);
-        }
+        else
+            slot2_device_type = NDS_SLOT2_NONE;
     }
 
 	switch (slot2_device_type)
@@ -7936,8 +8415,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 			break;
 	}
 	
-    slot2_Init();
-    slot2_Change((NDS_SLOT2_TYPE)slot2_device_type);
+    slot2_Change(slot2_device_type);
 
     /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
      * Perhaps it needs a "window" to catch events...? */
@@ -8844,6 +9322,8 @@ int main (int argc, char *argv[])
   g_action_map_add_action_entries(G_ACTION_MAP(app),
                                   app_entries, G_N_ELEMENTS(app_entries),
                                   app);
+  g_simple_action_set_enabled(G_SIMPLE_ACTION(g_action_map_lookup_action(
+      G_ACTION_MAP(app), "rom-info")), FALSE);
 
   if ( !fill_configured_features( &my_config, argv)) {
     exit(0);
