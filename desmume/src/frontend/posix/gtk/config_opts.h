@@ -132,6 +132,11 @@ OPT(fwconfig_birth_month, int, 6, Firmware, bMonth)
 OPT(fwconfig_birth_day, int, 23, Firmware, bDay)
 OPT(fwconfig_mac_address, std::string, "0009BF123456", Firmware, macAddress)
 
+/* Wifi settings use the same section and keys as the Windows frontend. */
+OPT(wifi_enabled, bool, false, Wifi, Enabled)
+OPT(wifi_compatibility_mode, bool, false, Wifi, Compatibility Mode)
+OPT(wifi_bridge_adapter, int, 0, Wifi, BridgeAdapter)
+
 /* RAM Watch
  *
  * The watch list itself is a document handled by shared/ramwatch_core.cpp;

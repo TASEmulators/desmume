@@ -4524,11 +4524,15 @@ int WifiHandler::GetBridgeDeviceList(std::vector<std::string>* deviceStringList)
 
 #ifdef DESMUME_WIFI_PCAP
 	char errbuf[PCAP_ERRBUF_SIZE];
-	pcap_if_t* deviceList;
+	pcap_if_t* deviceList = NULL;
 
 	result = this->GetPCapInterface()->findalldevs((void**)&deviceList, errbuf);
 	if((result == -1) || (deviceList == NULL))
 	{
+		if(deviceList != NULL)
+		{
+			this->GetPCapInterface()->freealldevs(deviceList);
+		}
 		return result;
 	}
 
@@ -4545,6 +4549,7 @@ int WifiHandler::GetBridgeDeviceList(std::vector<std::string>* deviceStringList)
 		}
 	}
 
+	this->GetPCapInterface()->freealldevs(deviceList);
 	return (int)deviceStringList->size();
 #else
 	(void)deviceStringList;

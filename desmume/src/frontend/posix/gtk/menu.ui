@@ -622,17 +622,21 @@
         </submenu>
 <!-- #ifdef HAVE_JIT
         <item>
-          <attribute name='label' translatable='yes'>Em_ulation Settings</attribute>
+          <attribute name='label' translatable='yes'>Em_ulation Settings…</attribute>
           <attribute name='action'>app.emulationsettings</attribute>
         </item>
 #endif -->
         <item>
-          <attribute name='label' translatable='yes'>_Graphics settings</attribute>
+          <attribute name='label' translatable='yes'>_Graphics settings…</attribute>
           <attribute name='action'>app.graphics-settings</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>_Sound settings…</attribute>
           <attribute name='action'>app.soundsettings</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Wi-Fi settings…</attribute>
+          <attribute name='action'>app.wifi-settings</attribute>
         </item>
 <!-- #ifdef FAKE_MIC
         <item>
@@ -644,11 +648,11 @@
           <attribute name='label' translatable='yes'>_Cheat</attribute>
           <section>
             <item>
-              <attribute name='label' translatable='yes'>_List</attribute>
+              <attribute name='label' translatable='yes'>_List…</attribute>
               <attribute name='action'>app.cheatlist</attribute>
             </item>
             <item>
-              <attribute name='label' translatable='yes'>_Search</attribute>
+              <attribute name='label' translatable='yes'>_Search…</attribute>
               <attribute name='action'>app.cheatsearch</attribute>
             </item>
           </section>
@@ -704,16 +708,12 @@
           <attribute name='action'>app.firmwaresettings</attribute>
         </item>
         <item>
-          <attribute name='label' translatable='yes'>_Edit controls</attribute>
+          <attribute name='label' translatable='yes'>_Edit controls…</attribute>
           <attribute name='action'>app.editctrls</attribute>
         </item>
         <item>
-          <attribute name='label' translatable='yes'>Edit _Hotkeys</attribute>
+          <attribute name='label' translatable='yes'>Edit _Hotkeys…</attribute>
           <attribute name='action'>app.hotkeys</attribute>
-        </item>
-        <item>
-          <attribute name='label' translatable='yes'>Edit _Joystick controls</attribute>
-          <attribute name='action'>app.editjoyctrls</attribute>
         </item>
       </section>
     </submenu>

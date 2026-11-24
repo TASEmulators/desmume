@@ -50,6 +50,7 @@
 #include "main.h"
 #include "firmware.h"
 #include "NDSSystem.h"
+#include "wifi.h"
 #include "driver.h"
 #include "SPU.h"
 #include "../shared/sndsdl.h"
@@ -299,11 +300,11 @@ static void LoadSaveStateInfo();
 static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Reset(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void SoundSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void WifiSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void FirmwareSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void HotkeyConfigDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void TogglePause(GSimpleAction *action, GVariant *parameter, gpointer user_data);
-static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void MenuSave(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void changesavetype(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void MenuLoad(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -418,6 +419,7 @@ static const GActionEntry app_entries[] = {
     { "frameskipA",        ToggleAutoFrameskip, NULL, "true" },
     { "frameskip",         Modify_Frameskip,    "s",  "\"0\"" },
     { "soundsettings",     SoundSettingsDialog },
+    { "wifi-settings",     WifiSettingsDialog },
 #ifdef FAKE_MIC
     { "micnoise",          ToggleMicNoise,      NULL, "false" },
 #endif
@@ -432,8 +434,6 @@ static const GActionEntry app_entries[] = {
     { "firmwaresettings",    FirmwareSettingsDialog },
     { "editctrls",           Edit_Controls },
     { "hotkeys",             HotkeyConfigDialog },
-    { "editjoyctrls",        Edit_Joystick_Controls },
-
     // Tools
     // dTool entries are populated dynamically in desmume_gtk_menu_tools().
 #ifdef HAVE_LUA
@@ -641,6 +641,7 @@ static u16 lookup_turbo_key(u32 keyval)
     return 0;
 }
 u32 Keypad_Temp[NB_KEYS];
+static u32 Joypad_Temp[NB_KEYS];
 
 class configured_features : public CommandLine
 {
@@ -4724,6 +4725,132 @@ static void SoundSettingsDialog(GSimpleAction *action, GVariant *parameter, gpoi
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 }
 
+static void WifiCompatibilityToggled(GtkToggleButton *button, gpointer data)
+{
+	gtk_widget_set_sensitive(GTK_WIDGET(data), gtk_toggle_button_get_active(button));
+}
+
+static void WifiSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Wi-Fi Settings",
+	                        GTK_WINDOW(pWindow), GTK_DIALOG_MODAL,
+	                        "_OK", GTK_RESPONSE_OK,
+	                        "_Cancel", GTK_RESPONSE_CANCEL,
+	                        NULL);
+	gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
+
+	GtkWidget *grid = gtk_grid_new();
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+	gtk_container_set_border_width(GTK_CONTAINER(grid), 12);
+	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), grid, TRUE, TRUE, 0);
+
+	GtkWidget *enabled = gtk_check_button_new_with_mnemonic("_Enable Wi-Fi emulation");
+	gtk_grid_attach(GTK_GRID(grid), enabled, 0, 0, 2, 1);
+	GtkWidget *compatibility = gtk_check_button_new_with_mnemonic("_Compatibility mode");
+	gtk_grid_attach(GTK_GRID(grid), compatibility, 0, 1, 2, 1);
+
+	GtkWidget *adapterLabel = gtk_label_new_with_mnemonic("_Bridge adapter:");
+	gtk_label_set_xalign(GTK_LABEL(adapterLabel), 1.0f);
+	GtkWidget *adapter = gtk_combo_box_text_new();
+	gtk_widget_set_hexpand(adapter, TRUE);
+	gtk_grid_attach(GTK_GRID(grid), adapterLabel, 0, 2, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), adapter, 1, 2, 1, 1);
+	gtk_label_set_mnemonic_widget(GTK_LABEL(adapterLabel), adapter);
+
+	const WifiEmulationLevel emulationLevel = wifiHandler->GetSelectedEmulationLevel();
+	const bool wifiEnabled = emulationLevel != WifiEmulationLevel_Off;
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(enabled), wifiEnabled);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(compatibility),
+	                             wifiEnabled ? emulationLevel == WifiEmulationLevel_Compatibility : config.wifi_compatibility_mode);
+	gtk_widget_set_sensitive(GTK_WIDGET(compatibility), wifiEnabled);
+	g_signal_connect(G_OBJECT(enabled), "toggled", G_CALLBACK(WifiCompatibilityToggled), compatibility);
+
+#ifdef EXPERIMENTAL_WIFI_COMM
+	gtk_widget_set_sensitive(enabled, TRUE);
+	gtk_widget_set_sensitive(compatibility, wifiEnabled);
+#else
+	gtk_widget_set_sensitive(enabled, FALSE);
+	gtk_widget_set_sensitive(compatibility, FALSE);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(enabled), FALSE);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(compatibility), FALSE);
+#endif
+
+	std::vector<std::string> devices;
+	int deviceCount = -1;
+	const bool pcapSupported = wifiHandler->IsPCapSupported();
+	if (pcapSupported)
+		deviceCount = wifiHandler->GetBridgeDeviceList(&devices);
+
+	int selectedDevice = config.wifi_bridge_adapter;
+	bool adapterAvailable = false;
+	if (!pcapSupported)
+	{
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(adapter), "Error: Could not load libpcap.");
+	}
+	else if (deviceCount < 0)
+	{
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(adapter), "Error: Searching for a device failed.");
+	}
+	else if (deviceCount == 0)
+	{
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(adapter), "No devices were found.");
+	}
+	else
+	{
+		for (const std::string &device : devices)
+			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(adapter), device.c_str());
+
+		if (selectedDevice < 0 || selectedDevice >= deviceCount)
+			selectedDevice = 0;
+		gtk_combo_box_set_active(GTK_COMBO_BOX(adapter), selectedDevice);
+		adapterAvailable = true;
+	}
+	gtk_widget_set_sensitive(adapter, adapterAvailable);
+
+	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(dialog)));
+
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK)
+	{
+		bool shouldReset = false;
+		if (gameInfo.fROM != NULL)
+		{
+			GtkWidget *prompt = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL,
+			                                           GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+			                                           "The current ROM needs to be reset to apply changes.\nReset now?");
+			shouldReset = gtk_dialog_run(GTK_DIALOG(prompt)) == GTK_RESPONSE_YES;
+			gtk_widget_destroy(prompt);
+		}
+
+#ifdef EXPERIMENTAL_WIFI_COMM
+		const bool enableWifi = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(enabled));
+		const bool compatibilityMode = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(compatibility));
+		config.wifi_enabled = enableWifi;
+		config.wifi_compatibility_mode = compatibilityMode;
+		wifiHandler->SetEmulationLevel(enableWifi
+		                               ? (compatibilityMode ? WifiEmulationLevel_Compatibility : WifiEmulationLevel_Normal)
+		                               : WifiEmulationLevel_Off);
+#else
+		config.wifi_enabled = false;
+		config.wifi_compatibility_mode = false;
+		wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
+#endif
+
+		const int activeDevice = gtk_combo_box_get_active(GTK_COMBO_BOX(adapter));
+		if (adapterAvailable && activeDevice >= 0)
+		{
+			CommonSettings.WifiBridgeDeviceID = activeDevice;
+			config.wifi_bridge_adapter = activeDevice;
+			wifiHandler->SetBridgeDeviceIndex(activeDevice);
+		}
+
+		if (shouldReset)
+			Reset(NULL, NULL, NULL);
+	}
+
+	gtk_widget_destroy(dialog);
+}
+
 /////////////////////////////// FIRMWARE SETTINGS //////////////////////////////////////
 
 // The firmware stores text as UTF-16 code units. GLib's gunichar2 is exactly
@@ -4781,6 +4908,23 @@ static void ApplyFirmwareSettingsConfig()
 	fw.birthdayDay = (u8)CLAMP(config.fwconfig_birth_day, 1, 31);
 	fw.language = (u8)CLAMP(config.firmware_language, 0, 5);
 	NDS_SetFirmwareMACAddressFromStr(fw, config.fwconfig_mac_address.get().c_str());
+}
+
+static void ApplyWifiSettingsConfig()
+{
+	CommonSettings.WifiBridgeDeviceID = config.wifi_bridge_adapter;
+	wifiHandler->SetBridgeDeviceIndex(CommonSettings.WifiBridgeDeviceID);
+
+#ifdef EXPERIMENTAL_WIFI_COMM
+	if (config.wifi_enabled)
+		wifiHandler->SetEmulationLevel(config.wifi_compatibility_mode
+		                               ? WifiEmulationLevel_Compatibility
+		                               : WifiEmulationLevel_Normal);
+	else
+		wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
+#else
+	wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
+#endif
 }
 
 static GtkWidget *FirmwareCombo(const char *const *items, int count, int active)
@@ -5423,18 +5567,28 @@ static void SaveKeyboardConfigIni(void)
     desmume_config_update_keys(keyfile, "KEYS");
 }
 
+static GtkWidget *JoystickControlsPage(void);
+
 static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     key_dialog state;
 
     memcpy(&Keypad_Temp, &keyboard_cfg, sizeof(keyboard_cfg));
+    memcpy(Joypad_Temp, joypad_cfg, sizeof(Joypad_Temp));
 
     KeyDialogInit(&state, "Control Config", KEYGROUP_CONTROL, KEYGROUP_TURBO | KEYGROUP_HOTKEY);
 
-    GtkWidget *box = KeyDialogContent(&state);
+    GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(state.dialog));
+    gtk_container_set_border_width(GTK_CONTAINER(content), 12);
+
+    GtkWidget *notebook = gtk_notebook_new();
+    gtk_box_pack_start(GTK_BOX(content), notebook, TRUE, TRUE, 0);
+
+    GtkWidget *keyboardPage = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 18);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), keyboardPage, gtk_label_new("Keyboard"));
 
     GtkWidget *grid = NULL;
-    KeyDialogGridFrame("Buttons", box, &grid);
+    KeyDialogGridFrame("Buttons", keyboardPage, &grid);
     for (int row = 0; row < 8; row++) {
         for (int col = 0; col < 2; col++) {
             const int key = control_grid[col][row];
@@ -5448,7 +5602,7 @@ static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer u
         }
     }
 
-    GtkWidget *side = KeyDialogSidePanel(&state, box,
+    GtkWidget *side = KeyDialogSidePanel(&state, keyboardPage,
         "<b>Red</b> means the key is used by another action.\n"
         "A button can be disabled using <b>Escape</b>.");
 
@@ -5456,8 +5610,10 @@ static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer u
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(allow), ctrls_get_allow_up_down());
     gtk_box_pack_start(GTK_BOX(side), allow, FALSE, FALSE, 0);
 
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), JoystickControlsPage(), gtk_label_new("Joystick"));
+
     KeyDialogUpdateConflicts(&state);
-    gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(state.dialog)));
+    gtk_widget_show_all(content);
 
     switch (gtk_dialog_run(GTK_DIALOG(state.dialog))) {
     case GTK_RESPONSE_OK:
@@ -5472,6 +5628,9 @@ static void Edit_Controls(GSimpleAction *action, GVariant *parameter, gpointer u
 
         memcpy(keyboard_cfg, Keypad_Temp, sizeof(keyboard_cfg));
         SaveKeyboardConfigIni();
+
+        memcpy(joypad_cfg, Joypad_Temp, sizeof(joypad_cfg));
+        desmume_config_update_joykeys(keyfile);
         break;
     case GTK_RESPONSE_CANCEL:
     case GTK_RESPONSE_NONE:
@@ -5579,10 +5738,10 @@ static void JoyKeyAcceptTimerStart(GtkWidget *w, GdkEventFocus *e, struct modify
 /* Text for a joystick binding field: 0xFFFF (and 0) mean "not bound". */
 static gchar *JoyKeyLabel(int key)
 {
-    if (Keypad_Temp[key] == 0xFFFF || Keypad_Temp[key] == 0)
+    if (Joypad_Temp[key] == 0xFFFF || Joypad_Temp[key] == 0)
         return g_strdup("Disabled");
 
-    return g_strdup_printf("%d", Keypad_Temp[key]);
+    return g_strdup_printf("%d", Joypad_Temp[key]);
 }
 
 static void Modify_JoyKey(GtkWidget* widget, gpointer data)
@@ -5596,10 +5755,10 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
     Key = GPOINTER_TO_INT(data);
     /* Joypad keys start at 1 */
     ctx.key_id = Key+1;
-    ctx.mk_key_chosen = Keypad_Temp[Key];
+    ctx.mk_key_chosen = Joypad_Temp[Key];
     Title = g_strdup_printf("Press \"%s\" button ...\n", key_names[Key]);
     mkDialog = gtk_dialog_new_with_buttons(Title,
-        GTK_WINDOW(pWindow),
+        GTK_WINDOW(gtk_widget_get_toplevel(widget)),
         GTK_DIALOG_MODAL,
         "_OK",GTK_RESPONSE_OK,
         "_Cancel",GTK_RESPONSE_CANCEL,
@@ -5616,7 +5775,7 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
 	
     switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
     case GTK_RESPONSE_OK:
-        Keypad_Temp[Key] = ctx.mk_key_chosen;
+        Joypad_Temp[Key] = ctx.mk_key_chosen;
         Key_Label = JoyKeyLabel(Key);
         gtk_button_set_label(GTK_BUTTON(widget), Key_Label);
         g_free(Key_Label);
@@ -5900,39 +6059,12 @@ static void EmulationSettingsDialog(GSimpleAction *action, GVariant *parameter, 
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 }
 
-static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+static GtkWidget *JoystickControlsPage(void)
 {
-    GtkWidget *ecDialog;
-    GtkWidget *ecKey;
-    GtkWidget *grid;
-    gchar *Key_Label;
+    GtkWidget *page = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 18);
+    GtkWidget *grid = NULL;
+    KeyDialogGridFrame("Buttons", page, &grid);
 
-    memcpy(&Keypad_Temp, &joypad_cfg, sizeof(joypad_cfg));
-
-    ecDialog = gtk_dialog_new_with_buttons("Joystick Config",
-                        GTK_WINDOW(pWindow),
-                        GTK_DIALOG_MODAL,
-                        "_Cancel",GTK_RESPONSE_CANCEL,
-                        "_OK",GTK_RESPONSE_OK,
-                        NULL);
-
-    GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(ecDialog));
-    gtk_container_set_border_width(GTK_CONTAINER(content), 12);
-
-    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 18);
-    gtk_box_pack_start(GTK_BOX(content), box, TRUE, TRUE, 0);
-
-    GtkWidget *frame = gtk_frame_new("Buttons");
-    gtk_box_pack_start(GTK_BOX(box), frame, FALSE, FALSE, 0);
-
-    grid = gtk_grid_new();
-    gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
-    gtk_grid_set_column_spacing(GTK_GRID(grid), 8);
-    gtk_container_set_border_width(GTK_CONTAINER(grid), 10);
-    gtk_container_add(GTK_CONTAINER(frame), grid);
-
-    /* Same layout as the keyboard config: the button names the action, the
-       field next to it holds the binding. */
     for (int row = 0; row < 8; row++) {
         for (int col = 0; col < 2; col++) {
             const int key = control_grid[col][row];
@@ -5942,21 +6074,21 @@ static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, g
             gchar *name = g_ascii_strup(key_names[key], -1);
             GtkWidget *label = gtk_label_new(name);
             g_free(name);
-            gtk_label_set_xalign(GTK_LABEL(label), 1.0);
+            gtk_label_set_xalign(GTK_LABEL(label), 1.0f);
             gtk_grid_attach(GTK_GRID(grid), label, col * 2, row, 1, 1);
 
-            Key_Label = JoyKeyLabel(key);
-            ecKey = gtk_button_new_with_label(Key_Label);
-            g_free(Key_Label);
-            gtk_widget_set_size_request(ecKey, 150, -1);
-            gtk_grid_attach(GTK_GRID(grid), ecKey, col * 2 + 1, row, 1, 1);
-            g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_JoyKey), GINT_TO_POINTER(key));
+            gchar *keyLabel = JoyKeyLabel(key);
+            GtkWidget *keyButton = gtk_button_new_with_label(keyLabel);
+            g_free(keyLabel);
+            gtk_widget_set_size_request(keyButton, 150, -1);
+            gtk_grid_attach(GTK_GRID(grid), keyButton, col * 2 + 1, row, 1, 1);
+            g_signal_connect(G_OBJECT(keyButton), "clicked", G_CALLBACK(Modify_JoyKey), GINT_TO_POINTER(key));
         }
     }
 
     GtkWidget *side = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
     gtk_widget_set_valign(side, GTK_ALIGN_START);
-    gtk_box_pack_start(GTK_BOX(box), side, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(page), side, FALSE, FALSE, 0);
 
     GtkWidget *hint = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(hint),
@@ -5966,19 +6098,7 @@ static void Edit_Joystick_Controls(GSimpleAction *action, GVariant *parameter, g
     gtk_label_set_max_width_chars(GTK_LABEL(hint), 24);
     gtk_box_pack_start(GTK_BOX(side), hint, FALSE, FALSE, 0);
 
-    gtk_widget_show_all(content);
-
-    switch (gtk_dialog_run(GTK_DIALOG(ecDialog))) {
-    case GTK_RESPONSE_OK:
-        memcpy(&joypad_cfg, &Keypad_Temp, sizeof(joypad_cfg));
-        desmume_config_update_joykeys(keyfile);
-        break;
-    case GTK_RESPONSE_CANCEL:
-    case GTK_RESPONSE_NONE:
-        break;
-    }
-    gtk_widget_destroy(ecDialog);
-
+    return page;
 }
 
 
@@ -7577,6 +7697,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
 
 	config.load();
 	ApplyFirmwareSettingsConfig();
+	ApplyWifiSettingsConfig();
 	ApplyEmulationSettingsConfig();
 
 #if !defined(ENABLE_WGPU)
