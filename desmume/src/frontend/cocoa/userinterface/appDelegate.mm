@@ -266,6 +266,7 @@
 	
 	[emuControl appInit];
 	[prefWindowDelegate markUnsupportedOpenGLMSAAMenuItems];
+	[prefWindowDelegate hideUnsupportedWebGPUMenuItems];
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification

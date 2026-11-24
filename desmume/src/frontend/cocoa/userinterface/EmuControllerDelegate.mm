@@ -92,6 +92,7 @@
 @synthesize exportRomSavePanelAccessoryView;
 
 @synthesize openglMSAAPopUpButton;
+@synthesize render3DEnginePopUpButton;
 
 @synthesize iconExecute;
 @synthesize iconPause;
@@ -2970,7 +2971,15 @@
 	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
 	
 	[graphicsController setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
-	[graphicsController setEngine3DClientIndex:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_RenderingEngine"]];
+
+	NSInteger engine3DClientIndex = [[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_RenderingEngine"];
+	if ( (engine3DClientIndex == CORE3DLIST_WGPU) && ![CocoaGraphicsController isWebGPUAvailable] )
+	{
+		engine3DClientIndex = CORE3DLIST_SWRASTERIZE;
+		[[NSUserDefaults standardUserDefaults] setInteger:engine3DClientIndex forKey:@"Render3D_RenderingEngine"];
+	}
+	[graphicsController setEngine3DClientIndex:engine3DClientIndex];
+	[CocoaGraphicsController hideWebGPUItemInPopUpButton:render3DEnginePopUpButton];
 	[graphicsController setHighPrecisionColorInterpolationEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_HighPrecisionColorInterpolation"]];
 	[graphicsController setEdgeMarkEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_EdgeMarking"]];
 	[graphicsController setFogEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Fog"]];

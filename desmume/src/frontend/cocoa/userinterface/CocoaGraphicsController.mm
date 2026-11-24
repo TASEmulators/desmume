@@ -363,6 +363,23 @@ void MacGraphicsControl::DidApplyGPUSettingsEnd()
 
 @implementation CocoaGraphicsController
 
++ (BOOL) isWebGPUAvailable
+{
+#if defined(ENABLE_WGPU)
+	return YES;
+#else
+	return NO;
+#endif
+}
+
++ (void) hideWebGPUItemInPopUpButton:(NSPopUpButton *)popUpButton
+{
+#if !defined(ENABLE_WGPU)
+	NSMenuItem *webGPUItem = [popUpButton itemWithTag:CORE3DLIST_WGPU];
+	[webGPUItem setHidden:YES];
+#endif
+}
+
 @dynamic gpuStateFlags;
 @dynamic gpu2DSettings;
 @dynamic gpuScale;

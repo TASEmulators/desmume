@@ -106,6 +106,9 @@ public:
 - (BOOL) gpuStateByBit:(const UInt32)stateBit;
 - (void) clearWithColor:(const uint16_t)colorBGRA5551;
 
++ (BOOL) isWebGPUAvailable;
++ (void) hideWebGPUItemInPopUpButton:(NSPopUpButton *)popUpButton;
+
 @end
 
 #endif // _COCOA_GRAPHICS_CONTROLLER_H_

@@ -87,6 +87,7 @@ class AudioSampleBlockGenerator;
 	NSLevelIndicator *ndsMicLevelIndicator;
 	
 	NSPopUpButton *openglMSAAPopUpButton;
+	NSPopUpButton *render3DEnginePopUpButton;
 	
 	BOOL isSaveStateEdited;
 	
@@ -175,6 +176,7 @@ class AudioSampleBlockGenerator;
 @property (readonly) IBOutlet NSLevelIndicator *ndsMicLevelIndicator;
 
 @property (readonly) IBOutlet NSPopUpButton *openglMSAAPopUpButton;
+@property (readonly) IBOutlet NSPopUpButton *render3DEnginePopUpButton;
 
 @property (readonly) NSImage *iconExecute;
 @property (readonly) NSImage *iconPause;

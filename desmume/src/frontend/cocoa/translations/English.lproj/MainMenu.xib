@@ -60058,13 +60058,29 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<integer value="-1" key="NSNullPlaceholder"/>
 								<string key="NSValueTransformerName">NSNegateBoolean</string>
 							</dictionary>
-							<reference key="NSPreviousConnector" ref="117016569"/>
-							<int key="NSNibBindingConnectorVersion">2</int>
-						</object>
+						<reference key="NSPreviousConnector" ref="117016569"/>
+						<int key="NSNibBindingConnectorVersion">2</int>
 					</object>
-					<int key="connectionID">12989</int>
 				</object>
-			</array>
+				<int key="connectionID">12989</int>
+			</object>
+			<object class="IBConnectionRecord">
+				<object class="IBOutletConnection" key="connection">
+					<string key="label">render3DEnginePopUpButton</string>
+					<reference key="source" ref="231770064"/>
+					<reference key="destination" ref="1015025781"/>
+				</object>
+				<int key="connectionID">990004</int>
+			</object>
+			<object class="IBConnectionRecord">
+				<object class="IBOutletConnection" key="connection">
+					<string key="label">render3DEnginePopUpButton</string>
+					<reference key="source" ref="660705428"/>
+					<reference key="destination" ref="552851483"/>
+				</object>
+				<int key="connectionID">990005</int>
+			</object>
+		</array>
 			<object class="IBMutableOrderedSet" key="objectRecords">
 				<array key="orderedObjects">
 					<object class="IBObjectRecord">

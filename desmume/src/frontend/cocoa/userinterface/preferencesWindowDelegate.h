@@ -74,6 +74,7 @@ class OGLImage;
 	NSTextField *displayRotationField;
 	
 	NSPopUpButton *openglMSAAPopUpButton;
+	NSPopUpButton *render3DEnginePopUpButton;
 	
 	NSImage *iconVolumeFull;
 	NSImage *iconVolumeTwoThird;
@@ -121,6 +122,7 @@ class OGLImage;
 @property (readonly) IBOutlet NSPopUpButton *spuSyncMethodMenu;
 
 @property (readonly) IBOutlet NSPopUpButton *openglMSAAPopUpButton;
+@property (readonly) IBOutlet NSPopUpButton *render3DEnginePopUpButton;
 
 @property (readonly) IBOutlet DisplayPreviewView *previewView;
 
@@ -168,6 +170,7 @@ class OGLImage;
 
 - (void) switchContentView:(NSView *)theView;
 - (void) markUnsupportedOpenGLMSAAMenuItems;
+- (void) hideUnsupportedWebGPUMenuItems;
 - (void) setupUserDefaults;
 - (void) handleAppearanceChange;
 

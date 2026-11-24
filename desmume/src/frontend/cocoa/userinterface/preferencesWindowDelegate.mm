@@ -313,6 +313,7 @@
 @synthesize spuSyncMethodMenu;
 
 @synthesize openglMSAAPopUpButton;
+@synthesize render3DEnginePopUpButton;
 
 @synthesize previewView;
 
@@ -952,6 +953,11 @@
 			[menuItem setTitle:[NSString stringWithFormat:@"%@ (unsupported on this GPU)", [menuItem title]]];
 		}
 	}
+}
+
+- (void) hideUnsupportedWebGPUMenuItems
+{
+	[CocoaGraphicsController hideWebGPUItemInPopUpButton:render3DEnginePopUpButton];
 }
 
 - (void) setupUserDefaults
