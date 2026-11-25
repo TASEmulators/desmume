@@ -26,13 +26,15 @@
 #include "tools/ramWatch.h"
 #include "tools/ramSearch.h"
 #include "tools/memoryViewer.h"
+#include "tools/disassembler.h"
 
 dTool_t *dTools_list[] =
 {
 	&dTool_ioregsView,
 	&dTool_ramWatch,
 	&dTool_ramSearch,
-	&dTool_memoryViewer
+	&dTool_memoryViewer,
+	&dTool_disassembler
 };
 
 int dTools_list_size = ARRAY_SIZE(dTools_list);

@@ -397,8 +397,19 @@ bool autoLoadLua;
 extern char Recent_Scripts[MAX_RECENT_SCRIPTS][1024];
 
 //=========================== view tools
-TOOLSCLASS	*ViewDisasm_ARM7 = NULL;
-TOOLSCLASS	*ViewDisasm_ARM9 = NULL;
+TOOLSCLASS	*ViewDisasm = NULL;
+
+// Breakpoint hits come from the CPU loop. They pause the emulator there and
+// post a message to the dialog, so the emulation thread never touches its
+// controls. This replaces the hand-written Win32 block that used to live in
+// NDSSystem.cpp's CPU loop.
+static void DebugBreakHandler(int cpu, u32 address)
+{
+	emu_paused = true;
+	paused = true;
+	DisView_NotifyDebugBreak(cpu, address);
+}
+
 TOOLSCLASS	*ViewPalette = NULL;
 TOOLSCLASS	*ViewTiles = NULL;
 TOOLSCLASS	*ViewMaps = NULL;
@@ -1498,14 +1509,21 @@ void CheckMessages()
 			if (SoundView_GetHWnd() && IsDialogMessage(SoundView_GetHWnd(), &msg))
 				continue;
 
-			if (DisViewWnd[0] && msg.message == WM_MOUSEWHEEL && IsDialogMessage(DisViewWnd[0], &msg))
+			// WM_MOUSEWHEEL is delivered to the focus window, which is the main
+			// window even while the pointer sits over the disassembly list. Hand
+			// it to that list when the pointer is over it; the list's own window
+			// procedure does the scrolling.
+			if (msg.message == WM_MOUSEWHEEL)
 			{
-				SendMessage(DisViewWnd[0], msg.message, msg.wParam, msg.lParam);
-			}
-
-			if (DisViewWnd[1] && msg.message == WM_MOUSEWHEEL && IsDialogMessage(DisViewWnd[1], &msg))
-			{
-				SendMessage(DisViewWnd[1], msg.message, msg.wParam, msg.lParam);
+				HWND listHwnd = DisView_GetListHwnd();
+				POINT pt;
+				pt.x = (short)LOWORD(msg.lParam);
+				pt.y = (short)HIWORD(msg.lParam);
+				if ((listHwnd != NULL) && (WindowFromPoint(pt) == listHwnd))
+				{
+					SendMessage(listHwnd, msg.message, msg.wParam, msg.lParam);
+					continue;
+				}
 			}
 
 			if(!TranslateAccelerator(hwnd,hAccel,&msg))
@@ -2463,6 +2481,7 @@ int _main()
 	osd = new OSDCLASS(-1);
 
 	NDS_Init();
+	NDS_SetDebugBreakHandler(DebugBreakHandler);
 	GPU->SetEventHandler(WinGPUEvent);
 	video.SetPrescale(1, 1);
 	SetDisplayNeedsBufferUpdates();
@@ -2561,8 +2580,7 @@ int _main()
 
 	SoundView_Init();
 
-	ViewDisasm_ARM7 = new TOOLSCLASS(hAppInst, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
-	ViewDisasm_ARM9 = new TOOLSCLASS(hAppInst, IDD_DESASSEMBLEUR_VIEWER9, (DLGPROC) ViewDisasm_ARM9Proc);
+	ViewDisasm = new TOOLSCLASS(hAppInst, IDD_DESASSEMBLEUR_VIEWER, (DLGPROC) ViewDisasmProc);
 	ViewPalette = new TOOLSCLASS(hAppInst, IDD_PAL, (DLGPROC) ViewPalProc);
 	ViewTiles = new TOOLSCLASS(hAppInst, IDD_TILE, (DLGPROC) ViewTilesProc);
 	ViewMaps = new TOOLSCLASS(hAppInst, IDD_MAP, (DLGPROC) ViewMapsProc);
@@ -2951,8 +2969,7 @@ int _main()
 	if (ViewMaps!=NULL) delete ViewMaps;
 	if (ViewTiles!=NULL) delete ViewTiles;
 	if (ViewPalette!=NULL) delete ViewPalette;
-	if (ViewDisasm_ARM9!=NULL) delete ViewDisasm_ARM9;
-	if (ViewDisasm_ARM7!=NULL) delete ViewDisasm_ARM7;
+	if (ViewDisasm!=NULL) delete ViewDisasm;
 
 	CloseAllToolWindows();
 
@@ -5561,21 +5578,13 @@ DOKEYDOWN:
 			if(!SoundView_IsOpened()) SoundView_DlgOpen(HWND_DESKTOP);
 			return 0;
 		case IDM_DISASSEMBLER:
-			ViewDisasm_ARM7->regClass("DesViewBox7",ViewDisasm_ARM7BoxProc);
-			if(!ViewDisasm_ARM7->IsOpen())
+			ViewDisasm->regClass("DesViewBox", ViewDisasmBoxProc);
+			if (!ViewDisasm->IsOpen())
 			{
-				if (!ViewDisasm_ARM7->open(false))
-					ViewDisasm_ARM7->unregClass();
+				if (!ViewDisasm->open(false))
+					ViewDisasm->unregClass();
 			}
-			else ViewDisasm_ARM7->Activate();
-
-			ViewDisasm_ARM9->regClass("DesViewBox9",ViewDisasm_ARM9BoxProc);
-			if(!ViewDisasm_ARM9->IsOpen())
-			{
-				if (!ViewDisasm_ARM9->open(false))
-					ViewDisasm_ARM9->unregClass();
-			}
-			else ViewDisasm_ARM9->Activate();
+			else ViewDisasm->Activate();
 			return 0;
 		case IDM_MAP:
 			ViewMaps->open();

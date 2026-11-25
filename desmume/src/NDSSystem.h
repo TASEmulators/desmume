@@ -470,6 +470,32 @@ void NDS_debug_break();
 void NDS_debug_continue();
 void NDS_debug_step();
 
+// ---- Debugger breakpoints (Windows, Cocoa and GTK3) ----------------------
+//
+// Breakpoints live in armcpu_t::breakPoints, so the CPU loop is the only place
+// that can notice a hit. It used to post a Win32 message straight from the
+// loop, which is why the feature was Windows-only. The loop now pauses and
+// reports the hit through the handler installed here; the handler runs on the
+// emulation thread, so a frontend whose UI lives on another thread has to hop
+// to it (Cocoa does, GTK3 and Windows are already on the right thread).
+enum
+{
+	NDS_DEBUG_CPU_ARM9 = 0,
+	NDS_DEBUG_CPU_ARM7 = 1
+};
+
+typedef void (*NDS_DebugBreakHandler)(int cpu, u32 address);
+
+void NDS_SetDebugBreakHandler(NDS_DebugBreakHandler handler);
+
+// Clears `execute` and remembers that the CPU loop stopped for the debugger
+// (breakpoint, single instruction step, step over, run to return) instead of
+// hitting a fatal error. Frontends that treat `execute == false` as an
+// emulation error must call NDS_TakeDebuggerPause() first. NDS_debug_continue()
+// clears the pending cause, so resuming always starts from a clean state.
+void NDS_DebuggerPause();
+bool NDS_TakeDebuggerPause();
+
 int NDS_GetCPUCoreCount();
 void NDS_GetCPULoadAverage(u32 &outLoadAvgARM9, u32 &outLoadAvgARM7);
 void NDS_SetupDefaultFirmware();

@@ -112,6 +112,19 @@ OPT(ramwatch_win_y, int, -1, RAMWatch, WindowY)
 OPT(ramwatch_win_w, int, 640, RAMWatch, WindowWidth)
 OPT(ramwatch_win_h, int, 460, RAMWatch, WindowHeight)
 
+/* Disassembler
+ *
+ * The view state itself (CPU, ARM/Thumb mode, scroll position) belongs to
+ * shared/disassembly_core.cpp; only these values are persisted.  Window
+ * positions are not stored: Wayland cannot restore them.
+ */
+OPT(disasm_cpu, int, 0, Disassembler, CPU)
+OPT(disasm_mode, int, 0, Disassembler, Mode)
+OPT(disasm_autoupdate, bool, true, Disassembler, AutoUpdate)
+OPT(disasm_autoupdate_frames, int, 1, Disassembler, AutoUpdateFrames)
+OPT(disasm_win_w, int, 900, Disassembler, WindowWidth)
+OPT(disasm_win_h, int, 720, Disassembler, WindowHeight)
+
 /* Cheats
  *
  * The cheat list itself is a document handled by src/cheatSystem.cpp; only the

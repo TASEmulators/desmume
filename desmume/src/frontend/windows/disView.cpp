@@ -1,6 +1,6 @@
-/*  
+/*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2016 DeSmuME team
+	Copyright (C) 2006-2026 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,944 +16,701 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// Win32 host for the disassembler. Decoding, address navigation, the ARM/Thumb
+// mode rules, register snapshots and the breakpoint list all live in
+// ../shared/disassembly_core.cpp and are shared with the Cocoa and GTK3
+// frontends; this file only paints, scrolls and forwards button presses.
+//
+// The dialog used to be duplicated, one template per CPU, and opening the tool
+// created both windows. There is now a single window with a CPU combo box, and
+// each CPU keeps its own scroll position and breakpoint-list offset.
+
 #include "disView.h"
 
 #include <algorithm>
 #include <commctrl.h>
-#include <tchar.h>
 #include <stdio.h>
+#include <string.h>
+#include <string>
+#include <vector>
+#include <windowsx.h>
 
-#include "MMU.h"
-#include "frontend/modules/Disassembler.h"
 #include "NDSSystem.h"
 #include "armcpu.h"
+#include "../shared/disassembly_core.h"
 
 #include "resource.h"
 #include "main.h"
 #include "UiFont.h"
 
-typedef struct
+// Number of breakpoint rows the template has room for.
+static const int kBreakpointRows = 8;
+
+// Height of one text line, plus the colour of the two row highlights. The old
+// code painted breakpoint rows fully saturated red, which made the text
+// unreadable; a light red keeps the instruction visible.
+static const COLORREF kBreakpointRowColor = RGB(255, 170, 170);
+static const COLORREF kCurrentRowColor    = RGB(255, 255, 0);
+
+struct DisViewState
 {
-	BOOL autogo;
-	BOOL autoup;
-	u32	autoup_secs;
-	u32 curr_ligne;
-	armcpu_t* cpu;
-	u16 mode;
-	s32 break_pos;
-} disview_struct;
+	HWND hwnd;
+	HWND box;
+	int cpu;
+	int breakPos[DisassemblyCore::CPU_COUNT];
+	bool autoUpdate;
+	unsigned int autoUpdateFrames;
+};
 
-disview_struct		*DisView7 = NULL;
-disview_struct		*DisView9 = NULL;
+static DisViewState* DisView = NULL;
+static HWND DisViewWnd = NULL;
 
-extern TOOLSCLASS	*ViewDisasm_ARM7;
-extern TOOLSCLASS	*ViewDisasm_ARM9;
+// Owned by main.cpp; used to mark the tool closed when the window is destroyed.
+extern TOOLSCLASS* ViewDisasm;
 
-	HWND DisViewWnd[2] = {NULL, NULL};
-
-#define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
-
-LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM lParam)
+static DisassemblyCore& Core()
 {
-        HDC          hdc;
-        PAINTSTRUCT  ps;
-        SIZE fontsize;
-        TCHAR text[100];
-        TCHAR txt[100];
-        RECT rect;
-        int lg;
-        int ht;
-        HDC mem_dc;
-        HBITMAP mem_bmp;
-        u32  nbligne;
-		std::vector<u32>* bpList = win->cpu->breakPoints;
-
-        GetClientRect(hwnd, &rect);
-        lg = rect.right - rect.left;
-        ht = rect.bottom - rect.top;
-        
-        hdc = BeginPaint(hwnd, &ps);
-        
-        mem_dc = CreateCompatibleDC(hdc);
-        mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
-        SelectObject(mem_dc, mem_bmp);
-        
-        FillRect(mem_dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
-        
-        // Machine generated text: a TrueType fixed pitch face that matches the
-        // size of the dialog's own font (the stock bitmap face when modern UI
-        // fonts are turned off).
-        SelectObject(mem_dc, uiFont::mono(hwnd));
-        
-        GetTextExtentPoint32(mem_dc, "0", 1, &fontsize);
-        
-        nbligne = ht/fontsize.cy;
-        
-        SetTextColor(mem_dc, RGB(0,0,0));
-        
-        if((win->mode==1) || ((win->mode==0) && (win->cpu->CPSR.bits.T == 0)))
-        {
-             u32 i;
-             u32 adr;
-
-             //if (win->autoup||win->autogo)
-			//	 win->curr_ligne = (win->cpu->instruct_adr >> 2);
-             adr = win->curr_ligne*4;
-
-			 SetTextColor(mem_dc, RGB(0, 0, 0));
-
-             for(i = 0; i < nbligne; ++i)
-             {
-				 SetBkColor(mem_dc, RGB(255, 255, 255));
-				 for (u32 j = 0; j < bpList->size(); ++j) {
-					 if (adr == (*bpList)[j]) {
-						 SetBkColor(mem_dc, RGB(255, 0, 0));
-					 }
-				 }
-				 if (adr == win->cpu->instruct_adr) {
-					 SetBkColor(mem_dc, RGB(0, 255, 0));
-				 }
-                  u32 ins = _MMU_read32(win->cpu->proc_ID, MMU_AT_DEBUG, adr);
-                  des_arm_instructions_set[INDEX(ins)](adr, ins, txt);
-                  sprintf(text, "%04X:%04X  %08X  %s", (int)(adr>>16), (int)(adr&0xFFFF), (int)ins, txt);
-                  DrawText(mem_dc, text, -1, &rect, DT_TOP | DT_LEFT | DT_NOPREFIX);
-                  rect.top+=fontsize.cy;
-                  adr += 4;
-             }
-             
-             
-        
-             if(((win->cpu->instruct_adr&0x0FFFFFFF) >= (win->curr_ligne<<2))&&((win->cpu->instruct_adr&0x0FFFFFFF) <= (win->curr_ligne+(nbligne<<2))))
-             {
-                  HBRUSH brjaune = CreateSolidBrush(RGB(255, 255, 0));
-                  SetBkColor(mem_dc, RGB(255, 255, 0));
-                  rect.top = (((win->cpu->instruct_adr&0x0FFFFFFF)>>2) - win->curr_ligne)*fontsize.cy;
-                  rect.bottom = rect.top + fontsize.cy;
-                  FillRect(mem_dc, &rect, brjaune);
-                  des_arm_instructions_set[INDEX(win->cpu->instruction)](win->cpu->instruct_adr, win->cpu->instruction, txt);
-                  sprintf(text, "%04X:%04X  %08X  %s", (int)((win->cpu->instruct_adr&0x0FFFFFFF)>>16), (int)(win->cpu->instruct_adr&0xFFFF), (int)win->cpu->instruction, txt);
-                  DrawText(mem_dc, text, -1, &rect, DT_TOP | DT_LEFT | DT_NOPREFIX);
-                  DeleteObject(brjaune);
-             }
-        } 
-        else
-        {    /* thumb display */
-             u32 i;
-             u32 adr;
-             if (win->autoup)
-                  win->curr_ligne = (win->cpu->instruct_adr >> 1) - (win->curr_ligne % nbligne) ;
-             
-             adr = win->curr_ligne*2;
-        
-             for(i = 0; i < nbligne; ++i)
-             {
-				 SetBkColor(mem_dc, RGB(255, 255, 255));
-				 for (u32 j = 0; j < bpList->size(); ++j) {
-					 if (adr == (*bpList)[j]) {
-						 SetBkColor(mem_dc, RGB(255, 0, 0));
-					 }
-				 }
-				 if (adr == win->cpu->instruct_adr) {
-					 SetBkColor(mem_dc, RGB(0, 255, 0));
-				 }
-                  u32 ins = _MMU_read16(win->cpu->proc_ID, MMU_AT_DEBUG, adr);
-                  des_thumb_instructions_set[ins>>6](adr, ins, txt);
-                  sprintf(text, "%04X:%04X  %04X  %s", (int)(adr>>16), (int)(adr&0xFFFF), (int)ins, txt);
-                  DrawText(mem_dc, text, -1, &rect, DT_TOP | DT_LEFT | DT_NOPREFIX);
-                  rect.top+=fontsize.cy;
-                  adr += 2;
-             }
-        
-             if(((win->cpu->instruct_adr&0x0FFFFFFF) >= (win->curr_ligne<<1))&&((win->cpu->instruct_adr&0x0FFFFFFF) <= (win->curr_ligne+(nbligne<<1))))
-             {
-                  HBRUSH brjaune = CreateSolidBrush(RGB(255, 255, 0));
-                  SetBkColor(mem_dc, RGB(255, 255, 0));
-                  
-                  rect.top = (((win->cpu->instruct_adr&0x0FFFFFFF)>>1) - win->curr_ligne)*fontsize.cy;
-                  rect.bottom = rect.top + fontsize.cy;
-                  FillRect(mem_dc, &rect, brjaune);
-                  des_thumb_instructions_set[((win->cpu->instruction)&0xFFFF)>>6](win->cpu->instruct_adr, win->cpu->instruction&0xFFFF, txt);
-                  sprintf(text, "%04X:%04X  %04X  %s", (int)((win->cpu->instruct_adr&0x0FFFFFFF)>>16), (int)(win->cpu->instruct_adr&0xFFFF), (int)(win->cpu->instruction&0xFFFF), txt);
-                  DrawText(mem_dc, text, -1, &rect, DT_TOP | DT_LEFT | DT_NOPREFIX);
-                  DeleteObject(brjaune);
-             }
-        }
-        
-        BitBlt(hdc, 0, 0, lg, ht, mem_dc, 0, 0, SRCCOPY);
-        
-        DeleteDC(mem_dc);
-        DeleteObject(mem_bmp);
-        
-        EndPaint(hwnd, &ps);
-        return 1;
+	return DisassemblyCore::Get();
 }
 
-LRESULT DisViewDialog_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM lParam)
+static int ClampBreakPos(int position)
 {
-        HDC          hdc;
-        PAINTSTRUCT  ps;
-        TCHAR        text[80];
-        u32 i;
+	const int count = (int)Core().BreakpointCount();
+	if (position < 0)
+	{
+		return 0;
+	}
+	if (position >= count)
+	{
+		return (count > 0) ? (count - 1) : 0;
+	}
+	return position;
+}
 
-        hdc = BeginPaint(hwnd, &ps);
-        
-        for(i = 0; i < 16; ++i)
-        {
-             sprintf(text, "%08X", (int)win->cpu->R[i]);
-             //SetWindowText(GetDlgItem(hwnd, IDC_R0+i), text);
-			 SetDlgItemText(hwnd, IDC_R0 + i, text);
-        }
-        
-        #define OFF 16
+// ---------------------------------------------------------------------------
+// Painting helpers
+// ---------------------------------------------------------------------------
 
-		#define CPSROFF 288
-        
-        SetBkMode(hdc, TRANSPARENT);
-        if(win->cpu->CPSR.bits.N)
-             SetTextColor(hdc, RGB(255,0,0));
-        else
-             SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 452+OFF, CPSROFF, "N", 1);
-        
-        if(win->cpu->CPSR.bits.Z)
-             SetTextColor(hdc, RGB(255,0,0));
-        else
-             SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 464+OFF, CPSROFF, "Z", 1);
-        
-        if(win->cpu->CPSR.bits.C)
-             SetTextColor(hdc, RGB(255,0,0));
-        else
-             SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 475+OFF, CPSROFF, "C", 1);
-        
-        if(win->cpu->CPSR.bits.V)
-             SetTextColor(hdc, RGB(255,0,0));
-        else
-             SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 486+OFF, CPSROFF, "V", 1);
-        
-        if(win->cpu->CPSR.bits.Q)
-             SetTextColor(hdc, RGB(255,0,0));
-        else
-             SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 497+OFF, CPSROFF, "Q", 1);
-        
-        if(!win->cpu->CPSR.bits.I)
-             SetTextColor(hdc, RGB(255,0,0));
-        else
-             SetTextColor(hdc, RGB(70, 70, 70));
-        TextOut(hdc, 508+OFF, CPSROFF, "I", 1);
-        
-        sprintf(text, "%02X", (int)win->cpu->CPSR.bits.mode);
-        SetWindowText(GetDlgItem(hwnd, IDC_MODE), text);
+static int VisibleLineCount(HWND box)
+{
+	RECT rect;
+	GetClientRect(box, &rect);
 
-        sprintf(text, "%08X", MMU.timer[0][0]);//win->cpu->SPSR);
-        SetWindowText(GetDlgItem(hwnd, IDC_TMP), text);
+	HDC dc = GetDC(box);
+	HGDIOBJ oldFont = SelectObject(dc, uiFont::mono(box));
 
-		// weehee break points drawing
-		std::vector<u32>* bpList = win->cpu->breakPoints;
-		for (int i = 0; i < 8; ++i) {
-			int j = i + win->break_pos;
-			if (j < bpList->size()) {
-				sprintf(text, "%08X", (*bpList)[j]);
-			}
-			else {
-				sprintf(text, "%08X", 0);
-			}
-			SetWindowText(GetDlgItem(hwnd, IDC_BP0 + i), text);
+	TEXTMETRIC tm;
+	GetTextMetrics(dc, &tm);
+
+	SelectObject(dc, oldFont);
+	ReleaseDC(box, dc);
+
+	const int lineHeight = (tm.tmHeight > 0) ? tm.tmHeight : 12;
+	const int lines = (rect.bottom - rect.top) / lineHeight;
+	return (lines > 0) ? lines : 1;
+}
+
+static void UpdateBoxScrollBar(HWND box)
+{
+	const uint32_t instructionSize = Core().InstructionSize();
+	const int maxLine = (int)(DisassemblyCore::kMaxAddress / instructionSize);
+
+	SCROLLINFO si;
+	memset(&si, 0, sizeof(si));
+	si.cbSize = sizeof(si);
+	si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
+	si.nMin = 0;
+	si.nMax = maxLine;
+	si.nPage = (UINT)VisibleLineCount(box);
+	si.nPos = (int)(Core().AnchorAddress() / instructionSize);
+	SetScrollInfo(box, SB_VERT, &si, TRUE);
+}
+
+static void PaintDisassembly(HWND box)
+{
+	PAINTSTRUCT ps;
+	HDC hdc = BeginPaint(box, &ps);
+
+	RECT client;
+	GetClientRect(box, &client);
+	const int width = client.right - client.left;
+	const int height = client.bottom - client.top;
+
+	HDC memDC = CreateCompatibleDC(hdc);
+	HBITMAP memBitmap = CreateCompatibleBitmap(hdc, width, height);
+	HGDIOBJ oldBitmap = SelectObject(memDC, memBitmap);
+	HGDIOBJ oldFont = SelectObject(memDC, uiFont::mono(box));
+
+	FillRect(memDC, &client, (HBRUSH)GetStockObject(WHITE_BRUSH));
+
+	TEXTMETRIC tm;
+	GetTextMetrics(memDC, &tm);
+	const int lineHeight = (tm.tmHeight > 0) ? tm.tmHeight : 12;
+	const int lineCount = (height / lineHeight) + 1;
+
+	std::vector<DisassemblyCore::Line> lines;
+	Core().BuildLines((size_t)lineCount, lines);
+
+	SetBkMode(memDC, OPAQUE);
+	SetTextColor(memDC, RGB(0, 0, 0));
+
+	int y = 0;
+	for (size_t i = 0; i < lines.size(); ++i)
+	{
+		const DisassemblyCore::Line& line = lines[i];
+
+		COLORREF background = RGB(255, 255, 255);
+		if (line.Breakpoint)
+		{
+			background = kBreakpointRowColor;
+		}
+		if (line.Current)
+		{
+			background = kCurrentRowColor;
 		}
 
-		sprintf(text, "%02i", win->break_pos);
-		SetWindowText(GetDlgItem(hwnd, IDC_BPCOUNT), text);
-        
-        EndPaint(hwnd, &ps);
-        return 1;
+		RECT row;
+		row.left = 0;
+		row.top = y;
+		row.right = width;
+		row.bottom = y + lineHeight;
+
+		// ETO_OPAQUE fills the row with the background colour in one call, so
+		// the highlight spans the full width like it did before.
+		SetBkColor(memDC, background);
+		ExtTextOutA(memDC, 2, y, ETO_OPAQUE, &row, line.Text.c_str(), (UINT)line.Text.length(), NULL);
+
+		y += lineHeight;
+	}
+
+	BitBlt(hdc, 0, 0, width, height, memDC, 0, 0, SRCCOPY);
+
+	SelectObject(memDC, oldFont);
+	SelectObject(memDC, oldBitmap);
+	DeleteObject(memBitmap);
+	DeleteDC(memDC);
+	EndPaint(box, &ps);
 }
 
-// =================================================== ARM7
-LRESULT CALLBACK ViewDisasm_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+// Paints the CPSR flags into the placeholder control, red when set and grey
+// when clear, the way the old dialog did -- but positioned from the control
+// itself so it survives font and DPI changes.
+static void PaintCpsrFlags(HWND hwnd, HDC hdc)
 {
-	switch(msg)
+	HWND placeholder = GetDlgItem(hwnd, IDC_CPSR_FLAGS);
+	if (placeholder == NULL)
 	{
-		case WM_NCCREATE:
-			SetScrollRange(hwnd, SB_VERT, 0, 0x3FFFFF7, TRUE);
-			SetScrollPos(hwnd, SB_VERT, 10, TRUE);
-			return 1;
-		    
-		case WM_NCDESTROY:
-			//free(win);
-			return 1;
+		return;
+	}
 
+	RECT rect;
+	GetWindowRect(placeholder, &rect);
+	MapWindowPoints(NULL, hwnd, (LPPOINT)&rect, 2);
+
+	const DisassemblyCore::Registers regs = DisassemblyCore::ReadCpuRegisters(Core().GetCpu());
+	const bool flags[8] = { regs.N, regs.Z, regs.C, regs.V, regs.Q, regs.I, regs.F, regs.T };
+	const char* names[8] = { "N", "Z", "C", "V", "Q", "I", "F", "T" };
+
+	HGDIOBJ oldFont = SelectObject(hdc, uiFont::message(hwnd));
+	SetBkMode(hdc, TRANSPARENT);
+
+	const int cellWidth = (rect.right - rect.left) / 8;
+	for (int i = 0; i < 8; ++i)
+	{
+		SetTextColor(hdc, flags[i] ? RGB(200, 0, 0) : RGB(110, 110, 110));
+		TextOutA(hdc, rect.left + (i * cellWidth), rect.top, names[i], 1);
+	}
+
+	SelectObject(hdc, oldFont);
+}
+
+// ---------------------------------------------------------------------------
+// Control refreshes
+// ---------------------------------------------------------------------------
+
+static void UpdateTitle(HWND hwnd)
+{
+	const char* cpuName = (Core().GetCpu() == DisassemblyCore::CPU_ARM7) ? "ARM7" : "ARM9";
+	char title[64];
+	snprintf(title, sizeof(title), "Disassembler - %s", cpuName);
+	SetWindowTextA(hwnd, title);
+}
+
+static void RefreshRegisters(HWND hwnd)
+{
+	const DisassemblyCore::Registers regs = DisassemblyCore::ReadCpuRegisters(Core().GetCpu());
+
+	char text[16];
+	for (int i = 0; i < 16; ++i)
+	{
+		snprintf(text, sizeof(text), "%08X", (unsigned int)regs.R[i]);
+		SetDlgItemTextA(hwnd, IDC_R0 + i, text);
+	}
+
+	snprintf(text, sizeof(text), "%02X", regs.Mode);
+	SetDlgItemTextA(hwnd, IDC_MODE, text);
+
+	snprintf(text, sizeof(text), "%08X", (unsigned int)regs.SPSR);
+	SetDlgItemTextA(hwnd, IDC_TMP, text);
+}
+
+static void RefreshBreakpointList(HWND hwnd)
+{
+	if (DisView == NULL)
+	{
+		return;
+	}
+
+	const int cpu = Core().GetCpu();
+	const int count = (int)Core().BreakpointCount();
+	DisView->breakPos[cpu] = ClampBreakPos(DisView->breakPos[cpu]);
+
+	char text[16];
+	for (int i = 0; i < kBreakpointRows; ++i)
+	{
+		const int index = DisView->breakPos[cpu] + i;
+		if (index < count)
+		{
+			snprintf(text, sizeof(text), "%08X", (unsigned int)Core().BreakpointAt((size_t)index));
+		}
+		else
+		{
+			snprintf(text, sizeof(text), "%08X", 0);
+		}
+		SetDlgItemTextA(hwnd, IDC_BP0 + i, text);
+	}
+
+	snprintf(text, sizeof(text), "%02i", DisView->breakPos[cpu]);
+	SetDlgItemTextA(hwnd, IDC_BPCOUNT, text);
+}
+
+static void SyncModeButtons(HWND hwnd)
+{
+	const DisassemblyCore::ViewMode mode = Core().GetViewMode();
+	CheckRadioButton(hwnd, IDC_AUTO_DES, IDC_THUMB,
+	                 (mode == DisassemblyCore::ViewMode_ARM) ? IDC_ARM :
+	                 (mode == DisassemblyCore::ViewMode_Thumb) ? IDC_THUMB : IDC_AUTO_DES);
+}
+
+static void RefreshAll(HWND hwnd)
+{
+	if (DisView == NULL)
+	{
+		return;
+	}
+
+	UpdateTitle(hwnd);
+	SyncModeButtons(hwnd);
+	RefreshRegisters(hwnd);
+	RefreshBreakpointList(hwnd);
+	UpdateBoxScrollBar(DisView->box);
+	InvalidateRect(DisView->box, NULL, FALSE);
+	InvalidateRect(hwnd, NULL, FALSE);
+}
+
+// Selects the CPU in the combo box without letting CBN_SELCHANGE re-enter.
+static void SyncCpuCombo(HWND hwnd)
+{
+	if (DisView == NULL)
+	{
+		return;
+	}
+
+	SendDlgItemMessageA(hwnd, IDC_DISASM_CPU, CB_SETCURSEL, (WPARAM)Core().GetCpu(), 0);
+	(void)DisView;
+}
+
+// The host has to resume emulation itself: the shared core only arms the CPU.
+static void ResumeEmulation()
+{
+	execute = true;
+	paused = false;
+}
+
+// ---------------------------------------------------------------------------
+// Custom disassembly child window
+// ---------------------------------------------------------------------------
+
+LRESULT CALLBACK ViewDisasmBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
 		case WM_PAINT:
-			DisViewBox_OnPaint(hwnd, DisView7, wParam, lParam);
-			return 1;
+			PaintDisassembly(hwnd);
+			return 0;
 
-		case WM_VSCROLL :
-			{
-				 RECT rect;
-				 SIZE fontsize;
-				 HDC dc;
-				 HFONT old;
-				 int nbligne;
-
-				 GetClientRect(hwnd, &rect);
-				 dc = GetDC(hwnd);
-				 old = (HFONT)SelectObject(dc, uiFont::mono(hwnd));
-				 GetTextExtentPoint32(dc, "0", 1, &fontsize);
-
-				 nbligne = (rect.bottom - rect.top)/fontsize.cy;
-
-				 switch LOWORD(wParam)
-				 {
-					  case SB_LINEDOWN :
-						   DisView7->curr_ligne = std::min<s32>(0x3FFFFF7*(1+DisView7->cpu->CPSR.bits.T), DisView7->curr_ligne+1);
-						   break;
-					  case SB_LINEUP :
-						   DisView7->curr_ligne = (u32)std::max<s32>(0, (s32)DisView7->curr_ligne-1);
-						   break;
-					  case SB_PAGEDOWN :
-						   DisView7->curr_ligne = std::min<s32>(0x3FFFFF7*(1+DisView7->cpu->CPSR.bits.T), DisView7->curr_ligne+nbligne);
-						   break;
-					  case SB_PAGEUP :
-						   DisView7->curr_ligne = (u32)std::max<s32>(0, DisView7->curr_ligne-nbligne);
-						   break;
-				  }
-		          
-				  SelectObject(dc, old);
-				  SetScrollPos(hwnd, SB_VERT, DisView7->curr_ligne, TRUE);
-				  InvalidateRect(hwnd, NULL, FALSE);
-			}
-			return 1;
-		                            
 		case WM_ERASEBKGND:
 			return 1;
+
+		case WM_SIZE:
+			UpdateBoxScrollBar(hwnd);
+			InvalidateRect(hwnd, NULL, FALSE);
+			return 0;
+
+		case WM_MOUSEWHEEL:
+		{
+			const short delta = GET_WHEEL_DELTA_WPARAM(wParam);
+			Core().ScrollLines(-(delta / WHEEL_DELTA) * 3);
+			UpdateBoxScrollBar(hwnd);
+			InvalidateRect(hwnd, NULL, FALSE);
+			return 0;
+		}
+
+		case WM_VSCROLL:
+		{
+			const uint32_t instructionSize = Core().InstructionSize();
+			const int maxLine = (int)(DisassemblyCore::kMaxAddress / instructionSize);
+
+			SCROLLINFO si;
+			memset(&si, 0, sizeof(si));
+			si.cbSize = sizeof(si);
+			si.fMask = SIF_ALL;
+			GetScrollInfo(hwnd, SB_VERT, &si);
+
+			int position = si.nPos;
+			switch (LOWORD(wParam))
+			{
+				case SB_LINEUP:       position -= 1; break;
+				case SB_LINEDOWN:     position += 1; break;
+				case SB_PAGEUP:       position -= (int)si.nPage; break;
+				case SB_PAGEDOWN:     position += (int)si.nPage; break;
+				case SB_THUMBTRACK:
+				case SB_THUMBPOSITION: position = si.nTrackPos; break;
+				case SB_TOP:          position = 0; break;
+				case SB_BOTTOM:       position = maxLine; break;
+				default:              return 0;
+			}
+
+			position = (position < 0) ? 0 : ((position > maxLine) ? maxLine : position);
+			Core().SetAnchorAddress((uint32_t)position * instructionSize);
+			UpdateBoxScrollBar(hwnd);
+			InvalidateRect(hwnd, NULL, FALSE);
+			return 0;
+		}
+
 	}
-	return FALSE;
+
+	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+// ---------------------------------------------------------------------------
+// Dialog
+// ---------------------------------------------------------------------------
+
+void DisView_NotifyDebugBreak(int cpu, u32 address)
 {
-	//bail out early if the dialog isnt initialized
-	if(!DisView7 && message != WM_INITDIALOG)
-		return false;
+	if (DisViewWnd == NULL)
+	{
+		return;
+	}
+
+	PostMessageA(DisViewWnd, WM_DISVIEW_DEBUG_BREAK, (WPARAM)cpu, (LPARAM)address);
+}
+
+HWND DisView_GetListHwnd(void)
+{
+	return (DisView != NULL) ? DisView->box : NULL;
+}
+
+BOOL CALLBACK ViewDisasmProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	// Bail out early if the dialog is not initialized yet.
+	if ((DisView == NULL) && (message != WM_INITDIALOG))
+	{
+		return FALSE;
+	}
 
 	switch (message)
 	{
-			case WM_INITDIALOG :
+		case WM_INITDIALOG:
+		{
+			DisView = new DisViewState;
+			memset(DisView, 0, sizeof(DisViewState));
+			DisView->hwnd = hwnd;
+			DisView->cpu = DisassemblyCore::CPU_ARM9;
+			DisView->autoUpdateFrames = 1;
+			DisViewWnd = hwnd;
+
+			Core().SetCpu(DisassemblyCore::CPU_ARM9);
+
+			SendDlgItemMessageA(hwnd, IDC_DISASM_CPU, CB_ADDSTRING, 0, (LPARAM)"ARM9");
+			SendDlgItemMessageA(hwnd, IDC_DISASM_CPU, CB_ADDSTRING, 0, (LPARAM)"ARM7");
+			SendDlgItemMessageA(hwnd, IDC_DISASM_CPU, CB_SETCURSEL, 0, 0);
+
+			DisView->box = GetDlgItem(hwnd, IDC_DES_BOX);
+
+			// PC is shown but not editable: writing it from a text field while
+			// the CPU is running has no sane semantics.
+			SendDlgItemMessageA(hwnd, IDC_R15, EM_SETREADONLY, TRUE, 0);
+
+			SendDlgItemMessageA(hwnd, IDC_AUTO_UPDATE_SPIN, UDM_SETRANGE, 0, MAKELONG(99, 1));
+			SendDlgItemMessageA(hwnd, IDC_AUTO_UPDATE_SPIN, UDM_SETPOS32, 0, DisView->autoUpdateFrames);
+			SetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, DisView->autoUpdateFrames, FALSE);
+
+			CheckRadioButton(hwnd, IDC_AUTO_DES, IDC_THUMB, IDC_AUTO_DES);
+			Core().SetViewMode(DisassemblyCore::ViewMode_Auto);
+
+			// Start on the instruction the CPU is about to run, like the old
+			// dialogs did not (they always opened at address 0).
+			Core().FollowPC();
+
+			RefreshAll(hwnd);
+			return TRUE;
+		}
+
+		case WM_CLOSE:
+		{
+			if (DisView != NULL)
+			{
+				if (DisView->autoUpdate)
 				{
-					SetWindowText(hwnd, "ARM7 Disassembler");
-					SetDlgItemInt(hwnd, IDC_SETPNUM, 1, FALSE);
-					SendMessage(GetDlgItem(hwnd, IDC_AUTO_DES), BM_SETCHECK, TRUE, 0);
-					DisView7 = new disview_struct;
-					memset(DisView7, 0, sizeof(disview_struct));
-					DisView7->cpu = &NDS_ARM7;
-					DisView7->autoup_secs = 1;
-					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
-									UDM_SETRANGE, 0, MAKELONG(99, 1));
-					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
-									UDM_SETPOS32, 0, DisView7->autoup_secs);
-					DisViewWnd[1] = hwnd;
-					return 1;
+					KillTimer(hwnd, IDT_VIEW_DISASM);
+					DisView->autoUpdate = false;
 				}
-			case WM_CLOSE :
-				{
-					EndDialog(hwnd,0);
-					if(DisView7->autoup)
-					{
-						KillTimer(hwnd, IDT_VIEW_DISASM7);
-						DisView7->autoup = false;
-					}
-					delete DisView7;
-					DisView7 = NULL;
-					DisViewWnd[1] = NULL;
-					ViewDisasm_ARM7->doClose();
-					//INFO("Close ARM7 disassembler\n");
-					return 1;
-				}
-			case WM_PAINT:
-					DisViewDialog_OnPaint(hwnd, DisView7, wParam, lParam);
-					return 1;
-			case WM_TIMER:
-				SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
-				return 1;
-			case WM_MOUSEWHEEL: {
-				int tmp = (*((int*)&wParam));
-				short tmp2 = (*(((short*)&tmp) + 1));
-				DisView7->curr_ligne += -tmp2 / WHEEL_DELTA;
-				InvalidateRect(hwnd, NULL, FALSE);
-				return 1;
+
+				delete DisView;
+				DisView = NULL;
 			}
-            case WM_COMMAND :
-                 switch (LOWORD (wParam))
-                 {
-                        case IDC_FERMER :
-                             SendMessage(hwnd, WM_CLOSE, 0, 0);
-                             return 0;
-                        case IDC_AUTO_DES :
-                             /* address to line correction */
-                             if ((DisView7->cpu->CPSR.bits.T) && (DisView7->mode == 1)) {
-                                  /* from arm to thumb, line * 2*/
-                                   DisView7->curr_ligne <<= 1 ;
-                             } else if (!(DisView7->cpu->CPSR.bits.T) && (DisView7->mode == 2)) {
-                                  /* from thumb to arm, line / 2 */
-                                   DisView7->curr_ligne >>= 1 ;
-                             }
-                             DisView7->mode = 0;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
-                             return 1;
-                        case IDC_ARM :
-                             /* address to line correction */
-                             if ((DisView7->mode==2) || ((DisView7->mode==0) && (DisView7->cpu->CPSR.bits.T))) {
-                                   DisView7->curr_ligne >>= 1 ;
-                             } ;
-                             DisView7->mode = 1;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
-                             return 1;
-                        case IDC_THUMB :
-                             /* address to line correction */
-                             if ((DisView7->mode==1) || ((DisView7->mode==0) && !(DisView7->cpu->CPSR.bits.T))) {
-                                   DisView7->curr_ligne <<= 1 ;
-                             } ;
-                             DisView7->mode = 2;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
-                             return 1;
-                        case IDC_AUTO_UPDATE :
-                             if(DisView7->autoup)
-                             {
-								 EnableWindow(GetDlgItem(hwnd, IDC_AUTOUPDATE_ASM), TRUE);
-								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), false);
-								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), false);
-								 KillTimer(hwnd, IDT_VIEW_DISASM7);
-                                  DisView7->autoup = FALSE;
-                                  return 1;
-                             }
-							 EnableWindow(GetDlgItem(hwnd, IDC_AUTOUPDATE_ASM), FALSE);
-							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
-							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
-                             DisView7->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_DISASM7, DisView7->autoup_secs*20, (TIMERPROC) NULL);
-                             return 1;
-						case IDC_STEP:
-                             {
-								NDS_debug_step();
-								NDS_ARM7.debugStep = true;
-                             }
-                             return 1;
 
-						case IDC_CONTINUE:
-                             {
-								NDS_debug_continue();
-                             }
-                             return 1;
-                        case IDC_GO :
-                             {
-                             u16 i;
-                             char tmp[16];
-                             int lg = GetDlgItemText(hwnd, IDC_GOTODES, tmp, 16);
-                             u32 adr = 0;
-                             for(i = 0; i<lg; ++i)
-                             {
-                                  if((tmp[i]>='A')&&(tmp[i]<='F'))
-                                  {
-                                       adr = adr*16 + (tmp[i]-'A'+10);
-                                       continue;
-                                  }         
-                                  if((tmp[i]>='0')&&(tmp[i]<='9'))
-                                  {
-                                       adr = adr*16 + (tmp[i]-'0');
-                                       continue;
-                                  }         
-                             } 
-                             /* address to line correction */
-                             switch (DisView7->mode) {
-                                    case 0:    /* auto */
-                                         DisView7->curr_ligne = adr>>2;
-                                         if (DisView7->cpu->CPSR.bits.T) {
-                                             DisView7->curr_ligne = adr>>1;
-                                         }
-                                         break ;
-                                    case 1:    /* arm */
-                                         DisView7->curr_ligne = adr>>2;
-                                         break ;
-                                    case 2:    /* thumb */
-                                         DisView7->curr_ligne = adr>>1;
-                                         break ;
-                             } ;
-                             InvalidateRect(hwnd, NULL, FALSE);
-                             }
-                             return 1;
-						case IDC_REFRESH:
-							DisView7->autogo=true;
-							InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
-							DisView7->autogo=false;
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-						case IDC_AUTO_UPDATE_SECS:
-							{
-								u16 t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
-								if (!DisView7) 
-								{
-									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
-								}
-								if (t != DisView7->autoup_secs)
-								{
-									DisView7->autoup_secs = t;
-									if (DisView7->autoup)
-										SetTimer(hwnd, IDT_VIEW_DISASM7, 
-												DisView7->autoup_secs*20, (TIMERPROC) NULL);
-								}
-							}
-							return 1;
-						case IDC_AUTOUPDATE_ASM:
-							{
-								if (DisViewWnd[1] == NULL)
-								{
-									EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE), FALSE);
-									DisViewWnd[1] = GetDlgItem(hwnd, IDC_DES_BOX);
-									return 1;
-								}
-								DisViewWnd[1] = NULL;
-								EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE), TRUE);
-							}
-							return 1;
-						case IDC_DISASMSEEK:
-						{
-							DisView7->curr_ligne = lParam / 4;
-							return 1;
-						}
-						case IDC_BPUP:
-						{
-							DisView7->break_pos = max<s32>(0, DisView7->break_pos - 1);
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-						}
-						case IDC_BPDOWN:
-						{
-							DisView7->break_pos += 1;
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-						}
-						case IDC_BREAKPOINT: {
-							char tmp[16];
-							int lg = GetDlgItemText(hwnd, IDC_BPDEST, tmp, 16);
-							u32 adr = 0;
-							for (int i = 0; i < lg; ++i)
-							{
-								if ((tmp[i] >= 'A') && (tmp[i] <= 'F'))
-								{
-									adr = adr * 16 + (tmp[i] - 'A' + 10);
-									continue;
-								}
-								if ((tmp[i] >= '0') && (tmp[i] <= '9'))
-								{
-									adr = adr * 16 + (tmp[i] - '0');
-									continue;
-								}
-							}
-							NDS_ARM7.breakPoints->push_back(adr);
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-						}
-						case IDC_DELBP: {
-							if (DisView7->break_pos < NDS_ARM7.breakPoints->size()) {
-								NDS_ARM7.breakPoints->erase(NDS_ARM7.breakPoints->begin() + DisView7->break_pos);
-							}
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-						}
-						case IDC_REGUPDATE: {
-							for (int i = 0; i < 15; ++i) {
-								char tmp[16];
-								int lg = GetDlgItemText(hwnd, IDC_R0 + i, tmp, 16);
-								u32 adr = 0;
-								for (int i = 0; i < lg; ++i)
-								{
-									if ((tmp[i] >= 'A') && (tmp[i] <= 'F'))
-									{
-										adr = adr * 16 + (tmp[i] - 'A' + 10);
-										continue;
-									}
-									if ((tmp[i] >= '0') && (tmp[i] <= '9'))
-									{
-										adr = adr * 16 + (tmp[i] - '0');
-										continue;
-									}
-								}
+			DisViewWnd = NULL;
 
-								NDS_ARM7.R[i] = adr;
-							}
-							return 1;
-						}
-						case IDC_RUNRET: {
-							NDS_ARM7.runToRet = true;
-							execute = true;
-							return 1;
-						}
-						case IDC_STEPOVER: {
-							NDS_ARM7.stepOverBreak = NDS_ARM7.instruct_adr + 4;
-							execute = true;
-							paused = false;
-						}
-										 return 1;
-                        return 1;
-                 }
-                 return 0;
-     }
+			// The dialog is modeless (CreateDialog), so EndDialog would not
+			// destroy it. Destroy it first and then tell the tool class, so
+			// unregClass() runs after the last window of the class is gone.
+			DestroyWindow(hwnd);
+			if (ViewDisasm != NULL)
+			{
+				ViewDisasm->doClose();
+			}
+			return TRUE;
+		}
 
-	return FALSE;
-}
-
-// =================================================== ARM9
-LRESULT CALLBACK ViewDisasm_ARM9BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch(msg)
-	{
-		case WM_NCCREATE:
-			SetScrollRange(hwnd, SB_VERT, 0, 0x3FFFFF7, TRUE);
-			SetScrollPos(hwnd, SB_VERT, 10, TRUE);
-			return 1;
-		    
 		case WM_NCDESTROY:
-			//free(win);
-			return 1;
+			// Safety net for CloseAllToolWindows(), which destroys the window
+			// without going through WM_CLOSE first.
+			if (DisView != NULL)
+			{
+				delete DisView;
+				DisView = NULL;
+			}
+			DisViewWnd = NULL;
+			return TRUE;
 
 		case WM_PAINT:
-			DisViewBox_OnPaint(hwnd, DisView9, wParam, lParam);
-			return 1;
+		{
+			PAINTSTRUCT ps;
+			HDC hdc = BeginPaint(hwnd, &ps);
+			PaintCpsrFlags(hwnd, hdc);
+			EndPaint(hwnd, &ps);
+			return TRUE;
+		}
 
-		case WM_VSCROLL :
+		case WM_MOUSEWHEEL:
+		{
+			// The list is a custom child window, so it only ever sees wheel
+			// messages when it holds the focus -- and it rarely does, because
+			// the dialog is modeless. Route by pointer position instead: main.cpp
+			// covers the case where the main window has the focus, this covers
+			// the one where an edit field inside this dialog has it.
+			HWND box = DisView_GetListHwnd();
+			POINT pt;
+			pt.x = (short)LOWORD(lParam);
+			pt.y = (short)HIWORD(lParam);
+			if ((box != NULL) && (WindowFromPoint(pt) == box))
 			{
-				 RECT rect;
-				 SIZE fontsize;
-				 HDC dc;
-				 HFONT old;
-				 int nbligne;
-
-				 GetClientRect(hwnd, &rect);
-				 dc = GetDC(hwnd);
-				 old = (HFONT)SelectObject(dc, uiFont::mono(hwnd));
-				 GetTextExtentPoint32(dc, "0", 1, &fontsize);
-
-				 nbligne = (rect.bottom - rect.top)/fontsize.cy;
-
-				 switch LOWORD(wParam)
-				 {
-					  case SB_LINEDOWN :
-						   DisView9->curr_ligne = std::min<s32>(0x3FFFFF7*(1+DisView9->cpu->CPSR.bits.T), DisView9->curr_ligne+1);
-						   break;
-					  case SB_LINEUP :
-						   DisView9->curr_ligne = (u32)std::max<s32>(0, (s32)DisView9->curr_ligne-1);
-						   break;
-					  case SB_PAGEDOWN :
-						   DisView9->curr_ligne = std::min<s32>(0x3FFFFF7*(1+DisView9->cpu->CPSR.bits.T), DisView9->curr_ligne+nbligne);
-						   break;
-					  case SB_PAGEUP :
-						   DisView9->curr_ligne = (u32)std::max<s32>(0, DisView9->curr_ligne-nbligne);
-						   break;
-				  }
-		          
-				  SelectObject(dc, old);
-				  SetScrollPos(hwnd, SB_VERT, DisView9->curr_ligne, TRUE);
-				  InvalidateRect(hwnd, NULL, FALSE);
+				SendMessage(box, WM_MOUSEWHEEL, wParam, lParam);
+				return TRUE;
 			}
-			return 1;
-		                            
-		case WM_ERASEBKGND:
-			return 1;
-	}
-	return FALSE;
-}
+			break;
+		}
 
-BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	//bail out early if the dialog isnt initialized
-	if(!DisView9 && message != WM_INITDIALOG)
-		return false;
+		case WM_ACTIVATE:
+			if (LOWORD(wParam) != WA_INACTIVE)
+			{
+				RefreshAll(hwnd);
+			}
+			return TRUE;
 
-	switch (message)
-     {
-            case WM_INITDIALOG :
+		case WM_DISVIEW_DEBUG_BREAK:
+		{
+			const int cpu = (int)wParam;
+			const uint32_t address = (uint32_t)lParam;
+
+			Core().SetCpu((cpu == NDS_DEBUG_CPU_ARM7) ? DisassemblyCore::CPU_ARM7 : DisassemblyCore::CPU_ARM9);
+			SyncCpuCombo(hwnd);
+			Core().SetAnchorAddress(address);
+
+			RefreshAll(hwnd);
+			ShowWindow(hwnd, SW_SHOW);
+			SetForegroundWindow(hwnd);
+			return TRUE;
+		}
+
+		case WM_TIMER:
+			if (wParam == IDT_VIEW_DISASM)
+			{
+				// Only chase the PC while the CPU is actually executing. When
+				// emulation is paused the PC cannot move, so re-anchoring would
+				// just undo the user's scrolling, and the refresh itself is a
+				// no-op.
+				if (execute)
 				{
-					SetWindowText(hwnd, "ARM9 Disassembler");
-					SetDlgItemInt(hwnd, IDC_SETPNUM, 1, FALSE);
-					SendMessage(GetDlgItem(hwnd, IDC_AUTO_DES), BM_SETCHECK, TRUE, 0);
-					DisView9 = new disview_struct;
-					memset(DisView9, 0, sizeof(disview_struct));
-					DisView9->cpu = &NDS_ARM9;
-					DisView9->autoup_secs = 1;
-					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
-									UDM_SETRANGE, 0, MAKELONG(99, 1));
-					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
-									UDM_SETPOS32, 0, DisView9->autoup_secs);
-					DisViewWnd[0] = hwnd;
-					return 1;
+					Core().FollowPC();
+					RefreshAll(hwnd);
 				}
-						case WM_CLOSE :
-				{
-					EndDialog(hwnd,0);
-					if(DisView9->autoup)
+			}
+			return TRUE;
+
+		case WM_COMMAND:
+			switch (LOWORD(wParam))
+			{
+				case IDC_DISASM_CPU:
+					if (HIWORD(wParam) == CBN_SELCHANGE)
 					{
-						KillTimer(hwnd, IDT_VIEW_DISASM9);
-						DisView9->autoup = false;
+						const int selection = (int)SendDlgItemMessageA(hwnd, IDC_DISASM_CPU, CB_GETCURSEL, 0, 0);
+						Core().SetCpu((selection == 1) ? DisassemblyCore::CPU_ARM7 : DisassemblyCore::CPU_ARM9);
+						Core().SetAnchorAddress(Core().AnchorAddress()); // re-align for the new CPU
+						RefreshAll(hwnd);
 					}
-					delete DisView9;
-					DisView9 = NULL;
-					DisViewWnd[0] = NULL;
-					ViewDisasm_ARM9->doClose();
-					//INFO("Close ARM9 disassembler\n");
-					return 1;
-				}
-            case WM_PAINT:
-					DisViewDialog_OnPaint(hwnd, DisView9, wParam, lParam);
-					return 1;
-			case WM_TIMER:
-				SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
-				return 1;
-			case WM_MOUSEWHEEL: {
-				int tmp = (*((int*)&wParam));
-				short tmp2 = (*(((short*)&tmp) + 1));
-				DisView9->curr_ligne += -tmp2 / WHEEL_DELTA;
-				InvalidateRect(hwnd, NULL, FALSE);
-				return 1;
-				}
-            case WM_COMMAND :
-                 switch (LOWORD (wParam))
-                 {
-                        case IDC_FERMER :
-                             SendMessage(hwnd, WM_CLOSE, 0, 0);
-                             return 0;
-                        case IDC_AUTO_DES :
-                             /* address to line correction */
-                             if ((DisView9->cpu->CPSR.bits.T) && (DisView9->mode == 1)) {
-                                  /* from arm to thumb, line * 2*/
-                                   DisView9->curr_ligne <<= 1 ;
-                             } else if (!(DisView9->cpu->CPSR.bits.T) && (DisView9->mode == 2)) {
-                                  /* from thumb to arm, line / 2 */
-                                   DisView9->curr_ligne >>= 2 ;
-                             }
-                             DisView9->mode = 0;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
-                             return 1;
-                        case IDC_ARM :
-                             /* address to line correction */
-                             if ((DisView9->mode==2) || ((DisView9->mode==0) && (DisView9->cpu->CPSR.bits.T))) {
-                                   DisView9->curr_ligne >>= 2 ;
-                             } ;
-                             DisView9->mode = 1;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
-                             return 1;
-                        case IDC_THUMB :
-                             /* address to line correction */
-                             if ((DisView9->mode==1) || ((DisView9->mode==0) && !(DisView9->cpu->CPSR.bits.T))) {
-                                   DisView9->curr_ligne <<= 1 ;
-                             } ;
-                             DisView9->mode = 2;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
-                             return 1;
-                        case IDC_AUTO_UPDATE :
-                             if(DisView9->autoup)
-                             {
-								 EnableWindow(GetDlgItem(hwnd, IDC_AUTOUPDATE_ASM), TRUE);
-								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), false);
-								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), false);
-								 KillTimer(hwnd, IDT_VIEW_DISASM9);
-                                  DisView9->autoup = FALSE;
-                                  return 1;
-                             }
-							 EnableWindow(GetDlgItem(hwnd, IDC_AUTOUPDATE_ASM), FALSE);
-							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
-							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
-                             DisView9->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_DISASM9, DisView9->autoup_secs*20, (TIMERPROC) NULL);
-                             return 1;
-						case IDC_STEP:
-                             {
-								NDS_debug_step();
-								DisView9->curr_ligne += 1;
-								NDS_ARM9.debugStep = true;
-                             }
-                             return 1;
-						case IDC_CONTINUE:
-                             {
-								NDS_debug_continue();
-                             }
-                             return 1;
-                        case IDC_GO :
-                             {
-                             u16 i;
-                             char tmp[16];
-                             int lg = GetDlgItemText(hwnd, IDC_GOTODES, tmp, 16);
-                             u32 adr = 0;
-                             for(i = 0; i<lg; ++i)
-                             {
-                                  if((tmp[i]>='A')&&(tmp[i]<='F'))
-                                  {
-                                       adr = adr*16 + (tmp[i]-'A'+10);
-                                       continue;
-                                  }         
-                                  if((tmp[i]>='0')&&(tmp[i]<='9'))
-                                  {
-                                       adr = adr*16 + (tmp[i]-'0');
-                                       continue;
-                                  }         
-                             } 
-                             /* address to line correction */
-                             switch (DisView9->mode) {
-                                    case 0:    /* auto */
-                                         DisView9->curr_ligne = adr>>2;
-                                         if (DisView9->cpu->CPSR.bits.T) {
-                                             DisView9->curr_ligne = adr>>1;
-                                         }
-                                         break ;
-                                    case 1:    /* arm */
-                                         DisView9->curr_ligne = adr>>2;
-                                         break ;
-                                    case 2:    /* thumb */
-                                         DisView9->curr_ligne = adr>>1;
-                                         break ;
-                             } ;
-                             InvalidateRect(hwnd, NULL, FALSE);
-                             }
-                             return 1;
-						case IDC_REFRESH:
-							DisView9->autogo=true;
-							InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
-							DisView9->autogo=false;
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-						case IDC_AUTO_UPDATE_SECS:
-							{
-								u16 t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
-								if (!DisView9) 
-								{
-									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
-								}
-								if (t != DisView9->autoup_secs)
-								{
-									DisView9->autoup_secs = t;
-									if (DisView9->autoup)
-										SetTimer(hwnd, IDT_VIEW_DISASM9, 
-												DisView9->autoup_secs*20, (TIMERPROC) NULL);
-								}
-							}
-							return 1;
-						case IDC_AUTOUPDATE_ASM:
-							{
-								if (DisViewWnd[0] == NULL)
-								{
-									EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE), FALSE);
-									DisViewWnd[0] = GetDlgItem(hwnd, IDC_DES_BOX);
-									return 1;
-								}
-								DisViewWnd[0] = NULL;
-								EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE), TRUE);
-							}
-							return 1;
-						case IDC_DISASMSEEK:
-							{
-								DisView9->curr_ligne = lParam / 4;
-								return 1;
-							}
-						case IDC_BPUP:
-						{
-							DisView9->break_pos = max<s32>(0, DisView9->break_pos - 1);
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-						}
-						case IDC_BPDOWN:
-						{
-							DisView9->break_pos += 1;
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-						}
-						case IDC_BREAKPOINT: {
-							char tmp[16];
-							int lg = GetDlgItemText(hwnd, IDC_BPDEST, tmp, 16);
-							u32 adr = 0;
-							for (int i = 0; i < lg; ++i)
-							{
-								if ((tmp[i] >= 'A') && (tmp[i] <= 'F'))
-								{
-									adr = adr * 16 + (tmp[i] - 'A' + 10);
-									continue;
-								}
-								if ((tmp[i] >= '0') && (tmp[i] <= '9'))
-								{
-									adr = adr * 16 + (tmp[i] - '0');
-									continue;
-								}
-							}
-							NDS_ARM9.breakPoints->push_back(adr);
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-						}
-						case IDC_DELBP: {
-							if (DisView9->break_pos < NDS_ARM9.breakPoints->size()) {
-								NDS_ARM9.breakPoints->erase(NDS_ARM9.breakPoints->begin() + DisView9->break_pos);
-							}
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-						}
-						case IDC_REGUPDATE: {
-							for (int i = 0; i < 15; ++i) {
-								char tmp[16];
-								int lg = GetDlgItemText(hwnd, IDC_R0 + i, tmp, 16);
-								u32 adr = 0;
-								for (int i = 0; i < lg; ++i)
-								{
-									if ((tmp[i] >= 'A') && (tmp[i] <= 'F'))
-									{
-										adr = adr * 16 + (tmp[i] - 'A' + 10);
-										continue;
-									}
-									if ((tmp[i] >= '0') && (tmp[i] <= '9'))
-									{
-										adr = adr * 16 + (tmp[i] - '0');
-										continue;
-									}
-								}
+					return TRUE;
 
-								NDS_ARM9.R[i] = adr;
-							}
-							return 1;
+				case IDC_FERMER:
+					SendMessage(hwnd, WM_CLOSE, 0, 0);
+					return TRUE;
+
+				case IDC_AUTO_DES:
+					Core().SetViewMode(DisassemblyCore::ViewMode_Auto);
+					RefreshAll(hwnd);
+					return TRUE;
+
+				case IDC_ARM:
+					Core().SetViewMode(DisassemblyCore::ViewMode_ARM);
+					RefreshAll(hwnd);
+					return TRUE;
+
+				case IDC_THUMB:
+					Core().SetViewMode(DisassemblyCore::ViewMode_Thumb);
+					RefreshAll(hwnd);
+					return TRUE;
+
+				case IDC_AUTO_UPDATE:
+					if (DisView->autoUpdate)
+					{
+						KillTimer(hwnd, IDT_VIEW_DISASM);
+						DisView->autoUpdate = false;
+						EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), FALSE);
+						EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), FALSE);
+					}
+					else
+					{
+						DisView->autoUpdate = true;
+						EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), TRUE);
+						EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), TRUE);
+						SetTimer(hwnd, IDT_VIEW_DISASM, DisView->autoUpdateFrames * 20, NULL);
+					}
+					return TRUE;
+
+				case IDC_AUTO_UPDATE_SECS:
+				{
+					BOOL translated = FALSE;
+					const UINT frames = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, &translated, FALSE);
+					if (translated && (frames >= 1) && (frames <= 99))
+					{
+						DisView->autoUpdateFrames = frames;
+						if (DisView->autoUpdate)
+						{
+							SetTimer(hwnd, IDT_VIEW_DISASM, DisView->autoUpdateFrames * 20, NULL);
 						}
-						case IDC_RUNRET: {
-							NDS_ARM9.runToRet = true;
-							execute = true;
-							return 1;
+					}
+					return TRUE;
+				}
+
+				case IDC_REFRESH:
+					Core().FollowPC();
+					RefreshAll(hwnd);
+					return TRUE;
+
+				case IDC_STEP:
+					Core().StepInstruction();
+					ResumeEmulation();
+					RefreshAll(hwnd);
+					return TRUE;
+
+				case IDC_CONTINUE:
+					Core().Continue();
+					ResumeEmulation();
+					return TRUE;
+
+				case IDC_RUNRET:
+					Core().RunToReturn();
+					ResumeEmulation();
+					return TRUE;
+
+				case IDC_STEPOVER:
+					Core().StepOver();
+					ResumeEmulation();
+					return TRUE;
+
+				case IDC_GO:
+				{
+					char text[32];
+					GetDlgItemTextA(hwnd, IDC_GOTODES, text, (int)sizeof(text));
+
+					uint32_t address = 0;
+					if (DisassemblyCore::ParseHex32(text, address))
+					{
+						Core().SetAnchorAddress(address);
+						RefreshAll(hwnd);
+					}
+					return TRUE;
+				}
+
+				case IDC_BREAKPOINT:
+				{
+					char text[32];
+					GetDlgItemTextA(hwnd, IDC_BPDEST, text, (int)sizeof(text));
+
+					uint32_t address = 0;
+					if (DisassemblyCore::ParseHex32(text, address))
+					{
+						Core().AddBreakpoint(address);
+						RefreshAll(hwnd);
+					}
+					return TRUE;
+				}
+
+				case IDC_DELBP:
+					Core().RemoveBreakpointAt((size_t)DisView->breakPos[Core().GetCpu()]);
+					RefreshAll(hwnd);
+					return TRUE;
+
+				case IDC_BPUP:
+					DisView->breakPos[Core().GetCpu()] -= 1;
+					RefreshBreakpointList(hwnd);
+					return TRUE;
+
+				case IDC_BPDOWN:
+					DisView->breakPos[Core().GetCpu()] += 1;
+					RefreshBreakpointList(hwnd);
+					return TRUE;
+
+				case IDC_REGUPDATE:
+					for (int i = 0; i < 15; ++i)
+					{
+						char text[32];
+						GetDlgItemTextA(hwnd, IDC_R0 + i, text, (int)sizeof(text));
+
+						uint32_t value = 0;
+						if (DisassemblyCore::ParseHex32(text, value))
+						{
+							Core().WriteRegister((unsigned int)i, value);
 						}
-						case IDC_STEPOVER: {
-							NDS_ARM9.stepOverBreak = NDS_ARM9.instruct_adr + 4;
-							execute = true;
-							paused = false;
-						}
-						return 1;
-                 }
-                 return 0;
-     }
+					}
+					RefreshAll(hwnd);
+					return TRUE;
+			}
+			return FALSE;
+	}
 
 	return FALSE;
 }
-
-template<int proc>
-FORCEINLINE void DisassemblerTools_Refresh()
-{
-	if (DisViewWnd[proc] == NULL) return;
-	if (proc == 0)
-	{
-		DisView9->autogo=true;
-		InvalidateRect(DisViewWnd[proc], NULL, FALSE);
-		DisView9->autogo=false;
-	}
-	else
-	{
-		DisView7->autogo=true;
-		InvalidateRect(DisViewWnd[proc], NULL, FALSE);
-		DisView7->autogo=false;
-	}
-}
-
-//these templates needed to be instantiated manually
-template void DisassemblerTools_Refresh<0>();
-template void DisassemblerTools_Refresh<1>();

@@ -7,7 +7,7 @@
 #define IDM_OPEN                        101
 #define IDM_QUIT                        102
 #define IDC_FERMER                      103
-#define IDD_DESASSEMBLEUR_VIEWER7       103
+#define IDD_DESASSEMBLEUR_VIEWER        103
 #define IDC_STEP                        104
 #define IDC_SETPNUM                     105
 #define IDC_SCROLLER                    106
@@ -231,6 +231,9 @@
 #define IDC_THUMB                       422
 #define IDC_GOTODES                     423
 #define IDC_TMP                         424
+// Single disassembler window: CPU selector and the CPSR flag strip.
+#define IDC_DISASM_CPU                  425
+#define IDC_CPSR_FLAGS                  426
 #define IDD_GAME_INFO                   501
 #define ID_RAM_WATCH                    550
 #define IDM_RENDER_NORMAL               551
@@ -642,7 +645,6 @@
 #define IDD_ABOUT_BOX                   1301
 #define IDC_AUTHORS_LIST                1302
 #define IDC_LIGHT_VIEWER_LIGHT0COLOR_COLORCTRL 1302
-#define IDD_DESASSEMBLEUR_VIEWER9       1302
 #define IDC_LIGHT_VIEWER_LIGHT0COLOR_EDIT 1303
 #define IDC_LIGHT_VIEWER_LIGHT0VECTOR_EDIT 1304
 #define IDD_GBASLOT_NONE                1304

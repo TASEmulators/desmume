@@ -25,6 +25,8 @@ desmume_src = [
   # Play/Record Movie dialogs: header parsing, desync assessment, comment
   # rewriting and name/RTC helpers, shared with Windows and Cocoa.
   '../../shared/movie_info_core.cpp',
+  # Disassembler view model, shared with the Windows and Cocoa frontends.
+  '../../shared/disassembly_core.cpp',
   'config.cpp',
   'desmume.cpp',
   'dToolsList.cpp',
@@ -32,6 +34,7 @@ desmume_src = [
   'tools/ramWatch.cpp',
   'tools/ramSearch.cpp',
   'tools/memoryViewer.cpp',
+  'tools/disassembler.cpp',
   'tools/moviePlay.cpp',
   'tools/movieRecord.cpp',
   'utilsGTK.cpp',

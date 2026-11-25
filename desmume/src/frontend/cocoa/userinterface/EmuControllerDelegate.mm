@@ -27,6 +27,7 @@
 #import "MemoryViewerWindow.h"
 #import "RAMWatchWindow.h"
 #import "RAMSearchWindow.h"
+#import "DisassemblerWindow.h"
 #import "MoviePlayWindowController.h"
 #import "MovieRecordWindowController.h"
 
@@ -140,40 +141,40 @@
 	{
 		return nil;
 	}
-	
+
 	_unfairlockFirmware = apple_unfairlock_create();
-	
+
 	mainWindow = nil;
 	windowList = [[NSMutableArray alloc] initWithCapacity:32];
-	
+
 	isRunningDarkMode = [CocoaDSUtil determineDarkModeAppearance];
-	
+
 	_displayRotationPanelTitle = nil;
 	_displaySeparationPanelTitle = nil;
 	_displayVideoSettingsPanelTitle = nil;
 	_displayHUDSettingsPanelTitle = nil;
-	
+
 	currentRom = nil;
 	cdsFirmware = nil;
 	audioController = [[CocoaAudioController alloc] init];
-	
+
 	isSaveStateEdited = NO;
 	isShowingSaveStateDialog = NO;
 	isShowingFileMigrationDialog = NO;
 	isUserInterfaceBlockingExecution = NO;
 	_isNDSErrorSheetAlreadyShown = NO;
-	
+
 	currentSaveStateURL = nil;
 	selectedRomSaveTypeID = ROMSAVETYPE_AUTOMATIC;
 	selectedExportRomSaveID = 0;
-	
+
 	lastSetSpeedScalar = 1.0f;
 	isHardwareMicAvailable = NO;
 	currentMicGainValue = 0.0f;
-	
+
 	iconExecute           = [[NSImage imageNamed:@"Icon_Execute_32x32"] retain];
 	iconPause             = [[NSImage imageNamed:@"Icon_Pause_32x32"] retain];
-	
+
 	iconSpeed1x           = [[NSImage imageNamed:@"Icon_Speed_1x_32x32"] retain];
 	iconSpeed2x           = [[NSImage imageNamed:@"Icon_Speed_2x_32x32"] retain];
 	iconSpeed3x           = [[NSImage imageNamed:@"Icon_Speed_3x_32x32"] retain];
@@ -184,10 +185,10 @@
 	iconSpeed8x           = [[NSImage imageNamed:@"Icon_Speed_8x_32x32"] retain];
 	iconSpeed9x           = [[NSImage imageNamed:@"Icon_Speed_9x_32x32"] retain];
 	iconSpeed10x          = [[NSImage imageNamed:@"Icon_Speed_10x_32x32"] retain];
-	
+
 	iconSpeedLimiterEnable  = [[NSImage imageNamed:@"Icon_SpeedLimiterEnable_32x32"] retain];
 	iconSpeedLimiterDisable = [[NSImage imageNamed:@"Icon_SpeedLimiterDisable_32x32"] retain];
-	
+
 	iconMicDisabled       = [[NSImage imageNamed:@"Icon_MicrophoneBlack_256x256"] retain];
 	iconMicDisabledDM     = [[NSImage imageNamed:@"Icon_MicrophoneOff_DarkMode_256x256"] retain];
 	iconMicIdle           = [[NSImage imageNamed:@"Icon_MicrophoneDarkGreen_256x256"] retain];
@@ -195,48 +196,48 @@
 	iconMicActive         = [[NSImage imageNamed:@"Icon_MicrophoneGreen_256x256"] retain];
 	iconMicInClip         = [[NSImage imageNamed:@"Icon_MicrophoneRed_256x256"] retain];
 	iconMicManualOverride = [[NSImage imageNamed:@"Icon_MicrophoneGray_256x256"] retain];
-	
+
 	isWorking = NO;
 	isRomLoading = NO;
 	statusText = [[NSAttributedString alloc] initWithString:NSSTRING_STATUS_READY];
 	micStatusTooltip = @"";
 	currentMicStatusIcon = (isRunningDarkMode) ? [iconMicDisabledDM retain] : [iconMicDisabled retain];
-	
+
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(loadRomDidFinish:)
 												 name:@"org.desmume.DeSmuME.loadRomDidFinish"
 											   object:nil];
-	
+
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(handleNDSError:)
 												 name:@"org.desmume.DeSmuME.handleNDSError"
 											   object:nil];
-	
+
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(handleEmulatorExecutionState:)
 												 name:@"org.desmume.DeSmuME.handleEmulatorExecutionState"
 											   object:nil];
-	
+
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(updateCheatDatabaseRecentsMenu:)
 												 name:@"org.desmume.DeSmuME.updateCheatDatabaseRecentsMenu"
 											   object:nil];
-	
+
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(applicationDidFinishLaunching:)
 												 name:NSApplicationDidFinishLaunchingNotification
 											   object:nil];
-	
+
 	return self;
 }
 
 - (void)dealloc
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
-	
+
 	[iconExecute release];
 	[iconPause release];
-	
+
 	[iconSpeed1x release];
 	[iconSpeed2x release];
 	[iconSpeed3x release];
@@ -249,7 +250,7 @@
 	[iconSpeed10x release];
 	[iconSpeedLimiterEnable release];
 	[iconSpeedLimiterDisable release];
-	
+
 	[iconMicDisabled release];
 	[iconMicDisabledDM release];
 	[iconMicIdle release];
@@ -257,29 +258,30 @@
 	[iconMicActive release];
 	[iconMicInClip release];
 	[iconMicManualOverride release];
-	
+
 	[[self currentRom] release];
 	[self setCurrentRom:nil];
-	
+
 	[self setIsWorking:NO];
 	[self setStatusText:nil];
-	
+
 	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
 	[cdsSoundController setContent:nil];
 	[cdsGraphicsController setContent:nil];
 	[firmwarePanelController setContent:nil];
-	
+
 	[self setMainWindow:nil];
 	[windowList release];
-	
+
 	[audioController release];
-	
+
 	[_memoryViewerWindowController release];
 	[_ramWatchWindowController release];
 	[_ramSearchWindowController release];
-	
+	[_disassemblerWindowController release];
+
 	apple_unfairlock_destroy(_unfairlockFirmware);
-	
+
 	[super dealloc];
 }
 
@@ -288,26 +290,26 @@
 - (void) setCdsFirmware:(CocoaDSFirmware *)theFirmware
 {
 	apple_unfairlock_lock(_unfairlockFirmware);
-	
+
 	if (theFirmware == cdsFirmware)
 	{
 		apple_unfairlock_unlock(_unfairlockFirmware);
 		return;
 	}
-	
+
 	if (theFirmware != nil)
 	{
 		[theFirmware retain];
 	}
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setCdsFirmware:theFirmware];
 	[cdsCore updateFirmwareMACAddressString];
 	[firmwarePanelController setContent:theFirmware];
-	
+
 	[cdsFirmware release];
 	cdsFirmware = theFirmware;
-	
+
 	apple_unfairlock_unlock(_unfairlockFirmware);
 }
 
@@ -316,7 +318,7 @@
 	apple_unfairlock_lock(_unfairlockFirmware);
 	CocoaDSFirmware *theFirmware = cdsFirmware;
 	apple_unfairlock_unlock(_unfairlockFirmware);
-	
+
 	return theFirmware;
 }
 
@@ -332,22 +334,22 @@
 	userDefaultsViewProps.rotation    = [[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"];
 	userDefaultsViewProps.screenScale = ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0);
 	ClientDisplayPresenter::CalculateViewPropertiesWithAllScalars(userDefaultsViewProps, userDefaultsViewProps.screenScale, 1.0);
-	
+
 	const BOOL isShowingStatusBar = [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"];
-	
+
 	DisplayWindowController *newWindowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow"
 																					   emuControlDelegate:self
 																						   viewProperties:userDefaultsViewProps
 																						  isMinSizeNormal:YES
 																					   isShowingStatusBar:isShowingStatusBar];
-	
+
 	[newWindowController window]; // Just reference the window to force the nib to load.
 	[[newWindowController view] setAllowViewUpdates:YES];
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	const BOOL useVerticalSync = ([[newWindowController view] layer] != nil) || [cdsCore isFrameSkipEnabled] || (([cdsCore speedScalar] < 1.03f) && [cdsCore isSpeedLimitEnabled]);
 	[[newWindowController view] setUseVerticalSync:useVerticalSync];
-	
+
 	MacDisplayViewOutput *dvo = [[newWindowController view] displayViewOutput];
 	dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 	[[newWindowController window] makeKeyAndOrderFront:self];
@@ -360,18 +362,18 @@
 	{
 		return;
 	}
-	
+
 	NSURL *selectedFile = nil;
 	NSInteger buttonClicked = 0;
-	
+
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseDirectories:NO];
 	[panel setCanChooseFiles:YES];
 	[panel setResolvesAliases:YES];
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTitle:NSSTRING_TITLE_OPEN_ROM_PANEL];
-	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_ZIP, @FILE_EXT_ROM_GZ, @FILE_EXT_ROM_GBA, nil]; 
-	
+	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_ZIP, @FILE_EXT_ROM_GZ, @FILE_EXT_ROM_GBA, nil];
+
 	// While [NSOpenPanel setAllowedFileTypes:] and [NSOpenPanel runModal]
 	// are available in Leopard, the allowedFileTypes property is ignored on
 	// that version of macOS. To maintain compatibility with Leopard, we need
@@ -388,7 +390,7 @@
 	{
 		SILENCE_DEPRECATION_MACOS_10_6( buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes] );
 	}
-	
+
 	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		selectedFile = [[panel URLs] lastObject];
@@ -396,7 +398,7 @@
 		{
 			return;
 		}
-		
+
 		[self handleLoadRomByURL:selectedFile];
 	}
 }
@@ -414,7 +416,7 @@
 - (IBAction) revealRomInFinder:(id)sender
 {
 	NSURL *romURL = [[self currentRom] fileURL];
-	
+
 	if (romURL != nil)
 	{
 		[[NSWorkspace sharedWorkspace] selectFile:[romURL path] inFileViewerRootedAtPath:@""];
@@ -431,7 +433,7 @@
 {
 	NSURL *selectedFile = nil;
 	NSInteger buttonClicked = 0;
-	
+
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseDirectories:NO];
 	[panel setCanChooseFiles:YES];
@@ -439,7 +441,7 @@
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTitle:NSSTRING_TITLE_OPEN_STATE_FILE_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_SAVE_STATE, nil];
-	
+
 	// While [NSOpenPanel setAllowedFileTypes:] and [NSOpenPanel runModal]
 	// are available in Leopard, the allowedFileTypes property is ignored on
 	// that version of macOS. To maintain compatibility with Leopard, we need
@@ -456,7 +458,7 @@
 	{
 		SILENCE_DEPRECATION_MACOS_10_6( buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes] );
 	}
-	
+
 	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		selectedFile = [[panel URLs] lastObject];
@@ -469,9 +471,9 @@
 	{
 		return;
 	}
-	
+
 	[self pauseCore];
-	
+
 	const BOOL isStateLoaded = [CocoaDSFile loadState:selectedFile];
 	if (!isStateLoaded)
 	{
@@ -479,16 +481,16 @@
 		[self restoreCoreState];
 		return;
 	}
-	
+
 	isSaveStateEdited = YES;
 	for (DisplayWindowController *windowController in windowList)
 	{
 		[[windowController window] setDocumentEdited:isSaveStateEdited];
 	}
-	
+
 	[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_LOADED];
 	[self restoreCoreState];
-	
+
 	[self setCurrentSaveStateURL:selectedFile];
 }
 
@@ -497,20 +499,20 @@
 	if (isSaveStateEdited && [self currentSaveStateURL] != nil)
 	{
 		[self pauseCore];
-		
+
 		const BOOL isStateSaved = [CocoaDSFile saveState:[self currentSaveStateURL]];
 		if (!isStateSaved)
 		{
 			[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
 			return;
 		}
-		
+
 		isSaveStateEdited = YES;
 		for (DisplayWindowController *windowController in windowList)
 		{
 			[[windowController window] setDocumentEdited:isSaveStateEdited];
 		}
-		
+
 		[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_SAVED];
 		[self restoreCoreState];
 	}
@@ -525,7 +527,7 @@
 	NSSavePanel *panel = [NSSavePanel savePanel];
 	[panel setCanCreateDirectories:YES];
 	[panel setTitle:NSSTRING_TITLE_SAVE_STATE_FILE_PANEL];
-	
+
 	// While [NSSavePanel setAllowedFileTypes:] is available in Leopard, the
 	// allowedFileTypes property is ignored on that version of macOS. To maintain
 	// compatibility with Leopard, we need to call the deprecated method
@@ -541,30 +543,30 @@
 	{
 		SILENCE_DEPRECATION_MACOS_10_6( [panel setRequiredFileType:@FILE_EXT_SAVE_STATE] );
 	}
-	
+
 	const NSInteger buttonClicked = [panel runModal];
 	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		NSURL *saveFileURL = [panel URL];
-		
+
 		[self pauseCore];
-		
+
 		const BOOL isStateSaved = [CocoaDSFile saveState:saveFileURL];
 		if (!isStateSaved)
 		{
 			[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
 			return;
 		}
-		
+
 		isSaveStateEdited = YES;
 		for (DisplayWindowController *windowController in windowList)
 		{
 			[[windowController window] setDocumentEdited:isSaveStateEdited];
 		}
-		
+
 		[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_SAVED];
 		[self restoreCoreState];
-		
+
 		[self setCurrentSaveStateURL:saveFileURL];
 	}
 }
@@ -575,22 +577,22 @@
 	{
 		return;
 	}
-	
+
 	[self pauseCore];
-	
+
 	const BOOL isStateLoaded = [CocoaDSFile loadState:[self currentSaveStateURL]];
 	if (!isStateLoaded)
 	{
 		[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_REVERTING_FAILED];
 		return;
 	}
-	
+
 	isSaveStateEdited = YES;
 	for (DisplayWindowController *windowController in windowList)
 	{
 		[[windowController window] setDocumentEdited:isSaveStateEdited];
 	}
-	
+
 	[self setStatusTextWithString:NSSTRING_STATUS_SAVESTATE_REVERTED];
 	[self restoreCoreState];
 }
@@ -679,7 +681,7 @@
 - (IBAction) stopReplay:(id)sender
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	[self pauseCore];
 	[cdsCore stopReplay];
 	[self setStatusTextWithString:NSSTRING_STATUS_REPLAY_STOPPED];
@@ -690,7 +692,7 @@
 {
 	NSURL *selectedFile = nil;
 	NSInteger buttonClicked = 0;
-	
+
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseDirectories:NO];
 	[panel setCanChooseFiles:YES];
@@ -703,9 +705,9 @@
 						  @FILE_EXT_ACTION_REPLAY_SAVE,
 						  @FILE_EXT_ACTION_REPLAY_MAX_SAVE,
 						  nil];
-	
+
 	[self pauseCore];
-	
+
 	// While [NSOpenPanel setAllowedFileTypes:] and [NSOpenPanel runModal]
 	// are available in Leopard, the allowedFileTypes property is ignored on
 	// that version of macOS. To maintain compatibility with Leopard, we need
@@ -722,7 +724,7 @@
 	{
 		SILENCE_DEPRECATION_MACOS_10_6( buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes] );
 	}
-	
+
 	if (buttonClicked == GUI_RESPONSE_OK)
 	{
 		selectedFile = [[panel URLs] lastObject];
@@ -730,11 +732,11 @@
 		{
 			return;
 		}
-		
+
 		const BOOL isRomSaveImported = [CocoaDSFile importRomSave:selectedFile];
 		[self setStatusTextWithString:(isRomSaveImported) ? NSSTRING_STATUS_ROM_SAVE_IMPORTED : NSSTRING_STATUS_ROM_SAVE_IMPORT_FAILED];
 	}
-	
+
 	[self restoreCoreState];
 }
 
@@ -744,9 +746,9 @@
 	[panel setTitle:NSSTRING_TITLE_EXPORT_ROM_SAVE_PANEL];
 	[panel setCanCreateDirectories:YES];
 	[panel setAccessoryView:exportRomSavePanelAccessoryView];
-	
+
 	[self pauseCore];
-	
+
 	const NSInteger buttonClicked = [panel runModal];
 	if (buttonClicked == GUI_RESPONSE_OK)
 	{
@@ -757,7 +759,7 @@
 			[self setStatusTextWithString:(isRomSaveExported) ? NSSTRING_STATUS_ROM_SAVE_EXPORTED : NSSTRING_STATUS_ROM_SAVE_EXPORT_FAILED];
 		}
 	}
-	
+
 	[self restoreCoreState];
 }
 
@@ -765,7 +767,7 @@
 {
 	CheatDatabaseWindowController *newWindowController = [[CheatDatabaseWindowController alloc] initWithWindowNibName:@"CheatDatabaseViewer" delegate:cheatWindowDelegate];
 	[newWindowController window]; // Just reference the window to force the NSWindow object to load.
-	
+
 	[[newWindowController window] makeKeyAndOrderFront:sender];
 	[[newWindowController window] makeMainWindow];
 	[newWindowController openFile:sender];
@@ -774,7 +776,7 @@
 - (IBAction) clearCheatDatabaseRecents:(id)sender
 {
 	NSArray *menuItemList = [cheatDatabaseRecentsMenu itemArray];
-	
+
 	for (NSMenuItem *menuItem in menuItemList)
 	{
 		if ( ([menuItem action] == @selector(openRecentCheatDatabase:)) || [menuItem isSeparatorItem] )
@@ -782,10 +784,10 @@
 			[cheatDatabaseRecentsMenu removeItem:menuItem];
 		}
 	}
-	
+
 	NSArray *emptyArray = [[[NSArray alloc] init] autorelease];
 	[[NSUserDefaults standardUserDefaults] setObject:emptyArray forKey:@"CheatDatabase_RecentFilePath"];
-	
+
 	// Also remove the legacy setting.
 	[[NSUserDefaults standardUserDefaults] removeObjectForKey:@"R4Cheat_DatabasePath"];
 }
@@ -794,15 +796,15 @@
 {
 	CheatDatabaseWindowController *newWindowController = [[CheatDatabaseWindowController alloc] initWithWindowNibName:@"CheatDatabaseViewer" delegate:cheatWindowDelegate];
 	[newWindowController window]; // Just reference the window to force the NSWindow object to load.
-	
+
 	[[newWindowController window] makeKeyAndOrderFront:self];
 	[[newWindowController window] makeMainWindow];
-	
+
 	NSArray *recentDBFilePathsList = [[NSUserDefaults standardUserDefaults] arrayForKey:@"CheatDatabase_RecentFilePath"];
 	NSInteger index = [CocoaDSUtil getIBActionSenderTag:sender];
 	NSDictionary *recentItem = (NSDictionary *)[recentDBFilePathsList objectAtIndex:index];
 	NSString *recentItemFilePath = nil;
-	
+
 	if (recentItem != nil)
 	{
 		NSNumber *compatibilityCheckNumber = (NSNumber *)[recentItem objectForKey:@"OptionIgnoreCompatibilityCheck"];
@@ -812,35 +814,35 @@
 			[newWindowController setIsCompatibilityCheckIgnored:[compatibilityCheckNumber boolValue]];
 			[newWindowController setIsOptionWarningSilenced:NO];
 		}
-		
+
 		// Set up the window properties.
 		NSString *windowFrameString = (NSString *)[recentItem objectForKey:@"WindowFrame"];
 		if (windowFrameString != nil)
 		{
 			[[newWindowController window] setFrameFromString:windowFrameString];
 		}
-		
+
 		NSNumber *windowSplitViewDividerPositionNumber = (NSNumber *)[recentItem objectForKey:@"WindowSplitViewDividerPosition"];
 		if (windowSplitViewDividerPositionNumber != nil)
 		{
 			CGFloat dividerPosition = [windowSplitViewDividerPositionNumber floatValue];
 			[[newWindowController splitView] setPosition:dividerPosition ofDividerAtIndex:0];
 		}
-		
+
 		// Check for the file's existence at its path, and then handle appropriately.
 		recentItemFilePath = (NSString *)[recentItem objectForKey:@"FilePath"];
 		NSFileManager *fileManager = [[NSFileManager alloc] init];
 		BOOL doesFileExist = [fileManager fileExistsAtPath:recentItemFilePath];
 		[fileManager release];
-		
+
 		if (!doesFileExist)
 		{
 			// If the file does not exist, then report the error to the user, and the remove the
 			// nonexistent file from the recents menu.
 			[newWindowController showErrorSheet:CheatSystemError_FileDoesNotExist];
-			
+
 			NSMutableArray *newRecentsList = [NSMutableArray arrayWithCapacity:[recentDBFilePathsList count]];
-			
+
 			for (NSDictionary *theItem in recentDBFilePathsList)
 			{
 				if (theItem != recentItem)
@@ -848,13 +850,13 @@
 					[newRecentsList addObject:theItem];
 				}
 			}
-			
+
 			[[NSUserDefaults standardUserDefaults] setObject:newRecentsList forKey:@"CheatDatabase_RecentFilePath"];
 			[self updateCheatDatabaseRecentsMenu:nil];
 			return;
 		}
 	}
-	
+
 	NSURL *dbFileURL = [NSURL fileURLWithPath:recentItemFilePath];
 	[newWindowController loadFileStart:dbFileURL];
 }
@@ -914,7 +916,7 @@
 {
 	// Force end of editing of any text fields.
 	[[(NSControl *)sender window] makeFirstResponder:nil];
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	const BOOL willStart = ([cdsCore isGdbStubStarted]) ? NO : YES;
 	[cdsCore setIsGdbStubStarted:willStart];
@@ -927,7 +929,7 @@
 	{
 		_memoryViewerWindowController = [[MemoryViewerWindowController alloc] init];
 	}
-	
+
 	[_memoryViewerWindowController showWindowForRegion:MEMVIEW_ARM9 address:0xFFFFFFFF];
 }
 
@@ -1015,6 +1017,44 @@
 	                    startsNewGroup:YES];
 }
 
+- (void) installDisassemblerMenuItem
+{
+	[self installToolMenuItemWithTitle:@"Disassembler..."
+	                            action:@selector(openDisassembler:)
+	                     keyEquivalent:@"d"
+	                      modifierMask:(NSEventModifierFlagCommand | NSEventModifierFlagOption)
+	                    startsNewGroup:YES];
+}
+
+- (IBAction) openDisassembler:(id)sender
+{
+	if (_disassemblerWindowController == nil)
+	{
+		_disassemblerWindowController = [[DisassemblerWindowController alloc] init];
+		[_disassemblerWindowController setDelegate:self];
+	}
+
+	[_disassemblerWindowController showDisassemblerWindow];
+}
+
+// The window cannot touch CocoaDSCore's execution state machine directly.
+- (void) disassemblerWindowDidRequestResume:(DisassemblerWindowController *)controller
+{
+	[self executeCore];
+}
+
+- (void) handleDisassemblerBreak:(NSNotification *)notification
+{
+	// A breakpoint paused the core; reflect that in the UI and show where.
+	[self pauseCore];
+
+	const int cpu = [[[notification userInfo] objectForKey:@"cpu"] intValue];
+	const unsigned int address = [[[notification userInfo] objectForKey:@"address"] unsignedIntValue];
+
+	[self openDisassembler:self];
+	[_disassemblerWindowController showAddress:address cpu:cpu];
+}
+
 - (void) installRAMSearchMenuItem
 {
 	[self installToolMenuItemWithTitle:@"RAM Search..."
@@ -1055,6 +1095,15 @@
 	[self installMemoryViewerMenuItem];
 	[self installRAMWatchMenuItem];
 	[self installRAMSearchMenuItem];
+	[self installDisassemblerMenuItem];
+
+	// Breakpoint hits are reported from the CPU loop through this hook; the
+	// notification is delivered on the main thread.
+	[DisassemblerWindowController installDebugBreakHandler];
+	[[NSNotificationCenter defaultCenter] addObserver:self
+	                                         selector:@selector(handleDisassemblerBreak:)
+	                                             name:kDisassemblerBreakNotification
+	                                           object:nil];
 
 	// RAM Search's Add Watch action is delivered as a notification that only
 	// RAM Watch observes. Create the controller up front so the action still
@@ -1076,7 +1125,7 @@
 {
 	const NSInteger saveTypeID = [CocoaDSUtil getIBActionSenderTag:sender];
 	[self setSelectedRomSaveTypeID:saveTypeID];
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore execControl]->SetROMSaveTypeUserForce((int)saveTypeID);
 }
@@ -1093,7 +1142,7 @@
 				{
 					puts("DeSmuME: User has just granted access to the microphone.");
 				}
-				
+
 				[self performSelectorOnMainThread:@selector(updateHostMicrophonePermissionStatus) withObject:nil waitUntilDone:NO];
 			}];
 		}
@@ -1122,7 +1171,7 @@
 		const CGFloat newSpeedScalar = (CGFloat)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0f;
 		[self changeCoreSpeedWithDouble:newSpeedScalar];
 	}
-	
+
 	[self setVerticalSyncForNonLayerBackedViews:sender];
 }
 
@@ -1130,7 +1179,7 @@
 {
 	// Force end of editing of any text fields.
 	[[(NSControl *)sender window] makeFirstResponder:nil];
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsFirmware] applySettings];
 	[cdsCore updateFirmwareMACAddressString];
@@ -1197,7 +1246,7 @@
 	{
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 		const BOOL useVerticalSync = [cdsCore isFrameSkipEnabled] || (([cdsCore speedScalar] < 1.03f) && [cdsCore isSpeedLimitEnabled]);
-		
+
 		for (DisplayWindowController *windowController in windowList)
 		{
 			[[windowController view] setUseVerticalSync:useVerticalSync];
@@ -1213,7 +1262,7 @@
 	[panel setResolvesAliases:YES];
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTitle:@"Select R4 Directory"];
-	
+
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
 	if (IsOSXVersionSupported(10, 6, 0))
 	{
@@ -1277,10 +1326,10 @@
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender
 {
 	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
-	
+
 	// Force end of editing of any text fields.
 	[[(NSControl *)sender window] makeFirstResponder:nil];
-	
+
 	[[NSUserDefaults standardUserDefaults] setInteger:[graphicsController engine3DClientIndex] forKey:@"Render3D_RenderingEngine"];
 	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController highPrecisionColorInterpolationEnable] forKey:@"Render3D_HighPrecisionColorInterpolation"];
 	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController edgeMarkEnable] forKey:@"Render3D_EdgeMarking"];
@@ -1295,12 +1344,12 @@
 	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController fragmentSamplingHackEnable] forKey:@"Render3D_FragmentSamplingHack"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[graphicsController gpuScale] forKey:@"Render3D_ScalingFactor"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[graphicsController gpuColorFormat] forKey:@"Render3D_ColorFormat"];
-	
+
 	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController shadowPolygonEnable] forKey:@"Render3D_OpenGL_EmulateShadowPolygon"];
 	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController specialZeroAlphaBlendingEnable] forKey:@"Render3D_OpenGL_EmulateSpecialZeroAlphaBlending"];
 	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController ndsDepthCalculationEnable] forKey:@"Render3D_OpenGL_EmulateNDSDepthCalculation"];
 	[[NSUserDefaults standardUserDefaults] setBool:[graphicsController depthLEqualPolygonFacingEnable] forKey:@"Render3D_OpenGL_EmulateDepthLEqualPolygonFacing"];
-	
+
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -1308,13 +1357,13 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	CocoaDSFirmware *writeFirmware = (CocoaDSFirmware *)[firmwarePanelController content];
-	
+
 	// Force end of editing of any text fields.
 	[[(NSControl *)sender window] makeFirstResponder:nil];
-	
+
 	// Saving the user defaults also applies the current firmware settings.
 	[writeFirmware applySettings];
-	
+
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagAdvancedBusLevelTiming] forKey:@"Emulation_AdvancedBusLevelTiming"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagRigorousTiming] forKey:@"Emulation_RigorousTiming"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagUseGameSpecificHacks] forKey:@"Emulation_UseGameSpecificHacks"];
@@ -1327,10 +1376,10 @@
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagFirmwareBoot] forKey:@"Emulation_FirmwareBoot"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagEmulateEnsata] forKey:@"Emulation_EmulateEnsata"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagDebugConsole] forKey:@"Emulation_UseDebugConsole"];
-	
+
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware firmwareMACAddressValue] forKey:@"FirmwareConfig_FirmwareMACAddress"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware customMACAddressValue] forKey:@"FirmwareConfig_CustomMACAddress"];
-	
+
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP1_1] forKey:@"FirmwareConfig_IPv4Address_AP1_1"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP1_2] forKey:@"FirmwareConfig_IPv4Address_AP1_2"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP1_3] forKey:@"FirmwareConfig_IPv4Address_AP1_3"];
@@ -1348,7 +1397,7 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP1_3] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP1_3"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP1_4] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP1_4"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware subnetMask_AP1] forKey:@"FirmwareConfig_SubnetMask_AP1"];
-	
+
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP2_1] forKey:@"FirmwareConfig_IPv4Address_AP2_1"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP2_2] forKey:@"FirmwareConfig_IPv4Address_AP2_2"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP2_3] forKey:@"FirmwareConfig_IPv4Address_AP2_3"];
@@ -1366,7 +1415,7 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP2_3] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP2_3"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP2_4] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP2_4"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware subnetMask_AP2] forKey:@"FirmwareConfig_SubnetMask_AP2"];
-	
+
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP3_1] forKey:@"FirmwareConfig_IPv4Address_AP3_1"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP3_2] forKey:@"FirmwareConfig_IPv4Address_AP3_2"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4Address_AP3_3] forKey:@"FirmwareConfig_IPv4Address_AP3_3"];
@@ -1384,7 +1433,7 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP3_3] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP3_3"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware ipv4SecondaryDNS_AP3_4] forKey:@"FirmwareConfig_IPv4SecondaryDNS_AP3_4"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware subnetMask_AP3] forKey:@"FirmwareConfig_SubnetMask_AP3"];
-	
+
 	//[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware consoleType] forKey:@"FirmwareConfig_ConsoleType"];
 	[[NSUserDefaults standardUserDefaults] setObject:[writeFirmware nickname] forKey:@"FirmwareConfig_Nickname"];
 	[[NSUserDefaults standardUserDefaults] setObject:[writeFirmware message] forKey:@"FirmwareConfig_Message"];
@@ -1392,22 +1441,22 @@
 	[[NSUserDefaults standardUserDefaults] setObject:[writeFirmware birthday] forKey:@"FirmwareConfig_Birthday"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware language] forKey:@"FirmwareConfig_Language"];
 	//[[NSUserDefaults standardUserDefaults] setInteger:[writeFirmware backlightLevel] forKey:@"FirmwareConfig_BacklightLevel"];
-	
+
 	[prefWindowDelegate updateFirmwareMACAddressString:nil];
 	[prefWindowDelegate updateSubnetMaskString_AP1:nil];
 	[prefWindowDelegate updateSubnetMaskString_AP2:nil];
 	[prefWindowDelegate updateSubnetMaskString_AP3:nil];
-	
+
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (IBAction) writeDefaultsSlot1Settings:(id)sender
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore slot1DeviceType] forKey:@"EmulationSlot1_DeviceType"];
 	[[NSUserDefaults standardUserDefaults] setObject:[[cdsCore slot1R4URL] path] forKey:@"EmulationSlot1_R4StoragePath"];
-	
+
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -1418,7 +1467,7 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)[audioController spuInterpolationModeIDValue] forKey:@"SPU_InterpolationMode"];
 	[[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)[audioController spuSyncModeIDValue] forKey:@"SPU_SyncMode"];
 	[[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)[audioController spuSyncMethodIDValue] forKey:@"SPU_SyncMethod"];
-	
+
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -1426,9 +1475,9 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	CocoaDSController *cdsController = [cdsCore cdsController];
-	
+
 	[[NSUserDefaults standardUserDefaults] setInteger:[cdsController stylusPressure] forKey:@"Emulation_StylusPressure"];
-	
+
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -1436,7 +1485,7 @@
 {
 	NSWindow *sheet = [(NSControl *)sender window];
 	const NSInteger code = [(NSControl *)sender tag];
-	
+
 	[CocoaDSUtil endSheet:sheet returnCode:code];
 }
 
@@ -1456,10 +1505,10 @@
 {
 	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 	const NSUInteger controlID = cmdAttr.intValue[0];
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] setControllerState:theState controlID:controlID];
-	
+
 	for (DisplayWindowController *windowController in windowList)
 	{
 		MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
@@ -1474,10 +1523,10 @@
 	const BOOL isTurboEnabled = (BOOL)cmdAttr.intValue[1];
 	const uint32_t turboPattern = (uint32_t)cmdAttr.intValue[2];
 	const uint32_t turboPatternLength = (uint32_t)cmdAttr.intValue[3];
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] setControllerState:theState controlID:controlID turbo:isTurboEnabled turboPattern:turboPattern turboPatternLength:turboPatternLength];
-	
+
 	for (DisplayWindowController *windowController in windowList)
 	{
 		MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
@@ -1488,13 +1537,13 @@
 - (void) cmdUpdateDSTouch:(const ClientCommandAttributes &)cmdAttr
 {
 	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
-	
+
 	const NSPoint touchLoc = (cmdAttr.useInputForIntCoord) ? NSMakePoint(cmdAttr.input.intCoordX, cmdAttr.input.intCoordY) : NSMakePoint(cmdAttr.intValue[1], cmdAttr.intValue[2]);
 	if (touchLoc.x >= 0.0 && touchLoc.y >= 0.0)
 	{
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 		[[cdsCore cdsController] setTouchState:theState location:touchLoc];
-		
+
 		for (DisplayWindowController *windowController in windowList)
 		{
 			MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
@@ -1506,16 +1555,16 @@
 - (void) cmdUpdateDSMicrophone:(const ClientCommandAttributes &)cmdAttr
 {
 	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	CocoaDSController *cdsController = [cdsCore cdsController];
-	
+
 	const NSInteger micMode = cmdAttr.intValue[1];
 	[cdsController setSoftwareMicState:theState mode:micMode];
-	
+
 	const float sineWaveFrequency = cmdAttr.floatValue[0];
 	[cdsController setSineWaveGeneratorFrequency:sineWaveFrequency];
-	
+
 	NSString *audioFilePath = (NSString *)cmdAttr.object[0];
 	[cdsController setSelectedAudioFileGenerator:[inputManager audioFileGeneratorFromFilePath:audioFilePath]];
 }
@@ -1523,24 +1572,24 @@
 - (void) cmdUpdateDSPaddle:(const ClientCommandAttributes &)cmdAttr
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	if (cmdAttr.input.isAnalog)
 	{
 		const float paddleSensitivity = cmdAttr.floatValue[0];
 		const float paddleScalar = cmdAttr.input.scalar;
 		float paddleAdjust = (paddleScalar * 2.0f) - 1.0f;
-		
+
 		// Clamp the paddle value.
 		if (paddleAdjust < -1.0f)
 		{
 			paddleAdjust = -1.0f;
 		}
-		
+
 		if (paddleAdjust > 1.0f)
 		{
 			paddleAdjust = 1.0f;
 		}
-		
+
 		// Normalize the input value for the paddle.
 		paddleAdjust *= paddleSensitivity;
 		[[cdsCore cdsController] setPaddleAdjust:(NSInteger)(paddleAdjust + 0.5f)];
@@ -1556,7 +1605,7 @@
 - (void) cmdAutoholdSet:(const ClientCommandAttributes &)cmdAttr
 {
 	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] setAutohold:theState];
 	[self setStatusTextWithString:(theState) ? NSSTRING_STATUS_AUTOHOLD_SET : NSSTRING_STATUS_AUTOHOLD_SET_RELEASE];
@@ -1568,11 +1617,11 @@
 	{
 		return;
 	}
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] clearAutohold];
 	[self setStatusTextWithString:NSSTRING_STATUS_AUTOHOLD_CLEAR];
-	
+
 }
 
 - (void) cmdLoadEmuSaveStateSlot:(const ClientCommandAttributes &)cmdAttr
@@ -1581,32 +1630,32 @@
 	{
 		return;
 	}
-	
+
 	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
 	if (saveStatePath == nil)
 	{
 		// Should throw an error message here...
 		return;
 	}
-	
+
 	const NSInteger slotNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
 	}
-	
+
 	NSURL *currentRomURL = [[self currentRom] fileURL];
 	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(slotNumber + 1)];
 	if (fileName == nil)
 	{
 		return;
 	}
-	
+
 	[self pauseCore];
-	
+
 	const BOOL isStateLoaded = [CocoaDSFile loadState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
 	[self setStatusTextWithString:(isStateLoaded) ? NSSTRING_STATUS_SAVESTATE_LOADED : NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
-	
+
 	[self restoreCoreState];
 }
 
@@ -1616,39 +1665,39 @@
 	{
 		return;
 	}
-	
+
 	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
 	if (saveStatePath == nil)
 	{
 		[self setStatusTextWithString:NSSTRING_STATUS_CANNOT_GENERATE_SAVE_PATH];
 		return;
 	}
-	
+
 	const BOOL isDirectoryCreated = [CocoaDSFile createUserAppSupportDirectory:@"States"];
 	if (!isDirectoryCreated)
 	{
 		[self setStatusTextWithString:NSSTRING_STATUS_CANNOT_CREATE_SAVE_DIRECTORY];
 		return;
 	}
-	
+
 	const NSInteger slotNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
 	}
-	
+
 	NSURL *currentRomURL = [[self currentRom] fileURL];
 	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(slotNumber + 1)];
 	if (fileName == nil)
 	{
 		return;
 	}
-	
+
 	[self pauseCore];
-	
+
 	const BOOL isStateSaved = [CocoaDSFile saveState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
 	[self setStatusTextWithString:(isStateSaved) ? NSSTRING_STATUS_SAVESTATE_SAVED : NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
-	
+
 	[self restoreCoreState];
 }
 
@@ -1663,7 +1712,7 @@
 	{
 		return;
 	}
-	
+
 	const double relativeDegrees = (cmdAttr.useInputForObject) ? (double)[CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : (double)cmdAttr.intValue[0];
 	const double angleDegrees = [mainWindow displayRotation] + relativeDegrees;
 	[mainWindow setDisplayRotation:angleDegrees];
@@ -1675,7 +1724,7 @@
 	{
 		return;
 	}
-	
+
 	for (DisplayWindowController *theWindow in windowList)
 	{
 		const NSInteger displayMode = [theWindow displayMode];
@@ -1684,11 +1733,11 @@
 			case ClientDisplayMode_Main:
 				[theWindow setDisplayMode:ClientDisplayMode_Touch];
 				break;
-				
+
 			case ClientDisplayMode_Touch:
 				[theWindow setDisplayMode:ClientDisplayMode_Main];
 				break;
-				
+
 			case ClientDisplayMode_Dual:
 			{
 				const NSInteger displayOrder = [theWindow displayOrder];
@@ -1702,7 +1751,7 @@
 				}
 				break;
 			}
-				
+
 			default:
 				break;
 		}
@@ -1714,7 +1763,7 @@
 	const float inputSpeedScalar = (cmdAttr.useInputForScalar) ? cmdAttr.input.scalar : cmdAttr.floatValue[0];
 	const SpeedLimitInputMode inputMode = (SpeedLimitInputMode)cmdAttr.intValue[0];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	switch (inputMode)
 	{
 		case SpeedLimitInputMode_LatchSingle:
@@ -1723,21 +1772,21 @@
 			{
 				break;
 			}
-			
+
 			[cdsCore setSpeedScalar:([cdsCore speedScalar] == inputSpeedScalar) ? lastSetSpeedScalar : inputSpeedScalar];
 			break;
 		}
-			
+
 		case SpeedLimitInputMode_LatchList:
 		{
 			if (cmdAttr.input.state != ClientInputDeviceState_On)
 			{
 				break;
 			}
-			
+
 			const SpeedLimitInputList speedLimitListCount = (SpeedLimitInputList)cmdAttr.intValue[1];
 			const SpeedLimitInputList speedLimitListSelect = (SpeedLimitInputList)cmdAttr.intValue[2];
-			
+
 			switch (speedLimitListCount)
 			{
 				case SpeedLimitInputList1:
@@ -1754,7 +1803,7 @@
 					}
 					break;
 				}
-					
+
 				case SpeedLimitInputList2:
 				{
 					if (speedLimitListSelect == SpeedLimitInputList1)
@@ -1774,7 +1823,7 @@
 					}
 					break;
 				}
-					
+
 				case SpeedLimitInputList3:
 				{
 					if (speedLimitListSelect == SpeedLimitInputList1)
@@ -1799,7 +1848,7 @@
 					}
 					break;
 				}
-					
+
 				case SpeedLimitInputList4:
 				{
 					if (speedLimitListSelect == SpeedLimitInputList1)
@@ -1829,7 +1878,7 @@
 					}
 					break;
 				}
-					
+
 				default:
 					[cdsCore setSpeedScalar:1.0f];
 					[inputManager setMappedCommandAttributeIntValue:cmdAttr index:2 value:SpeedLimitInputList1];
@@ -1837,13 +1886,13 @@
 			}
 			break;
 		}
-			
+
 		case SpeedLimitInputMode_Hold:
 		default:
 			[cdsCore setSpeedScalar:(cmdAttr.input.state == ClientInputDeviceState_Off) ? lastSetSpeedScalar : inputSpeedScalar];
 			break;
 	}
-	
+
 	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
@@ -1853,9 +1902,9 @@
 	{
 		return;
 	}
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	if ([cdsCore isSpeedLimitEnabled])
 	{
 		[cdsCore setIsSpeedLimitEnabled:NO];
@@ -1868,7 +1917,7 @@
 		[self setStatusTextWithString:NSSTRING_STATUS_SPEED_LIMIT_ENABLED];
 		[[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"CoreControl_EnableSpeedLimit"];
 	}
-	
+
 	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
@@ -1878,9 +1927,9 @@
 	{
 		return;
 	}
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	if ([cdsCore isFrameSkipEnabled])
 	{
 		[cdsCore setIsFrameSkipEnabled:NO];
@@ -1893,7 +1942,7 @@
 		[self setStatusTextWithString:NSSTRING_STATUS_AUTO_FRAME_SKIP_ENABLED];
 		[[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"CoreControl_EnableAutoFrameSkip"];
 	}
-	
+
 	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
@@ -1903,9 +1952,9 @@
 	{
 		return;
 	}
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	if ([cdsCore isCheatingEnabled])
 	{
 		[cdsCore setIsCheatingEnabled:NO];
@@ -1926,9 +1975,9 @@
 	{
 		return;
 	}
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	if ([cdsCore coreState] == ExecutionBehavior_Pause)
 	{
 		[self executeCore];
@@ -1945,7 +1994,7 @@
 	{
 		return;
 	}
-	
+
 	[self executeCore];
 }
 
@@ -1955,21 +2004,21 @@
 	{
 		return;
 	}
-	
+
 	[self pauseCore];
 }
 
 - (void) cmdFrameAdvance:(const ClientCommandAttributes &)cmdAttr
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) ||
 	     ([cdsCore coreState] != ExecutionBehavior_Pause) ||
 	     ([self currentRom] == nil) )
 	{
 		return;
 	}
-	
+
 	[cdsCore setCoreState:ExecutionBehavior_FrameAdvance];
 }
 
@@ -1979,9 +2028,9 @@
 	{
 		return;
 	}
-	
+
 	[executionControlWindow makeFirstResponder:nil];
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setCoreState:ExecutionBehavior_FrameJump];
 }
@@ -1992,17 +2041,17 @@
 	{
 		return;
 	}
-	
+
 	[self setStatusTextWithString:NSSTRING_STATUS_EMULATOR_RESETTING];
 	[self setIsWorking:YES];
-	
+
 	for (DisplayWindowController *windowController in windowList)
 	{
 		[[windowController window] displayIfNeeded];
 	}
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	// If we're using an Advanscene database to set the save type, then set it now.
 	if ([self selectedRomSaveTypeID] == ROMSAVETYPE_AUTOMATIC)
 	{
@@ -2012,19 +2061,19 @@
 			[cdsCore execControl]->SetROMSaveTypeUserOnReset((int)saveTypeAdvsc);
 		}
 	}
-	
+
 	[cdsCore reset];
-	
+
 	for (DisplayWindowController *windowController in windowList)
 	{
 		MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
 		dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 	}
-	
+
 	[self setStatusTextWithString:NSSTRING_STATUS_EMULATOR_RESET];
 	[self setIsWorking:NO];
 	[self writeDefaultsSlot1Settings:nil];
-	
+
 	for (DisplayWindowController *windowController in windowList)
 	{
 		[[windowController window] displayIfNeeded];
@@ -2037,7 +2086,7 @@
 	{
 		return;
 	}
-	
+
 	if ([audioController isMuted])
 	{
 		[audioController setMute:NO];
@@ -2056,23 +2105,23 @@
 	{
 		return;
 	}
-	
+
 	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
 	const NSInteger bitNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	const UInt32 flagBit = [graphicsController gpuStateFlags] ^ (1 << bitNumber);
-	
+
 	[graphicsController setGpuStateFlags:flagBit];
 }
 
 - (BOOL) handleLoadRomByURL:(NSURL *)fileURL
 {
 	BOOL result = NO;
-	
+
 	if (fileURL == nil || [self isRomLoading])
 	{
 		return result;
 	}
-	
+
 	if ([self currentRom] != nil)
 	{
 		const BOOL closeResult = [self handleUnloadRom:REASONFORCLOSE_OPEN romToLoad:fileURL];
@@ -2080,22 +2129,22 @@
 		{
 			return result;
 		}
-		
+
 		if (![self isShowingFileMigrationDialog] && !closeResult)
 		{
 			return result;
 		}
 	}
-	
+
 	// Check for the v0.9.7 ROM Save File
 	if ([CocoaDSFile romSaveExistsWithRom:fileURL] && ![CocoaDSFile romSaveExists:fileURL])
 	{
 		[fileURL retain];
 		[self setIsUserInterfaceBlockingExecution:YES];
 		[self setIsShowingFileMigrationDialog:YES];
-		
+
 		NSWindow *window = [[windowList objectAtIndex:0] window];
-		
+
 #if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
 		if ([window respondsToSelector:@selector(beginSheet:completionHandler:)])
 		{
@@ -2118,45 +2167,45 @@
 	{
 		result = [self loadRomByURL:fileURL asynchronous:YES];
 	}
-	
+
 	return result;
 }
 
 - (BOOL) handleUnloadRom:(NSInteger)reasonID romToLoad:(NSURL *)romURL
 {
 	BOOL result = NO;
-	
+
 	if ([self isRomLoading] || [self currentRom] == nil)
 	{
 		return result;
 	}
-	
+
 	[self pauseCore];
-	
+
 	if (isSaveStateEdited && [self currentSaveStateURL] != nil)
 	{
 		SEL endSheetSelector = @selector(didEndSaveStateSheet:returnCode:contextInfo:);
-		
+
 		switch (reasonID)
 		{
 			case REASONFORCLOSE_OPEN:
 				[romURL retain];
 				endSheetSelector = @selector(didEndSaveStateSheetOpen:returnCode:contextInfo:);
-				break;	
-				
+				break;
+
 			case REASONFORCLOSE_TERMINATE:
 				endSheetSelector = @selector(didEndSaveStateSheetTerminate:returnCode:contextInfo:);
 				break;
-				
+
 			default:
 				break;
 		}
-		
+
 		[self setIsUserInterfaceBlockingExecution:YES];
 		[self setIsShowingSaveStateDialog:YES];
-		
+
 		NSWindow *window = [[windowList objectAtIndex:0] window];
-		
+
 #if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
 		if ([window respondsToSelector:@selector(beginSheet:completionHandler:)])
 		{
@@ -2167,15 +2216,15 @@
 					case REASONFORCLOSE_NORMAL:
 						[self didEndSaveStateSheet:nil returnCode:response contextInfo:romURL];
 						break;
-						
+
 					case REASONFORCLOSE_OPEN:
 						[self didEndSaveStateSheetOpen:nil returnCode:response contextInfo:romURL];
 						break;
-						
+
 					case REASONFORCLOSE_TERMINATE:
 						[self didEndSaveStateSheetTerminate:nil returnCode:response contextInfo:romURL];
 						break;
-						
+
 					default:
 						break;
 				}
@@ -2195,30 +2244,30 @@
 	{
 		result = [self unloadRom];
 	}
-	
+
 	return result;
 }
 
 - (BOOL) loadRomByURL:(NSURL *)romURL asynchronous:(BOOL)willLoadAsync
 {
 	BOOL result = NO;
-	
+
 	if (romURL == nil)
 	{
 		return result;
 	}
-	
+
 	[self setStatusTextWithString:NSSTRING_STATUS_ROM_LOADING];
 	[self setIsWorking:YES];
-	
+
 	for (DisplayWindowController *windowController in windowList)
 	{
 		[[windowController window] displayIfNeeded];
 	}
-	
+
 	// Need to pause the core before loading the ROM.
 	[self pauseCore];
-	
+
 	CocoaDSRom *newRom = [[CocoaDSRom alloc] init];
 	if (newRom == nil)
 	{
@@ -2226,23 +2275,23 @@
 		[self setIsWorking:NO];
 		return result;
 	}
-	
+
 	[self setIsRomLoading:YES];
 	[romURL retain];
 	[newRom setSaveType:[self selectedRomSaveTypeID]];
 	[newRom setWillStreamLoadData:[[NSUserDefaults standardUserDefaults] boolForKey:@"General_StreamLoadRomData"]];
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	if (![cdsCore emuFlagUseExternalBios] || ![cdsCore emuFlagUseExternalFirmware])
 	{
 		[[cdsCore cdsFirmware] updateFirmwareConfigSessionValues];
 	}
-	
+
 	[cdsCore execControl]->SetROMSaveTypeUserOnReset((int)[self selectedRomSaveTypeID]);
 	[cdsCore execControl]->ApplySettingsOnReset();
 	[cdsCore updateSlot1DeviceStatus];
 	[self writeDefaultsSlot1Settings:nil];
-	
+
 	if (willLoadAsync)
 	{
 		[NSThread detachNewThreadSelector:@selector(loadDataOnThread:) toTarget:newRom withObject:romURL];
@@ -2251,9 +2300,9 @@
 	{
 		[newRom loadData:romURL];
 	}
-	
+
 	[romURL release];
-	
+
 	result = YES;
 	return result;
 }
@@ -2263,7 +2312,7 @@
 	CocoaDSRom *theRom = [aNotification object];
 	NSDictionary *userInfo = [aNotification userInfo];
 	const BOOL didLoad = [(NSNumber *)[userInfo valueForKey:@"DidLoad"] boolValue];
-	
+
 	if ( theRom == nil || !didLoad || (![theRom willStreamLoadData] && ![theRom isDataLoaded]) )
 	{
 		// If ROM loading fails, restore the core state, but only if a ROM is already loaded.
@@ -2271,20 +2320,20 @@
 		{
 			[self restoreCoreState];
 		}
-		
+
 		[self setStatusTextWithString:NSSTRING_STATUS_ROM_LOADING_FAILED];
 		[self setIsWorking:NO];
 		[self setIsRomLoading:NO];
-		
+
 		return;
 	}
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	// Set the core's ROM to our newly allocated ROM object.
 	[self setCurrentRom:theRom];
 	[romInfoPanelController setContent:[theRom bindings]];
-	
+
 	// If we're using an Advanscene database to set the save type, then set it now.
 	if ([self selectedRomSaveTypeID] == ROMSAVETYPE_AUTOMATIC)
 	{
@@ -2294,40 +2343,40 @@
 			[cdsCore execControl]->SetROMSaveTypeUserForce((int)saveTypeAdvsc);
 		}
 	}
-	
+
 	// If the ROM has an associated cheat file, load it now.
 	[cheatWindowDelegate cheatSystemStart:[cdsCore cdsCheatManager]];
-	
+
 	// Add the last loaded ROM to the Recent ROMs list.
 	[[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[theRom fileURL]];
-	
+
 	// Update the UI to indicate that a ROM has indeed been loaded.
 	[self updateAllWindowTitles];
 	[screenshotCaptureToolDelegate setRomName:[currentRom internalName]];
 	[avCaptureToolDelegate setRomName:[currentRom internalName]];
-	
+
 	for (DisplayWindowController *windowController in windowList)
 	{
 		MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
 		dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 	}
-	
+
 	[self setStatusTextWithString:NSSTRING_STATUS_ROM_LOADED];
 	[self setIsWorking:NO];
 	[self setIsRomLoading:NO];
-	
+
 	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2WindowController content];
 	[slot2WindowDelegate setAutoSelectedDeviceText:[[slot2WindowDelegate deviceManager] autoSelectedDeviceName]];
 	[[slot2WindowDelegate deviceManager] updateStatus];
-		
+
 	for (DisplayWindowController *windowController in windowList)
 	{
 		[[windowController window] displayIfNeeded];
 	}
-	
+
 	[cdsCore updateCurrentSessionMACAddressString:YES];
 	[cdsCore setMasterExecute:YES];
-	
+
 	// After the ROM loading is complete, send an execute message to the Cocoa DS per
 	// user preferences.
 	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"General_ExecuteROMOnLoad"])
@@ -2339,10 +2388,10 @@
 - (BOOL) unloadRom
 {
 	BOOL result = NO;
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[self setCurrentSaveStateURL:nil];
-	
+
 	[self setIsWorking:YES];
 	isSaveStateEdited = NO;
 	for (DisplayWindowController *windowController in windowList)
@@ -2350,49 +2399,49 @@
 		[[windowController window] setDocumentEdited:isSaveStateEdited];
 		[[windowController window] displayIfNeeded];
 	}
-	
+
 	[cheatWindowDelegate cheatSystemEnd];
-	
+
 	// Update the UI to indicate that the ROM has started the process of unloading.
 	[self setStatusTextWithString:NSSTRING_STATUS_ROM_UNLOADING];
 	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
-	
+
 	// Unload the ROM.
 	if (![cdsCore emuFlagUseExternalBios] || ![cdsCore emuFlagUseExternalFirmware])
 	{
 		[[cdsCore cdsFirmware] writeUserDefaultWFCUserID];
 	}
-	
+
 	[[self currentRom] release];
 	[self setCurrentRom:nil];
-	
+
 	// Update the UI to indicate that the ROM has finished unloading.
 	[self updateAllWindowTitles];
 	[screenshotCaptureToolDelegate setRomName:[currentRom internalName]];
 	[avCaptureToolDelegate setRomName:[currentRom internalName]];
-	
+
 	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
 	[graphicsController clearWithColor:0x8000];
-	
+
 	for (DisplayWindowController *windowController in windowList)
 	{
 		MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
 		dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
 	}
-	
+
 	[self setStatusTextWithString:NSSTRING_STATUS_ROM_UNLOADED];
 	[self setIsWorking:NO];
-	
+
 	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2WindowController content];
 	[slot2WindowDelegate setAutoSelectedDeviceText:[[slot2WindowDelegate deviceManager] autoSelectedDeviceName]];
 	[[slot2WindowDelegate deviceManager] updateStatus];
-	
+
 	[cdsCore setSlot1StatusText:NSSTRING_STATUS_EMULATION_NOT_RUNNING];
 	[cdsCore updateCurrentSessionMACAddressString:NO];
 	[[cdsCore cdsController] reset];
-	
+
 	result = YES;
-	
+
 	return result;
 }
 
@@ -2400,24 +2449,24 @@
 {
 	NSArray *dbRecentsList = (NSArray *)[aNotification object];
 	BOOL needReleaseObject = (dbRecentsList != nil);
-	
+
 	if ( (dbRecentsList == nil) || ([dbRecentsList count] == 0) )
 	{
 		dbRecentsList = [[NSUserDefaults standardUserDefaults] arrayForKey:@"CheatDatabase_RecentFilePath"];
 	}
-	
+
 	NSMutableArray *newRecentsList = [NSMutableArray arrayWithArray:dbRecentsList];
-	
+
 	// Note that we're relying on the notification object to retain this prior to
 	// sending the notification.
 	if (needReleaseObject)
 	{
 		[dbRecentsList release];
 	}
-	
+
 	NSString *legacyFilePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"R4Cheat_DatabasePath"];
 	BOOL useLegacyFilePath = ( (legacyFilePath != nil) && ([legacyFilePath length] > 0) );
-	
+
 	if (useLegacyFilePath)
 	{
 		// We need to check if the legacy file path also exists in the recents list.
@@ -2432,7 +2481,7 @@
 			}
 		}
 	}
-	
+
 	if (useLegacyFilePath)
 	{
 		// The legacy file path must always be the first entry of the recents list.
@@ -2440,7 +2489,7 @@
 										  [legacyFilePath lastPathComponent], @"FileName",
 										  nil];
 		[newRecentsList insertObject:legacyRecentItem atIndex:0];
-		
+
 		if ([newRecentsList count] == 1)
 		{
 			// If the legacy file path is the only item in the recents list, then we can write it
@@ -2448,7 +2497,7 @@
 			[[NSUserDefaults standardUserDefaults] setObject:newRecentsList forKey:@"CheatDatabase_RecentFilePath"];
 		}
 	}
-	
+
 	NSArray *recentsMenuItems = [cheatDatabaseRecentsMenu itemArray];
 	for (NSMenuItem *menuItem in recentsMenuItems)
 	{
@@ -2457,7 +2506,7 @@
 			[cheatDatabaseRecentsMenu removeItem:menuItem];
 		}
 	}
-	
+
 	if ([newRecentsList count] > 0)
 	{
 		if ( ![[cheatDatabaseRecentsMenu itemAtIndex:0] isSeparatorItem] )
@@ -2465,7 +2514,7 @@
 			[cheatDatabaseRecentsMenu insertItem:[NSMenuItem separatorItem] atIndex:0];
 		}
 	}
-	
+
 	// Recent files are added in reverse order, in which least recent files appear below
 	// more recent files in the menu. The most recent file should be at the top of the menu.
 	for (NSDictionary *recentItem in newRecentsList)
@@ -2475,7 +2524,7 @@
 		{
 			menuNameString = [recentItem objectForKey:@"FilePath"];
 		}
-		
+
 		NSMenuItem *newMenuItem = [[[NSMenuItem alloc] initWithTitle:menuNameString action:@selector(openRecentCheatDatabase:) keyEquivalent:@""] autorelease];
 		[newMenuItem setTag:[newRecentsList indexOfObject:recentItem]];
 		[newMenuItem setTarget:self];
@@ -2486,12 +2535,12 @@
 - (void) handleNDSError:(NSNotification *)aNotification
 {
 	[self setIsUserInterfaceBlockingExecution:YES];
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	NSString *ndsErrorString = [cdsCore errorStatus];
 	const char *ndsErrorCString = [ndsErrorString cStringUsingEncoding:NSUTF8StringEncoding];
 	size_t lineCount = 1;
-	
+
 	for (size_t i = 0; i < [ndsErrorString length]; i++)
 	{
 		if (ndsErrorCString[i] == '\n')
@@ -2499,10 +2548,10 @@
 			lineCount++;
 		}
 	}
-	
+
 	NSRect newSheetFrameRect = [ndsErrorSheet frame];
 	newSheetFrameRect.size.height = 98.0f + (16.0f * lineCount);
-	
+
 	// For some reason, when the sheet is shown for the very first time,
 	// the sheet doesn't drop down as low as it should. However, upon
 	// subsequent showings, the sheet drops down to the intended distance.
@@ -2513,15 +2562,15 @@
 		_isNDSErrorSheetAlreadyShown = YES;
 		newSheetFrameRect.size.height += 22.0f;
 	}
-	
+
 	[ndsErrorSheet setFrame:newSheetFrameRect display:NO];
-	
+
 	NSRect newTextFieldRect = [ndsErrorStatusTextField frame];
 	newTextFieldRect.size.height = 16.0f * lineCount;
 	[ndsErrorStatusTextField setFrame:newTextFieldRect];
-	
+
 	NSWindow *window = [[windowList objectAtIndex:0] window];
-	
+
 #if defined(MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
 	if ([window respondsToSelector:@selector(beginSheet:completionHandler:)])
 	{
@@ -2547,7 +2596,7 @@
 	NSDictionary *userInfo = [aNotification userInfo];
 	ExecutionBehavior execState = (ExecutionBehavior)[(NSNumber *)[userInfo valueForKey:@"ExecutionState"] integerValue];
 	NSString *frameStatusString = (NSString *)[userInfo valueForKey:@"FrameStatusString"];
-	
+
 	[cdsCore setEmulationPaused:(execState == ExecutionBehavior_Pause)];
 	[cdsCore setFrameStatus:frameStatusString];
 }
@@ -2585,7 +2634,7 @@
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	CocoaDSController *cdsController = [cdsCore cdsController];
 	NSImage *micIcon = ([self isRunningDarkMode]) ? iconMicDisabledDM : iconMicDisabled;
-	
+
 	if (![cdsCore emulationPaused])
 	{
 		if ([cdsController softwareMicState])
@@ -2595,7 +2644,7 @@
 		else
 		{
 			micIcon = iconMicIdleNoHardware;
-			
+
 			if (![cdsController hardwareMicMute])
 			{
 				if ([cdsController isHardwareMicAvailable])
@@ -2616,12 +2665,12 @@
 			}
 		}
 	}
-	
+
 	if (micIcon != [self currentMicStatusIcon])
 	{
 		[self setCurrentMicStatusIcon:micIcon];
 	}
-	
+
 	[ndsMicLevelIndicator setNeedsDisplay];
 }
 
@@ -2641,23 +2690,23 @@
 {
 	NSURL *romURL = (NSURL *)contextInfo;
 	NSURL *romSaveURL = [CocoaDSFile romSaveURLFromRomURL:romURL];
-	
-    [sheet orderOut:self];	
-	
+
+    [sheet orderOut:self];
+
 	switch (returnCode)
 	{
 		case GUI_RESPONSE_OK:
 			[CocoaDSFile moveFileToCurrentDirectory:romSaveURL];
 			break;
-			
+
 		default:
 			break;
 	}
-	
+
 	[self setIsUserInterfaceBlockingExecution:NO];
 	[self setIsShowingFileMigrationDialog:NO];
 	[self loadRomByURL:romURL asynchronous:YES];
-	
+
 	// We retained this when we initially put up the sheet, so we need to release it now.
 	[romURL release];
 }
@@ -2665,7 +2714,7 @@
 - (void) didEndSaveStateSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
-	
+
 	switch (returnCode)
 	{
 		case GUI_RESPONSE_CANCEL: // Cancel
@@ -2674,7 +2723,7 @@
 			[self setIsShowingSaveStateDialog:NO];
 			return;
 			break;
-			
+
 		case COCOA_DIALOG_DEFAULT: // Save
 		{
 			const BOOL isStateSaved = [CocoaDSFile saveState:[self currentSaveStateURL]];
@@ -2686,14 +2735,14 @@
 			}
 			break;
 		}
-			
+
 		case COCOA_DIALOG_OPTION: // Don't Save
 			break;
-			
+
 		default:
 			break;
 	}
-	
+
 	[self unloadRom];
 	[self setIsUserInterfaceBlockingExecution:NO];
 	[self setIsShowingSaveStateDialog:NO];
@@ -2702,7 +2751,7 @@
 - (void) didEndSaveStateSheetOpen:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
 {
 	[self didEndSaveStateSheet:sheet returnCode:returnCode contextInfo:contextInfo];
-	
+
 	NSURL *romURL = (NSURL *)contextInfo;
 	[self handleLoadRomByURL:romURL];
 	[romURL release];
@@ -2711,7 +2760,7 @@
 - (void) didEndSaveStateSheetTerminate:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
 {
 	[self didEndSaveStateSheet:sheet returnCode:returnCode contextInfo:contextInfo];
-	
+
 	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		[NSApp replyToApplicationShouldTerminate:NO];
@@ -2728,20 +2777,20 @@
 - (void) didEndChooseSlot1R4Directory:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
 {
 	[sheet orderOut:self];
-	
+
 	if (returnCode == GUI_RESPONSE_CANCEL)
 	{
 		return;
 	}
-	
+
 	NSURL *selectedDirURL = [[sheet URLs] lastObject]; //hopefully also the first object
 	if(selectedDirURL == nil)
 	{
 		return;
 	}
-	
+
 	[[NSUserDefaults standardUserDefaults] setObject:[selectedDirURL path] forKey:@"EmulationSlot1_R4StoragePath"];
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setSlot1R4URL:selectedDirURL];
 }
@@ -2750,13 +2799,13 @@
 {
 	[sheet orderOut:self];
 	[self setIsUserInterfaceBlockingExecution:NO];
-	
+
 	switch (returnCode)
 	{
 		case COCOA_DIALOG_OPTION: // Reset
 			[self reset:self];
 			break;
-			
+
 		case GUI_RESPONSE_CANCEL: // Stop
 		default:
 			break;
@@ -2769,11 +2818,11 @@
 	{
 		return;
 	}
-	
+
 	NSString *romName = nil;
 	NSURL *repURL = nil;
 	NSImage *titleIcon = nil;
-	
+
 	if ([self currentRom] == nil)
 	{
 		romName = (NSString *)[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
@@ -2784,13 +2833,13 @@
 		repURL = [currentRom fileURL];
 		titleIcon = [currentRom icon];
 	}
-	
+
 	if ([windowList count] > 1)
 	{
 		for (DisplayWindowController *windowController in windowList)
 		{
 			NSString *newWindowTitle = [romName stringByAppendingFormat:@":%ld", (unsigned long)([windowList indexOfObject:windowController] + 1)];
-			
+
 			[[windowController masterWindow] setTitle:newWindowTitle];
 			[[windowController masterWindow] setRepresentedURL:repURL];
 			[[[windowController masterWindow] standardWindowButton:NSWindowDocumentIconButton] setImage:titleIcon];
@@ -2815,7 +2864,7 @@
 		_displayVideoSettingsPanelTitle = [[displayVideoSettingsPanel title] copy];
 		_displayHUDSettingsPanelTitle = [[displayHUDSettingsPanel title] copy];
 	}
-	
+
 	// Set the panel titles to the window number.
 	if ([windowList count] <= 1)
 	{
@@ -2838,16 +2887,16 @@
 {
 	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
 	[cheatWindowController setContent:[cheatWindowDelegate bindings]];
-	
+
 	// Update the SLOT-2 device list.
 	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2WindowController content];
 	[slot2WindowDelegate update];
 	[slot2WindowDelegate setHidManager:[inputManager hidManager]];
 	[slot2WindowDelegate setAutoSelectedDeviceText:[[slot2WindowDelegate deviceManager] autoSelectedDeviceName]];
-	
+
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore updateCurrentSessionMACAddressString:NO];
-	
+
 	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
 	[screenshotCaptureToolDelegate setFetchObject:[graphicsController fetchObject]];
 	[avCaptureToolDelegate setFetchObject:[graphicsController fetchObject]];
@@ -2859,29 +2908,29 @@
 	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
 	NSUInteger maxSamples = [graphicsController maxMultisampleSize];
 	size_t itemCount = 0;
-	
+
 	while (maxSamples > 1)
 	{
 		itemCount++;
 		maxSamples >>= 1;
 	}
-	
+
 	if (itemCount <= 0)
 	{
 		return;
 	}
-	
+
 	int itemValue = 2;
-	
+
 	for (size_t i = 0; i < itemCount; i++, itemValue<<=1)
 	{
 		NSString *itemTitle = [NSString stringWithFormat:@"%d", itemValue];
 		[openglMSAAPopUpButton addItemWithTitle:itemTitle];
-		
+
 		NSMenuItem *menuItem = [openglMSAAPopUpButton itemAtIndex:i+1];
 		[menuItem setTag:itemValue];
 	}
-	
+
 	[openglMSAAPopUpButton selectItemAtIndex:0];
 }
 
@@ -2889,9 +2938,9 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	CocoaDSController *cdsController = [cdsCore cdsController];
-	
+
 	NSInteger authStatus = 0;
-	
+
 #if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
 	if (IsOSXVersionSupported(10, 14, 0))
 	{
@@ -2899,31 +2948,31 @@
 		{
 			BOOL authFlag = NO;
 			authStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
-			
+
 			switch (authStatus)
 			{
 				case AVAuthorizationStatusNotDetermined:
 					[self setMicStatusTooltip:@"Hardware microphone usage has yet to be authorized. If you need access, click \"OK\" when DeSmuME requests permission from the system."];
 					break;
-					
+
 				case AVAuthorizationStatusRestricted:
 					[self setMicStatusTooltip:@"Hardware microphone usage has been restricted. Please see your system administrator."];
 					break;
-					
+
 				case AVAuthorizationStatusDenied:
 					[self setMicStatusTooltip:@"Hardware microphone usage has been denied. If you need access, change your microphone privacy settings for DeSmuME in System Preferences."];
 					break;
-						
+
 				case AVAuthorizationStatusAuthorized:
 					[self setMicStatusTooltip:@""];
 					authFlag = YES;
 					break;
-					
+
 				default:
 					[self setMicStatusTooltip:@"Hardware microphone usage is currently unknown. If you need access, change your microphone privacy settings for DeSmuME in System Preferences."];
 					break;
 			}
-			
+
 			[cdsController setHardwareMicAuthorization:authFlag];
 		}
 	}
@@ -2934,7 +2983,7 @@
 		[self setMicStatusTooltip:@""];
 		[cdsController setHardwareMicAuthorization:YES];
 	}
-	
+
 	[self updateMicStatusIcon];
 	return authStatus;
 }
@@ -2943,7 +2992,7 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2WindowController content];
-	
+
 	// Set up the user's default input settings.
 	NSDictionary *userMappings = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"];
 	if (userMappings == nil)
@@ -2952,24 +3001,24 @@
 		NSArray *internalDefaultProfilesList = (NSArray *)[defaultKeyMappingsDict valueForKey:@"DefaultInputProfiles"];
 		userMappings = [(NSDictionary *)[internalDefaultProfilesList objectAtIndex:0] valueForKey:@"Mappings"];
 	}
-	
+
 	[inputManager setMappingsWithMappings:userMappings];
 	[[inputManager hidManager] setDeviceListController:inputDeviceListController];
 	[[inputManager hidManager] setRunLoop:[NSRunLoop currentRunLoop]];
-	
+
 	// Set the microphone settings per user preferences.
 	[[cdsCore cdsController] setHardwareMicMute:[[NSUserDefaults standardUserDefaults] boolForKey:@"Microphone_HardwareMicMute"]];
-	
+
 	// Set the SPU settings per user preferences.
 	[audioController setEngineIDValue:(int)[[NSUserDefaults standardUserDefaults] integerForKey:@"Sound_AudioOutputEngine"]];
 	[audioController setVolumeValue:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
 	[audioController setSpuInterpolationModeIDValue:(SPUInterpolationMode)[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_InterpolationMode"]];
 	[audioController setSpuSyncModeIDValue:(ESynchMode)[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMode"]];
 	[audioController setSpuSyncMethodIDValue:(ESynchMethod)[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMethod"]];
-	
+
 	// Set the 3D rendering options per user preferences.
 	CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
-	
+
 	[graphicsController setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
 
 	NSInteger engine3DClientIndex = [[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_RenderingEngine"];
@@ -2992,23 +3041,23 @@
 	[graphicsController setFragmentSamplingHackEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_FragmentSamplingHack"]];
 	[graphicsController setGpuScale:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ScalingFactor"]];
 	[graphicsController setGpuColorFormat:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ColorFormat"]];
-	
+
 	[graphicsController setShadowPolygonEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateShadowPolygon"]];
 	[graphicsController setSpecialZeroAlphaBlendingEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateSpecialZeroAlphaBlending"]];
 	[graphicsController setNdsDepthCalculationEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateNDSDepthCalculation"]];
 	[graphicsController setDepthLEqualPolygonFacingEnable:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_OpenGL_EmulateDepthLEqualPolygonFacing"]];
-	
+
 	((MacGPUFetchObjectAsync *)[graphicsController fetchObject])->FetchSynchronousAtIndex(0);
-	
+
 	// Set the stylus options per user preferences.
 	[[cdsCore cdsController] setStylusPressure:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_StylusPressure"]];
-	
+
 	// Set up the default SLOT-2 device.
 	[slot2WindowDelegate setupUserDefaults];
-	
+
 	// Set up the ROM Info panel.
 	[romInfoPanel setupUserDefaults];
-	
+
 	// Set up the capture tool defaults.
 	[screenshotCaptureToolDelegate readUserDefaults];
 	[avCaptureToolDelegate readUserDefaults];
@@ -3025,7 +3074,7 @@
 {
 	NSArray *windowPropertiesList = [[NSUserDefaults standardUserDefaults] arrayForKey:@"General_DisplayWindowRestorableStates"];
 	const BOOL willRestoreWindows = [[NSUserDefaults standardUserDefaults] boolForKey:@"General_WillRestoreDisplayWindows"];
-	
+
 	if (!willRestoreWindows || windowPropertiesList == nil || [windowPropertiesList count] < 1)
 	{
 		// If no windows were saved for restoring (the user probably closed all windows before
@@ -3042,10 +3091,10 @@
 			savedViewProps.order       = (ClientDisplayOrder)(([windowProperties objectForKey:@"displayOrder"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayOrder"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"]);
 			savedViewProps.gapScale    = ([windowProperties objectForKey:@"displayGap"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayGap"] doubleValue] : ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayViewCombo_Gap"] / 100.0);
 			savedViewProps.screenScale = ([windowProperties objectForKey:@"displayScale"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayScale"] doubleValue] : ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0);
-			
+
 			double localRotation = ([windowProperties objectForKey:@"displayRotation"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayRotation"] doubleValue] : [[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"];
 			localRotation = fmod(localRotation, 360.0);
-			
+
 			if (localRotation < 0.0)
 			{
 				localRotation += 360.0;
@@ -3054,33 +3103,33 @@
 			{
 				localRotation = 0.0;
 			}
-			
+
 			savedViewProps.rotation = (localRotation == 0.0) ? 0.0 : 360.0 - localRotation;
-			
+
 			ClientDisplayPresenter::CalculateViewPropertiesWithAllScalars(savedViewProps, savedViewProps.screenScale, 1.0);
-			
+
 			const BOOL isMinSizeNormal    = ([windowProperties objectForKey:@"isMinSizeNormal"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isMinSizeNormal"] boolValue] : YES;
 			const BOOL isShowingStatusBar = ([windowProperties objectForKey:@"isShowingStatusBar"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isShowingStatusBar"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"];
-			
+
 			DisplayWindowController *windowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow"
 																							emuControlDelegate:self
 																								viewProperties:savedViewProps
 																							   isMinSizeNormal:isMinSizeNormal
 																							isShowingStatusBar:isShowingStatusBar];
-			
+
 			if (windowController == nil)
 			{
 				continue;
 			}
-			
+
 			const NSInteger displayMainSource		= ([windowProperties objectForKey:@"displayMainVideoSource"]  != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayMainVideoSource"] integerValue]  : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayMainVideoSource"];
 			const NSInteger displayTouchSource		= ([windowProperties objectForKey:@"displayTouchVideoSource"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayTouchVideoSource"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayTouchVideoSource"];
-			
+
 			const BOOL videoFiltersPreferGPU		= ([windowProperties objectForKey:@"videoFiltersPreferGPU"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoFiltersPreferGPU"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_FiltersPreferGPU"];
 			const BOOL videoSourceDeposterize		= ([windowProperties objectForKey:@"videoSourceDeposterize"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoSourceDeposterize"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_Deposterize"];
 			const NSInteger videoPixelScaler		= ([windowProperties objectForKey:@"videoFilterType"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoFilterType"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"];
 			const NSInteger videoOutputFilter		= ([windowProperties objectForKey:@"videoOutputFilter"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoOutputFilter"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"];
-			
+
 			const BOOL hudEnable					= ([windowProperties objectForKey:@"hudEnable"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudEnable"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_EnableHUD"];
 			const BOOL hudShowExecutionSpeed		= ([windowProperties objectForKey:@"hudShowExecutionSpeed"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowExecutionSpeed"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowExecutionSpeed"];
 			const BOOL hudShowVideoFPS				= ([windowProperties objectForKey:@"hudShowVideoFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowVideoFPS"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowVideoFPS"];
@@ -3090,7 +3139,7 @@
 			const BOOL hudShowCPULoadAverage		= ([windowProperties objectForKey:@"hudShowCPULoadAverage"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowCPULoadAverage"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowCPULoadAverage"];
 			const BOOL hudShowRTC					= ([windowProperties objectForKey:@"hudShowRTC"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowRTC"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"];
 			const BOOL hudShowInput					= ([windowProperties objectForKey:@"hudShowInput"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowInput"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowInput"];
-			
+
 			const NSUInteger hudColorExecutionSpeed	= ([windowProperties objectForKey:@"hudColorExecutionSpeed"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorExecutionSpeed"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_ExecutionSpeed"];
 			const NSUInteger hudColorVideoFPS		= ([windowProperties objectForKey:@"hudColorVideoFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorVideoFPS"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_VideoFPS"];
 			const NSUInteger hudColorRender3DFPS	= ([windowProperties objectForKey:@"hudColorRender3DFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorRender3DFPS"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Render3DFPS"];
@@ -3101,30 +3150,30 @@
 			const NSUInteger hudColorInputPendingAndApplied = ([windowProperties objectForKey:@"hudColorInputPendingAndApplied"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorInputPendingAndApplied"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Input_PendingAndApplied"];
 			const NSUInteger hudColorInputAppliedOnly = ([windowProperties objectForKey:@"hudColorInputAppliedOnly"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorInputAppliedOnly"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Input_AppliedOnly"];
 			const NSUInteger hudColorInputPendingOnly = ([windowProperties objectForKey:@"hudColorInputPendingOnly"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorInputPendingOnly"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Input_PendingOnly"];
-			
+
 			const BOOL useVerticalSync				= ([windowProperties objectForKey:@"useVerticalSync"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"useVerticalSync"] boolValue] : YES;
 			const BOOL isInFullScreenMode			= ([windowProperties objectForKey:@"isInFullScreenMode"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isInFullScreenMode"] boolValue] : NO;
 			const NSUInteger screenIndex			= ([windowProperties objectForKey:@"screenIndex"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"screenIndex"] unsignedIntegerValue] : 0;
 			NSString *windowFrameStr				= (NSString *)[windowProperties valueForKey:@"windowFrame"];
-			
+
 			int frameX = 0;
 			int frameY = 0;
 			int frameWidth = 256;
 			int frameHeight = 192*2;
 			const char *frameCStr = [windowFrameStr cStringUsingEncoding:NSUTF8StringEncoding];
 			sscanf(frameCStr, "%i %i %i %i", &frameX, &frameY, &frameWidth, &frameHeight);
-			
+
 			// Force the window to load now so that we can overwrite its internal defaults with the user's defaults.
 			[windowController window];
-			
+
 			[[windowController view] setDisplayMainVideoSource:displayMainSource];
 			[[windowController view] setDisplayTouchVideoSource:displayTouchSource];
-			
+
 			[windowController setVideoPropertiesWithoutUpdateUsingPreferGPU:videoFiltersPreferGPU
 														  sourceDeposterize:videoSourceDeposterize
 															   outputFilter:videoOutputFilter
 																pixelScaler:videoPixelScaler];
-			
+
 			[[windowController view] setUseVerticalSync:useVerticalSync];
 			[[windowController view] setIsHUDVisible:hudEnable];
 			[[windowController view] setIsHUDExecutionSpeedVisible:hudShowExecutionSpeed];
@@ -3135,7 +3184,7 @@
 			[[windowController view] setIsHUDCPULoadAverageVisible:hudShowCPULoadAverage];
 			[[windowController view] setIsHUDRealTimeClockVisible:hudShowRTC];
 			[[windowController view] setIsHUDInputVisible:hudShowInput];
-			
+
 			[[windowController view] setHudColorExecutionSpeed:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorExecutionSpeed]];
 			[[windowController view] setHudColorVideoFPS:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorVideoFPS]];
 			[[windowController view] setHudColorRender3DFPS:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorRender3DFPS]];
@@ -3146,17 +3195,17 @@
 			[[windowController view] setHudColorInputPendingAndApplied:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorInputPendingAndApplied]];
 			[[windowController view] setHudColorInputAppliedOnly:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorInputAppliedOnly]];
 			[[windowController view] setHudColorInputPendingOnly:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorInputPendingOnly]];
-			
+
 			[[windowController masterWindow] setFrameOrigin:NSMakePoint(frameX, frameY)];
-			
+
 			// If this is the last window in the list, make this window key and main.
 			// Otherwise, just order the window to the front so that the windows will
 			// stack in a deterministic order.
 			[[windowController view] setAllowViewUpdates:YES];
-			
+
 			MacDisplayViewOutput *dvo = [[windowController view] displayViewOutput];
 			dvo->Dispatch(MESSAGE_RELOAD_REPROCESS_REDRAW);
-			
+
 			if (windowProperties == [windowPropertiesList lastObject])
 			{
 				[[windowController window] makeKeyAndOrderFront:self];
@@ -3167,7 +3216,7 @@
 				[[windowController window] orderFront:self];
 				[[windowController window] makeMainWindow];
 			}
-			
+
 			// If this window is set to full screen mode, its associated screen index must
 			// exist. If not, this window will not enter full screen mode. This is necessary,
 			// since the user's screen configuration could change in between app launches,
@@ -3184,19 +3233,19 @@
 - (void) saveDisplayWindowStates
 {
 	const BOOL willRestoreWindows = [[NSUserDefaults standardUserDefaults] boolForKey:@"General_WillRestoreDisplayWindows"];
-	
+
 	if (willRestoreWindows && [windowList count] > 0)
 	{
 		NSMutableArray *windowPropertiesList = [NSMutableArray arrayWithCapacity:[windowList count]];
-		
+
 		for (DisplayWindowController *windowController in windowList)
 		{
 			const NSUInteger screenIndex = [[NSScreen screens] indexOfObject:[[windowController masterWindow] screen]];
-			
+
 			const NSRect windowFrame = [windowController masterWindowFrame];
 			NSString *windowFrameStr = [NSString stringWithFormat:@"%i %i %i %i",
 										(int)windowFrame.origin.x, (int)windowFrame.origin.y, (int)windowFrame.size.width, (int)windowFrame.size.height];
-			
+
 			NSDictionary *windowProperties = [NSDictionary dictionaryWithObjectsAndKeys:
 											  [NSNumber numberWithInteger:[windowController displayMode]], @"displayMode",
 											  [NSNumber numberWithDouble:[windowController masterWindowScale]], @"displayScale",
@@ -3236,10 +3285,10 @@
 											  [NSNumber numberWithUnsignedInteger:screenIndex], @"screenIndex",
 											  windowFrameStr, @"windowFrame",
 											  nil];
-			
+
 			[windowPropertiesList addObject:windowProperties];
 		}
-		
+
 		[[NSUserDefaults standardUserDefaults] setObject:windowPropertiesList forKey:@"General_DisplayWindowRestorableStates"];
 	}
 	else
@@ -3266,7 +3315,7 @@
 	BOOL enable = YES;
     const SEL theAction = [theItem action];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
+
 	if (theAction == @selector(importRomSave:))
     {
 		if ([self currentRom] == nil)
@@ -3277,13 +3326,13 @@
 	else if (theAction == @selector(exportRomSave:))
 	{
 		NSFileManager *fileManager = [[NSFileManager alloc] init];
-		
+
 		if ( ([self currentRom] == nil) ||
 		     ![fileManager isReadableFileAtPath:[[CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"] path]] )
 		{
 			enable = NO;
 		}
-		
+
 		[fileManager release];
 	}
     else if (theAction == @selector(toggleExecutePause:))
@@ -3294,7 +3343,7 @@
 		{
 			enable = NO;
 		}
-		
+
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
 			if ([cdsCore coreState] == ExecutionBehavior_Pause)
@@ -3411,7 +3460,7 @@
 		{
 			enable = NO;
 		}
-		
+
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
 			if ([CocoaDSFile saveStateExistsForSlot:[[self currentRom] fileURL] slotNumber:[theItem tag] + 1])
@@ -3456,7 +3505,7 @@
 	else if (theAction == @selector(changeCoreSpeed:))
 	{
 		NSInteger speedScalar = (NSInteger)([cdsCore speedScalar] * 100.0);
-		
+
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
 			if ([theItem tag] == -1)
@@ -3506,7 +3555,7 @@
 		{
 			[(NSMenuItem*)theItem setTitle:([cdsCore isFrameSkipEnabled]) ? NSSTRING_TITLE_DISABLE_AUTO_FRAME_SKIP : NSSTRING_TITLE_ENABLE_AUTO_FRAME_SKIP];
 		}
-		
+
 		if ([avCaptureToolDelegate isRecording])
 		{
 			enable = NO;
@@ -3555,13 +3604,13 @@
 	else if (theAction == @selector(toggleGPUState:))
 	{
 		CocoaGraphicsController *graphicsController = (CocoaGraphicsController *)[[self cdsGraphicsController] content];
-		
+
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
 			[(NSMenuItem*)theItem setState:([graphicsController gpuStateByBit:(UInt32)[theItem tag]]) ? GUI_STATE_ON : GUI_STATE_OFF];
 		}
 	}
-	
+
 	return enable;
 }
 

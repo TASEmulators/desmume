@@ -17,6 +17,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import "../cocoa_input.h"
+#import "DisassemblerWindow.h"
 #include "../utilities.h"
 
 @class CocoaAudioController;
@@ -32,13 +33,14 @@
 @class MemoryViewerWindowController;
 @class RAMWatchWindowController;
 @class RAMSearchWindowController;
+@class DisassemblerWindowController;
 @class MacScreenshotCaptureToolDelegate;
 @class MacAVCaptureToolDelegate;
 @class PreferencesWindowDelegate;
 struct ClientCommandAttributes;
 class AudioSampleBlockGenerator;
 
-@interface EmuControllerDelegate : NSObject <NSUserInterfaceValidations, CocoaDSControllerDelegate>
+@interface EmuControllerDelegate : NSObject <NSUserInterfaceValidations, CocoaDSControllerDelegate, DisassemblerWindowDelegate>
 {
 	InputManager *inputManager;
 	
@@ -66,6 +68,7 @@ class AudioSampleBlockGenerator;
 	MemoryViewerWindowController *_memoryViewerWindowController;
 	RAMWatchWindowController *_ramWatchWindowController;
 	RAMSearchWindowController *_ramSearchWindowController;
+	DisassemblerWindowController *_disassemblerWindowController;
 	
 	NSWindow *displayRotationPanel;
 	NSWindow *displaySeparationPanel;

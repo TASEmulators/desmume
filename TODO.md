@@ -36,8 +36,8 @@
 | 视频录制 | ☑ MP4/AVI/WAV | ☑ AVFoundation | ☑ FFmpeg | |
 | 旧式 AVI / WAV / UserSPU WAV | ☑ | ☐ | ◐ 仅 H.264 / FLAC | 建议不追平，见 §5 |
 | 截图：格式选择、目录、独立截图工具 | ☑ | ☑ | ◐ 固定 PNG 到 Pictures | |
-| 反汇编器 | ☑ | ☐ | ☐ | |
-| 内存视图（hex，可改值，断点） | ☑ | ☑ | ☐ | |
+| 反汇编器 | ☑ 单窗口 + CPU 下拉 | ☑ | ☑ GTK3 + GTK4 | 三端共用 `shared/disassembly_core` |
+| 内存视图（hex，可改值，断点） | ☑ | ☑ | ☑ | |
 | IO 寄存器视图 | ☑ | ☐ | ☑ | |
 | 调色板 / 图块 / 地图 / OAM / 矩阵 / 光照 / 声音状态 / NitroFS 视图 | ☑ | ☐ | ☐ | 8 个窗口，两端全空 |
 | GPU 图层开关 | ☑ 含主/子 GPU | ☑ | ◐ 缺主/子 GPU | |
@@ -55,7 +55,7 @@
 | 固件设置（语言、MAC、子网等） | ☑ | ☑ | ◐ 仅语言 | |
 | 麦克风设置（设备/电平） | ☑ | ☑ | ◐ | GTK 有物理/噪声/WAV 输入模式，缺设备选择与输入电平 |
 | Wi-Fi 设置 | ☑ | ☑ | ◐ | GTK 已有启用/兼容模式和 PCAP 网卡选择，缺 MAC/AP 子网等高级项 |
-| 3D 设置（含 Edge Marking/Fog/Line Hack 等） | ☑ | ☑ | ◐ 仅基础项 | |
+| 3D 设置（含 Edge Marking/Fog/Line Hack 等） | ☑ | ☑ | ☑ | |
 | 音频设置 | ☑ 对话框 | ☑ 首选项 | ◐ 菜单项拼装 | |
 | 路径设置（每类文件独立目录） | ☑ | ◐ | ☐ | |
 | Always On Top / Lockdown | ☑ | ☐ | ☐ | |
@@ -78,7 +78,7 @@ Windows 侧实现：`disView.cpp`(32 KB)、`IORegView.cpp`(34 KB)、`palView.cpp
 `tileView.cpp`(31 KB)、`mapView.cpp`(8 KB)、`oamView.cpp`(15 KB)、`matrixView.cpp`(8 KB)、
 `lightView.cpp`(5 KB)、`soundView.cpp`(16 KB)、`fsnitroView.cpp`(11 KB)。
 
-- ☐ 反汇编器（ARM9/ARM7，地址跳转、跟随 PC、导出）
+- ☑ 反汇编器（ARM9/ARM7，CPU 下拉单窗、地址跳转、跟随 PC、断点、单步/步过/运行到返回）— GTK3 与 GTK4 各有一份宿主
 - ☐ IO 寄存器视图（分组、实时刷新、可写寄存器）
 - ☐ 调色板视图（主/子引擎、扩展调色板）
 - ☐ 图块视图（BG/OBJ、4/16/256 色、翻转、调色板索引）
@@ -159,7 +159,7 @@ GTK3 这半年补得很快（RAM Watch/Search、金手指重写、FFmpeg 录制�
 ### P0 — 开发者视图（缺 10 个）
 
 - ☐ 内存视图（可改值、断点、区域导出）— macOS 有 `MemoryViewerWindow`，Windows 有 `memView.cpp`
-- ☐ 反汇编器
+- ☑ 反汇编器（三端共用 `shared/disassembly_core`；GTK3 与 GTK4 均已有宿主）
 - ☐ 调色板 / 图块 / 地图 / OAM / 矩阵 / 光照 / 声音状态 / NitroFS 视图
 - ◐ IO 寄存器视图已有（`tools/ioregsView.cpp`），可作为其余视图的宿主范式
 - ◐ GPU 图层开关已有，缺"Main GPU / Sub GPU"两级总开关

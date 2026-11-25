@@ -465,6 +465,11 @@
           <attribute name='target' type='u'>4</attribute>
         </item>
         <item>
+          <attribute name='label' translatable='yes'>_Disassembler…</attribute>
+          <attribute name='action'>app.tool</attribute>
+          <attribute name='target' type='u'>5</attribute>
+        </item>
+        <item>
           <attribute name='label' translatable='yes'>Disable _cheats</attribute>
           <attribute name='action'>app.cheatsdisable</attribute>
         </item>

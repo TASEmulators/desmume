@@ -4,7 +4,8 @@
 
 #include "gtk_monospace_font.h"
 
-static PangoLayout *
+/* inline, so a tool that only needs the metrics does not warn about the rest. */
+static inline PangoLayout *
 memory_viewer_layout_new(GtkWidget *widget, GSettings *settings)
 {
 	PangoLayout *layout = gtk_widget_create_pango_layout(widget, NULL);
@@ -14,7 +15,7 @@ memory_viewer_layout_new(GtkWidget *widget, GSettings *settings)
 	return layout;
 }
 
-static void
+static inline void
 memory_viewer_metrics(PangoLayout *layout, double *char_w, double *line_h, double *header_h)
 {
 	pango_layout_set_text(layout, "0", -1);
@@ -25,7 +26,7 @@ memory_viewer_metrics(PangoLayout *layout, double *char_w, double *line_h, doubl
 	*header_h = *line_h + 2;
 }
 
-static void
+static inline void
 memory_viewer_set_min_width(GtkWidget *widget, GSettings *settings)
 {
 	PangoLayout *layout = memory_viewer_layout_new(widget, settings);
@@ -37,7 +38,7 @@ memory_viewer_set_min_width(GtkWidget *widget, GSettings *settings)
 }
 
 /* Render each character on the same grid, even if a fallback glyph is wider. */
-static void
+static inline void
 memory_viewer_draw_cells(cairo_t *cr, PangoLayout *layout, const char *text,
                          double x, double y, double char_w, double line_h)
 {

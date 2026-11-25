@@ -752,6 +752,10 @@
           <attribute name='label' translatable='yes'>_Memory Viewer</attribute>
           <attribute name='action'>app.memoryviewer</attribute>
         </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Disassembler</attribute>
+          <attribute name='action'>app.disassembler</attribute>
+        </item>
         <submenu>
           <attribute name='label' translatable='yes'>_Lua Scripting</attribute>
           <section>

@@ -1299,6 +1299,17 @@ static void* RunCoreThread(void *arg)
 		// Check if an internal execution error occurred that halted the emulation.
 		if (!execute)
 		{
+			// A breakpoint, single-instruction step, step over or run-to-return
+			// stops the CPU loop on purpose. That is not an emulator error, and
+			// `execute` must stay usable for the next Run.
+			if (NDS_TakeDebuggerPause())
+			{
+				execControl->SetExecutionBehavior(ExecutionBehavior_Pause);
+				execute = true;
+				pthread_mutex_unlock(&param->mutexThreadExecute);
+				continue;
+			}
+			
 			NDSError ndsError = NDS_GetLastError();
 			pthread_mutex_unlock(&param->mutexThreadExecute);
 			

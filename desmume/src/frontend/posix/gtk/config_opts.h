@@ -166,6 +166,20 @@ OPT(ramwatch_win_y, int, -1, RAMWatch, WindowY)
 OPT(ramwatch_win_w, int, 640, RAMWatch, WindowWidth)
 OPT(ramwatch_win_h, int, 460, RAMWatch, WindowHeight)
 
+/* Disassembler
+ *
+ * The view state (CPU, ARM/Thumb mode, auto-update interval) belongs to
+ * shared/disassembly_core.cpp; only these values are persisted, because
+ * persistence is a host job. WindowX/Y are not stored: the WM places the window
+ * and the geometry below only restores its size.
+ */
+OPT(disasm_cpu, int, 0, Disassembler, CPU)
+OPT(disasm_mode, int, 0, Disassembler, Mode)
+OPT(disasm_autoupdate, bool, true, Disassembler, AutoUpdate)
+OPT(disasm_autoupdate_frames, int, 1, Disassembler, AutoUpdateFrames)
+OPT(disasm_win_w, int, 900, Disassembler, WindowWidth)
+OPT(disasm_win_h, int, 640, Disassembler, WindowHeight)
+
 /* Cheats
  *
  * The cheat list itself is a document handled by src/cheatSystem.cpp; only the

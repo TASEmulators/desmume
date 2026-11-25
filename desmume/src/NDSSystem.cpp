@@ -59,10 +59,6 @@
 #include "Database.h"
 #include "frontend/modules/Disassembler.h"
 
-#if defined(HOST_WINDOWS) && !defined(TARGET_INTERFACE)
-#include "display.h"
-extern HWND DisViewWnd[2];
-#endif
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
@@ -111,6 +107,11 @@ int lastLag;
 int TotalLagFrames;
 u8 MicSampleSelection = 0;
 std::vector< std::vector<u8> > micSamples;
+
+// Debugger breakpoints: the frontend's notification hook and the "the CPU
+// loop paused itself on purpose" flag consumed by NDS_TakeDebuggerPause().
+static NDS_DebugBreakHandler s_debugBreakHandler = NULL;
+static bool s_debuggerPaused = false;
 
 TSCalInfo TSCal;
 
@@ -1955,6 +1956,95 @@ static const int kMaxWork = 4000;
 static const int kIrqWait = 4000;
 
 
+// ---------------------------------------------------------------------------
+// Debugger pause and breakpoints
+//
+// These used to be Windows-only: the CPU loop posted a message straight to the
+// disassembler's child windows. Everything here is frontend agnostic now; a
+// frontend installs a handler with NDS_SetDebugBreakHandler() and polls
+// NDS_TakeDebuggerPause() to tell a debugger stop apart from an NDS error.
+// ---------------------------------------------------------------------------
+
+void NDS_debug_continue()
+{
+	NDS_ARM9.stalled = NDS_ARM7.stalled = 0;
+	execute = true;
+	s_debuggerPaused = false;
+}
+
+void NDS_DebuggerPause()
+{
+	execute = false;
+	s_debuggerPaused = true;
+}
+
+bool NDS_TakeDebuggerPause()
+{
+	if (!s_debuggerPaused)
+	{
+		return false;
+	}
+
+	s_debuggerPaused = false;
+	return true;
+}
+
+void NDS_SetDebugBreakHandler(NDS_DebugBreakHandler handler)
+{
+	s_debugBreakHandler = handler;
+}
+
+// Called once per CPU loop iteration. Both lists are usually empty, which is
+// the only thing this has to check in the common case.
+static inline bool nds_debug_check_breakpoints()
+{
+	const std::vector<u32> *breakpointList9 = NDS_ARM9.breakPoints;
+	const std::vector<u32> *breakpointList7 = NDS_ARM7.breakPoints;
+
+	const bool check9 = (breakpointList9 != NULL) && !breakpointList9->empty();
+	const bool check7 = (breakpointList7 != NULL) && !breakpointList7->empty();
+	if (!check9 && !check7)
+	{
+		return false;
+	}
+
+	// The old code skipped the hit while the CPU was executing a single step
+	// over the very breakpoint it stopped on.
+	if (check9 && !NDS_ARM9.debugStep)
+	{
+		for (size_t i = 0; i < breakpointList9->size(); ++i)
+		{
+			if (NDS_ARM9.instruct_adr == (*breakpointList9)[i])
+			{
+				NDS_DebuggerPause();
+				if (s_debugBreakHandler != NULL)
+				{
+					s_debugBreakHandler(NDS_DEBUG_CPU_ARM9, NDS_ARM9.instruct_adr);
+				}
+				return true;
+			}
+		}
+	}
+
+	if (check7 && !NDS_ARM7.debugStep)
+	{
+		for (size_t i = 0; i < breakpointList7->size(); ++i)
+		{
+			if (NDS_ARM7.instruct_adr == (*breakpointList7)[i])
+			{
+				NDS_DebuggerPause();
+				if (s_debugBreakHandler != NULL)
+				{
+					s_debugBreakHandler(NDS_DEBUG_CPU_ARM7, NDS_ARM7.instruct_adr);
+				}
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 template<bool doarm9, bool doarm7>
 static FORCEINLINE s32 minarmtime(s32 arm9, s32 arm7)
 {
@@ -1978,33 +2068,10 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 	s32 timer = minarmtime<doarm9,doarm7>(arm9,arm7);
 	while(timer < s32next && !sequencer.reschedule && execute)
 	{
-		// breakpoint handling
-		#if defined(HOST_WINDOWS) && !defined(TARGET_INTERFACE)
-		const std::vector<u32> *breakpointList9 = NDS_ARM9.breakPoints;
-		for (int i = 0; i < breakpointList9->size(); ++i) {
-			if (NDS_ARM9.instruct_adr == (*breakpointList9)[i] && !NDS_ARM9.debugStep) {
-				emu_paused = true;
-				paused = true;
-				execute = false;
-				// update debug display
-				PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
-				InvalidateRect(DisViewWnd[0], NULL, FALSE);
-				return std::make_pair(arm9, arm7);
-			}
+		if (nds_debug_check_breakpoints())
+		{
+			return std::make_pair(arm9, arm7);
 		}
-		const std::vector<u32> *breakpointList7 = NDS_ARM7.breakPoints;
-		for (int i = 0; i < breakpointList7->size(); ++i) {
-			if (NDS_ARM7.instruct_adr == (*breakpointList7)[i] && !NDS_ARM7.debugStep) {
-				emu_paused = true;
-				paused = true;
-				execute = false;
-				// update debug display
-				PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
-				InvalidateRect(DisViewWnd[1], NULL, FALSE);
-				return std::make_pair(arm9, arm7);
-			}
-		}
-		#endif //HOST_WINDOWS
 
 		if(doarm9 && (!doarm7 || arm9 <= timer))
 		{
@@ -2031,15 +2098,11 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			// for proper stepping...
 			if (NDS_ARM9.debugStep) {
 				NDS_ARM9.debugStep = false;
-				execute = false;
-				//PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
-				//InvalidateRect(DisViewWnd[0], NULL, FALSE);
+				NDS_DebuggerPause();
 			}
 			if (NDS_ARM9.stepOverBreak == NDS_ARM9.instruct_adr && NDS_ARM9.stepOverBreak != 0) {
 				NDS_ARM9.stepOverBreak = 0;
-				execute = false;
-				//PostMessageA(DisViewWnd[0], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM9.instruct_adr);
-				//InvalidateRect(DisViewWnd[0], NULL, FALSE);
+				NDS_DebuggerPause();
 			}
 			// aaand handle step to return
 			if (NDS_ARM9.runToRetTmp != 0 && NDS_ARM9.runToRetTmp == NDS_ARM9.instruct_adr) {
@@ -2079,15 +2142,11 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			}
 			if (NDS_ARM7.debugStep) {
 				NDS_ARM7.debugStep = false;
-				execute = false;
-				//PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
-				//InvalidateRect(DisViewWnd[1], NULL, FALSE);
+				NDS_DebuggerPause();
 			}
 			if (NDS_ARM7.stepOverBreak == NDS_ARM7.instruct_adr && NDS_ARM7.stepOverBreak != 0) {
 				NDS_ARM7.stepOverBreak = 0;
-				execute = false;
-				//PostMessageA(DisViewWnd[1], WM_COMMAND, IDC_DISASMSEEK, NDS_ARM7.instruct_adr);
-				//InvalidateRect(DisViewWnd[1], NULL, FALSE);
+				NDS_DebuggerPause();
 			}
 			// aaand handle step to return
 			if (NDS_ARM7.runToRetTmp != 0 && NDS_ARM7.runToRetTmp == NDS_ARM7.instruct_adr) {
@@ -2109,12 +2168,6 @@ void NDS_debug_break()
 
 	//triggers an immediate exit from the cpu loop
 	NDS_Reschedule();
-}
-
-void NDS_debug_continue()
-{
-	NDS_ARM9.stalled = NDS_ARM7.stalled = 0;
-	execute = true;
 }
 
 void NDS_debug_step()

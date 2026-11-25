@@ -95,8 +95,10 @@ void WIN_InstallGBACartridge();
 #define IDM_RECENT_RESERVED12                   65512
 #define IDM_RECENT_RESERVED13                   65513
 
+// The palette view reused the old ARM7 disassembler timer id; timers are
+// per-window, so the number only has to stay unique inside one dialog.
 #define IDT_VIEW_DISASM7						50001
-#define IDT_VIEW_DISASM9                		50002
+#define IDT_VIEW_DISASM                 		50002
 #define IDT_VIEW_MEM7                   		50003
 #define IDT_VIEW_MEM9                   		50004
 #define IDT_VIEW_IOREG                  		50005

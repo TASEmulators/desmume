@@ -4033,6 +4033,25 @@
 		A5F0000000000000000002C1 /* x86_ra_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5F000000000000000000036 /* x86_ra_pass.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
 		A5F0000000000000000002C2 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
 		A5F0000000000000000002C3 /* arm_jit_arm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB46E54D2814F40800A4E3D6 /* arm_jit_arm.cpp */; settings = {COMPILER_FLAGS = "-std=c++20"; }; };
+		D15A5E000000000000000005 /* disassembly_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000002 /* disassembly_core.cpp */; };
+		D15A5E000000000000000006 /* DisassemblerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000004 /* DisassemblerWindow.mm */; };
+		D15A5E000000000000000007 /* disassembly_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000002 /* disassembly_core.cpp */; };
+		D15A5E000000000000000008 /* DisassemblerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000004 /* DisassemblerWindow.mm */; };
+		D15A5E000000000000000009 /* disassembly_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000002 /* disassembly_core.cpp */; };
+		D15A5E00000000000000000A /* DisassemblerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000004 /* DisassemblerWindow.mm */; };
+		D15A5E00000000000000000B /* disassembly_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000002 /* disassembly_core.cpp */; };
+		D15A5E00000000000000000C /* DisassemblerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000004 /* DisassemblerWindow.mm */; };
+		D15A5E00000000000000000D /* disassembly_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000002 /* disassembly_core.cpp */; };
+		D15A5E00000000000000000E /* DisassemblerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000004 /* DisassemblerWindow.mm */; };
+		D15A5E00000000000000000F /* disassembly_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000002 /* disassembly_core.cpp */; };
+		D15A5E000000000000000010 /* DisassemblerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000004 /* DisassemblerWindow.mm */; };
+		D15A5E000000000000000011 /* disassembly_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000002 /* disassembly_core.cpp */; };
+		D15A5E000000000000000012 /* DisassemblerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000004 /* DisassemblerWindow.mm */; };
+		D15A5E000000000000000013 /* disassembly_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000002 /* disassembly_core.cpp */; };
+		D15A5E000000000000000014 /* DisassemblerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000004 /* DisassemblerWindow.mm */; };
+		D15A5E000000000000000015 /* disassembly_core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000002 /* disassembly_core.cpp */; };
+		D15A5E000000000000000016 /* DisassemblerWindow.mm in Sources */ = {isa = PBXBuildFile; fileRef = D15A5E000000000000000004 /* DisassemblerWindow.mm */; };
+
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -5050,6 +5069,11 @@
 		A5F000000000000000000034 /* x86_inst_api.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_inst_api.cpp; path = ../../../3rdparty/asmjit/x86/x86_inst_api.cpp; sourceTree = SOURCE_ROOT; };
 		A5F000000000000000000035 /* x86_inst_db.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_inst_db.cpp; path = ../../../3rdparty/asmjit/x86/x86_inst_db.cpp; sourceTree = SOURCE_ROOT; };
 		A5F000000000000000000036 /* x86_ra_pass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = x86_ra_pass.cpp; path = ../../../3rdparty/asmjit/x86/x86_ra_pass.cpp; sourceTree = SOURCE_ROOT; };
+		D15A5E000000000000000001 /* disassembly_core.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../shared/disassembly_core.h"; sourceTree = "<group>"; };
+		D15A5E000000000000000002 /* disassembly_core.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "../../shared/disassembly_core.cpp"; sourceTree = "<group>"; };
+		D15A5E000000000000000003 /* DisassemblerWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DisassemblerWindow.h"; sourceTree = "<group>"; };
+		D15A5E000000000000000004 /* DisassemblerWindow.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "DisassemblerWindow.mm"; sourceTree = "<group>"; };
+
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -5753,6 +5777,10 @@
 				A7E5CAFE0000000000000105 /* RAMWatchWindow.h */,
 				A7E5CAFE0000000000000106 /* RAMWatchWindow.mm */,
 				A7E5CAFE0000000000000107 /* ram_search_core.h */,
+				D15A5E000000000000000001 /* disassembly_core.h */,
+				D15A5E000000000000000002 /* disassembly_core.cpp */,
+				D15A5E000000000000000003 /* DisassemblerWindow.h */,
+				D15A5E000000000000000004 /* DisassemblerWindow.mm */,
 				A7E5CAFE0000000000000001 /* MemoryViewerCore.h */,
 				A7E5CAFE0000000000000002 /* MemoryViewerCore.cpp */,
 				A7E5CAFE0000000000000003 /* MemoryViewerWindow.h */,
@@ -8792,6 +8820,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F00000000000000000006B /* x86_inst_db.cpp in Sources */,
 				A5F00000000000000000006C /* x86_ra_pass.cpp in Sources */,
 				D3D0E0000000000000000002 /* gdbstub.cpp in Sources */,
+				D15A5E000000000000000005 /* disassembly_core.cpp in Sources */,
+				D15A5E000000000000000006 /* DisassemblerWindow.mm in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -9074,6 +9104,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F0000000000000000000A0 /* x86_inst_api.cpp in Sources */,
 				A5F0000000000000000000A1 /* x86_inst_db.cpp in Sources */,
 				A5F0000000000000000000A2 /* x86_ra_pass.cpp in Sources */,
+				D15A5E000000000000000007 /* disassembly_core.cpp in Sources */,
+				D15A5E000000000000000008 /* DisassemblerWindow.mm in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -9356,6 +9388,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F0000000000000000000D7 /* x86_inst_db.cpp in Sources */,
 				A5F0000000000000000000D8 /* x86_ra_pass.cpp in Sources */,
 				D3D0E0000000000000000003 /* gdbstub.cpp in Sources */,
+				D15A5E000000000000000009 /* disassembly_core.cpp in Sources */,
+				D15A5E00000000000000000A /* DisassemblerWindow.mm in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -9640,6 +9674,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F00000000000000000028A /* arm_jit.cpp in Sources */,
 				A5F00000000000000000028B /* arm_jit_arm.cpp in Sources */,
 				D3D0E0000000000000000007 /* gdbstub.cpp in Sources */,
+				D15A5E00000000000000000B /* disassembly_core.cpp in Sources */,
+				D15A5E00000000000000000C /* DisassemblerWindow.mm in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -9922,6 +9958,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F000000000000000000179 /* x86_inst_db.cpp in Sources */,
 				A5F00000000000000000017A /* x86_ra_pass.cpp in Sources */,
 				D3D0E0000000000000000004 /* gdbstub.cpp in Sources */,
+				D15A5E00000000000000000D /* disassembly_core.cpp in Sources */,
+				D15A5E00000000000000000E /* DisassemblerWindow.mm in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10204,6 +10242,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F0000000000000000001E4 /* x86_inst_api.cpp in Sources */,
 				A5F0000000000000000001E5 /* x86_inst_db.cpp in Sources */,
 				A5F0000000000000000001E6 /* x86_ra_pass.cpp in Sources */,
+				D15A5E00000000000000000F /* disassembly_core.cpp in Sources */,
+				D15A5E000000000000000010 /* DisassemblerWindow.mm in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10454,6 +10494,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F0000000000000000002C2 /* arm_jit.cpp in Sources */,
 				A5F0000000000000000002C3 /* arm_jit_arm.cpp in Sources */,
 				D3D0E0000000000000000005 /* gdbstub.cpp in Sources */,
+				D15A5E000000000000000011 /* disassembly_core.cpp in Sources */,
+				D15A5E000000000000000012 /* DisassemblerWindow.mm in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10735,6 +10777,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F00000000000000000021B /* x86_inst_db.cpp in Sources */,
 				A5F00000000000000000021C /* x86_ra_pass.cpp in Sources */,
 				D3D0E0000000000000000001 /* gdbstub.cpp in Sources */,
+				D15A5E000000000000000013 /* disassembly_core.cpp in Sources */,
+				D15A5E000000000000000014 /* DisassemblerWindow.mm in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11017,6 +11061,8 @@ A5F000000000000000000036 /* x86_ra_pass.cpp */,
 				A5F000000000000000000251 /* x86_inst_db.cpp in Sources */,
 				A5F000000000000000000252 /* x86_ra_pass.cpp in Sources */,
 				D3D0E0000000000000000006 /* gdbstub.cpp in Sources */,
+				D15A5E000000000000000015 /* disassembly_core.cpp in Sources */,
+				D15A5E000000000000000016 /* DisassemblerWindow.mm in Sources */,
 );
 			runOnlyForDeploymentPostprocessing = 0;
 		};

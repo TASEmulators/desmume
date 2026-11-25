@@ -4761,7 +4761,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMIA(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 	}
@@ -4808,7 +4808,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMIB(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 		return MMU_aluMemCycles<PROCNUM>(4, c);
@@ -4840,7 +4840,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMDA(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 	}
@@ -4887,7 +4887,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMDB(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 	}
@@ -4950,7 +4950,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMIA_W(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 	}
@@ -5006,7 +5006,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMIB_W(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 	}
@@ -5045,7 +5045,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMDA_W(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 	}
@@ -5100,7 +5100,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMDB_W(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 	}
@@ -5184,7 +5184,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMIA2(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 	}
@@ -5245,7 +5245,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMIB2(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 	}
@@ -5283,7 +5283,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMDA2(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 	}
@@ -5347,7 +5347,7 @@ TEMPLATE static u32 DESMUME_FASTCALL  OP_LDMDB2(const u32 i)
 
 		// debugging
 		if (cpu->runToRet) {
-			execute = false;
+			NDS_DebuggerPause();
 			cpu->runToRet = false;
 		}
 	}

@@ -333,6 +333,23 @@ feature. Each entry says what you can do with it — not how it is built.
   overrunning the list, no stale bytes left after saving, and poking a RAM
   Search result now actually writes to emulated memory.
 
+### Disassembler on all three frontends
+- **One window, two CPUs** — the Windows tool used to open a separate window per
+  CPU; it is now a single window with an ARM9/ARM7 selector, and macOS and Linux
+  gained the same tool instead of being Windows-only.
+- **One codebase** — decoding, address navigation, ARM/Thumb/auto mode, register
+  snapshots and the breakpoint list live in the shared core, so all three
+  frontends list the same instructions for the same address.
+- **Breakpoints that any frontend can serve** — the CPU loop no longer posts
+  messages to Windows windows, so setting a breakpoint stops emulation and shows
+  the instruction everywhere.
+- **Step, step over, run to return** — with the register pane writable (except
+  PC) and the CPSR flags shown per bit.
+- **Fixed along the way** — switching ARM/Thumb no longer drifts the address (the
+  old code multiplied the line index instead of tracking an address), a
+  breakpoint row is readable instead of saturated red, and closing the Windows
+  window no longer leaves the tool in a half-open state.
+
 ### Build and toolchain
 - **Native ARM64 build** — the solution has an ARM64 configuration beside x64,
   with a matching manifest and ARM64 builds of the bundled 7-Zip, WebGPU and
@@ -358,9 +375,9 @@ feature. Each entry says what you can do with it — not how it is built.
   (including hybrid), screen swap, rotation and gap, plus keyboard, mouse and
   stylus input, are restored from saved preferences.
 - **The familiar tools** — IO registers, RAM Watch, RAM Search, Memory Viewer,
-  Play/Record Movie dialogs, cheats with R4 database import, and a Lua console
-  with run/stop/edit, file watching and drag-and-drop. Watch and search rows
-  can become cheat entries or new watches.
+  Disassembler, Play/Record Movie dialogs, cheats with R4 database import, and a
+  Lua console with run/stop/edit, file watching and drag-and-drop. Watch and
+  search rows can become cheat entries or new watches.
 - **GPU presentation where available** — WGPU and OpenGL 3D backends, a Screen
   presentation selector (WebGPU backends or software/Cairo), and the shared
   GPU filter chains through an offscreen WebGPU path with a plain-blit fallback.
@@ -370,6 +387,10 @@ feature. Each entry says what you can do with it — not how it is built.
   upload and snapshot timings for diagnosis.
 - **Installable beside GTK3** — its desktop entry and appdata use a separate
   app-id, with a GTK4 man page and CI validation of the packaged assets.
+- **A GTK4-specific disassembler view** — GTK4 dropped `GtkTreeView`, so the
+  instruction list is a `GtkDrawingArea` that decodes and paints only the rows
+  that fit; everything else (the core, the breakpoint list, step/step-over/run
+  to return) matches the GTK3 window.
 - **Current limits** — Lua popups, dynamic menus and input-state APIs still use
   generic fallbacks, there is no GPU HUD yet, and real-ROM pixel comparison and
   desktop-environment acceptance checks are still pending.

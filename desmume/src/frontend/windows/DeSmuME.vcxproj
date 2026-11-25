@@ -483,6 +483,7 @@
     <ClCompile Include="..\shared\wgpu_present.cpp" />
     <ClCompile Include="..\shared\ram_debug_core.cpp" />
     <ClCompile Include="..\shared\ramwatch_core.cpp" />
+    <ClCompile Include="..\shared\disassembly_core.cpp" />
     <ClCompile Include="..\shared\movie_info_core.cpp" />
     <ClCompile Include="DPI.cpp" />
     <ClCompile Include="UiFont.cpp" />
@@ -707,6 +708,7 @@
     <ClInclude Include="DarkMode.h" />
     <ClInclude Include="..\shared\ram_debug_core.h" />
     <ClInclude Include="..\shared\ramwatch_core.h" />
+    <ClInclude Include="..\shared\disassembly_core.h" />
     <ClInclude Include="..\shared\ram_search_core.h" />
     <ClInclude Include="..\shared\movie_info_core.h" />
     <ClInclude Include="DPI.h" />
