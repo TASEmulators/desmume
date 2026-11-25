@@ -74,6 +74,14 @@ AC_ARG_ENABLE([wgpu],
                [AC_HELP_STRING([--enable-wgpu], [Build the WebGPU presentation layer (requires wgpu-native)])],
                [wgpu=$enableval],
                [wgpu=no])
+case $host_os in
+  freebsd*)
+    if test "x$wgpu" = "xyes" ; then
+        AC_MSG_WARN([WebGPU presentation is not supported on FreeBSD; disabling it.])
+    fi
+    wgpu=no
+    ;;
+esac
 have_wgpu=no
 if test "x$wgpu" = "xyes" ; then
     AC_CHECK_HEADERS([webgpu.h], [have_wgpu=yes], [have_wgpu=no])

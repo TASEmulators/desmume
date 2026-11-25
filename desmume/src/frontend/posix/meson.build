@@ -13,11 +13,42 @@ project('desmume',
 fs = import('fs')
 cxx = meson.get_compiler('cpp')
 
+# Some distributions only install a versioned Python executable (for example
+# python3.12) and do not provide an unversioned python3 symlink.
+python_mod = import('python')
+python3 = python_mod.find_installation('python3', required: false)
+if not python3.found()
+  python3 = python_mod.find_installation('python3.13', required: false)
+endif
+if not python3.found()
+  python3 = python_mod.find_installation('python3.12', required: false)
+endif
+if not python3.found()
+  python3 = python_mod.find_installation('python3.11', required: false)
+endif
+if not python3.found()
+  python3 = python_mod.find_installation('python3.10', required: false)
+endif
+if not python3.found()
+  python3 = python_mod.find_installation('python', required: false)
+endif
+if not python3.found()
+  error('Python 3 is required to build generated OSD fonts and asmjit sources')
+endif
+
 # Which bundled wgpu-native to use. Termux runs a native Android toolchain, so
 # uname -s still reports Linux; uname -o is the reliable signal there. An
 # NDK cross-build can set -Dwgpu-platform=android explicitly instead.
+wgpu_enabled = get_option('wgpu')
+if host_machine.system() == 'freebsd'
+  if wgpu_enabled
+    warning('WebGPU presentation is not supported on FreeBSD; disabling it')
+  endif
+  wgpu_enabled = false
+endif
+
 wgpu_platform = get_option('wgpu-platform')
-if wgpu_platform == 'auto'
+if wgpu_enabled and wgpu_platform == 'auto'
   if host_machine.system() == 'android'
     wgpu_platform = 'android'
   else
@@ -29,10 +60,14 @@ if wgpu_platform == 'auto'
     endif
   endif
 endif
-if (wgpu_platform == 'android') and (host_machine.cpu_family() != 'aarch64')
+if wgpu_enabled and (wgpu_platform == 'android') and (host_machine.cpu_family() != 'aarch64')
   warning('The bundled Android wgpu-native is aarch64 only, but the host cpu family is ' + host_machine.cpu_family())
 endif
-message('wgpu platform: ' + wgpu_platform)
+if wgpu_enabled
+  message('wgpu platform: ' + wgpu_platform)
+else
+  message('WebGPU presentation: disabled')
+endif
 
 dep_glib2 = dependency('glib-2.0')
 dep_sdl = dependency('sdl3')
@@ -58,7 +93,7 @@ dep_fontconfig = dependency('fontconfig', required: false)
 dep_egl = dependency('egl', required: false)
 # wayland-client is only linked by the WebGPU surface adapter. Keep it
 # optional when WebGPU is disabled so a minimal build does not need it.
-dep_wayland = dependency('wayland-client', required: get_option('wgpu'))
+dep_wayland = dependency('wayland-client', required: wgpu_enabled)
 dep_x11 = dependency('x11')
 
 # The FFmpeg recorder is optional. When any of the libav* modules is missing,
@@ -385,7 +420,7 @@ libdesmume_src += [
 # recorder implements the AggDrawTarget interface without instantiating Agg2D,
 # so both object files are free of undefined agg::* symbols (wgpu-agg.md 20).
 # Only the WebGPU frontend path uses the recorder.
-if get_option('wgpu')
+if wgpu_enabled
   add_global_arguments('-DDESMUME_WGPU_OSD', language: ['c', 'cpp'])
 endif
 
@@ -403,7 +438,6 @@ if dep_freetype.found()
 endif
 
 if get_option('osd-elf-fonts') and osd_elf_font_systems.contains(host_machine.system())
-  python3 = import('python').find_installation('python3')
   osd_font_bins = files(
     '../windows/osd_fonts/fonts/gse4x6.bin',
     '../windows/osd_fonts/fonts/gse4x8.bin',
@@ -490,7 +524,7 @@ libdesmume_src += [
   'shared/wgpu_upscaler_linux.cpp',
 ]
 
-if get_option('wgpu')
+if wgpu_enabled
   # wgpu-native is taken from the checked-in 3rdparty copy, or from the
   # directory passed with -Dwgpu-native-path=/path/to/wgpu-<platform>-<arch>-release.
   wgpu_native_path = get_option('wgpu-native-path')
@@ -545,7 +579,6 @@ if have_jit
   # tools/jit_matrix/gen_asmjit_sources.py is the single source of truth for
   # the vendored source list (the MSVC and Xcode generators use it too), so
   # adding a new upstream .cpp does not require editing this file as well.
-  python3 = import('python').find_installation('python3')
   asmjit_list = run_command(
     python3,
     files('../../../../tools/jit_matrix/gen_asmjit_sources.py'),

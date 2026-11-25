@@ -29,6 +29,8 @@
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
+#elif defined(__FreeBSD__)
+#include <sys/sysctl.h>
 #endif
 
 #include <string>
@@ -76,6 +78,7 @@ static const char * const kLibraryNames[] =
 
 static std::string ExecutableDirectory(void)
 {
+	char resolved[PATH_MAX] = "";
 #ifdef __APPLE__
 	uint32_t size = 0;
 	_NSGetExecutablePath(NULL, &size);
@@ -86,7 +89,6 @@ static std::string ExecutableDirectory(void)
 	if (_NSGetExecutablePath(&buffer[0], &size) != 0)
 		return std::string();
 
-	char resolved[PATH_MAX] = "";
 	if (realpath(&buffer[0], resolved) == NULL)
 		return std::string();
 #elif defined(__linux__)
@@ -96,7 +98,16 @@ static std::string ExecutableDirectory(void)
 		return std::string();
 	exe[len] = '\0';
 
-	char resolved[PATH_MAX] = "";
+	if (realpath(exe, resolved) == NULL)
+		return std::string();
+#elif defined(__FreeBSD__)
+	char exe[PATH_MAX] = "";
+	int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, getpid() };
+	size_t size = sizeof(exe);
+	if (sysctl(mib, 4, exe, &size, NULL, 0) != 0 || size == 0)
+		return std::string();
+	exe[sizeof(exe) - 1] = '\0';
+
 	if (realpath(exe, resolved) == NULL)
 		return std::string();
 #else

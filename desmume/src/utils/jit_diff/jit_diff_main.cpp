@@ -263,7 +263,7 @@ static uintptr_t gFaultOp = 0;
 	 (gFaultAccess = (GetExceptionInformation()->ExceptionRecord->NumberParameters > 1) \
 	     ? GetExceptionInformation()->ExceptionRecord->ExceptionInformation[1] : 0), \
 	 EXCEPTION_EXECUTE_HANDLER)
-#elif defined(__APPLE__) || defined(__linux__)
+#elif defined(__APPLE__) || defined(__linux__) || (defined(__FreeBSD__) && defined(__x86_64__))
 // Same idea on a POSIX host, where there is no SEH: a signal handler records the
 // fault and siglongjmp()s back to the caller. This is what makes the arm64 side
 // measurable at all -- a hand-written encoder that emits a broken instruction
@@ -301,6 +301,8 @@ static uintptr_t harnessFaultPc(void *ctx)
 	return (uintptr_t)uc->uc_mcontext->__ss.__pc;
 #elif defined(__APPLE__) && defined(__x86_64__)
 	return (uintptr_t)uc->uc_mcontext->__ss.__rip;
+#elif defined(__FreeBSD__) && defined(__x86_64__)
+	return (uintptr_t)uc->uc_mcontext.mc_rip;
 #elif defined(__aarch64__)
 	return (uintptr_t)uc->uc_mcontext.pc;
 #elif defined(__x86_64__)

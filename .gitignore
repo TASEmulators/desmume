@@ -94,3 +94,5 @@ xcuserdata/
 
 ## Written by the differential harness on --dump
 block.bin
+
+.cache
