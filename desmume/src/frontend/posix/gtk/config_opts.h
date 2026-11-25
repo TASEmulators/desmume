@@ -219,3 +219,29 @@ OPT(movie_read_only, bool, true, Movie, ReadOnly)
 OPT(movie_pause_enabled, bool, false, Movie, PauseEnabled)
 OPT(movie_author, std::string, std::string(), Movie, Author)
 
+/* Path Settings (Config > Path Settings)
+ *
+ * Section and key names match the Windows [PathSettings] group, so the two
+ * desmume.ini files stay readable side by side.  An empty value means "use
+ * the built-in default": for the categories the core resolves that is the
+ * module directory (~/.config/desmume), for screenshots it is the XDG
+ * Pictures folder.  The Movies row is config.movie_directory above, because
+ * the Play/Record dialogs already remember their own last folder there.
+ *
+ * "format" is the strftime-style screenshot name pattern; "%f" expands to the
+ * ROM name, "%r" to a random number and "%t" to a tick.  An empty pattern
+ * keeps the old desmume-screenshot-N naming.  "ImageFormat" is a GdkPixbuf
+ * writer name (png, jpeg, ...) rather than the Windows PNG/BMP enum. */
+OPT(path_roms, std::string, std::string(), PathSettings, Roms)
+OPT(path_battery, std::string, std::string(), PathSettings, Battery)
+OPT(path_sram_import_export, std::string, std::string(), PathSettings, SramImportExport)
+OPT(path_states, std::string, std::string(), PathSettings, States)
+OPT(path_state_slots, std::string, std::string(), PathSettings, StateSlots)
+OPT(path_screenshots, std::string, std::string(), PathSettings, Screenshots)
+OPT(path_avi_files, std::string, std::string(), PathSettings, AviFiles)
+OPT(path_cheats, std::string, std::string(), PathSettings, Cheats)
+OPT(path_lua, std::string, std::string(), PathSettings, Lua)
+OPT(path_screenshot_format, std::string, std::string(), PathSettings, format)
+OPT(path_screenshot_image_format, std::string, "png", PathSettings, ImageFormat)
+OPT(path_save_last_visit, bool, true, PathSettings, lastVisit)
+

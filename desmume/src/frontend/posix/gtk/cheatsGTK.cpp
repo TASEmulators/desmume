@@ -31,6 +31,7 @@
 #include "config.h"
 #include "desmume.h"
 #include "main.h"
+#include "pathsettings.h"
 #include "NDSSystem.h"
 
 /* GTK takes these as a bit mask of GtkDialogFlags, which C++ will not fold for
@@ -822,15 +823,21 @@ void code_cheat_dialog(bool editing, size_t position, u8 type)
 
 std::string cheat_database_path(void)
 {
-	std::string path = config.cheats_database_path.get();
-	if (!path.empty()) {
-		return path;
+	std::string configured = config.cheats_database_path.get();
+	if (!configured.empty()) {
+		return configured;
 	}
 
-	gchar *baseName = g_build_filename(g_get_user_config_dir(), "desmume", "cheat.dat", NULL);
-	path.assign(baseName);
-	g_free(baseName);
-	return path;
+	// The Cheats folder from Config > Path Settings is where the R4 database
+	// is expected; without it the config directory keeps the old behaviour.
+	std::string directory = path_settings_directory(PathInfo::CHEATS);
+	if (directory.empty()) {
+		gchar *defaultDir = g_build_filename(g_get_user_config_dir(), "desmume", NULL);
+		directory.assign(defaultDir);
+		g_free(defaultDir);
+	}
+
+	return directory + "/cheat.dat";
 }
 
 /* The database is a separate file the user has to point us at once, exactly as

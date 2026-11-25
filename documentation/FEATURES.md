@@ -222,6 +222,17 @@ feature. Each entry says what you can do with it — not how it is built.
 - **A filename that never overwrites** — derived from the loaded ROM, with
   ` - 1`, ` - 2`, … appended until the name is free in the Movies folder.
 
+### Path Settings
+- **Tools > Path Settings** — one window for the nine folders the Cocoa frontend
+  resolves through `CocoaDSFile`: ROMs, battery saves, save states, screenshots,
+  video, cheats, sound samples, firmware and Lua scripts.
+- **Defaults stay authoritative** — only the rows the user changed are stored in
+  `NSUserDefaults`; *Use Default Folders* refills the fields from
+  `FileTypeInfo.plist`, and clearing a row falls back to the bundled folder.
+- **Applied to both layers** — the values feed `path.pathTo*` for the emulation
+  core and `+[CocoaDSFile directoryURLByKind:]` for the open/save panels, so a
+  chosen folder is where every panel starts as well.
+
 ### Metal OSD for Lua and the HUD
 - **AGG-free rendering** — Lua drawing and OSD text go into a HUD layer shared by
   the live view, screenshots and recording, so all three look the same.
@@ -522,6 +533,21 @@ feature. Each entry says what you can do with it — not how it is built.
   debug filesystem directory; Slot 2 configures a GBA cartridge ROM and
   CompactFlash directory/image. These selections and paths persist in
   `config.cfg`.
+
+### Path settings
+- **Config > Path settings** — folders for ROMs, battery saves, SRAM
+  import/export, save states and slots, screenshots, video, movies, cheats and
+  Lua scripts. An empty field keeps the old default and shows it as a
+  placeholder: `~/.config/desmume`, the XDG Pictures folder, or `~/Movies`.
+- **The selection survives ROM loads** — battery, slot and `.dct` paths go
+  through the core's `path` model, and `path.init()` no longer resets them to
+  the module directory on every ROM load; the file choosers for ROMs, states,
+  SRAM, recordings and Lua start in the configured folder.
+- **Screenshots** — the image format is whatever GdkPixbuf can write in the
+  build (PNG by default); the file name takes the Windows `%f`/`%r`/`%t` codes
+  plus strftime, and an empty pattern keeps `desmume-screenshot-N`.
+- **Remember the last ROM folder** — with the checkbox on, opening a ROM writes
+  its folder back into the Roms row, matching the Windows frontend.
 
 ### Input, audio and build simplification
 - **SDL-based microphone** replaces the optional ALSA/OpenAL backends, removing

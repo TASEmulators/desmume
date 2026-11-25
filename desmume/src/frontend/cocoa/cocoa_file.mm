@@ -29,6 +29,22 @@
 
 @implementation CocoaDSFile
 
+// Folders picked in Tools > Path Settings.  Only the rows the user changed are
+// stored, so a new build can add a default folder without an empty value
+// shadowing it.
+static NSString *const kCocoaDSPathSettingsKey = @"PathSettings";
+
+static void CopyPathSetting(NSDictionary *settings, NSString *fileKind, char *destination)
+{
+	NSString *value = (NSString *)[settings objectForKey:fileKind];
+	if (![value isKindOfClass:[NSString class]] || [value length] == 0)
+	{
+		return;
+	}
+
+	strlcpy(destination, [value fileSystemRepresentation], MAX_PATH);
+}
+
 // Global dictionary that can be used for storing URLs.
 //
 // Usually, it's best to add directory paths to FileTypeInfo.plist, and then
@@ -322,6 +338,88 @@ static NSMutableDictionary *_gURLDictionary = nil;
 }
 
 /********************************************************************************************
+	userPathSettings
+
+	Returns the folders selected in Tools > Path Settings.
+
+	Takes:
+		Nothing.
+
+	Returns:
+		An NSDictionary that maps a file kind to an absolute folder path.
+
+	Details:
+		An absent key means "use the folder from FileTypeInfo.plist", so only
+		the rows the user actually changed are stored.
+ ********************************************************************************************/
++ (NSDictionary *) userPathSettings
+{
+	NSDictionary *settings = [[NSUserDefaults standardUserDefaults] dictionaryForKey:kCocoaDSPathSettingsKey];
+	return (settings != nil) ? settings : [NSDictionary dictionary];
+}
+
+/********************************************************************************************
+	setUserPathSettings:
+
+	Stores the folders selected in Tools > Path Settings and applies them.
+
+	Takes:
+		settings - An NSDictionary that maps a file kind to a folder path.  A
+			nil or empty dictionary restores every FileTypeInfo.plist default.
+
+	Returns:
+		Nothing.
+
+	Details:
+		setupAllFilePaths restores the plist folders first, so clearing a row
+		really goes back to the built-in folder instead of keeping the old
+		override.  applyUserPathSettings then copies the stored rows on top.
+ ********************************************************************************************/
++ (void) setUserPathSettings:(NSDictionary *)settings
+{
+	if (settings == nil)
+	{
+		settings = [NSDictionary dictionary];
+	}
+
+	[[NSUserDefaults standardUserDefaults] setObject:settings forKey:kCocoaDSPathSettingsKey];
+	[[NSUserDefaults standardUserDefaults] synchronize];
+
+	[CocoaDSFile setupAllFilePaths];
+}
+
+/********************************************************************************************
+	applyUserPathSettings
+
+	Copies the folders stored by Tools > Path Settings into the emulation
+	layer's path model.
+
+	Takes:
+		Nothing.
+
+	Returns:
+		Nothing.
+
+	Details:
+		Called at the end of setupAllFilePathsForVersion:port: after the
+		FileTypeInfo.plist folders have been installed.
+ ********************************************************************************************/
++ (void) applyUserPathSettings
+{
+	NSDictionary *settings = [CocoaDSFile userPathSettings];
+
+	CopyPathSetting(settings, @"ROM", path.pathToRoms);
+	CopyPathSetting(settings, @"ROM Save", path.pathToBattery);
+	CopyPathSetting(settings, @"Save State", path.pathToStates);
+	CopyPathSetting(settings, @"Screenshot", path.pathToScreenshots);
+	CopyPathSetting(settings, @"Video", path.pathToAviFiles);
+	CopyPathSetting(settings, @"Cheat", path.pathToCheats);
+	CopyPathSetting(settings, @"Sound Sample", path.pathToSounds);
+	CopyPathSetting(settings, @"Firmware Configuration", path.pathToFirmware);
+	CopyPathSetting(settings, @"Lua Script", path.pathToLua);
+}
+
+/********************************************************************************************
 	setupAllFilePaths
 
 	Sets up all application file paths using the current version of the default port.
@@ -413,6 +511,9 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	{
 		strlcpy(path.pathToLua, [CocoaDSUtil cPathFromFileURL:luaURL], MAX_PATH);
 	}
+
+	// Tools > Path Settings overrides the plist folders.
+	[CocoaDSFile applyUserPathSettings];
 }
 
 /********************************************************************************************
@@ -850,6 +951,28 @@ static NSMutableDictionary *_gURLDictionary = nil;
 }
 
 + (NSURL *) directoryURLByKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString
+{
+	NSURL *fileURL = nil;
+
+	if (fileKind == nil)
+	{
+		return fileURL;
+	}
+
+	// Tools > Path Settings wins over the plist default, so every open/save
+	// panel starts in the folder the user chose.
+	NSString *userPath = (NSString *)[[CocoaDSFile userPathSettings] objectForKey:fileKind];
+	if ([userPath isKindOfClass:[NSString class]] && [userPath length] > 0)
+	{
+		return [NSURL fileURLWithPath:[userPath stringByExpandingTildeInPath] isDirectory:YES];
+	}
+
+	return [CocoaDSFile defaultDirectoryURLByKind:fileKind version:versionString port:portString];
+}
+
+/* The FileTypeInfo.plist folder, ignoring the Tools > Path Settings override.
+ * The Path Settings window shows these when the user asks for the defaults. */
++ (NSURL *) defaultDirectoryURLByKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString
 {
 	NSURL *fileURL = nil;
 	NSString *lookupVersionStr = versionString;

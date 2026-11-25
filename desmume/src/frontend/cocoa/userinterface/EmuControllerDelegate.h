@@ -34,6 +34,7 @@
 @class RAMWatchWindowController;
 @class RAMSearchWindowController;
 @class DisassemblerWindowController;
+@class PathSettingsWindowController;
 @class MacScreenshotCaptureToolDelegate;
 @class MacAVCaptureToolDelegate;
 @class PreferencesWindowDelegate;
@@ -69,6 +70,7 @@ class AudioSampleBlockGenerator;
 	RAMWatchWindowController *_ramWatchWindowController;
 	RAMSearchWindowController *_ramSearchWindowController;
 	DisassemblerWindowController *_disassemblerWindowController;
+	PathSettingsWindowController *_pathSettingsWindowController;
 	
 	NSWindow *displayRotationPanel;
 	NSWindow *displaySeparationPanel;

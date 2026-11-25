@@ -15,6 +15,9 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef DESMUME_PATH_H_
+#define DESMUME_PATH_H_
+
 #include <string>
 #include <vector>
 #include <string.h>
@@ -116,6 +119,7 @@ public:
 		CHEATS,
 		SOUNDS,
 		FIRMWARE,
+		LUA,
 		MODULE,
 		SLOT1D,
 		MAXKNOWNPATH = MODULE
@@ -160,6 +164,11 @@ public:
 	std::string getpath(KnownPath path);
 	void getpath(KnownPath path, char *buffer);
 
+	// The GTK port keeps the folder preferences in its own settings file.
+	// ReadPathSettings() runs on every ROM load and would otherwise reset every
+	// category to the module directory, so on the ports that store their paths
+	// outside the INI these setters remember the value and it is re-applied at
+	// the end of ReadPathSettings().  An empty value restores the default.
 	void setpath(KnownPath path, std::string value);
 	void setpath(KnownPath path, char *buffer);
 
@@ -203,4 +212,6 @@ public:
 };
 
 extern PathInfo path;
+
+#endif /* DESMUME_PATH_H_ */
 

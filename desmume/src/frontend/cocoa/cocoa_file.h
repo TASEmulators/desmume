@@ -46,6 +46,15 @@
 + (void) setupAllFilePathsWithURLDictionary:(NSString *)URLDictionaryKey;
 + (void) setupAllFilePathsForVersion:(NSString *)versionString port:(NSString *)portString;
 + (BOOL) setupAllAppDirectories;
+
+/* Tools > Path Settings.  The dictionary maps a file kind ("ROM",
+ * "ROM Save", ...) to an absolute folder; a missing kind keeps the folder
+ * from FileTypeInfo.plist. */
++ (NSDictionary *) userPathSettings;
++ (void) setUserPathSettings:(NSDictionary *)settings;
+/* Re-applies the stored folders to path.pathTo*; setupAllFilePaths calls it
+ * after restoring the plist defaults. */
++ (void) applyUserPathSettings;
 + (NSURL *) saveStateURL;
 + (BOOL) saveScreenshot:(NSURL *)fileURL bitmapData:(NSBitmapImageRep *)bitmapImageRep fileType:(NSBitmapImageFileType)fileType;
 + (BOOL) isFileKindWithRom:(NSString *)fileKind;
@@ -63,6 +72,7 @@
 + (NSString *) fileExtensionByKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString;
 + (NSURL *) directoryURLByKind:(NSString *)fileKind;
 + (NSURL *) directoryURLByKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString;
++ (NSURL *) defaultDirectoryURLByKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString;
 + (NSURL *) userAppSupportBaseURL;
 + (NSURL *) userAppSupportURL:(NSString *)directoryName version:(NSString *)versionString;
 + (BOOL) createUserAppSupportDirectory:(NSString *)directoryName;

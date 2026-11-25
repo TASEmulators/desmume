@@ -57,7 +57,7 @@
 | Wi-Fi 设置 | ☑ | ☑ | ◐ | GTK 已有启用/兼容模式和 PCAP 网卡选择，缺 MAC/AP 子网等高级项 |
 | 3D 设置（含 Edge Marking/Fog/Line Hack 等） | ☑ | ☑ | ☑ | |
 | 音频设置 | ☑ 对话框 | ☑ 首选项 | ◐ 菜单项拼装 | |
-| 路径设置（每类文件独立目录） | ☑ | ◐ | ☐ | |
+| 路径设置（每类文件独立目录） | ☑ | ☑ | ☑ | 三端共用 `shared/path_settings_core.h` 的分类表；GTK 10 项、Cocoa 9 项 |
 | Always On Top / Lockdown | ☑ | ☐ | ☐ | |
 | 屏幕比例 / 垂直居中 / 间距颜色 / 拖动改间距 | ☑ | ◐ 只有间距百分比 | ◐ 只有 px 间距 | |
 | 全屏选项（强制窗口化、显示菜单、自动隐藏光标） | ☑ | ◐ | ◐ | |
@@ -122,6 +122,10 @@ Windows 侧：`dsmeditor.cpp`(73 KB) + `dsmcsv.cpp`(11 KB)。macOS 只做了播�
 
 - ☐ Always On Top（`NSWindow` level）
 - ☐ Lockdown（锁住输入，防误触）
+- ☑ Path Settings（Tools 菜单）：ROM、存档、即时存档、截图、录像、金手指、声音样本、
+  固件、Lua 共 9 个目录；只把改过的行写进 `NSUserDefaults`，`Use Default Folders`
+  从 `FileTypeInfo.plist` 重新填，清空行即回到内置目录。窗口用代码搭，
+  不依赖 `MainMenu.xib`。
 - ☐ 屏幕比例 1.0:1.0 … 1.5:0.5、垂直居中、间距颜色、拖动边框改间距
 - ☐ 全屏选项：强制窗口化全屏 / 全屏显示菜单 / 自动隐藏光标
 - ☐ Pad To Integer（整数倍内边距）与"保持宽高比"的完整语义
@@ -168,7 +172,8 @@ GTK3 这半年补得很快（RAM Watch/Search、金手指重写、FFmpeg 录制�
 
 - ☑ ROM Info 对话框（标题、代号、容量、CRC、存档类型、CPU/3D 引擎）
 - ☐ 卸载 ROM（Close ROM），现在只能重新打开一个 ROM
-- ☐ 路径设置：截图 / 存档 / 录像 / 金手指 / 电影各自独立目录（现在写死在 XDG 目录）
+- ☑ 路径设置：截图 / 存档 / 录像 / 金手指 / 电影各自独立目录（Config > Path settings，
+  10 项；空值保留旧默认并作为占位提示显示）
 - ☐ ADVANsCEne 数据库导入 + "从数据库自动判定存档类型"
 
 ### P1 — 配置对话框
@@ -193,8 +198,8 @@ GTK3 这半年补得很快（RAM Watch/Search、金手指重写、FFmpeg 录制�
 
 ### P2 — 截图与显示
 
-- ☐ 截图：选格式（PNG/BMP/JPEG…）、选目录、另存为对话框；现在固定
-      `~/Pictures/desmume-screenshot-N.png`，重名靠自增序号
+- ◐ 截图：格式（GdkPixbuf 可写格式，默认 PNG）与目录已可在 Path settings 里设，
+      文件名支持 `%f/%r/%t` + strftime；仍缺独立的"另存为"对话框
 - ☐ Always On Top、Lockdown
 - ☐ 屏幕比例 / 垂直居中 / 间距颜色（现有 `Screen Gap` 只有像素间距）
 - ☐ 整数倍缩放 / 保持宽高比
@@ -215,7 +220,7 @@ GTK3 这半年补得很快（RAM Watch/Search、金手指重写、FFmpeg 录制�
 |---|---|---|---|
 | 调试视图族 | `disView` / `palView` / `tileView` / `mapView` / `oamView` / `matrixView` / `lightView` / `soundView` / `fsnitroView` | `shared/debug_views/`：地址解码、图块解压、OAM 解析、音轨快照、NitroFS 目录 | 每个视图一个控件 + 一个菜单项 |
 | DSM 编辑 | `dsmeditor.cpp` + `dsmcsv.cpp` | `shared/dsm_editor_core`：帧模型、选区、CSV 编解码、回写 | 网格控件（NSTableView / GtkTreeView） |
-| 路径模型 | `pathsettings.cpp` | 一个"类别 → 目录"的配置结构 + 解析函数 | 设置页 |
+| 路径模型 | `pathsettings.cpp` | 已落地为 `shared/path_settings_core.h`：13 类的 INI 键/标签/说明 + 目录归一化 | GTK 与 Cocoa 的设置页已完成 |
 | 热键模型 | `hotkey.cpp`（命令枚举 + 绑定表） | 命令枚举与默认绑定表 | 键捕获控件 |
 | ROM 载入策略 | `ID_LOADTOORAM` / `ID_STREAMFROMDISK` | 已由 core 提供，缺的是每前端的持久化开关 | 一行菜单 |
 | 屏幕布局模型 | 比例 / 居中 / 间距 / 整数缩放 | 与 `ScreenLayout` 相关的计算 | 菜单 + 绘制路径 |
@@ -246,7 +251,8 @@ RAM 工具的三端一致性就是这么来的 —— 新工具沿用同一模�
    同时验证"core + 两种宿主"的模式。
 3. **调试视图族**：按 图块 → 调色板 → OAM → 地图 → 其余 的顺序推；每个视图独立可交付。
 4. **DSM 编辑器**：core 先行，macOS 与 GTK3 各自接网格控件。
-5. **配置类对话框**：补齐 GTK3 的 Slot 2 专用控制、麦克风设备/电平、Wi-Fi 高级项，再做热键与路径。
+5. **配置类对话框**：补齐 GTK3 的 Slot 2 专用控制、麦克风设备/电平、Wi-Fi 高级项，
+   再做热键（路径设置已完成）。
 6. **细节**：截图设置、卸载 ROM、Always On Top、屏幕比例。
 
 每完成一项，同步更新 `documentation/FEATURES.md` 对应段落，并在此文件把 `☐` 改成 `☑`。

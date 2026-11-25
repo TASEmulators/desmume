@@ -24,6 +24,14 @@
 #include "utils/xstring.h"
 
 
+#if !defined(HOST_WINDOWS)
+// Folders chosen in a front end that keeps its own settings file (the GTK
+// Path Settings dialog).  ReadPathSettings() re-applies them after its usual
+// fallback to the module directory, which runs on every ROM load.
+// An empty entry means "no override, keep the default".
+static std::string sPathOverrides[PathInfo::SLOT1D + 1];
+#endif
+
 //-----------------------------------
 //This is taken from mono Path.cs
 static const char InvalidPathChars[] = {
@@ -296,6 +304,32 @@ void PathInfo::ReadPathSettings()
 		r4Format = R4_USRCHEAT_DAT;
 		WritePrivateProfileInt(SECTION, R4FORMATKEY, r4Format, IniName);
 	}
+#else
+	// The ports that keep their paths outside the INI hand their values over
+	// through setpath().  They are applied last so that the module-directory
+	// fallback above cannot overwrite them.
+#	define APPLY_PATH_OVERRIDE(id, field) \
+	if (!sPathOverrides[(int)(id)].empty()) \
+	{ \
+		strncpy(field, sPathOverrides[(int)(id)].c_str(), MAX_PATH - 1); \
+		field[MAX_PATH - 1] = '\0'; \
+	}
+
+	APPLY_PATH_OVERRIDE(ROMS, pathToRoms);
+	APPLY_PATH_OVERRIDE(BATTERY, pathToBattery);
+	APPLY_PATH_OVERRIDE(SRAM_IMPORT_EXPORT, pathToSramImportExport);
+	APPLY_PATH_OVERRIDE(STATES, pathToStates);
+	APPLY_PATH_OVERRIDE(STATE_SLOTS, pathToStateSlots);
+	APPLY_PATH_OVERRIDE(SCREENSHOTS, pathToScreenshots);
+	APPLY_PATH_OVERRIDE(AVI_FILES, pathToAviFiles);
+	APPLY_PATH_OVERRIDE(MOVIES, pathToMovies);
+	APPLY_PATH_OVERRIDE(CHEATS, pathToCheats);
+	APPLY_PATH_OVERRIDE(SOUNDS, pathToSounds);
+	APPLY_PATH_OVERRIDE(FIRMWARE, pathToFirmware);
+	APPLY_PATH_OVERRIDE(LUA, pathToLua);
+	APPLY_PATH_OVERRIDE(SLOT1D, pathToSlot1D);
+
+#	undef APPLY_PATH_OVERRIDE
 #endif
 	/*
 	needsSaving		= GetPrivateProfileInt(SECTION, NEEDSSAVINGKEY, TRUE, IniName);
@@ -344,6 +378,9 @@ void PathInfo::SwitchPath(Action action, KnownPath path, char *buffer)
 	case FIRMWARE:
 		pathToCopy = pathToFirmware;
 		break;
+	case LUA:
+		pathToCopy = pathToLua;
+		break;
 	case MODULE:
 		pathToCopy = pathToModule;
 		break;
@@ -377,11 +414,37 @@ void PathInfo::SwitchPath(Action action, KnownPath path, char *buffer)
 	}
 	else if (action == SET)
 	{
-		int len = strlen(buffer) - 1;
-		if (std::string(ALL_DIRECTORY_DELIMITER_STRING).find(buffer[len]) != std::string::npos)
-			buffer[len] = '\0';
+		// Trim into a copy: the caller's buffer may belong to a std::string
+		// (setpath() hands over c_str()) and must not be written through.
+		std::string value(buffer);
+		while (!value.empty() &&
+		       (value[value.size() - 1] == '/' || value[value.size() - 1] == '\\'))
+			value.erase(value.size() - 1);
 
-		strncpy(pathToCopy, buffer, MAX_PATH);
+#if !defined(HOST_WINDOWS)
+		// Remember the choice so ReadPathSettings() can restore it after
+		// path.init() resets the category on the next ROM load.
+		if ((int)path >= 0 && (int)path <= (int)SLOT1D)
+			sPathOverrides[(int)path] = value;
+#endif
+
+#if defined(HOST_WINDOWS)
+		strncpy(pathToCopy, value.c_str(), MAX_PATH - 1);
+		pathToCopy[MAX_PATH - 1] = '\0';
+#else
+		if (value.empty())
+		{
+			// "No explicit folder" means the module-directory default that
+			// ReadPathSettings() installs on these ports.
+			strncpy(pathToCopy, pathToModule, MAX_PATH - 1);
+			pathToCopy[MAX_PATH - 1] = '\0';
+		}
+		else
+		{
+			strncpy(pathToCopy, value.c_str(), MAX_PATH - 1);
+			pathToCopy[MAX_PATH - 1] = '\0';
+		}
+#endif
 	}
 }
 

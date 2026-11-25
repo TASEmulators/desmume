@@ -45,6 +45,8 @@
 #import "cocoa_rom.h"
 #import "cocoa_slot2.h"
 
+#include "../../shared/path_settings_core.h"
+
 #ifdef HAVE_LUA
 #import "../MacLuaScriptConsole.h"
 #import "../MacLuaFrontend.h"
@@ -53,6 +55,277 @@
 #if HAVE_OSAVAILABLE && defined(MAC_OS_X_VERSION_10_14) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_14)
 	#import <AVFoundation/AVFoundation.h>
 #endif
+
+#pragma mark - Path Settings window
+
+/* One row per folder the Cocoa frontend resolves through
+ * +[CocoaDSFile directoryURLByKind:].  The kinds are the keys FileTypeInfo.plist
+ * uses; the labels come from the table shared with the GTK port. */
+static NSString *const kPathSettingKinds[] =
+{
+	@"ROM", @"ROM Save", @"Save State", @"Screenshot", @"Video",
+	@"Cheat", @"Sound Sample", @"Firmware Configuration", @"Lua Script"
+};
+
+static const PathInfo::KnownPath kPathSettingCategories[] =
+{
+	PathInfo::ROMS, PathInfo::BATTERY, PathInfo::STATES, PathInfo::SCREENSHOTS,
+	PathInfo::AVI_FILES, PathInfo::CHEATS, PathInfo::SOUNDS, PathInfo::FIRMWARE,
+	PathInfo::LUA
+};
+
+static const NSUInteger kPathSettingCount =
+	sizeof(kPathSettingKinds) / sizeof(kPathSettingKinds[0]);
+
+@interface PathSettingsWindowController : NSWindowController <NSWindowDelegate>
+{
+	NSMutableArray *_pathFields;
+}
+
+- (void)showPathSettings;
+- (void)buildContent;
+- (void)reloadFields;
+
+- (NSTextField *)labelWithText:(NSString *)text frame:(NSRect)frame;
+- (NSTextField *)fieldWithFrame:(NSRect)frame;
+- (NSButton *)buttonWithTitle:(NSString *)title frame:(NSRect)frame action:(SEL)action;
+
+- (IBAction)chooseFolder:(id)sender;
+- (IBAction)applySettings:(id)sender;
+- (IBAction)cancelSettings:(id)sender;
+- (IBAction)useDefaultFolders:(id)sender;
+
+@end
+
+@implementation PathSettingsWindowController
+
+- (id)init
+{
+	NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0.0, 0.0, 620.0, 380.0)
+	                                               styleMask:(NSTitledWindowMask | NSClosableWindowMask)
+	                                                 backing:NSBackingStoreBuffered
+	                                                   defer:NO];
+	[window setTitle:@"Path Settings"];
+	[window setReleasedWhenClosed:NO];
+	[window center];
+
+	self = [super initWithWindow:window];
+	if (self == nil)
+	{
+		[window release];
+		return nil;
+	}
+
+	_pathFields = [[NSMutableArray alloc] initWithCapacity:kPathSettingCount];
+	[self buildContent];
+
+	[window release];
+
+	return self;
+}
+
+- (void)dealloc
+{
+	[_pathFields release];
+	[super dealloc];
+}
+
+- (NSTextField *)labelWithText:(NSString *)text frame:(NSRect)frame
+{
+	NSTextField *label = [[NSTextField alloc] initWithFrame:frame];
+	[label setStringValue:text];
+	[label setBezeled:NO];
+	[label setDrawsBackground:NO];
+	[label setEditable:NO];
+	[label setSelectable:NO];
+	[label setAlignment:NSTextAlignmentRight];
+	[label setFont:[NSFont systemFontOfSize:12.0]];
+	return [label autorelease];
+}
+
+- (NSTextField *)fieldWithFrame:(NSRect)frame
+{
+	NSTextField *field = [[NSTextField alloc] initWithFrame:frame];
+	[field setFont:[NSFont systemFontOfSize:12.0]];
+	[field setEditable:YES];
+	[field setSelectable:YES];
+	[field setBezeled:YES];
+	[field setDrawsBackground:YES];
+	return [field autorelease];
+}
+
+- (NSButton *)buttonWithTitle:(NSString *)title frame:(NSRect)frame action:(SEL)action
+{
+	NSButton *button = [[NSButton alloc] initWithFrame:frame];
+	[button setTitle:title];
+	[button setBezelStyle:NSBezelStyleRounded];
+	[button setFont:[NSFont systemFontOfSize:12.0]];
+	[button setTarget:self];
+	[button setAction:action];
+	return [button autorelease];
+}
+
+- (void)buildContent
+{
+	NSWindow *window = [self window];
+	NSView *contentView = [window contentView];
+
+	// Fixed, non-resizable layout like the other programmatic windows in this
+	// frontend: a label, a path field and a Choose button per row, then the
+	// action buttons at the bottom.  Nothing newer than the rest of the file.
+	const CGFloat rowHeight = 28.0;
+	const CGFloat rowGap = 4.0;
+	const CGFloat topMargin = 16.0;
+
+	for (NSUInteger i = 0; i < kPathSettingCount; i++)
+	{
+		const CGFloat y = 380.0 - topMargin - rowHeight - (CGFloat)i * (rowHeight + rowGap);
+
+		const desmume::pathsettings::CategoryInfo *info =
+			desmume::pathsettings::FindCategory(kPathSettingCategories[i]);
+
+		NSTextField *label = [self labelWithText:
+			[NSString stringWithUTF8String:((info != NULL) ? info->label : "")]
+			frame:NSMakeRect(20.0, y + 5.0, 150.0, 18.0)];
+		[contentView addSubview:label];
+
+		NSTextField *field = [self fieldWithFrame:NSMakeRect(178.0, y, 320.0, 24.0)];
+		[contentView addSubview:field];
+		[_pathFields addObject:field];
+
+		NSButton *button = [self buttonWithTitle:@"Choose..."
+			frame:NSMakeRect(506.0, y - 2.0, 96.0, 28.0)
+			action:@selector(chooseFolder:)];
+		[button setTag:(NSInteger)i];
+		[contentView addSubview:button];
+	}
+
+	NSButton *defaultsButton = [self buttonWithTitle:@"Use Default Folders"
+		frame:NSMakeRect(20.0, 20.0, 180.0, 32.0)
+		action:@selector(useDefaultFolders:)];
+	[contentView addSubview:defaultsButton];
+
+	NSButton *cancelButton = [self buttonWithTitle:@"Cancel"
+		frame:NSMakeRect(414.0, 20.0, 88.0, 32.0)
+		action:@selector(cancelSettings:)];
+	[cancelButton setKeyEquivalent:@"\033"];
+	[cancelButton setKeyEquivalentModifierMask:0];
+	[contentView addSubview:cancelButton];
+
+	NSButton *okButton = [self buttonWithTitle:@"OK"
+		frame:NSMakeRect(510.0, 20.0, 92.0, 32.0)
+		action:@selector(applySettings:)];
+	[okButton setKeyEquivalent:@"\r"];
+	[okButton setKeyEquivalentModifierMask:0];
+	[contentView addSubview:okButton];
+
+	[self reloadFields];
+}
+
+- (void)reloadFields
+{
+	for (NSUInteger i = 0; i < kPathSettingCount; i++)
+	{
+		NSURL *folderURL = [CocoaDSFile directoryURLByKind:kPathSettingKinds[i]];
+		NSString *folderPath = (folderURL != nil) ? [folderURL path] : @"";
+		[(NSTextField *)[_pathFields objectAtIndex:i] setStringValue:folderPath];
+	}
+}
+
+- (void)showPathSettings
+{
+	[self reloadFields];
+	[[self window] center];
+	[self showWindow:nil];
+	[[self window] makeKeyAndOrderFront:nil];
+}
+
+- (IBAction)chooseFolder:(id)sender
+{
+	const NSInteger index = [sender tag];
+	if ((index < 0) || ((NSUInteger)index >= kPathSettingCount))
+	{
+		return;
+	}
+
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
+	[panel setTitle:@"Select Folder"];
+	[panel setCanChooseFiles:NO];
+	[panel setCanChooseDirectories:YES];
+	[panel setAllowsMultipleSelection:NO];
+	[panel setCanCreateDirectories:YES];
+
+	NSString *current = [(NSTextField *)[_pathFields objectAtIndex:index] stringValue];
+	if ([current length] > 0)
+	{
+		[panel setDirectoryURL:[NSURL fileURLWithPath:[current stringByExpandingTildeInPath] isDirectory:YES]];
+	}
+
+	if ([panel runModal] == NSModalResponseOK)
+	{
+		NSURL *folderURL = [[panel URLs] firstObject];
+		if (folderURL != nil)
+		{
+			[(NSTextField *)[_pathFields objectAtIndex:index] setStringValue:[folderURL path]];
+		}
+	}
+}
+
+- (IBAction)applySettings:(id)sender
+{
+	NSMutableDictionary *settings = [NSMutableDictionary dictionaryWithCapacity:kPathSettingCount];
+	NSFileManager *fileManager = [NSFileManager defaultManager];
+
+	for (NSUInteger i = 0; i < kPathSettingCount; i++)
+	{
+		NSString *value = [(NSTextField *)[_pathFields objectAtIndex:i] stringValue];
+		value = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+
+		if ([value length] == 0)
+		{
+			continue;
+		}
+
+		value = [[value stringByExpandingTildeInPath] stringByStandardizingPath];
+
+		BOOL isDirectory = NO;
+		if (![fileManager fileExistsAtPath:value isDirectory:&isDirectory] || !isDirectory)
+		{
+			NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+			[alert setMessageText:@"This folder does not exist."];
+			[alert setInformativeText:value];
+			[alert addButtonWithTitle:@"OK"];
+			[alert runModal];
+			return;
+		}
+
+		[settings setObject:value forKey:kPathSettingKinds[i]];
+	}
+
+	[CocoaDSFile setUserPathSettings:settings];
+	[[self window] orderOut:nil];
+}
+
+- (IBAction)useDefaultFolders:(id)sender
+{
+	// Only refill the fields; nothing is written until OK.  Querying the plist
+	// default directly avoids clearing the stored rows just to show them.
+	for (NSUInteger i = 0; i < kPathSettingCount; i++)
+	{
+		NSURL *folderURL = [CocoaDSFile defaultDirectoryURLByKind:kPathSettingKinds[i]
+		                                                  version:nil
+		                                                     port:nil];
+		NSString *folderPath = (folderURL != nil) ? [folderURL path] : @"";
+		[(NSTextField *)[_pathFields objectAtIndex:i] setStringValue:folderPath];
+	}
+}
+
+- (IBAction)cancelSettings:(id)sender
+{
+	[[self window] orderOut:nil];
+}
+
+@end
 
 @implementation EmuControllerDelegate
 
@@ -278,7 +551,7 @@
 	[_memoryViewerWindowController release];
 	[_ramWatchWindowController release];
 	[_ramSearchWindowController release];
-	[_disassemblerWindowController release];
+	[_pathSettingsWindowController release];
 
 	apple_unfairlock_destroy(_unfairlockFirmware);
 
@@ -1026,6 +1299,28 @@
 	                    startsNewGroup:YES];
 }
 
+// Path Settings lives in the Tools menu because that menu is the port's
+// runtime-built window list; installing it here keeps MainMenu.xib untouched,
+// the same way the memory and RAM tools are added.
+- (void) installPathSettingsMenuItem
+{
+	[self installToolMenuItemWithTitle:@"Path Settings..."
+	                            action:@selector(openPathSettings:)
+	                     keyEquivalent:@""
+	                      modifierMask:0
+	                    startsNewGroup:YES];
+}
+
+- (IBAction) openPathSettings:(id)sender
+{
+	if (_pathSettingsWindowController == nil)
+	{
+		_pathSettingsWindowController = [[PathSettingsWindowController alloc] init];
+	}
+
+	[_pathSettingsWindowController showPathSettings];
+}
+
 - (IBAction) openDisassembler:(id)sender
 {
 	if (_disassemblerWindowController == nil)
@@ -1096,6 +1391,7 @@
 	[self installRAMWatchMenuItem];
 	[self installRAMSearchMenuItem];
 	[self installDisassemblerMenuItem];
+	[self installPathSettingsMenuItem];
 
 	// Breakpoint hits are reported from the CPU loop through this hook; the
 	// notification is delivered on the main thread.

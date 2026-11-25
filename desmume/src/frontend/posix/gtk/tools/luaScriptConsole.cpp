@@ -32,6 +32,7 @@
 #include <sys/select.h>
 
 #include "lua-engine.h"
+#include "../pathsettings.h"
 
 // Match the Windows console character limit
 #define MAX_CONSOLE_CHARS 250000
@@ -391,12 +392,17 @@ static void on_browse_clicked(GtkButton * /*btn*/, gpointer user_data)
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(fc), filter_lua);
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(fc), filter_all);
 
-	// Open in the directory of the current script, if one is set
+	// Open in the directory of the current script, if one is set; otherwise
+	// fall back to the Lua folder from Config > Path Settings.
 	if (!con->filename.empty()) {
 		std::string dir = con->filename;
 		size_t sl = dir.rfind('/');
 		if (sl != std::string::npos) dir.resize(sl);
 		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(fc), dir.c_str());
+	} else {
+		const std::string dir = path_settings_directory(PathInfo::LUA);
+		if (!dir.empty())
+			gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(fc), dir.c_str());
 	}
 
 	if (gtk_native_dialog_run(GTK_NATIVE_DIALOG(fc)) == GTK_RESPONSE_ACCEPT) {

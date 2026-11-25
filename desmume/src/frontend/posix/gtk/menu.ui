@@ -654,6 +654,10 @@
           <attribute name='label' translatable='yes'>Slot _2 settings…</attribute>
           <attribute name='action'>app.slot2-settings</attribute>
         </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Path settings…</attribute>
+          <attribute name='action'>app.path-settings</attribute>
+        </item>
 <!-- #ifdef FAKE_MIC
         <item>
           <attribute name='label' translatable='yes'>Fake mic _noise</attribute>

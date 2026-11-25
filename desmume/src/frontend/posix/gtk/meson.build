@@ -30,6 +30,7 @@ desmume_src = [
   'config.cpp',
   'desmume.cpp',
   'dToolsList.cpp',
+  'pathsettings.cpp',
   'tools/ioregsView.cpp',
   'tools/ramWatch.cpp',
   'tools/ramSearch.cpp',

@@ -93,6 +93,7 @@
 #include "slot2.h"
 #include "slot1.h"
 #include "path.h"
+#include "pathsettings.h"
 
 #include "utils/xstring.h"
 
@@ -360,6 +361,7 @@ static void SelectFirmwareFile(GSimpleAction *action, GVariant *parameter, gpoin
 #endif
 static void EmulationSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void PathSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 
 #ifdef HAVE_LUA
 static void AddLuaScript(GSimpleAction *action, GVariant *parameter, gpointer user_data);
@@ -434,6 +436,7 @@ static const GActionEntry app_entries[] = {
     { "wifi-settings",     WifiSettingsDialog },
     { "slot1-settings",    Slot1SettingsDialog },
     { "slot2-settings",    Slot2SettingsDialog },
+    { "path-settings",     PathSettingsDialog },
     { "rom-info",          RomInfoDialog },
 #ifdef FAKE_MIC
     { "micnoise",          ToggleMicNoise,      NULL, "false" },
@@ -1153,6 +1156,17 @@ static void FrameAdvance(GSimpleAction *action, GVariant *parameter, gpointer us
     sResyncTiming = true;
 }
 
+// Seeds a file chooser with a folder from the Path Settings dialog, when one
+// is configured.  Leaving the entry empty keeps GTK's own last-folder
+// behaviour, which is what these dialogs did before the settings existed.
+static void SetChooserFolder(GtkFileChooserNative *chooser, PathInfo::KnownPath category)
+{
+    const std::string dir = path_settings_directory(category);
+
+    if (!dir.empty() && g_file_test(dir.c_str(), G_FILE_TEST_IS_DIR))
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(chooser), dir.c_str());
+}
+
 static void LoadStateDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
     GtkFileFilter *pFilter_ds, *pFilter_any;
@@ -1174,6 +1188,7 @@ static void LoadStateDialog(GSimpleAction *action, GVariant *parameter, gpointer
             GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_OPEN,
             "_Open", "_Cancel");
+    SetChooserFolder(pFileSelection, path.STATES);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ds);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
@@ -1258,6 +1273,7 @@ static void ImportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
             GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_OPEN,
             "_Open", "_Cancel");
+    SetChooserFolder(pFileSelection, path.SRAM_IMPORT_EXPORT);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_raw);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ar);
@@ -1306,6 +1322,7 @@ static void ExportBackupMemoryDialog(GSimpleAction *action, GVariant *parameter,
             GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_SAVE,
             "_Save", "_Cancel");
+    SetChooserFolder(pFileSelection, path.SRAM_IMPORT_EXPORT);
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_raw);
@@ -1359,6 +1376,7 @@ static void SaveStateDialog(GSimpleAction *action, GVariant *parameter, gpointer
             GTK_WINDOW(pWindow),
             GTK_FILE_CHOOSER_ACTION_SAVE,
             "_Save", "_Cancel");
+    SetChooserFolder(pFileSelection, path.STATES);
     gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(pFileSelection), "save.ds");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
 
@@ -1414,6 +1432,7 @@ static void RecordAV_x264(GSimpleAction *action, GVariant *parameter, gpointer u
             GTK_FILE_CHOOSER_ACTION_SAVE,
             "_Save", "_Cancel");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
+    SetChooserFolder(pFileSelection, path.AVI_FILES);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_mkv);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_mp4);
@@ -1464,6 +1483,7 @@ static void RecordAV_flac(GSimpleAction *action, GVariant *parameter, gpointer u
             GTK_FILE_CHOOSER_ACTION_SAVE,
             "_Save", "_Cancel");
     gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
+    SetChooserFolder(pFileSelection, path.AVI_FILES);
 
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_flac);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
@@ -1985,6 +2005,7 @@ static void RecordAV_Video(GSimpleAction *action, GVariant *parameter, gpointer 
             GTK_FILE_CHOOSER_ACTION_SAVE,
             "_Save", "_Cancel");
     gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(pFileSelection), TRUE);
+    SetChooserFolder(pFileSelection, path.AVI_FILES);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_video);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
@@ -2146,7 +2167,9 @@ static void OpenNdsDialog(GSimpleAction *action, GVariant *parameter, gpointer u
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_dsgba);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
-    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(pFileSelection), g_get_home_dir());
+    const std::string romDirectory = path_settings_directory(path.ROMS);
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(pFileSelection),
+            romDirectory.empty() ? g_get_home_dir() : romDirectory.c_str());
 
     /* Showing the window */
     int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(pFileSelection));
@@ -2163,6 +2186,17 @@ static void OpenNdsDialog(GSimpleAction *action, GVariant *parameter, gpointer u
             gtk_dialog_run(GTK_DIALOG(pDialog));
             gtk_widget_destroy(pDialog);
         } else {
+            // Mirrors the Windows frontend: when "use last visited ROM path"
+            // is on, the folder of the ROM just opened becomes the Roms
+            // category, so the next Open dialog starts there.
+            if (config.path_save_last_visit) {
+                gchar *dir = g_path_get_dirname(sPath);
+                config.path_roms.set(dir);
+                path.setpath(path.ROMS, dir);
+                config.save();
+                g_free(dir);
+            }
+
             GtkRecentData recentData;
             gchar *uri;
             memset(&recentData, 0, sizeof(GtkRecentData));
@@ -6646,6 +6680,11 @@ static void EmulationSettingsDialog(GSimpleAction *action, GVariant *parameter, 
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 }
 
+static void PathSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	path_settings_dialog_show(GTK_WINDOW(pWindow));
+}
+
 static GtkWidget *JoystickControlsPage(void)
 {
     GtkWidget *page = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 18);
@@ -7194,10 +7233,8 @@ static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer use
 	u8 *screenshotBuffer = (u8 *)malloc_alignedPage(videoWidth * videoHeight * sizeof(u32));
 	
     GdkPixbuf *screenshot;
-    const gchar *dir;
-    gchar *filename = NULL, *filen = NULL;
     GError *error = NULL;
-    static int seq = 0;
+    static unsigned int seq = 0;
     gint H, W;
 
     if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
@@ -7225,32 +7262,29 @@ static void Printscreen(GSimpleAction *action, GVariant *parameter, gpointer use
                           NULL,
                           NULL);
 
-    dir = g_get_user_special_dir(G_USER_DIRECTORY_PICTURES);
-    if (dir == NULL) {
-        dir = g_get_user_special_dir(G_USER_DIRECTORY_DESKTOP);
-    }
-    if (dir == NULL) {
-        dir = g_get_home_dir();
+    // Folder, extension and file name all come from Config > Path Settings.
+    // An empty folder keeps the old behaviour: the XDG Pictures folder, then
+    // Desktop, then home.
+    const std::string dir = path_settings_screenshot_directory();
+    const std::string extension = path_settings_screenshot_extension();
+    const std::string base = path_settings_screenshot_name(sCurrentROMBaseName, seq++);
+
+    std::string filename = dir + "/" + base + extension;
+    for (int attempt = 1;
+         (attempt < 1000) && g_file_test(filename.c_str(), G_FILE_TEST_EXISTS);
+         attempt++)
+    {
+        filename = dir + "/" + base + "-" + std::to_string(attempt) + extension;
     }
 
-    do {
-        g_free(filen);
-        g_free(filename);
-        filen = g_strdup_printf("desmume-screenshot-%d.png", seq++);
-        filename = g_build_filename(dir, filen, NULL);
-    }
-    while (g_file_test(filename, G_FILE_TEST_EXISTS));
-
-    gdk_pixbuf_save(screenshot, filename, "png", &error, NULL);
+    gdk_pixbuf_save(screenshot, filename.c_str(),
+                    path_settings_screenshot_image_format().c_str(), &error, NULL);
     if (error) {
         g_error_free (error);
-        g_printerr("Failed to save %s", filename);
-        seq--;
+        g_printerr("Failed to save %s", filename.c_str());
     }
 
     g_object_unref(screenshot);
-    g_free(filename);
-    g_free(filen);
     free_aligned(screenshotBuffer);
 }
 
@@ -8282,11 +8316,15 @@ common_gtk_main(GApplication *app, gpointer user_data)
 {
     configured_features *my_config = static_cast<configured_features*>(user_data);
 
-	config.load();
-	ApplyFirmwareSettingsConfig();
-	ApplyMicrophoneSettingsConfig();
-	ApplyWifiSettingsConfig();
-	ApplyEmulationSettingsConfig();
+    config.load();
+    ApplyFirmwareSettingsConfig();
+    ApplyMicrophoneSettingsConfig();
+    ApplyWifiSettingsConfig();
+    ApplyEmulationSettingsConfig();
+    // Push the Config > Path Settings folders into the path model before any
+    // ROM is opened, so battery, state slots and cheat files land where they
+    // belong.
+    path_settings_apply_config();
 
 #if !defined(ENABLE_WGPU)
 	// A config written by a WebGPU build may still request the WebGPU
