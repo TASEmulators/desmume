@@ -304,6 +304,16 @@ GetDropDown(GtkWidget *drop)
 	return (selected == GTK_INVALID_LIST_POSITION) ? 0 : selected;
 }
 
+/* Every drop down in this dialog is filled from a GtkStringList built here.
+ *
+ * gtk_drop_down_new() takes ownership of the model (transfer full): it refs
+ * the model into its own property and then consumes the caller's reference.
+ * Never g_object_unref() one of these lists after handing it to a drop down -
+ * that frees the model while the dropdown's popup list view still points at
+ * it, and destroying the dialog then trips
+ * gtk_list_item_manager_clear_model() inside GTK (the
+ * g_list_model_get_n_items() assertion spam that precedes it comes from the
+ * same dangling model). */
 GtkStringList *
 NewStringList(void)
 {
@@ -669,7 +679,6 @@ BuildFirmwarePage(ConfigDialog *d)
 		}
 		d->fwColorDrop = gtk_drop_down_new(G_LIST_MODEL(colors), NULL);
 		AddRow(GTK_GRID(grid), 2, "Favourite colour:", d->fwColorDrop);
-		g_object_unref(colors);
 	}
 
 	{
@@ -680,7 +689,6 @@ BuildFirmwarePage(ConfigDialog *d)
 		}
 		d->fwMonthDrop = gtk_drop_down_new(G_LIST_MODEL(months), NULL);
 		AddRow(GTK_GRID(grid), 3, "Birth month:", d->fwMonthDrop);
-		g_object_unref(months);
 	}
 
 	{
@@ -693,7 +701,6 @@ BuildFirmwarePage(ConfigDialog *d)
 		}
 		d->fwDayDrop = gtk_drop_down_new(G_LIST_MODEL(days), NULL);
 		AddRow(GTK_GRID(grid), 4, "Birth day:", d->fwDayDrop);
-		g_object_unref(days);
 	}
 
 	{
@@ -704,7 +711,6 @@ BuildFirmwarePage(ConfigDialog *d)
 		}
 		d->fwLanguageDrop = gtk_drop_down_new(G_LIST_MODEL(languages), NULL);
 		AddRow(GTK_GRID(grid), 5, "Language:", d->fwLanguageDrop);
-		g_object_unref(languages);
 	}
 
 	d->fwMac = gtk_entry_new();
@@ -760,7 +766,6 @@ BuildGraphicTab(ConfigDialog *d)
 		}
 		d->rendererDrop = gtk_drop_down_new(G_LIST_MODEL(renderers), NULL);
 		gtk_widget_set_hexpand(d->rendererDrop, TRUE);
-		g_object_unref(renderers);
 	}
 	gtk_grid_attach(GTK_GRID(grid), d->rendererDrop, 1, 0, 1, 1);
 
@@ -779,7 +784,6 @@ BuildGraphicTab(ConfigDialog *d)
 		}
 		d->multisampleDrop = gtk_drop_down_new(G_LIST_MODEL(samples), NULL);
 		gtk_widget_set_hexpand(d->multisampleDrop, TRUE);
-		g_object_unref(samples);
 	}
 	gtk_widget_set_tooltip_text(d->multisampleDrop,
 		"Antialiasing for the OpenGL and WebGPU renderers; ignored by the "
@@ -896,7 +900,6 @@ BuildGraphicTab(ConfigDialog *d)
 
 		d->presentationDrop = gtk_drop_down_new(G_LIST_MODEL(presentations), NULL);
 		gtk_widget_set_hexpand(d->presentationDrop, TRUE);
-		g_object_unref(presentations);
 	}
 	gtk_grid_attach(GTK_GRID(grid), d->presentationDrop, 1, 0, 1, 1);
 	g_signal_connect(d->presentationDrop, "notify::selected",
@@ -925,7 +928,6 @@ BuildGraphicTab(ConfigDialog *d)
 
 		d->filterDrop = gtk_drop_down_new(G_LIST_MODEL(filters), NULL);
 		gtk_widget_set_hexpand(d->filterDrop, TRUE);
-		g_object_unref(filters);
 	}
 	gtk_grid_attach(GTK_GRID(grid), d->filterDrop, 1, 1, 1, 1);
 
@@ -1125,7 +1127,6 @@ BuildSlotsPage(ConfigDialog *d)
 		}
 		d->slot1Drop = gtk_drop_down_new(G_LIST_MODEL(devices), NULL);
 		gtk_widget_set_hexpand(d->slot1Drop, TRUE);
-		g_object_unref(devices);
 	}
 	gtk_grid_attach(GTK_GRID(grid), d->slot1Drop, 1, 0, 1, 1);
 
@@ -1162,7 +1163,6 @@ BuildSlotsPage(ConfigDialog *d)
 		}
 		d->slot2Drop = gtk_drop_down_new(G_LIST_MODEL(devices), NULL);
 		gtk_widget_set_hexpand(d->slot2Drop, TRUE);
-		g_object_unref(devices);
 	}
 	gtk_grid_attach(GTK_GRID(grid), d->slot2Drop, 1, 0, 1, 1);
 
@@ -1254,7 +1254,6 @@ BuildWifiPage(ConfigDialog *d)
 		d->wifiAdapterDrop = gtk_drop_down_new(G_LIST_MODEL(adapters), NULL);
 		gtk_widget_set_hexpand(d->wifiAdapterDrop, TRUE);
 		gtk_widget_set_sensitive(d->wifiAdapterDrop, count > 0);
-		g_object_unref(adapters);
 	}
 	gtk_grid_attach(GTK_GRID(grid), d->wifiAdapterDrop, 1, 2, 1, 1);
 
@@ -1305,7 +1304,6 @@ BuildMicPage(ConfigDialog *d)
 		}
 		d->micModeDrop = gtk_drop_down_new(G_LIST_MODEL(modes), NULL);
 		gtk_widget_set_hexpand(d->micModeDrop, TRUE);
-		g_object_unref(modes);
 	}
 	gtk_grid_attach(GTK_GRID(grid), d->micModeDrop, 1, 0, 1, 1);
 
@@ -1525,7 +1523,6 @@ BuildPathsPage(ConfigDialog *d)
 		}
 		d->shotFormatDrop = gtk_drop_down_new(G_LIST_MODEL(formats), NULL);
 		gtk_widget_set_hexpand(d->shotFormatDrop, TRUE);
-		g_object_unref(formats);
 	}
 	gtk_grid_attach(GTK_GRID(grid), d->shotFormatDrop, 1, 0, 1, 1);
 

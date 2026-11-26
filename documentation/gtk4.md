@@ -1388,6 +1388,23 @@ SIGSEGV / GObject 断言；GTK4 与 GTK3/CLI 均编译通过。
 | 同上，去掉 `g_object_unref()` 或改用 `gtk_drop_down_new_from_strings()` | 正常退出 |
 | 真机：gdb 脚本开 IO registers + RAM Search + RAM Watch，跑 120 帧后 `desmume_tools_close_all()` | 修复前：7 CRITICAL + `Bail out!` + SIGABRT；修复后：0 CRITICAL，正常退出 |
 
+**2026-11-26 回归（设置窗）**：P9 把设置窗从 3 页扩到 8 页时，`configdialog.cpp` 里 13 个
+`gtk_drop_down_new()` 调用后又补写了 `g_object_unref()`。旧版 3 页只有 3 个下拉框且都不
+unref，所以同样的问题没有暴露。症状与工具窗口那次完全一致：打开设置窗再关闭 →
+6–8 条 `g_list_model_get_n_items: assertion 'G_IS_LIST_MODEL (list)' failed` →
+`gtk_list_item_manager_clear_model` 断言 → SIGABRT。
+
+修复：删掉 13 处多余的 unref（Firmware 4、Graphic 4、Slots 2、Wi-Fi 1、Microphone 1、
+Paths 1），并在 `NewStringList()` 上方写明 transfer full 约定。
+
+验证（Arch/WSL，WSLg，GTK 4.24.2）：
+
+| 测试 | 结果 |
+|---|---|
+| 宿主程序（`configdialog.cpp.o` + `emulation.cpp.o` + `libdesmume.a`）建八页设置窗后 `gtk_window_close()` | 修复后 0 断言、退出码 0 |
+| 同上，临时把一处 `g_object_unref()` 加回去 | 立刻复现 `G_IS_LIST_MODEL` 断言 + SIGABRT，证明该用例能捕获回归 |
+| 最小复现（`ddrepro`，裸 GtkDropDown） | 带 unref 退出码 134；去掉后 0 |
+
 #### 复现与回归手法（可复用）
 
 **1. 最小宿主：把崩溃缩到一个控件。** 不碰模拟器核心，只依赖 `gtk4`：
