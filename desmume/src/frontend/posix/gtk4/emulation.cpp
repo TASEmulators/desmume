@@ -16,6 +16,7 @@
 
 #include "emulation.h"
 
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -42,6 +43,9 @@
 #include "utils/datetime.h"
 #include "utils/xstring.h"
 #include "path.h"
+#include "wifi.h"
+#include "slot1.h"
+#include "slot2.h"
 #ifdef HAVE_JIT
 #include "arm_jit.h"
 #endif
@@ -55,6 +59,13 @@
  * and beginOffscreen() simply returns false, so the plain frame path remains. */
 #include "../../shared/wgpu_present.h"
 #include "../shared/wgpu_upscaler_linux.h"
+
+#include <string>
+#include <vector>
+
+/* mic_sdl.cpp is linked into libdesmume, but mic.h predates the sample modes,
+ * so the sample loader is not declared there.  GTK3 declares it the same way. */
+BOOL Mic_ApplySettings(const char *sampleFile);
 
 /* ------------------------------------------------ host globals used by core */
 
@@ -161,6 +172,32 @@ static gboolean sTextureDeposterize = FALSE;
 static gboolean sTextureSmoothing = FALSE;
 static gboolean sHighColorInterpolation = TRUE;
 static int sMultisampleSize = 0;
+
+/* Output depth of the 3D renderer (15/18/24 bits).  The GPU hands its frames
+ * over in this format, so the conversion below has to know about it. */
+static int sColorDepth = 18;
+
+/* Addon and Wi-Fi selections.  Applying them needs the core (the slot change
+ * raises a card-eject IRQ, the Wi-Fi handler is created by NDS_Init()), so
+ * before desmume_emu_init() they are only remembered and desmume_emu_init()
+ * applies them right after NDS_Init(). */
+static int sSlot1Id = 0xFE;
+static std::string sSlot1FatDir;
+static gboolean sSlot1FatSameAsRom = FALSE;
+static std::string sSlot1DebugDir;
+
+static int sSlot2Id = 0xFE;
+static int sSlot2CFlashMode = ADDON_CFLASH_MODE_RomPath;
+static std::string sSlot2CFlashPath;
+static std::string sSlot2GbaRom;
+
+static gboolean sWifiEnabled = FALSE;
+static gboolean sWifiCompatibility = FALSE;
+static int sWifiBridge = 0;
+static std::vector<std::string> sWifiDevices;
+
+static int sMicMode = MicMode_InternalNoise;
+static std::string sMicSampleFile;
 
 /* ------------------------------------------------------- zero-copy frame pool
  * The core's custom buffer is converted straight into a pooled BGRA8888
@@ -1025,6 +1062,563 @@ desmume_emu_set_graphics_config(int renderer, int texture_upscale,
 	apply_renderer();
 }
 
+/* ------------------------------------ Emulation / BIOS / firmware options */
+
+/* The GPU hands frames over in the depth the user picked; both the present
+ * path and the screenshot writer have to convert from it. */
+static NDSColorFormat
+color_format_for_depth(int depth)
+{
+	switch (depth)
+	{
+	case 15:
+		return NDSColorFormat_BGR555_Rev;
+	case 24:
+		return NDSColorFormat_BGR888_Rev;
+	default:
+		return NDSColorFormat_BGR666_Rev;
+	}
+}
+
+void
+desmume_emu_set_cpu_options(gboolean advanced_timing, gboolean game_hacks,
+                            gboolean debug_console, gboolean ensata)
+{
+	CommonSettings.advanced_timing = (advanced_timing != FALSE);
+	CommonSettings.gamehacks.en = (game_hacks != FALSE);
+	CommonSettings.DebugConsole = (debug_console != FALSE);
+	CommonSettings.EnsataEmulation = (ensata != FALSE);
+}
+
+void
+desmume_emu_set_bios_config(gboolean use_external,
+                            const char *arm9_path, const char *arm7_path,
+                            gboolean swi_from_bios, gboolean patch_swi3)
+{
+	CommonSettings.UseExtBIOS = (use_external != FALSE);
+	g_snprintf(CommonSettings.ARM9BIOS, MAX_PATH, "%s",
+	           (arm9_path != NULL) ? arm9_path : "");
+	g_snprintf(CommonSettings.ARM7BIOS, MAX_PATH, "%s",
+	           (arm7_path != NULL) ? arm7_path : "");
+	CommonSettings.SWIFromBIOS = (swi_from_bios != FALSE);
+	CommonSettings.PatchSWI3 = (patch_swi3 != FALSE);
+}
+
+void
+desmume_emu_set_firmware_image_config(gboolean use_external,
+                                      const char *path,
+                                      gboolean boot_from_firmware,
+                                      gboolean use_external_settings)
+{
+	CommonSettings.UseExtFirmware = (use_external != FALSE);
+	g_snprintf(CommonSettings.ExtFirmwarePath, MAX_PATH, "%s",
+	           (path != NULL) ? path : "");
+	CommonSettings.BootFromFirmware = (boot_from_firmware != FALSE);
+	CommonSettings.UseExtFirmwareSettings = (use_external_settings != FALSE);
+}
+
+/* The firmware stores text as UTF-16 code units.  GLib's gunichar2 is exactly
+ * that width, so convert with GLib instead of wchar_t (32-bit here, which
+ * would pair adjacent units into bogus code points). */
+static void
+set_firmware_text(const char *utf8, u16 *text, u8 *text_length, size_t max_units)
+{
+	glong unit_count = 0;
+	gunichar2 *units = g_utf8_to_utf16((utf8 != NULL) ? utf8 : "", -1,
+	                                   NULL, &unit_count, NULL);
+	size_t length = ((units != NULL) && (unit_count > 0)) ? (size_t)unit_count : 0;
+
+	if (length > max_units)
+	{
+		length = max_units;
+		/* Never keep half of a surrogate pair. */
+		if ((units[length - 1] >= 0xD800) && (units[length - 1] <= 0xDBFF))
+		{
+			--length;
+		}
+	}
+
+	for (size_t i = 0; i < length; ++i)
+	{
+		text[i] = units[i];
+	}
+	text[length] = 0;
+	*text_length = (u8)length;
+
+	g_free(units);
+}
+
+void
+desmume_emu_set_firmware_user_config(const char *nickname,
+                                     const char *message,
+                                     int favorite_color,
+                                     int birth_month, int birth_day,
+                                     int language, const char *mac_address)
+{
+	FirmwareConfig &fw = CommonSettings.fwConfig;
+
+	set_firmware_text(nickname, fw.nickname, &fw.nicknameLength,
+	                  MAX_FW_NICKNAME_LENGTH);
+	set_firmware_text(message, fw.message, &fw.messageLength,
+	                  MAX_FW_MESSAGE_LENGTH);
+
+	fw.favoriteColor = (u8)CLAMP(favorite_color, 0, 15);
+	fw.birthdayMonth = (u8)CLAMP(birth_month, 1, 12);
+	fw.birthdayDay = (u8)CLAMP(birth_day, 1, 31);
+	fw.language = (u8)CLAMP(language, 0, 5);
+
+	/* Accept "00:09:BF:12:34:56" as well as 12 bare hex digits. */
+	std::string digits;
+	for (const char *p = mac_address; (p != NULL) && (*p != '\0') &&
+	                                 (digits.size() < 12); ++p)
+	{
+		if (g_ascii_isxdigit(*p))
+		{
+			digits += *p;
+		}
+	}
+	NDS_SetFirmwareMACAddressFromStr(fw, digits.c_str());
+}
+
+void
+desmume_emu_set_gfx3d_config(gboolean edge_mark, gboolean fog,
+                             gboolean texture, gboolean line_hack,
+                             gboolean txt_hack, gboolean shadow_polygon,
+                             gboolean zero_alpha_blending,
+                             gboolean nds_depth_calculation,
+                             gboolean depth_lequal_facing,
+                             int color_depth)
+{
+	/* The OpenGL renderers bake these into their shaders, so a change means
+	 * the current core has to be rebuilt (the software and WebGPU cores read
+	 * them every frame and need nothing). */
+	const gboolean accuracy_changed =
+		(CommonSettings.OpenGL_Emulation_ShadowPolygon != (shadow_polygon != FALSE)) ||
+		(CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending != (zero_alpha_blending != FALSE)) ||
+		(CommonSettings.OpenGL_Emulation_NDSDepthCalculation != (nds_depth_calculation != FALSE)) ||
+		(CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing != (depth_lequal_facing != FALSE));
+
+	CommonSettings.GFX3D_EdgeMark = (edge_mark != FALSE);
+	CommonSettings.GFX3D_Fog = (fog != FALSE);
+	CommonSettings.GFX3D_Texture = (texture != FALSE);
+	CommonSettings.GFX3D_LineHack = (line_hack != FALSE);
+	CommonSettings.GFX3D_TXTHack = (txt_hack != FALSE);
+	CommonSettings.OpenGL_Emulation_ShadowPolygon = (shadow_polygon != FALSE);
+	CommonSettings.OpenGL_Emulation_SpecialZeroAlphaBlending = (zero_alpha_blending != FALSE);
+	CommonSettings.OpenGL_Emulation_NDSDepthCalculation = (nds_depth_calculation != FALSE);
+	CommonSettings.OpenGL_Emulation_DepthLEqualPolygonFacing = (depth_lequal_facing != FALSE);
+
+	switch (color_depth)
+	{
+	case 15:
+	case 18:
+	case 24:
+		sColorDepth = color_depth;
+		break;
+	default:
+		sColorDepth = 18;
+		break;
+	}
+
+	if (!sInitialized)
+	{
+		return;
+	}
+
+	GPU->SetColorFormat(color_format_for_depth(sColorDepth));
+
+	if (accuracy_changed && (cur3DCore >= 0))
+	{
+		GPU->Change3DRendererByID(cur3DCore);
+	}
+}
+
+/* ------------------------------------------------------ Slot 1 / Slot 2 */
+
+int
+desmume_emu_slot1_count(void)
+{
+	slot1_Init();
+	return NDS_SLOT1_COUNT;
+}
+
+const char *
+desmume_emu_slot1_name(int index)
+{
+	if ((index < 0) || (index >= desmume_emu_slot1_count()))
+	{
+		return NULL;
+	}
+	return slot1_List[index]->info()->name();
+}
+
+const char *
+desmume_emu_slot1_description(int index)
+{
+	if ((index < 0) || (index >= desmume_emu_slot1_count()))
+	{
+		return NULL;
+	}
+	return slot1_List[index]->info()->descr();
+}
+
+int
+desmume_emu_slot1_id(int index)
+{
+	if ((index < 0) || (index >= desmume_emu_slot1_count()))
+	{
+		return -1;
+	}
+	return (int)slot1_List[index]->info()->id();
+}
+
+gboolean
+desmume_emu_slot1_has_fat(int index)
+{
+	return (index == NDS_SLOT1_R4) ? TRUE : FALSE;
+}
+
+gboolean
+desmume_emu_slot1_has_debug(int index)
+{
+	return (index == NDS_SLOT1_RETAIL_DEBUG) ? TRUE : FALSE;
+}
+
+char *
+desmume_emu_slot1_default_debug_path(void)
+{
+	const std::string dir = path.getpath(path.SLOT1D);
+
+	/* Before the first ROM load the path model has no module directory yet
+	 * and getpath() reports the relative "./"; that is not a useful default. */
+	if (dir.empty() || (dir == "./") || (dir == "."))
+	{
+		return g_strdup("");
+	}
+	return g_strdup(dir.c_str());
+}
+
+/* Apply the remembered Slot 1 choice.  Called from desmume_emu_init() and by
+ * the setter once the core exists. */
+static void
+apply_slot1_config(void)
+{
+	slot1_Init();
+
+	NDS_SLOT1_TYPE type = NDS_SLOT1_RETAIL_AUTO;
+	if (!slot1_getTypeByID((u8)sSlot1Id, type))
+	{
+		type = NDS_SLOT1_RETAIL_AUTO;
+	}
+
+	slot1_SetFatDir(sSlot1FatDir, (sSlot1FatSameAsRom != FALSE));
+	if (!sSlot1DebugDir.empty())
+	{
+		path.setpath(path.SLOT1D, sSlot1DebugDir);
+	}
+
+	/* slot1_Change() reports "nothing to do" when the device is already
+	 * selected; a reset still reconnects it so a new FAT folder or debug
+	 * filesystem is picked up. */
+	if (!slot1_Change(type))
+	{
+		slot1_Reset();
+	}
+}
+
+gboolean
+desmume_emu_set_slot1_config(int id, const char *fat_dir,
+                             gboolean fat_same_as_rom, const char *debug_dir)
+{
+	const std::string fat = (fat_dir != NULL) ? fat_dir : "";
+	const std::string debug = (debug_dir != NULL) ? debug_dir : "";
+	const gboolean same = (fat_same_as_rom != FALSE);
+
+	/* Reconnecting the device raises a card-eject IRQ, so a dialog that only
+	 * changed the volume must not touch it. */
+	const gboolean unchanged = (sSlot1Id == id) && (sSlot1FatDir == fat) &&
+		(sSlot1FatSameAsRom == same) && (sSlot1DebugDir == debug);
+
+	sSlot1Id = id;
+	sSlot1FatDir = fat;
+	sSlot1FatSameAsRom = same;
+	sSlot1DebugDir = debug;
+
+	if (!sInitialized || unchanged)
+	{
+		return TRUE;
+	}
+
+	apply_slot1_config();
+	return slot1_device != NULL;
+}
+
+int
+desmume_emu_slot2_count(void)
+{
+	slot2_Init();
+	return NDS_SLOT2_COUNT;
+}
+
+const char *
+desmume_emu_slot2_name(int index)
+{
+	if ((index < 0) || (index >= desmume_emu_slot2_count()))
+	{
+		return NULL;
+	}
+	return slot2_List[index]->info()->name();
+}
+
+const char *
+desmume_emu_slot2_description(int index)
+{
+	if ((index < 0) || (index >= desmume_emu_slot2_count()))
+	{
+		return NULL;
+	}
+	return slot2_List[index]->info()->descr();
+}
+
+int
+desmume_emu_slot2_id(int index)
+{
+	if ((index < 0) || (index >= desmume_emu_slot2_count()))
+	{
+		return -1;
+	}
+	return (int)slot2_List[index]->info()->id();
+}
+
+gboolean
+desmume_emu_slot2_has_cflash(int index)
+{
+	return (index == NDS_SLOT2_CFLASH) ? TRUE : FALSE;
+}
+
+gboolean
+desmume_emu_slot2_has_gba_rom(int index)
+{
+	return (index == NDS_SLOT2_GBACART) ? TRUE : FALSE;
+}
+
+/* A GBA cartridge keeps its save next to the ROM, with the same base name. */
+static void
+set_gba_rom_path(const std::string &rom_path)
+{
+	GBACartridge_RomPath = rom_path;
+
+	if (rom_path.empty())
+	{
+		GBACartridge_SRAMPath.clear();
+		return;
+	}
+
+	const size_t extension = rom_path.find_last_of('.');
+	const size_t separator = rom_path.find_last_of("/\\");
+	GBACartridge_SRAMPath = ((extension == std::string::npos) ||
+	                         ((separator != std::string::npos) && (extension < separator)))
+		? rom_path + ".sav"
+		: rom_path.substr(0, extension) + ".sav";
+}
+
+static void
+apply_slot2_config(void)
+{
+	slot2_Init();
+
+	NDS_SLOT2_TYPE type = NDS_SLOT2_AUTO;
+	if (!slot2_getTypeByID((u8)sSlot2Id, type))
+	{
+		type = NDS_SLOT2_AUTO;
+	}
+
+	CFlash_Mode = (ADDON_CFLASH_MODE)sSlot2CFlashMode;
+	CFlash_Path = sSlot2CFlashPath;
+	set_gba_rom_path(sSlot2GbaRom);
+
+	if (!slot2_Change(type))
+	{
+		slot2_Reset();
+	}
+}
+
+gboolean
+desmume_emu_set_slot2_config(int id, int cflash_mode,
+                             const char *cflash_path, const char *gba_rom_path)
+{
+	const std::string cflash = (cflash_path != NULL) ? cflash_path : "";
+	const std::string rom = (gba_rom_path != NULL) ? gba_rom_path : "";
+	const int mode = CLAMP(cflash_mode, (int)ADDON_CFLASH_MODE_Path,
+	                       (int)ADDON_CFLASH_MODE_RomPath);
+
+	/* Same reasoning as Slot 1: only reconnect when something changed. */
+	const gboolean unchanged = (sSlot2Id == id) &&
+		(sSlot2CFlashMode == mode) && (sSlot2CFlashPath == cflash) &&
+		(sSlot2GbaRom == rom);
+
+	sSlot2Id = id;
+	sSlot2CFlashMode = mode;
+	sSlot2CFlashPath = cflash;
+	sSlot2GbaRom = rom;
+
+	if (!sInitialized || unchanged)
+	{
+		return TRUE;
+	}
+
+	apply_slot2_config();
+	return slot2_device != NULL;
+}
+
+/* --------------------------------------------------- Wi-Fi / microphone */
+
+int
+desmume_emu_wifi_bridge_count(char **error_message)
+{
+	if (error_message != NULL)
+	{
+		*error_message = NULL;
+	}
+
+	sWifiDevices.clear();
+
+#ifdef EXPERIMENTAL_WIFI_COMM
+	if (wifiHandler == NULL)
+	{
+		/* NDS_Init() creates the handler; until then the list cannot be
+		 * queried.  The selection is still stored and applied on init. */
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup(
+				"The bridge device list is available once a ROM has started.");
+		}
+		return 0;
+	}
+
+	if (!wifiHandler->IsPCapSupported())
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("Could not load libpcap.");
+		}
+		return 0;
+	}
+
+	const int count = wifiHandler->GetBridgeDeviceList(&sWifiDevices);
+	if (count < 0)
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("Searching for a bridge device failed.");
+		}
+		return 0;
+	}
+
+	if (count == 0)
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("No bridge devices were found.");
+		}
+		return 0;
+	}
+
+	return count;
+#else
+	if (error_message != NULL)
+	{
+		*error_message = g_strdup(
+			"This build has no Wi-Fi emulation (configured with -Dwifi=false).");
+	}
+	return 0;
+#endif
+}
+
+const char *
+desmume_emu_wifi_bridge_name(int index)
+{
+	if ((index < 0) || (index >= (int)sWifiDevices.size()))
+	{
+		return NULL;
+	}
+	return sWifiDevices[(size_t)index].c_str();
+}
+
+static void
+apply_wifi_config(void)
+{
+	if (wifiHandler == NULL)
+	{
+		return;
+	}
+
+	CommonSettings.WifiBridgeDeviceID = sWifiBridge;
+	wifiHandler->SetBridgeDeviceIndex(sWifiBridge);
+
+#ifdef EXPERIMENTAL_WIFI_COMM
+	wifiHandler->SetEmulationLevel(sWifiEnabled
+		? (sWifiCompatibility ? WifiEmulationLevel_Compatibility
+		                      : WifiEmulationLevel_Normal)
+		: WifiEmulationLevel_Off);
+#else
+	wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
+#endif
+}
+
+void
+desmume_emu_set_wifi_config(gboolean enabled, gboolean compatibility_mode,
+                            int bridge_index)
+{
+	const gboolean on = (enabled != FALSE);
+	const gboolean compat = (compatibility_mode != FALSE);
+	const int bridge = (bridge_index > 0) ? bridge_index : 0;
+
+	/* SetEmulationLevel() resets the Wi-Fi state machine, so skip it when the
+	 * dialog left the Wi-Fi page alone. */
+	const gboolean unchanged = (sWifiEnabled == on) &&
+		(sWifiCompatibility == compat) && (sWifiBridge == bridge);
+
+	sWifiEnabled = on;
+	sWifiCompatibility = compat;
+	sWifiBridge = bridge;
+
+	if (sInitialized && !unchanged)
+	{
+		apply_wifi_config();
+	}
+}
+
+gboolean
+desmume_emu_set_mic_config(int mode, const char *sample_file)
+{
+	const int new_mode = CLAMP(mode, (int)MicMode_InternalNoise, (int)MicMode_Physical);
+	const std::string new_file = (sample_file != NULL) ? sample_file : "";
+
+	/* Mic_ApplySettings() closes and reopens the capture device, so leave a
+	 * running source alone when nothing changed (the config dialog applies
+	 * every page on OK, not just the one that was edited). */
+	const gboolean unchanged = (sMicMode == new_mode) && (sMicSampleFile == new_file);
+
+	sMicMode = new_mode;
+	sMicSampleFile = new_file;
+	CommonSettings.micMode = (MicMode)sMicMode;
+
+	/* NDS_Init() -> Mic_Init() opens the configured source, so before the
+	 * core exists there is nothing more to do. */
+	if (!sInitialized || unchanged)
+	{
+		return TRUE;
+	}
+
+	if (!Mic_ApplySettings(sMicSampleFile.c_str()))
+	{
+		g_printerr("GTK4: could not apply the configured microphone source\n");
+		return FALSE;
+	}
+	return TRUE;
+}
+
 void
 desmume_emu_set_key(guint keyval, gboolean pressed)
 {
@@ -1087,6 +1681,13 @@ desmume_emu_init(void)
 	 * stale environment value cannot reintroduce the hang. */
 	g_setenv("SDL_NO_SIGNAL_HANDLERS", "1", TRUE);
 
+	/* Sample-mode microphones load a WAV file, which Mic_Init() does not do;
+	 * the other modes are opened by Mic_Init() itself. */
+	if (sMicMode == MicMode_Sample)
+	{
+		Mic_ApplySettings(sMicSampleFile.c_str());
+	}
+
 	if (NDS_Init() != 0)
 	{
 		g_printerr("GTK4: NDS_Init() failed\n");
@@ -1097,6 +1698,15 @@ desmume_emu_init(void)
 	 * output now that the core exists.  Keep running silently if the device
 	 * cannot be opened, so a headless machine can still emulate. */
 	apply_audio_settings();
+
+	/* Addon and Wi-Fi selections need the core objects NDS_Init() created. */
+	apply_slot1_config();
+	apply_slot2_config();
+	apply_wifi_config();
+
+	/* The GPU's output depth is part of the graphics tab; apply it before the
+	 * renderer starts so the first frame already has the right format. */
+	GPU->SetColorFormat(color_format_for_depth(sColorDepth));
 
 #ifdef HAVE_JIT
 	CommonSettings.jit_max_block_size = (u32)sJitBlockSize;
@@ -1362,6 +1972,11 @@ desmume_emu_screenshot(const char *path, char **error_message)
 		ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapNone>(
 			(const u16 *)info.masterCustomBuffer, (u32 *)bgra, pixel_count);
 	}
+	else if (info.colorFormat == NDSColorFormat_BGR666_Rev)
+	{
+		ColorspaceConvertBuffer6665To8888<true, false>(
+			(const u32 *)info.masterCustomBuffer, (u32 *)bgra, pixel_count);
+	}
 	else
 	{
 		ColorspaceConvertBuffer888xTo8888Opaque<true, false>(
@@ -1374,7 +1989,46 @@ desmume_emu_screenshot(const char *path, char **error_message)
 	                                             bytes, stride);
 	g_bytes_unref(bytes);
 
-	const gboolean ok = gdk_texture_save_to_png(texture, path);
+	/* PNG goes through the texture directly; anything else (Path Settings
+	 * offers every writable GdkPixbuf format) is downloaded and handed to
+	 * the matching GdkPixbuf writer.  Frames are opaque, so the premultiplied
+	 * download is also a valid straight-alpha image. */
+	const char *extension = strrchr(path, '.');
+	gboolean ok;
+	if ((extension == NULL) || (g_ascii_strcasecmp(extension, ".png") == 0))
+	{
+		ok = gdk_texture_save_to_png(texture, path);
+	}
+	else
+	{
+		const gchar *type = extension + 1;
+		if (g_ascii_strcasecmp(type, "jpg") == 0)
+		{
+			type = "jpeg";
+		}
+
+		guchar *rgba = (guchar *)g_malloc(stride * height);
+		gdk_texture_download(texture, rgba, stride);
+
+		GdkPixbuf *pixbuf = gdk_pixbuf_new_from_data(rgba, GDK_COLORSPACE_RGB,
+		                                             TRUE, 8,
+		                                             (int)width, (int)height,
+		                                             (int)stride, NULL, NULL);
+		GError *save_error = NULL;
+		ok = (pixbuf != NULL) &&
+		     gdk_pixbuf_save(pixbuf, path, type, &save_error, NULL);
+
+		if (!ok && (save_error != NULL))
+		{
+			g_printerr("GTK4: screenshot failed: %s\n", save_error->message);
+			g_clear_error(&save_error);
+		}
+		if (pixbuf != NULL)
+		{
+			g_object_unref(pixbuf);
+		}
+		g_free(rgba);
+	}
 	g_object_unref(texture);
 
 	if (!ok && (error_message != NULL))
@@ -1457,6 +2111,13 @@ present_current_frame(void)
 	{
 		ColorspaceConvertBuffer555xTo8888Opaque<true, false, BESwapNone>(
 			(const u16 *)info.masterCustomBuffer, dst, pixel_count);
+	}
+	else if (info.colorFormat == NDSColorFormat_BGR666_Rev)
+	{
+		/* 18-bit output: 6 bits per channel plus a 5-bit alpha.  The frame is
+		 * opaque, so the non-Opaque converter still leaves alpha at 255. */
+		ColorspaceConvertBuffer6665To8888<true, false>(
+			(const u32 *)info.masterCustomBuffer, dst, pixel_count);
 	}
 	else
 	{

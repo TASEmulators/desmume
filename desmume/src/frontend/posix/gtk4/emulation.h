@@ -213,6 +213,105 @@ void desmume_emu_set_graphics_config(int renderer, int texture_upscale,
                                      gboolean high_color_interpolation,
                                      int multisample_size);
 
+/* ---- Emulation / BIOS / firmware (read while the core resets) ---------- */
+
+/* Values the core only reads while it boots: bus timing, game hacks, the
+ * debug console and Ensata emulation.  Changing any of them after a ROM has
+ * been loaded needs a reset (see desmume_emu_reset()). */
+void desmume_emu_set_cpu_options(gboolean advanced_timing, gboolean game_hacks,
+                                 gboolean debug_console, gboolean ensata);
+
+/* External ARM9/ARM7 BIOS images.  Paths are copied into the core's fixed
+ * buffers; an empty path restores the default file name. */
+void desmume_emu_set_bios_config(gboolean use_external,
+                                 const char *arm9_path, const char *arm7_path,
+                                 gboolean swi_from_bios, gboolean patch_swi3);
+
+/* External firmware image ("Boot from firmware" needs both an external BIOS
+ * and an external firmware image, matching the Windows dialog). */
+void desmume_emu_set_firmware_image_config(gboolean use_external,
+                                           const char *path,
+                                           gboolean boot_from_firmware,
+                                           gboolean use_external_settings);
+
+/* The user name/message/birthday/colour/MAC written into the internal
+ * firmware image.  UTF-8 in, converted to the firmware's UTF-16 units here so
+ * the GTK layer never deals with the encoding.  `mac_address` accepts the
+ * usual 00:09:BF:... spelling or 12 bare hex digits. */
+void desmume_emu_set_firmware_user_config(const char *nickname,
+                                          const char *message,
+                                          int favorite_color,
+                                          int birth_month, int birth_day,
+                                          int language, const char *mac_address);
+
+/* ---- 3D renderer options ---------------------------------------------- */
+
+/* The switches the graphics tab shares with GTK3/Windows.  The accuracy
+ * options are baked into the OpenGL shaders, so changing one rebuilds the
+ * active renderer; the software and WebGPU renderers read them per frame.
+ * `color_depth` is 15, 18 or 24 bits. */
+void desmume_emu_set_gfx3d_config(gboolean edge_mark, gboolean fog,
+                                  gboolean texture, gboolean line_hack,
+                                  gboolean txt_hack, gboolean shadow_polygon,
+                                  gboolean zero_alpha_blending,
+                                  gboolean nds_depth_calculation,
+                                  gboolean depth_lequal_facing,
+                                  int color_depth);
+
+/* ---- Slot 1 / Slot 2 addons ------------------------------------------- */
+
+/* Device lists for the addon combo boxes.  Names are owned by the core and
+ * live for the whole process; ids are what the config stores.  The lists are
+ * populated on first use (slot1_Init()/slot2_Init()). */
+int desmume_emu_slot1_count(void);
+const char *desmume_emu_slot1_name(int index);
+const char *desmume_emu_slot1_description(int index);
+int desmume_emu_slot1_id(int index);
+/* Which of the optional rows apply to the device at `index`: the R4 needs a
+ * FAT folder, the retail debug device a filesystem folder. */
+gboolean desmume_emu_slot1_has_fat(int index);
+gboolean desmume_emu_slot1_has_debug(int index);
+char *desmume_emu_slot1_default_debug_path(void);
+
+int desmume_emu_slot2_count(void);
+const char *desmume_emu_slot2_name(int index);
+const char *desmume_emu_slot2_description(int index);
+int desmume_emu_slot2_id(int index);
+/* The CompactFlash device takes an image/folder plus a mode; the GBA
+ * cartridge device takes a ROM file. */
+gboolean desmume_emu_slot2_has_cflash(int index);
+gboolean desmume_emu_slot2_has_gba_rom(int index);
+
+/* `id` is the addon id from the list above (0xFE = auto).  The FAT folder is
+ * only used by the R4 device, the debug folder only by the retail debug
+ * device; both are ignored otherwise.  Returns FALSE when the core refused
+ * the device, in which case the previous one stays connected. */
+gboolean desmume_emu_set_slot1_config(int id, const char *fat_dir,
+                                      gboolean fat_same_as_rom,
+                                      const char *debug_dir);
+gboolean desmume_emu_set_slot2_config(int id, int cflash_mode,
+                                      const char *cflash_path,
+                                      const char *gba_rom_path);
+
+/* ---- Wi-Fi / microphone ----------------------------------------------- */
+
+/* Number of bridge adapters libpcap reported.  A build without Wi-Fi support,
+ * or a machine without libpcap, reports 0; *error_message then explains why
+ * (owned string) so the dialog can show the same hint GTK3 does. */
+int desmume_emu_wifi_bridge_count(char **error_message);
+const char *desmume_emu_wifi_bridge_name(int index);
+
+/* Turn Wi-Fi emulation on/off and pick the bridge adapter.  A build without
+ * EXPERIMENTAL_WIFI_COMM keeps the core off no matter what is stored. */
+void desmume_emu_set_wifi_config(gboolean enabled, gboolean compatibility_mode,
+                                 int bridge_index);
+
+/* `mode` is a MicMode value (0 = internal noise, 1 = samples, 2 = random,
+ * 3 = physical device).  Returns FALSE when the sample file cannot be used;
+ * the previous source stays active in that case. */
+gboolean desmume_emu_set_mic_config(int mode, const char *sample_file);
+
+
 /* Keyvals use the GTK3 default keymap.  Touch coordinates are in NDS logical
  * space (0..255 / 0..191), exactly what DesmumeDisplay's signals emit. */
 void desmume_emu_set_key(guint keyval, gboolean pressed);

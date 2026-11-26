@@ -81,6 +81,44 @@ OPT(multisamplingSize, int, 0, Config, OpenGLMultisamplingSize)
 OPT(firmware_language, int, 1, Config, FirmwareLanguage)
 OPT(savetype, int, 0, Config, SaveType)
 
+/* 3D renderer options, stored with the same section and key names the Windows
+ * port writes into its [3D] section.  The defaults mirror CommonSettings, so a
+ * config file written before these options existed keeps the core defaults
+ * instead of overriding them.  GTK3 has had these since its graphics dialog
+ * was expanded; GTK4 carried only the texture/renderer subset. */
+OPT(gfx3dEdgeMark, bool, true, 3D, EnableEdgeMark)
+OPT(gfx3dFog, bool, true, 3D, EnableFog)
+OPT(gfx3dTexture, bool, true, 3D, EnableTexture)
+OPT(gfx3dLineHack, bool, true, 3D, EnableLineHack)
+OPT(gfx3dTxtHack, bool, false, 3D, EnableTXTHack)
+OPT(gfx3dShadowPolygon, bool, true, 3D, EnableShadowPolygon)
+OPT(gfx3dZeroAlphaBlending, bool, true, 3D, EnableSpecialZeroAlphaBlending)
+OPT(gfx3dNdsDepthCalculation, bool, true, 3D, EnableNDSDepthCalculation)
+OPT(gfx3dDepthLEqualFacing, bool, false, 3D, EnableDepthLEqualPolygonFacing)
+/* Output color depth of the 3D renderer: 15 = BGR555, 18 = BGR666 (packed as
+ * 32-bit), 24 = BGR888.  18 is the Windows port's default as well. */
+OPT(gfx3dColorDepth, int, 18, 3D, GpuBpp)
+
+/* Emulation
+ *
+ * The Windows port's Emulation Settings dialog keeps these in [Emulation],
+ * [BIOS] and [Firmware]; the same names are used here so the values mean the
+ * same thing.  Defaults mirror CommonSettings.  They are read by the core
+ * while it resets, so changing one needs a ROM reset to take effect. */
+OPT(emu_advanced_timing, bool, true, Emulation, AdvancedTiming)
+OPT(emu_game_hacks, bool, true, Emulation, GameHacks)
+OPT(emu_debug_console, bool, false, Emulation, DebugConsole)
+OPT(emu_ensata, bool, false, Emulation, EnsataEmulation)
+OPT(bios_use_external, bool, false, BIOS, UseExtBIOS)
+OPT(bios_arm9_path, std::string, "biosnds9.bin", BIOS, ARM9BIOSFile)
+OPT(bios_arm7_path, std::string, "biosnds7.bin", BIOS, ARM7BIOSFile)
+OPT(bios_swi_from_bios, bool, false, BIOS, SWIFromBIOS)
+OPT(bios_patch_swi3, bool, false, BIOS, PatchSWI3)
+OPT(fw_use_external, bool, false, Firmware, UseExtFirmware)
+OPT(fw_image_path, std::string, "firmware.bin", Firmware, FirmwareFile)
+OPT(fw_boot_from, bool, false, Firmware, BootFromFirmware)
+OPT(fw_use_ext_settings, bool, false, Firmware, UseExtFirmwareSettings)
+
 /* Firmware
  *
  * Settings written into the internal firmware image. The section and key
@@ -96,6 +134,52 @@ OPT(fwconfig_favorite_color, int, 7, Firmware, favColor)
 OPT(fwconfig_birth_month, int, 6, Firmware, bMonth)
 OPT(fwconfig_birth_day, int, 23, Firmware, bDay)
 OPT(fwconfig_mac_address, std::string, "0009BF123456", Firmware, macAddress)
+
+/* Wifi settings use the same section and keys as the Windows frontend. */
+OPT(wifi_enabled, bool, false, Wifi, Enabled)
+OPT(wifi_compatibility_mode, bool, false, Wifi, Compatibility Mode)
+OPT(wifi_bridge_adapter, int, 0, Wifi, BridgeAdapter)
+
+/* Slot 1/2 device selection and the paths used by configurable addons. */
+OPT(slot1_id, int, 254, Slot1, id)
+OPT(slot1_fat_path, std::string, std::string(), Slot1, fat_path)
+OPT(slot1_fat_path_type, bool, false, Slot1, fat_path_type)
+OPT(slot1_debug_path, std::string, std::string(), Paths, Slot1D)
+OPT(slot2_id, int, 254, Slot2, id)
+OPT(slot2_cflash_mode, int, 2, Slot2.CFlash, fileMode)
+OPT(slot2_cflash_path, std::string, std::string(), Slot2.CFlash, path)
+OPT(slot2_gba_rom, std::string, std::string(), Slot2.GBAgame, filename)
+
+/* Microphone input mode and the optional WAV sample file. */
+OPT(mic_mode, int, 0, MicSettings, MicMode)
+OPT(mic_sample_file, std::string, "micsample.raw", MicSettings, MicSampleFile)
+
+/* Path Settings (Config > Path Settings)
+ *
+ * Section and key names match the Windows [PathSettings] group, so the two
+ * desmume.ini files stay readable side by side.  An empty value means "use
+ * the built-in default": for the categories the core resolves that is the
+ * module directory (~/.config/desmume), for screenshots it is the XDG
+ * Pictures folder.  The Movies row is config.movie_directory above, because
+ * the Play/Record dialogs already remember their own last folder there.
+ *
+ * "format" is the strftime-style screenshot name pattern; "%f" expands to the
+ * ROM name, "%r" to a random number and "%t" to a tick.  An empty pattern
+ * keeps the old desmume-screenshot-N naming.  "ImageFormat" is a GdkPixbuf
+ * writer name (png, jpeg, ...) rather than the Windows PNG/BMP enum.
+ */
+OPT(path_roms, std::string, std::string(), PathSettings, Roms)
+OPT(path_battery, std::string, std::string(), PathSettings, Battery)
+OPT(path_sram_import_export, std::string, std::string(), PathSettings, SramImportExport)
+OPT(path_states, std::string, std::string(), PathSettings, States)
+OPT(path_state_slots, std::string, std::string(), PathSettings, StateSlots)
+OPT(path_screenshots, std::string, std::string(), PathSettings, Screenshots)
+OPT(path_avi_files, std::string, std::string(), PathSettings, AviFiles)
+OPT(path_cheats, std::string, std::string(), PathSettings, Cheats)
+OPT(path_lua, std::string, std::string(), PathSettings, Lua)
+OPT(path_screenshot_format, std::string, std::string(), PathSettings, format)
+OPT(path_screenshot_image_format, std::string, "png", PathSettings, ImageFormat)
+OPT(path_save_last_visit, bool, true, PathSettings, lastVisit)
 
 /* RAM Watch
  *

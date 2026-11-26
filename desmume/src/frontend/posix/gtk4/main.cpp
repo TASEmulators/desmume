@@ -660,6 +660,7 @@ LoadRomDone(GObject *source_object, GAsyncResult *result, gpointer user_data)
 	}
 
 	RecentAdd(load->path);
+	desmume_config_note_rom_dir(pConfig, load->path);
 	RomLoaded();
 }
 
@@ -703,6 +704,7 @@ LoadRomAndReport(const char *path)
 	}
 
 	RecentAdd(path);
+	desmume_config_note_rom_dir(pConfig, path);
 	RomLoaded();
 	return TRUE;
 }
@@ -747,6 +749,20 @@ static void ActionOpen(GSimpleAction *action, GVariant *parameter, gpointer user
 
 	GtkFileDialog *dialog = gtk_file_dialog_new();
 	gtk_file_dialog_set_title(dialog, "Open Nintendo DS ROM");
+
+	/* Path Settings > "ROM files" is the starting folder; it is rewritten to
+	 * the folder of the last opened ROM while "Remember the folder of the
+	 * last opened ROM" is on. */
+	{
+		char *directory = desmume_config_rom_directory(pConfig);
+		if (directory != NULL)
+		{
+			GFile *folder = g_file_new_for_path(directory);
+			gtk_file_dialog_set_initial_folder(dialog, folder);
+			g_object_unref(folder);
+			g_free(directory);
+		}
+	}
 
 	GtkFileFilter *filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, "Nintendo DS ROMs");
@@ -851,17 +867,11 @@ static void ActionScreenshot(GSimpleAction *action, GVariant *parameter, gpointe
 	(void)parameter;
 	(void)user_data;
 
-	const char *dir = g_get_user_special_dir(G_USER_DIRECTORY_PICTURES);
-	if (dir == NULL)
-	{
-		dir = g_get_home_dir();
-	}
-
-	GDateTime *now = g_date_time_new_now_local();
-	char *stamp = g_date_time_format(now, "%Y%m%d-%H%M%S");
-	char *filename = g_strdup_printf("desmume-%s.png", stamp);
-	char *path = g_build_filename(dir, filename, NULL);
-	g_date_time_unref(now);
+	/* Directory, image format and name pattern all come from Path Settings. */
+	char *base = desmume_emu_rom_base_name();
+	char *path = desmume_config_screenshot_path(pConfig,
+	                                            (base != NULL) ? base : "");
+	g_free(base);
 
 	char *error = NULL;
 	const gboolean ok = desmume_emu_screenshot(path, &error);
@@ -878,8 +888,6 @@ static void ActionScreenshot(GSimpleAction *action, GVariant *parameter, gpointe
 
 	g_free(error);
 	g_free(path);
-	g_free(filename);
-	g_free(stamp);
 }
 
 static void ActionRecent(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -1417,6 +1425,46 @@ static void ActionConfig(GSimpleAction *action, GVariant *parameter,
 	                           OnConfigApplied, NULL);
 }
 
+/* Config > the individual pages.  GTK3 had one dialog per topic; GTK4 keeps
+ * them in one window, so these shortcuts just pick the page. */
+static void ActionConfigPage(GSimpleAction *action, GVariant *parameter,
+                             gpointer user_data)
+{
+	(void)action;
+	(void)user_data;
+
+	if (pConfig == NULL)
+	{
+		return;
+	}
+
+	const char *name = g_variant_get_string(parameter, NULL);
+	static const struct { const char *name; int page; } pages[] =
+	{
+		{ "emulation",   DESMUME_CONFIG_PAGE_EMULATION },
+		{ "graphic",     DESMUME_CONFIG_PAGE_GRAPHIC },
+		{ "sound",       DESMUME_CONFIG_PAGE_SOUND },
+		{ "firmware",    DESMUME_CONFIG_PAGE_FIRMWARE },
+		{ "slots",       DESMUME_CONFIG_PAGE_SLOTS },
+		{ "wifi",        DESMUME_CONFIG_PAGE_WIFI },
+		{ "microphone",  DESMUME_CONFIG_PAGE_MICROPHONE },
+		{ "paths",       DESMUME_CONFIG_PAGE_PATHS },
+	};
+
+	int page = DESMUME_CONFIG_PAGE_EMULATION;
+	for (guint i = 0; i < G_N_ELEMENTS(pages); ++i)
+	{
+		if (g_strcmp0(name, pages[i].name) == 0)
+		{
+			page = pages[i].page;
+			break;
+		}
+	}
+
+	desmume_config_dialog_show_page(GTK_WINDOW(pWindow), pConfig,
+	                                OnConfigApplied, NULL, page);
+}
+
 /* ---- movie actions (P4b) --------------------------------------------- */
 
 static void
@@ -1513,6 +1561,7 @@ static const GActionEntry app_entries[] =
 	{ "tool",           ActionTool,       "u",  NULL,   NULL },
 	{ "gpufilter",      ActionGpuFilter,  "s",  "'0'",  NULL },
 	{ "config",         ActionConfig,     NULL, NULL,   NULL },
+	{ "configpage",     ActionConfigPage, "s",  NULL,   NULL },
 	{ "cheatsdisable",  NULL,             NULL, "false", CheatsDisableChanged },
 	{ "playmovie",      ActionPlayMovie,  NULL, NULL,   NULL },
 	{ "recordmovie",    ActionRecordMovie, NULL, NULL,  NULL },
@@ -1819,6 +1868,10 @@ int main(int argc, char *argv[])
 
 	pConfig = new desmume::config::Config();
 	pConfig->load();
+	/* Emulation/BIOS/firmware/3D/addon/microphone/Wi-Fi/path settings.  This
+	 * runs before the audio and graphics mirrors below so a 3D renderer that
+	 * is created for the first ROM already sees the graphics switches. */
+	desmume_config_apply(pConfig);
 	desmume_emu_set_audio_config(pConfig->audio_enabled.get(),
 	                             pConfig->audio_volume.get(),
 	                             pConfig->audio_sync.get(),

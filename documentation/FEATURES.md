@@ -382,9 +382,17 @@ feature. Each entry says what you can do with it — not how it is built.
   decorations, and needs GTK 4.10 or newer.
 - **A complete emulator window, not a shell** — background ROM loading,
   ten instant-save slots (F1–F10 / Shift+F1–F10), screenshots, recent ROMs,
-  and emulation, graphics and sound settings in one dialog. LCD layouts
-  (including hybrid), screen swap, rotation and gap, plus keyboard, mouse and
-  stylus input, are restored from saved preferences.
+  and one settings window with eight pages. LCD layouts (including hybrid),
+  screen swap, rotation and gap, plus keyboard, mouse and stylus input, are
+  restored from saved preferences.
+- **The full settings set GTK3 has** — one window holds Emulation (bus timing,
+  game hacks, debug console, BIOS images, firmware image), Graphics (3D core,
+  output colour depth, multisampling, SoftRasterizer and accuracy switches,
+  texture options, presentation and GPU filter), Sound, Firmware (nickname,
+  message, colour, birthday, language, MAC), Slot 1/Slot 2 devices, Wi-Fi,
+  Microphone, and Paths (per-category folders plus the screenshot format and
+  file-name pattern). Settings the core only reads at boot offer a reset when
+  they change, and each page is reachable straight from the Config menu.
 - **The familiar tools** — IO registers, RAM Watch, RAM Search, Memory Viewer,
   Disassembler, Play/Record Movie dialogs, cheats with R4 database import, and a
   Lua console with run/stop/edit, file watching and drag-and-drop. Watch and
@@ -403,8 +411,10 @@ feature. Each entry says what you can do with it — not how it is built.
   that fit; everything else (the core, the breakpoint list, step/step-over/run
   to return) matches the GTK3 window.
 - **Current limits** — Lua popups, dynamic menus and input-state APIs still use
-  generic fallbacks, there is no GPU HUD yet, and real-ROM pixel comparison and
-  desktop-environment acceptance checks are still pending.
+  generic fallbacks, there is no GPU HUD or video/audio recording yet, and ROM
+  Info, save import/export, the cheat database, hotkey remapping and the debug
+  views are still missing. Real-ROM pixel comparison and desktop-environment
+  acceptance checks are still pending.
 
 ---
 

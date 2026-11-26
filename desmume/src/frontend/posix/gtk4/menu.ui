@@ -434,6 +434,50 @@
           <attribute name='accel'>&lt;Control&gt;p</attribute>
         </item>
       </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Emulation settings…</attribute>
+          <attribute name='action'>app.configpage</attribute>
+          <attribute name='target' type='s'>'emulation'</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Graphics settings…</attribute>
+          <attribute name='action'>app.configpage</attribute>
+          <attribute name='target' type='s'>'graphic'</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Sound settings…</attribute>
+          <attribute name='action'>app.configpage</attribute>
+          <attribute name='target' type='s'>'sound'</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Firmware settings…</attribute>
+          <attribute name='action'>app.configpage</attribute>
+          <attribute name='target' type='s'>'firmware'</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name='label' translatable='yes'>_Slot 1 / Slot 2 settings…</attribute>
+          <attribute name='action'>app.configpage</attribute>
+          <attribute name='target' type='s'>'slots'</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Wi-Fi settings…</attribute>
+          <attribute name='action'>app.configpage</attribute>
+          <attribute name='target' type='s'>'wifi'</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Microphone settings…</attribute>
+          <attribute name='action'>app.configpage</attribute>
+          <attribute name='target' type='s'>'microphone'</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Path settings…</attribute>
+          <attribute name='action'>app.configpage</attribute>
+          <attribute name='target' type='s'>'paths'</attribute>
+        </item>
+      </section>
     </submenu>
 
     <submenu>

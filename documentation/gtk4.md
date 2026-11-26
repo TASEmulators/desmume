@@ -707,6 +707,7 @@ GTK4 里 `GtkDrawingArea` 不再有独立 `GdkWindow`，`WGPU_PresentFrame()` �
 | **P6** | 性能与打磨 | 停绘、双缓冲、ColumnView、测量报告 | 达到 §1.3 指标 | 1–2 周 |
 | **P7** | **wgpu（必做，最后补齐）** | 离屏 + 回读；滤镜对齐；GPU 选项恢复 | 滤镜输出与 GTK3 wgpu 一致（或明确差异） | 2–4 周 |
 | **P8** | 收尾 | 文档、桌面文件、man、CI 矩阵、弃用清理 | 发布检查表全过 | 1 周 |
+| **P9** | 设置补齐 | 8 页统一设置窗；路径/Slot/固件/Wi-Fi/麦克风/3D 实验开关；BGR666 输出 | 与 GTK3 各设置对话框逐项对齐 | 1 周 |
 
 总计约 **12–18 周**（单人、熟悉 GTK 的前提下）。P0–P3 完成即可日常使用；P4–P5 决定能否替代 GTK3；P7 不补齐则 GPU 滤镜功能缺位，不能宣布完全对齐。
 
@@ -1636,6 +1637,49 @@ P8 完成发布收尾。原则仍是 `gtk/` 一行不改——所有新资产都
 **验证**：三种构建全部 `ninja gtk4/desmume` 通过且无警告——默认 `wgpu=true`、`-Dwgpu=false`、`-Dopengl=true`。无 GPU 的 headless 环境里 wgpu-native 的 Vulkan 枚举会在进程启动阶段挂起（环境问题，与本次改动无关），故未做 GUI 实机截图；bridge 的列表构建逻辑此前已用 gdb 在无 wgpu 构建上 dump 验证（Null + SoftRasterizer，下标稳定）。
 
 **未做**：GPU OSD（`presentationWGPUHud`）——依赖整套 AGG HUD 绘制管线（`agg_osd.cpp` / `DrawHUD` / 字体 / `Agg_setHudTarget` 钩子 / Lua `agg.*`），GTK4 前端完全没有这套子系统，属独立大工程，单列为后续任务。
+
+---
+
+### P9：设置类配置补齐（2026-11-26）
+
+**目标**：GTK3 有而 GTK4 缺的设置项——路径、Slot 1/2、固件、麦克风、Wi-Fi、3D 实验
+开关、色彩深度/多重采样、截图格式与目录——一次搬完。GTK3 是"一个主题一个对话框"，
+GTK4 沿用既有的统一窗口，把三页扩成八页。
+
+| 路径 | 改动 |
+|---|---|
+| `gtk4/config_opts.h` | 补齐 3D 实验开关（`gfx3d*` 10 项）、Emulation/BIOS/固件镜像（`emu_*`/`bios_*`/`fw_*` 13 项）、固件用户数据（`fwconfig_*`，原本已有但无 UI）、Wi-Fi（3 项）、Slot 1/2（8 项）、麦克风（2 项）、PathSettings（12 项）。section/key 与 Windows `desmume.ini` 同名 |
+| `gtk4/emulation.{h,cpp}` | 新增桥接：`set_cpu_options` / `set_bios_config` / `set_firmware_image_config` / `set_firmware_user_config`（UTF-16 与 MAC 规范化在桥接层完成）/ `set_gfx3d_config` / `set_slot1_config` / `set_slot2_config` / `set_wifi_config` / `set_mic_config`，以及 Slot 设备枚举（名称/描述/id/是否需要 FAT 或 GBA ROM 行）与 Wi-Fi 网卡枚举。全部可在 `NDS_Init()` 之前调用：能直接写 `CommonSettings` 的立即生效，需要内核对象的（Slot/Wi-Fi/麦克风设备）先暂存、在 `desmume_emu_init()` 里应用 |
+| `gtk4/configdialog.{h,cpp}` | 八页：Emulation（General/CPU/Debug/BIOS/Firmware image）、Graphic（3D core/色彩深度/多重采样/SoftRasterizer/General 3D/Rendering accuracy/Texture/WebGPU presentation）、Sound、Firmware（用户数据）、Slots、Wi-Fi、Microphone、Paths（10 个目录 + 截图格式/文件名模板 + 记住上次目录）。`desmume_config_apply()` 把整份 config 推进内核，启动时与 OK 时共用同一份映射 |
+| `gtk4/main.cpp` / `menu.ui` | Config 菜单新增逐页快捷入口（`app.configpage` 字符串 target）；Open ROM 从 Paths 的 Roms 起步并按 `lastVisit` 回写；截图走 `desmume_config_screenshot_path()`（目录/格式/文件名模板） |
+| `gtk4/meson.build` | 加 `gdk-pixbuf-2.0`（截图的多格式写入；本就是 GTK4 的硬依赖） |
+
+**设计要点**：
+- **重置语义**：需要重启内核才生效的项（总线时序、BIOS/固件镜像、固件用户数据、
+  Slot 设备、Wi-Fi）在 OK 时比对签名，变了且已载入 ROM 就弹 "Reset now / Later"。
+  提示框挂在**主窗口**上、在设置窗销毁之后再显示——GTK4 里销毁父窗口会连带关掉
+  以它为 transient parent 的 alert。
+- **不做无谓重连**：统一窗口每次 OK 都会"应用全部"，所以 Slot 1/2 与麦克风在值未变时
+  直接跳过（`slot1_Reset()` 会发 card-eject IRQ，`Mic_ApplySettings()` 会重开录音设备）。
+- **18 bit 输出**：GTK4 原本只处理 BGR555/BGR888；色彩深度下拉框暴露后，
+  `present_current_frame()` 与截图路径补上 `ColorspaceConvertBuffer6665To8888<true,false>`。
+  对应地 `GPU->SetColorFormat()` 在 init 与每次应用时设置，内核每帧
+  `_ApplyFramebufferSettings()` 会自己取用这个 pending 值，不需要 GPU 事件回调。
+- **Wi-Fi**：`EXPERIMENTAL_WIFI_COMM` 未编入时页面仍可见，启用开关照存 config，
+  桥接强制 `WifiEmulationLevel_Off`，与 GTK3 一致；网卡列表在核心未启动时给出说明文字。
+
+**验证**（Arch/WSL，GTK 4.24.2）：
+- `ninja gtk4/desmume` 全绿，`gtk4-builder-tool validate menu.ui` 通过
+- 临时测试程序（链接 `configdialog.cpp.o` + `emulation.cpp.o` + `libdesmume.a`，
+  不建窗口）覆盖桥接层：CPU/BIOS 开关与路径、固件昵称/消息的 UTF-16 长度与终止、
+  `00:09:BF:11:22:33` → 6 字节 MAC、3D 开关落进 `CommonSettings`、Slot 列表与
+  "这行只对该设备有效" 的判定、`path.setpath` → `getpath` 往返、截图名模板
+  （`%f`/`%Y`、`jpeg` → `.jpg`、空模板回落 `desmume-screenshot-N.png`），全部通过
+- **未做**：本机无 X/Wayland，Broadway 后端也拿不到 display，八页控件树、逐页切换与
+  OK 应用路径**没有在真实显示器上跑过**；只在源码层核对了 GTK4 API（`GtkFileDialog`、
+  `GtkAlertDialog`、`GtkDropDown`、`gtk_editable_*`）的 4.10 可用性与下拉框索引范围。
+  上线前建议人工过一遍：Paths 改目录后打开 ROM 落在新目录、R4/调试设备要求填目录、
+  改 BIOS/固件后弹 Reset、Wi-Fi 页在有 libpcap 的机器上列出网卡。
 
 ---
 

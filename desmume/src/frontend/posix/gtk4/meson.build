@@ -4,7 +4,9 @@ gnome = import('gnome')
 gtk4_args = []
 
 # `dependencies` already contains dep_x11 (added in posix/meson.build).
-gtk_dependencies = dependencies + [dep_gtk4]
+# gdk-pixbuf is a hard dependency of GTK4 and its headers are needed for the
+# non-PNG screenshot writers selected in Path Settings.
+gtk_dependencies = dependencies + [dep_gtk4, dependency('gdk-pixbuf-2.0')]
 
 # Backend-specific pkg-config files are needed for gdk/wayland/gdkwayland.h and
 # gdk/x11/gdkx.h.  They are optional: without them the decoration probe falls
