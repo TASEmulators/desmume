@@ -393,6 +393,12 @@ feature. Each entry says what you can do with it — not how it is built.
   Microphone, and Paths (per-category folders plus the screenshot format and
   file-name pattern). Settings the core only reads at boot offer a reset when
   they change, and each page is reachable straight from the Config menu.
+- **ROM-level actions** — a ROM Info window (title, game code, maker, cartridge
+  and loaded size, CRC32, save type, CPU and 3D engine), import/export of the
+  battery save (raw `.sav`, No$GBA, `.dsv`, Action Replay `.duc`/`.dss`), a
+  `Saves` menu to force EEPROM/FRAM/FLASH or return to autodetect, and
+  ADVANsCEne XML import for save-type detection. View Layers switches each main
+  and sub background and OBJ layer on or off while the game runs.
 - **The familiar tools** — IO registers, RAM Watch, RAM Search, Memory Viewer,
   Disassembler, Play/Record Movie dialogs, cheats with R4 database import, and a
   Lua console with run/stop/edit, file watching and drag-and-drop. Watch and
@@ -411,10 +417,10 @@ feature. Each entry says what you can do with it — not how it is built.
   that fit; everything else (the core, the breakpoint list, step/step-over/run
   to return) matches the GTK3 window.
 - **Current limits** — Lua popups, dynamic menus and input-state APIs still use
-  generic fallbacks, there is no GPU HUD or video/audio recording yet, and ROM
-  Info, save import/export, the cheat database, hotkey remapping and the debug
-  views are still missing. Real-ROM pixel comparison and desktop-environment
-  acceptance checks are still pending.
+  generic fallbacks, there is no GPU HUD or video/audio recording yet, and
+  hotkey remapping, Turbo, the eight debug views and the DSM editor are still
+  missing. Real-ROM pixel comparison and desktop-environment acceptance checks
+  are still pending.
 
 ---
 

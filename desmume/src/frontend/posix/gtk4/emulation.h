@@ -51,6 +51,52 @@ gboolean desmume_emu_state_exists(int slot);
  * Returns TRUE on success; on failure *error_message holds a owned string. */
 gboolean desmume_emu_screenshot(const char *path, char **error_message);
 
+/* ---- ROM information / battery backup ------------------------------- */
+
+/* One label/value pair of the ROM Info dialog.  Both strings belong to the
+ * row and are released by desmume_emu_rom_info_free(). */
+typedef struct
+{
+	char *label;
+	char *value;
+} DesmumeRomInfoRow;
+
+/* Describe the loaded ROM (title, game code, maker, cartridge and loaded
+ * size, CRC32, save type, CPU and 3D engine).  Returns a NULL-terminated
+ * array, or NULL when no ROM is loaded. */
+DesmumeRomInfoRow *desmume_emu_rom_info(void);
+void desmume_emu_rom_info_free(DesmumeRomInfoRow *rows);
+
+/* Import a raw/Action Replay battery save into the loaded ROM's backup
+ * device, or write the current battery contents out.  Pause the emulation
+ * first: both replace the whole backup device contents.  On failure
+ * *error_message receives an owned string when requested. */
+gboolean desmume_emu_import_backup(const char *path, char **error_message);
+gboolean desmume_emu_export_backup(const char *path, char **error_message);
+
+/* Manual save type, in mc.h order: 0 = autodetect, 1..6 = EEPROM 4/64/512
+ * kbit, FRAM 256 kbit, FLASH 2/4 Mbit.  The backup device is re-detected and
+ * the existing save file is left untouched. */
+void desmume_emu_set_save_type(int type);
+int desmume_emu_get_save_type(void);
+
+/* Parse an ADVANsCEne XML database into the binary .ddb the core reads next
+ * to the executable, so later ROM loads can pick the save type from it.
+ * Returns TRUE and stores the record count in *record_count on success. */
+gboolean desmume_emu_import_advanscene(const char *xml_path,
+                                       guint *record_count,
+                                       char **error_message);
+
+/* ---- GPU layer visibility -------------------------------------------- */
+
+/* Layers 0..4 are the main engine's BG 0..3 and OBJ, 5..9 the sub engine's
+ * BG 0..3 and OBJ.  The state is per session and follows the emulation
+ * rather than the config file, like the GTK3 View > Layers menu.  Returns
+ * FALSE when no core is running yet, so the caller can leave the menu check
+ * mark alone. */
+gboolean desmume_emu_set_layer_enabled(int layer, gboolean enabled);
+gboolean desmume_emu_get_layer_enabled(int layer);
+
 void desmume_emu_set_frame_sink(DesmumeFrameSink sink, gpointer user_data);
 
 /* Run one frame and push it to the frame sink.  Safe to call with no ROM. */

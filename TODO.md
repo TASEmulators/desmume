@@ -33,7 +33,7 @@
 | Windows（基线） | 39 | 3 | 1 | 自身缺口只有"多显示窗口"；3 项部分：手动存档类型、独立截图工具、帧跳跃 |
 | macOS (Cocoa) | 30 | 6 | 7 | 日常功能齐全，缺口集中在开发者视图、DSM 编辑、载入策略与窗口细节 |
 | Linux GTK3 | 23 | 12 | 8 | 内存/IO/反汇编已补齐，主要缺 8 个开发者视图、DSM、ROM 生命周期与配置细节 |
-| Linux GTK4 | 16 | 11 | 16 | 迁移中的子集前端；2026-11-26 补齐设置类配置（路径/Slot/固件/Wi-Fi/麦克风/3D），缺录制、HUD 菜单、开发者视图与 DSM |
+| Linux GTK4 | 21 | 11 | 11 | 迁移中的子集前端；2026-11-26 补齐设置类配置与 ROM 生命周期（ROM Info / 存档导入导出 / ADVANsCEne / 存档类型 / GPU 图层），缺录制、HUD 菜单、开发者视图与 DSM |
 
 - **Cocoa 与 GTK3 同时完全缺失（5 项）**：载入策略、DSM 编辑器、8 个开发者视图、
   Always On Top / Lockdown、调试日志窗口。GTK4 也同样缺这 5 项，适合先抽共享 core。
@@ -50,8 +50,10 @@
   - GTK4 单独成列；它有而 GTK3 没有的 **Close ROM** 属迁移差异，不要"对齐掉"。
   - **GTK4 配置功能迁移（2026-11-26）**：路径设置、Slot 1/2、固件、Wi-Fi、麦克风、
     3D 实验开关、截图格式/目录、色彩深度/多重采样 已随统一设置窗口落地，
-    `☐`/`◐` 相应上调。存档类型选择仍是菜单项（与 GTK3 一致，不在设置对话框里），
-    因此保持 `☐`。
+    `☐`/`◐` 相应上调。
+  - **GTK4 ROM 生命周期与图层（2026-11-26，P10）**：ROM Info、存档导入/导出、
+    存档类型选择（`Saves 0–6`）、ADVANsCEne 数据库导入、View Layers 10 项全部落地，
+    这 5 项从 `☐` 上调为 `☑`。存档类型选择像 GTK3 一样是菜单项，不在设置对话框里。
 
 ### 1.2 矩阵
 
@@ -59,11 +61,11 @@
 |---|---|---|---|---|---|
 | ROM 载入 / 最近列表 | ☑ | ☑ | ☑ | ☑ | |
 | 卸载（Close/Unload ROM） | ☑ | ☑ | ☐ | ☑ | GTK3 只能换 ROM 或退出；GTK4 `app.close` 已有 |
-| ROM Info 对话框 | ☑ | ☑ | ☑ | ☐ | GTK3 `gtk/main.cpp:5418-5465`；GTK4 无 |
+| ROM Info 对话框 | ☑ | ☑ | ☑ | ☑ | GTK3 `gtk/main.cpp:5418-5465`；GTK4 `app.rominfo`（桥接 `desmume_emu_rom_info()`） |
 | 载入策略（全部读入 RAM / 从磁盘流式） | ☑ | ☐ | ☐ | ☐ | 三端全缺，core 已支持 |
-| 存档导入 / 导出 | ☑ | ☑ | ☑ | ☐ | |
-| 存档类型选择 | ◐ | ☑ | ☑ | ☐ | Windows 仅自动检测；GTK3 `Saves 0–6`；Cocoa 有 ROM Save Type 子菜单 |
-| ADVANsCEne 数据库（导入 + 自动判存档类型） | ☑ | ☑ | ☐ | ☐ | `advanscene.cpp` 已编入，缺前端入口 |
+| 存档导入 / 导出 | ☑ | ☑ | ☑ | ☑ | GTK4 File 菜单；导入支持 .sav/.dsv/.duc/.dss |
+| 存档类型选择 | ◐ | ☑ | ☑ | ☑ | Windows 仅自动检测；GTK3/GTK4 `Saves 0–6`；Cocoa 有 ROM Save Type 子菜单 |
+| ADVANsCEne 数据库（导入 + 自动判存档类型） | ☑ | ☑ | ☐ | ☑ | GTK4 File 菜单导入 XML → `~/.config/desmume/desmume.ddb`；GTK3 仍缺入口 |
 | 即时存档（10 槽 + 另存/另读） | ☑ | ☑ | ☑ | ☑ | |
 | 金手指：列表 / 搜索 / 禁用 / 数据库 | ☑ | ☑ | ☑ | ◐ | GTK4 有 Cheat list + Disable，无搜索/数据库 |
 | 电影（.dsm）播放 / 录制 / 停止 | ☑ | ☑ | ☑ | ☑ | |
@@ -76,7 +78,7 @@
 | 内存视图（hex，可改值，断点） | ☑ | ☑ | ☑ | ☑ | GTK3/GTK4 均已实现 |
 | IO 寄存器视图 | ☑ | ☐ | ☑ | ☑ | `tools/ioregsView.cpp` / `gtk4/tools/ioregs.cpp` |
 | 调色板 / 图块 / 地图 / OAM / 矩阵 / 光照 / 声音状态 / NitroFS 视图 | ☑ | ☐ | ☐ | ☐ | 8 个窗口，其余三端全空 |
-| GPU 图层开关 | ☑ 含主/子 GPU | ☑ | ◐ 缺主/子 GPU 总开关 | ☐ | GTK4 菜单无 Layers |
+| GPU 图层开关 | ☑ 含主/子 GPU | ☑ | ◐ 缺主/子 GPU 总开关 | ☑ 10 项，主/子各 5 | GTK4 View > View Layers；状态随会话，不写 config |
 | RAM Watch / RAM Search | ☑ | ☑ | ☑ | ☑ | 已共享 `shared/ram*_core` |
 | GDB stub | ☑ 命令行 | ☑ 控制面板 | ☑ 命令行 | ☑ 命令行 | Cocoa 控制面板是反向优势 |
 | Lua 脚本控制台 | ☑ | ☑ | ☑ | ☑ | |
@@ -234,13 +236,21 @@ GTK3 近期补得很快：RAM Watch/Search、金手指重写、FFmpeg 录制、�
 GTK4 **不是 GTK3 的换皮**：`gtk4/` 有独立的 `main.cpp`、`configdialog.cpp`、`display.cpp`、
 `tools.cpp` 与自己的 `menu.ui`（文件头注明"只列已接线 action"）。每次 meson 配置只编一个 GTK 前端。
 
-- **已具备**：Open/最近列表、Close ROM、即时存档、Frame advance/帧跳/限速、全屏、
-  Layout/Rotation/Screen Gap、WebGPU 呈现与 GPU 滤镜、IO 寄存器、RAM Watch/Search、
-  Cheat list、Memory Viewer、Disassembler、电影播放/录制/停止（含元数据）、Lua 控制台、
+- **已具备**：Open/最近列表、Close ROM、ROM Info、存档导入/导出、存档类型 `Saves 0–6`、
+  ADVANsCEne 导入、即时存档、Frame advance/帧跳/限速、全屏、
+  Layout/Rotation/Screen Gap、View Layers（主/子各 5 项）、WebGPU 呈现与 GPU 滤镜、
+  IO 寄存器、RAM Watch/Search、Cheat list、Memory Viewer、Disassembler、
+  电影播放/录制/停止（含元数据）、Lua 控制台、
   **统一设置窗的 8 页**（Emulation / Graphic / Sound / Firmware / Slots / Wi-Fi /
   Microphone / Paths，含 GTK3 的全部设置项）、截图格式/目录/文件名模板。
-- **相对 GTK3 的主要缺口**：视频/音频录制、存档导入导出、ROM Info、ADVANsCEne、
-  热键自定义、Turbo、GPU 图层开关、HUD 菜单、8 个开发者视图、DSM 编辑器。
+- **相对 GTK3 的主要缺口**：视频/音频录制、热键自定义、Turbo、HUD 菜单、
+  8 个开发者视图、DSM 编辑器。
+- **ROM 生命周期与图层（2026-11-26，P10）**：`emulation.{h,cpp}` 新增
+  `desmume_emu_rom_info()`（九行键值对）、`import_backup` / `export_backup`、
+  `set_save_type` / `get_save_type`、`import_advanscene()`、`set_layer_enabled` /
+  `get_layer_enabled`；`main.cpp` 接上 ROM Info 对话框、导入/导出对话框
+  （暂停 → 选文件 → 恢复）、`Saves` 单选菜单、ADVANsCEne 导入与 10 个图层开关
+  （`stateful` action，按会话生效）。
 - **配置功能迁移（2026-11-26，P9）**：`configdialog.cpp` 从 3 页扩到 8 页，
   `config_opts.h` 补齐 GTK3 的 3D 实验开关、Emulation/BIOS/固件镜像、固件用户数据、
   Wi-Fi、Slot 1/2、麦克风与 PathSettings 选项；`emulation.{h,cpp}` 新增对应桥接
@@ -250,8 +260,8 @@ GTK4 **不是 GTK3 的换皮**：`gtk4/` 有独立的 `main.cpp`、`configdialog
 - **GTK4 有而 GTK3 没有**：Close ROM（`gtk4/menu.ui:21-24` + `app.close`）。
   这是迁移顺序造成的，不要把 GTK4 的入口删掉去"对齐"GTK3；应反过来给 GTK3 补上。
 - **建议**：GTK4 的 UI 迁移按"已共享 core 的工具优先"推进（disassembler / memory viewer
-  已经这么做了），设置类项目已随 P9 一次搬完，剩下的按"ROM 生命周期（ROM Info /
-  ADVANsCEne / 存档导入导出）→ 录制 → HUD 菜单 → 开发者视图"排。
+  已经这么做了）；设置类与 ROM 生命周期已搬完，剩下的按"录制 → HUD 菜单 →
+  开发者视图"排。HUD 需要先有 `agg_osd` 那套绘制管线，属独立工程。
 
 ---
 
@@ -304,8 +314,14 @@ Cocoa 9 类、GTK3 10 类）、`shared/disassembly_core.cpp`、`shared/movie_inf
 6. ~~**GTK4 UI 迁移（设置部分）**~~ —— 已完成（2026-11-26）：GTK3 已有的设置对话框
    逐页搬到 `configdialog.cpp`（路径 / Slot 1&2 / 固件 / 麦克风 / Wi-Fi / 3D 实验开关 /
    色彩深度与多重采样）。剩下的 GTK4 项见 §3.2。
-7. **细节**：帧跳跃（Windows/GTK）、截图另存为、Always On Top、屏幕比例、
-   录像暂停、后台输入/暂停、HUD 图形输入。
+7. ~~**GTK4 ROM 生命周期 + 图层**~~ —— 已完成（2026-11-26）：ROM Info、存档导入/导出、
+   存档类型、ADVANsCEne 导入、View Layers。
+8. **GTK4 录制**：GTK3 的 FFmpeg 录制器（`gtk/` 侧按容器过滤编码器、双屏合成、旋转/间距）
+   可抽成 `shared/` 的录制 core，再接 GTK4 的对话框；工作量比前两项大。
+9. **GTK4 HUD 菜单**：需要先移植 `agg_osd.cpp` / `DrawHUD` / 字体与 `Agg_setHudTarget`
+   这套绘制管线，之后 `config_opts.h` 里已有的 7 个开关才有效。
+10. **细节**：帧跳跃（Windows/GTK）、截图另存为、Always On Top、屏幕比例、
+    录像暂停、后台输入/暂停、HUD 图形输入。
 
 每完成一项，同步更新 `documentation/FEATURES.md` 对应段落，并在此文件把 `☐` 改成 `☑`。
 
@@ -327,6 +343,12 @@ Cocoa 9 类、GTK3 10 类）、`shared/disassembly_core.cpp`、`shared/movie_inf
   （本环境无 X/Wayland，Broadway 后端也连不上），8 页的控件树、逐页切换与 OK 应用
   路径只有静态核对，上线前建议人工过一遍：路径页改目录后打开 ROM 应落到新目录、
   R4/调试设备要求填目录、改 BIOS 后提示 Reset。
+- **2026-11-26 的 GTK4 ROM 生命周期与图层**：`ninja gtk4/desmume` 与
+  `gtk4-builder-tool validate menu.ui` 均通过；临时测试程序（已删除）覆盖了
+  无 ROM 时的拒绝路径、存档类型往返与越界回退、图层设置在核心启动前被拒绝、
+  ADVANsCEne XML → `.ddb` 的导入（1 条记录，落在 `~/.config/desmume/desmume.ddb`）。
+  **对话框本身仍未在真实显示器上打开过**：ROM Info 的九行内容、导入/导出对话框的
+  暂停→恢复、`Saves` 菜单的单选标记、图层开关的实际画面裁剪只有静态核对。
 - Cocoa 侧没有编译验证（需要 macOS + Xcode）。
 - GTK2 按维护模式处理，未纳入对比；它的功能集是 GTK3 的子集减去近期新增项。
 - "缺失"以入口/实现的存在性判断。若某项在别处以非常规路径存在（例如只由 Lua API 暴露），

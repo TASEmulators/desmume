@@ -2509,6 +2509,23 @@ desmume_config_rom_directory(desmume::config::Config *config)
 	return g_strdup(g_get_home_dir());
 }
 
+/* Where the backup import/export dialogs start. */
+char *
+desmume_config_sram_directory(desmume::config::Config *config)
+{
+	std::string configured;
+	if (config != NULL)
+	{
+		configured = desmume::pathsettings::NormalizeDirectory(
+			config->path_sram_import_export.get());
+	}
+	if (!configured.empty() && g_file_test(configured.c_str(), G_FILE_TEST_IS_DIR))
+	{
+		return g_strdup(configured.c_str());
+	}
+	return g_strdup(g_get_home_dir());
+}
+
 void
 desmume_config_note_rom_dir(desmume::config::Config *config, const char *rom_path)
 {

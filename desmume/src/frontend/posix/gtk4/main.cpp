@@ -110,6 +110,9 @@ static guint sLoadsInFlight = 0;
 /* Dynamically rebuilt "Open recent" submenu (GtkRecentManager is gone in 4). */
 static GMenu *sRecentMenu = NULL;
 
+static void SetRunButton(gboolean running);
+static void SetStatus(const char *text);
+
 /* Host accessors used by the tool windows (declared in tools.h). */
 desmume::config::Config *
 desmume_host_config(void)
@@ -558,7 +561,8 @@ UpdateRomActions(void)
 {
 	const gboolean has_rom = desmume_emu_has_rom();
 	static const char *const rom_actions[] = {
-		"run", "reset", "save-state", "load-state", "screenshot", "close"
+		"run", "reset", "save-state", "load-state", "screenshot", "close",
+		"rominfo", "importbackup", "exportbackup"
 	};
 	for (guint i = 0; i < G_N_ELEMENTS(rom_actions); ++i)
 	{
@@ -822,11 +826,7 @@ static void ActionClose(GSimpleAction *action, GVariant *parameter, gpointer use
 	}
 	desmume_emu_unload_rom();
 	gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME");
-	if (pRunButton != NULL)
-	{
-		gtk_button_set_icon_name(GTK_BUTTON(pRunButton), "media-playback-start-symbolic");
-		gtk_widget_set_tooltip_text(pRunButton, "Run");
-	}
+	SetRunButton(FALSE);
 	SetStatus("ROM closed");
 	UpdateRomActions();
 }
@@ -907,6 +907,22 @@ static void ActionRecent(GSimpleAction *action, GVariant *parameter, gpointer us
 	g_free(path);
 }
 
+/* Reflect the emulation state on the toolbar button.  Pausing from a menu
+ * action has to go through here, otherwise the button keeps showing "Pause"
+ * while the emulation is stopped. */
+static void
+SetRunButton(gboolean running)
+{
+	if (pRunButton == NULL)
+	{
+		return;
+	}
+	gtk_button_set_icon_name(GTK_BUTTON(pRunButton),
+	                         running ? "media-playback-pause-symbolic"
+	                                 : "media-playback-start-symbolic");
+	gtk_widget_set_tooltip_text(pRunButton, running ? "Pause" : "Run");
+}
+
 static void ActionRun(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
 	(void)action;
@@ -921,16 +937,412 @@ static void ActionRun(GSimpleAction *action, GVariant *parameter, gpointer user_
 
 	const gboolean now_running = !desmume_emu_get_running();
 	desmume_emu_set_running(now_running);
-
-	if (pRunButton != NULL)
-	{
-		gtk_button_set_icon_name(GTK_BUTTON(pRunButton),
-		                         now_running ? "media-playback-pause-symbolic"
-		                                     : "media-playback-start-symbolic");
-		gtk_widget_set_tooltip_text(pRunButton, now_running ? "Pause" : "Run");
-	}
+	SetRunButton(now_running);
 
 	SetStatus(now_running ? "Running" : "Paused");
+}
+
+/* ------------------------------------------------- ROM info / save files */
+
+static void
+OnCloseInfoClicked(GtkButton *button, gpointer user_data)
+{
+	(void)button;
+	gtk_window_destroy(GTK_WINDOW(user_data));
+}
+
+static void
+ActionRomInfo(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+
+	DesmumeRomInfoRow *rows = desmume_emu_rom_info();
+	if (rows == NULL)
+	{
+		SetStatus("Open a ROM first (Ctrl+O).");
+		return;
+	}
+
+	GtkWidget *window = gtk_window_new();
+	gtk_window_set_title(GTK_WINDOW(window), "ROM Info");
+	gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(pWindow));
+	gtk_window_set_modal(GTK_WINDOW(window), TRUE);
+	gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
+
+	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 14);
+	gtk_widget_set_margin_start(box, 16);
+	gtk_widget_set_margin_end(box, 16);
+	gtk_widget_set_margin_top(box, 16);
+	gtk_widget_set_margin_bottom(box, 16);
+
+	GtkWidget *grid = gtk_grid_new();
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+
+	int row = 0;
+	for (const DesmumeRomInfoRow *item = rows; item->label != NULL; ++item, ++row)
+	{
+		GtkWidget *label = gtk_label_new(item->label);
+		gtk_label_set_xalign(GTK_LABEL(label), 1.0f);
+		gtk_widget_add_css_class(label, "dim-label");
+
+		GtkWidget *value = gtk_label_new(item->value);
+		gtk_label_set_xalign(GTK_LABEL(value), 0.0f);
+		gtk_label_set_selectable(GTK_LABEL(value), TRUE);
+		gtk_widget_set_hexpand(value, TRUE);
+
+		gtk_grid_attach(GTK_GRID(grid), label, 0, row, 1, 1);
+		gtk_grid_attach(GTK_GRID(grid), value, 1, row, 1, 1);
+	}
+	gtk_box_append(GTK_BOX(box), grid);
+
+	GtkWidget *close_button = gtk_button_new_with_label("Close");
+	gtk_widget_set_halign(close_button, GTK_ALIGN_END);
+	GtkWidget *close_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_box_append(GTK_BOX(close_row), close_button);
+	gtk_box_append(GTK_BOX(box), close_row);
+	gtk_widget_grab_focus(close_button);
+
+	GtkWindow *info = GTK_WINDOW(window);
+	g_signal_connect(close_button, "clicked", G_CALLBACK(OnCloseInfoClicked), info);
+
+	gtk_window_set_child(GTK_WINDOW(window), box);
+	gtk_window_present(GTK_WINDOW(window));
+
+	desmume_emu_rom_info_free(rows);
+}
+
+/* Backup import/export share the pausing and the "was it running" bookkeeping. */
+typedef struct
+{
+	gboolean resume;  /* emulation was running when the dialog opened */
+	gboolean writing; /* TRUE writes the battery out, FALSE reads it in */
+} BackupDialog;
+
+static void
+OnBackupFileChosen(GObject *source, GAsyncResult *result, gpointer user_data)
+{
+	BackupDialog *dialog = (BackupDialog *)user_data;
+
+	/* The window may have been closed while the picker was open. */
+	if (pWindow == NULL)
+	{
+		g_free(dialog);
+		return;
+	}
+
+	GError *error = NULL;
+
+	GFile *file = dialog->writing
+		? gtk_file_dialog_save_finish(GTK_FILE_DIALOG(source), result, &error)
+		: gtk_file_dialog_open_finish(GTK_FILE_DIALOG(source), result, &error);
+
+	if (file == NULL)
+	{
+		if ((error != NULL) &&
+		    !g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_DISMISSED))
+		{
+			ShowErrorAlert(error->message);
+		}
+		g_clear_error(&error);
+	}
+	else
+	{
+		char *path = g_file_get_path(file);
+		g_object_unref(file);
+
+		if (path == NULL)
+		{
+			ShowErrorAlert("Only local files are supported.");
+		}
+		else
+		{
+			char *message = NULL;
+			const gboolean ok = dialog->writing
+				? desmume_emu_export_backup(path, &message)
+				: desmume_emu_import_backup(path, &message);
+
+			if (ok)
+			{
+				char *status = g_strdup_printf(
+					dialog->writing ? "Exported save data: %s"
+					               : "Imported save data: %s", path);
+				SetStatus(status);
+				g_free(status);
+			}
+			else
+			{
+				ShowErrorAlert((message != NULL) ? message
+				                                 : "The save file could not be transferred.");
+			}
+			g_free(message);
+			g_free(path);
+		}
+	}
+
+	if (dialog->resume)
+	{
+		desmume_emu_set_running(TRUE);
+		SetRunButton(TRUE);
+	}
+	g_free(dialog);
+}
+
+/* Pause, ask for a file and hand it to OnBackupFileChosen.  Pausing keeps the
+ * backup device from being rewritten by the running game while it is being
+ * replaced, which is also what GTK3 does. */
+static void
+ShowBackupDialog(gboolean writing)
+{
+	if (!desmume_emu_has_rom())
+	{
+		SetStatus("Open a ROM first (Ctrl+O).");
+		return;
+	}
+
+	BackupDialog *dialog = g_new0(BackupDialog, 1);
+	dialog->writing = writing;
+	dialog->resume = desmume_emu_get_running();
+	if (dialog->resume)
+	{
+		desmume_emu_set_running(FALSE);
+		SetRunButton(FALSE);
+	}
+
+	GtkFileDialog *file_dialog = gtk_file_dialog_new();
+	GtkFileFilter *filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, "Battery saves (*.sav, *.dsv, *.duc, *.dss)");
+	gtk_file_filter_add_pattern(filter, "*.sav");
+	gtk_file_filter_add_pattern(filter, "*.SAV");
+	gtk_file_filter_add_pattern(filter, "*.dsv");
+	gtk_file_filter_add_pattern(filter, "*.DSV");
+	gtk_file_filter_add_pattern(filter, "*.duc");
+	gtk_file_filter_add_pattern(filter, "*.dss");
+	GListStore *filters = g_list_store_new(GTK_TYPE_FILE_FILTER);
+	g_list_store_append(filters, filter);
+	gtk_file_dialog_set_filters(file_dialog, G_LIST_MODEL(filters));
+
+	char *directory = desmume_config_sram_directory(pConfig);
+	if (directory != NULL)
+	{
+		GFile *folder = g_file_new_for_path(directory);
+		gtk_file_dialog_set_initial_folder(file_dialog, folder);
+		g_object_unref(folder);
+		g_free(directory);
+	}
+
+	if (writing)
+	{
+		gtk_file_dialog_set_title(file_dialog, "Export Backup Memory To…");
+		gtk_file_dialog_set_accept_label(file_dialog, "Export");
+
+		char *base = desmume_emu_rom_base_name();
+		char *name = g_strdup_printf("%s.sav",
+		                             ((base != NULL) && (*base != '\0'))
+		                                 ? base : "desmume");
+		gtk_file_dialog_set_initial_name(file_dialog, name);
+		g_free(name);
+		g_free(base);
+
+		gtk_file_dialog_save(file_dialog, GTK_WINDOW(pWindow), NULL,
+		                     OnBackupFileChosen, dialog);
+	}
+	else
+	{
+		gtk_file_dialog_set_title(file_dialog, "Import Backup Memory From…");
+		gtk_file_dialog_set_accept_label(file_dialog, "Import");
+		gtk_file_dialog_open(file_dialog, GTK_WINDOW(pWindow), NULL,
+		                     OnBackupFileChosen, dialog);
+	}
+
+	g_object_unref(file_dialog);
+	g_object_unref(filter);
+	g_object_unref(filters);
+}
+
+static void ActionImportBackup(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+	ShowBackupDialog(FALSE);
+}
+
+static void ActionExportBackup(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+	ShowBackupDialog(TRUE);
+}
+
+/* ADVANsCEne XML -> desmume.ddb beside the executable.  The core reads that
+ * file when it detects a save type, so no reload is needed: the next ROM load
+ * picks it up. */
+static void
+OnDatabaseFileChosen(GObject *source, GAsyncResult *result, gpointer user_data)
+{
+	(void)user_data;
+
+	GError *error = NULL;
+	GFile *file = gtk_file_dialog_open_finish(GTK_FILE_DIALOG(source), result, &error);
+	if (file == NULL)
+	{
+		if ((error != NULL) &&
+		    !g_error_matches(error, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_DISMISSED))
+		{
+			ShowErrorAlert(error->message);
+		}
+		g_clear_error(&error);
+		return;
+	}
+
+	char *path = g_file_get_path(file);
+	g_object_unref(file);
+
+	char *message = NULL;
+	guint records = 0;
+	const gboolean ok = desmume_emu_import_advanscene(path, &records, &message);
+
+	if (ok)
+	{
+		char *status = g_strdup_printf("ADVANsCEne database imported: %u records",
+		                               records);
+		SetStatus(status);
+		g_free(status);
+	}
+	else
+	{
+		ShowErrorAlert((message != NULL) ? message
+		                                 : "The database could not be imported.");
+	}
+
+	g_free(message);
+	g_free(path);
+}
+
+static void ActionImportDatabase(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)action;
+	(void)parameter;
+	(void)user_data;
+
+	GtkFileDialog *dialog = gtk_file_dialog_new();
+	gtk_file_dialog_set_title(dialog, "Import ADVANsCEne Database");
+
+	GtkFileFilter *filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, "ADVANsCEne database (XML)");
+	gtk_file_filter_add_pattern(filter, "*.xml");
+	gtk_file_filter_add_pattern(filter, "*.XML");
+	GListStore *filters = g_list_store_new(GTK_TYPE_FILE_FILTER);
+	g_list_store_append(filters, filter);
+	gtk_file_dialog_set_filters(dialog, G_LIST_MODEL(filters));
+
+	gtk_file_dialog_open(dialog, GTK_WINDOW(pWindow), NULL,
+	                     OnDatabaseFileChosen, NULL);
+
+	g_object_unref(dialog);
+	g_object_unref(filter);
+	g_object_unref(filters);
+}
+
+/* ------------------------------------------------------ save type / layers */
+
+/* Same order as save_types[] in mc.cpp; the strings are the menu targets. */
+static const char *const kSaveTypeNames[] =
+{
+	"autodetect", "eeprom-4k", "eeprom-64k", "eeprom-512k",
+	"fram-256k", "flash-2m", "flash-4m"
+};
+
+static const char *const kSaveTypeLabels[] =
+{
+	"Autodetect", "EEPROM 4kbit", "EEPROM 64kbit", "EEPROM 512kbit",
+	"FRAM 256kbit", "FLASH 2Mbit", "FLASH 4Mbit"
+};
+
+static void
+ActionSaveType(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)user_data;
+
+	const char *name = g_variant_get_string(parameter, NULL);
+	int type = 0;
+	for (guint i = 0; i < G_N_ELEMENTS(kSaveTypeNames); ++i)
+	{
+		if (g_strcmp0(name, kSaveTypeNames[i]) == 0)
+		{
+			type = (int)i;
+			break;
+		}
+	}
+
+	g_simple_action_set_state(action, parameter);
+	desmume_emu_set_save_type(type);
+
+	if (pConfig != NULL)
+	{
+		pConfig->savetype = type;
+		pConfig->save();
+	}
+
+	char *status = g_strdup_printf("Save type: %s", kSaveTypeLabels[type]);
+	SetStatus(status);
+	g_free(status);
+}
+
+/* Main BG 0..3 and OBJ, then the same five on the sub engine. */
+static const struct
+{
+	const char *name;
+	guint layer;
+} kLayerActions[] =
+{
+	{ "layermainbg0", 0 },
+	{ "layermainbg1", 1 },
+	{ "layermainbg2", 2 },
+	{ "layermainbg3", 3 },
+	{ "layermainobj",  4 },
+	{ "layersubbg0", 5 },
+	{ "layersubbg1", 6 },
+	{ "layersubbg2", 7 },
+	{ "layersubbg3", 8 },
+	{ "layersubobj",  9 }
+};
+
+static void
+OnLayerToggled(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+	(void)parameter;
+
+	const guint layer = GPOINTER_TO_UINT(user_data);
+	GVariant *state = g_action_get_state(G_ACTION(action));
+	const gboolean active = g_variant_get_boolean(state) ? FALSE : TRUE;
+	g_variant_unref(state);
+
+	/* Leave the check mark alone when there is no core to change yet. */
+	if (!desmume_emu_set_layer_enabled((int)layer, active))
+	{
+		return;
+	}
+
+	g_simple_action_set_state(action, g_variant_new_boolean(active));
+}
+
+static void
+InstallLayerActions(GtkApplication *app)
+{
+	for (guint i = 0; i < G_N_ELEMENTS(kLayerActions); ++i)
+	{
+		GSimpleAction *action = g_simple_action_new_stateful(
+			kLayerActions[i].name, NULL, g_variant_new_boolean(TRUE));
+		g_signal_connect(action, "activate", G_CALLBACK(OnLayerToggled),
+		                 GUINT_TO_POINTER(kLayerActions[i].layer));
+		g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(action));
+		g_object_unref(action);
+	}
 }
 
 /* ------------------------------------------------------ speed / frame (P3d) */
@@ -952,11 +1364,7 @@ ActionFrameAdvance(GSimpleAction *action, GVariant *parameter, gpointer user_dat
 	if (desmume_emu_get_running())
 	{
 		desmume_emu_set_running(FALSE);
-		if (pRunButton != NULL)
-		{
-			gtk_button_set_icon_name(GTK_BUTTON(pRunButton), "media-playback-start-symbolic");
-			gtk_widget_set_tooltip_text(pRunButton, "Run");
-		}
+		SetRunButton(FALSE);
 	}
 
 	desmume_emu_step_frame_advance();
@@ -1544,6 +1952,11 @@ static const GActionEntry app_entries[] =
 	{ "save-state",     ActionSaveState,  "u",  NULL,   NULL },
 	{ "load-state",     ActionLoadState,  "u",  NULL,   NULL },
 	{ "screenshot",     ActionScreenshot, NULL, NULL,   NULL },
+	{ "rominfo",        ActionRomInfo,    NULL, NULL,   NULL },
+	{ "importbackup",   ActionImportBackup, NULL, NULL, NULL },
+	{ "exportbackup",   ActionExportBackup, NULL, NULL, NULL },
+	{ "importdb",       ActionImportDatabase, NULL, NULL, NULL },
+	{ "savetype",       ActionSaveType,   "s",  "'autodetect'", NULL },
 	{ "fps-limiter",    NULL,             NULL, "true", FpsLimiterChanged },
 	{ "auto-frameskip", NULL,             NULL, "true", AutoFrameskipChanged },
 	{ "frameskip",      ActionFrameskip,  "s",  "'0'",  NULL },
@@ -1783,6 +2196,18 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 	RecentRebuildMenu();
 	UpdateRomActions();
 
+	/* The save type is a plain index in the config; the menu uses string
+	 * targets so the radio group can mark the active entry. */
+	{
+		int type = pConfig->savetype.get();
+		if ((type < 0) || (type >= (int)G_N_ELEMENTS(kSaveTypeNames)))
+		{
+			type = 0;
+		}
+		desmume_emu_set_save_type(type);
+		SetActionStringState("savetype", kSaveTypeNames[type]);
+	}
+
 	gtk_window_present(GTK_WINDOW(pWindow));
 
 	/* Pass the address of the widget pointer, guarded by a weak pointer in
@@ -1907,6 +2332,9 @@ int main(int argc, char *argv[])
 	g_action_map_add_action_entries(G_ACTION_MAP(app),
 	                                app_entries, G_N_ELEMENTS(app_entries),
 	                                app);
+	/* The ten layer switches are separate stateful actions created at run
+	 * time, because GActionEntry cannot pass the layer index through. */
+	InstallLayerActions(app);
 
 	/* Stop Movie is only meaningful while playback/recording is active. */
 	UpdateMovieActions();

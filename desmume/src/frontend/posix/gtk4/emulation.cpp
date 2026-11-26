@@ -40,6 +40,10 @@
 #include "saves.h"
 #include "cheatSystem.h"
 #include "movie.h"
+#include "Database.h"
+#include "mc.h"
+#include "emufile.h"
+#include "utils/advanscene.h"
 #include "utils/datetime.h"
 #include "utils/xstring.h"
 #include "path.h"
@@ -743,6 +747,292 @@ desmume_emu_rom_base_name(void)
 	char *result = g_strdup(base);
 	g_free(base);
 	return result;
+}
+
+/* --------------------------------------- ROM info / battery backup memory */
+
+/* The rows are handed to the UI so it never has to include NDSSystem.h and
+ * deal with the header layout itself. */
+DesmumeRomInfoRow *
+desmume_emu_rom_info(void)
+{
+	if (!sHasROM || (gameInfo.fROM == NULL))
+	{
+		return NULL;
+	}
+
+/* Nine rows plus the NULL terminator. */
+	DesmumeRomInfoRow *rows = g_new0(DesmumeRomInfoRow, 10);
+	int index = 0;
+	char buffer[128];
+
+	/* Row 0: internal title. */
+	rows[index].label = g_strdup("Internal title:");
+	rows[index].value = g_strdup(gameInfo.ROMname);
+	++index;
+	rows[index].label = g_strdup("Game code:");
+	rows[index].value = g_strdup(gameInfo.ROMserial);
+	++index;
+
+	/* Maker code is two ASCII characters stored little endian in the header;
+	 * Database::MakerNameForMakerCode wants the 16 bit form. */
+	{
+		const u8 *header = (const u8 *)&gameInfo.header;
+		const u16 maker = (u16)(header[0x10] | ((u16)header[0x11] << 8));
+		g_snprintf(buffer, sizeof(buffer), "%c%c (%s)",
+		           g_ascii_isprint(header[0x10]) ? header[0x10] : '?',
+		           g_ascii_isprint(header[0x11]) ? header[0x11] : '?',
+		           Database::MakerNameForMakerCode(maker, true));
+		rows[index].label = g_strdup("Maker:");
+		rows[index].value = g_strdup(buffer);
+		++index;
+	}
+
+	if (gameInfo.header.cardSize < 48)
+	{
+		g_snprintf(buffer, sizeof(buffer), "%llu KiB",
+		           (unsigned long long)(0x80ull << gameInfo.header.cardSize));
+	}
+	else
+	{
+		g_snprintf(buffer, sizeof(buffer), "Unknown");
+	}
+	rows[index].label = g_strdup("Cartridge capacity:");
+	rows[index].value = g_strdup(buffer);
+	++index;
+
+	g_snprintf(buffer, sizeof(buffer), "%u bytes", gameInfo.romsize);
+	rows[index].label = g_strdup("Loaded ROM size:");
+	rows[index].value = g_strdup(buffer);
+	++index;
+
+	g_snprintf(buffer, sizeof(buffer), "0x%08X", gameInfo.crc);
+	rows[index].label = g_strdup("CRC32:");
+	rows[index].value = g_strdup(buffer);
+	++index;
+
+	{
+		const int saveType = CommonSettings.manualBackupType;
+		rows[index].label = g_strdup("Save type:");
+		rows[index].value = g_strdup(((saveType >= 0) && (saveType <= 6))
+		                                 ? save_types[saveType].descr
+		                                 : "Unknown");
+		++index;
+	}
+
+#ifdef HAVE_JIT
+	rows[index].label = g_strdup("CPU engine:");
+	rows[index].value = g_strdup(CommonSettings.use_jit ? "JIT recompiler"
+	                                                    : "Interpreter");
+#else
+	rows[index].label = g_strdup("CPU engine:");
+	rows[index].value = g_strdup("Interpreter");
+#endif
+	++index;
+
+	{
+		const char *name = desmume_emu_renderer_name(desmume_emu_get_renderer());
+		rows[index].label = g_strdup("3D engine:");
+		rows[index].value = g_strdup((name != NULL) ? name : "None");
+		++index;
+	}
+
+	return rows;
+}
+
+void
+desmume_emu_rom_info_free(DesmumeRomInfoRow *rows)
+{
+	if (rows == NULL)
+	{
+		return;
+	}
+	for (DesmumeRomInfoRow *row = rows; row->label != NULL; ++row)
+	{
+		g_free(row->label);
+		g_free(row->value);
+	}
+	g_free(rows);
+}
+
+gboolean
+desmume_emu_import_backup(const char *path, char **error_message)
+{
+	if (!sHasROM || (path == NULL) || (*path == '\0'))
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("Load a ROM before importing a save file.");
+		}
+		return FALSE;
+	}
+	if (!g_file_test(path, G_FILE_TEST_IS_REGULAR))
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("The selected save file does not exist.");
+		}
+		return FALSE;
+	}
+
+	if (!MMU_new.backupDevice.importData(path))
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup(
+				"The save file could not be imported. Supported formats are "
+				"raw .sav, No$GBA .sav, .dsv, .duc and .dss.");
+		}
+		return FALSE;
+	}
+	return TRUE;
+}
+
+gboolean
+desmume_emu_export_backup(const char *path, char **error_message)
+{
+	if (!sHasROM || (path == NULL) || (*path == '\0'))
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("Load a ROM before exporting its save file.");
+		}
+		return FALSE;
+	}
+	/* BackupDevice::exportData() only writes raw .sav files. */
+	gchar *target = g_str_has_suffix(path, ".sav") ? g_strdup(path)
+	                                               : g_strconcat(path, ".sav", NULL);
+	const gboolean ok = MMU_new.backupDevice.exportData(target) ? TRUE : FALSE;
+	g_free(target);
+
+	if (!ok && (error_message != NULL))
+	{
+		*error_message = g_strdup("The save file could not be written.");
+	}
+	return ok;
+}
+
+void
+desmume_emu_set_save_type(int type)
+{
+	if ((type < 0) || (type > 6))
+	{
+		type = 0;
+	}
+	backup_setManualBackupType(type);
+
+	/* A loaded ROM keeps the device it detected at boot; re-run the
+	 * detection so the new choice is applied without reloading the ROM. */
+	if (sInitialized && sHasROM)
+	{
+		backup_forceManualBackupType();
+	}
+}
+
+int
+desmume_emu_get_save_type(void)
+{
+	return CommonSettings.manualBackupType;
+}
+
+gboolean
+desmume_emu_import_advanscene(const char *xml_path, guint *record_count,
+                              char **error_message)
+{
+	if (record_count != NULL)
+	{
+		*record_count = 0;
+	}
+	if ((xml_path == NULL) || (*xml_path == '\0') ||
+	    !g_file_test(xml_path, G_FILE_TEST_IS_REGULAR))
+	{
+		if (error_message != NULL)
+		{
+			*error_message = g_strdup("The selected database file does not exist.");
+		}
+		return FALSE;
+	}
+
+	/* The .ddb lives next to the module path, which on POSIX is the
+	 * ~/.config/desmume folder.  pathToModule is only filled in by
+	 * NDS_LoadROM(), so fall back to the config folder when the import runs
+	 * before the first ROM.  Build the name with g_build_filename because
+	 * pathToModule carries no trailing separator. */
+	std::string database;
+	if (path.pathToModule[0] != '\0')
+	{
+		char *name = g_build_filename(path.pathToModule, "desmume.ddb", NULL);
+		database = name;
+		g_free(name);
+	}
+	else
+	{
+		char *dir = g_build_filename(g_get_user_config_dir(), "desmume", NULL);
+		g_mkdir_with_parents(dir, 0755);
+		char *name = g_build_filename(dir, "desmume.ddb", NULL);
+		database = name;
+		g_free(name);
+		g_free(dir);
+	}
+	advsc.setDatabase(database.c_str());
+
+	EMUFILE_FILE output(database.c_str(), "wb");
+	const u32 count = advsc.convertDB(xml_path, output);
+	/* The file is flushed and closed by the destructor at the end of this
+	 * scope, before the caller reads the database back. */
+
+	if (count == 0)
+	{
+		if (error_message != NULL)
+		{
+			*error_message = advsc.lastImportErrorMessage.empty()
+				? g_strdup("No records could be read from that file.")
+				: g_strdup(advsc.lastImportErrorMessage.c_str());
+		}
+		return FALSE;
+	}
+
+	if (record_count != NULL)
+	{
+		*record_count = (guint)count;
+	}
+	return TRUE;
+}
+
+/* ------------------------------------------------------- GPU layer toggles */
+
+/* Mirrors GPUEngine's layer order: BG 0..3 then OBJ for each engine. */
+gboolean
+desmume_emu_set_layer_enabled(int layer, gboolean enabled)
+{
+	if (!sInitialized || (GPU == NULL) || (layer < 0) || (layer > 9))
+	{
+		return FALSE;
+	}
+
+	const bool on = (enabled != FALSE);
+	if (layer <= 4)
+	{
+		GPU->GetEngineMain()->SetLayerEnableState((size_t)layer, on);
+	}
+	else
+	{
+		GPU->GetEngineSub()->SetLayerEnableState((size_t)(layer - 5), on);
+	}
+	return TRUE;
+}
+
+gboolean
+desmume_emu_get_layer_enabled(int layer)
+{
+	if (!sInitialized || (GPU == NULL) || (layer < 0) || (layer > 9))
+	{
+		return TRUE;
+	}
+
+	return (layer <= 4)
+		? (GPU->GetEngineMain()->GetLayerEnableState((size_t)layer) ? TRUE : FALSE)
+		: (GPU->GetEngineSub()->GetLayerEnableState((size_t)(layer - 5)) ? TRUE : FALSE);
 }
 
 /* ------------------------------------------------------------- key / touch */

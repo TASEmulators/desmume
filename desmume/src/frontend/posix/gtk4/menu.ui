@@ -22,6 +22,10 @@
           <attribute name='label' translatable='yes'>_Close ROM</attribute>
           <attribute name='action'>app.close</attribute>
         </item>
+        <item>
+          <attribute name='label' translatable='yes'>ROM _Info…</attribute>
+          <attribute name='action'>app.rominfo</attribute>
+        </item>
       </section>
       <section>
         <submenu>
@@ -162,6 +166,20 @@
       </section>
       <section>
         <item>
+          <attribute name='label' translatable='yes'>_Import backup memory…</attribute>
+          <attribute name='action'>app.importbackup</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>_Export backup memory…</attribute>
+          <attribute name='action'>app.exportbackup</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Import ADVANsCEne data_base…</attribute>
+          <attribute name='action'>app.importdb</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
           <attribute name='label' translatable='yes'>_Quit</attribute>
           <attribute name='action'>app.quit</attribute>
           <attribute name='accel'>&lt;Control&gt;q</attribute>
@@ -253,6 +271,46 @@
               <attribute name='label' translatable='yes'>_9</attribute>
               <attribute name='action'>app.frameskip</attribute>
               <attribute name='target' type='s'>'9'</attribute>
+            </item>
+          </section>
+        </submenu>
+        <submenu>
+          <attribute name='label' translatable='yes'>_Saves</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_0 Autodetect</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target' type='s'>'autodetect'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_1 EEPROM 4kbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target' type='s'>'eeprom-4k'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_2 EEPROM 64kbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target' type='s'>'eeprom-64k'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_3 EEPROM 512kbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target' type='s'>'eeprom-512k'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_4 FRAM 256kbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target' type='s'>'fram-256k'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_5 FLASH 2Mbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target' type='s'>'flash-2m'</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_6 FLASH 4Mbit</attribute>
+              <attribute name='action'>app.savetype</attribute>
+              <attribute name='target' type='s'>'flash-4m'</attribute>
             </item>
           </section>
         </submenu>
@@ -405,6 +463,51 @@
               <attribute name='label' translatable='yes'>_PT SkyWalker541</attribute>
               <attribute name='action'>app.gpufilter</attribute>
               <attribute name='target' type='s'>'12'</attribute>
+            </item>
+          </section>
+        </submenu>
+        <submenu>
+          <attribute name='label' translatable='yes'>View _Layers</attribute>
+          <section>
+            <item>
+              <attribute name='label' translatable='yes'>_0 Main BG 0</attribute>
+              <attribute name='action'>app.layermainbg0</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_1 Main BG 1</attribute>
+              <attribute name='action'>app.layermainbg1</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_2 Main BG 2</attribute>
+              <attribute name='action'>app.layermainbg2</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_3 Main BG 3</attribute>
+              <attribute name='action'>app.layermainbg3</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_4 Main OBJ</attribute>
+              <attribute name='action'>app.layermainobj</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_5 SUB BG 0</attribute>
+              <attribute name='action'>app.layersubbg0</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_6 SUB BG 1</attribute>
+              <attribute name='action'>app.layersubbg1</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_7 SUB BG 2</attribute>
+              <attribute name='action'>app.layersubbg2</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_8 SUB BG 3</attribute>
+              <attribute name='action'>app.layersubbg3</attribute>
+            </item>
+            <item>
+              <attribute name='label' translatable='yes'>_9 SUB OBJ</attribute>
+              <attribute name='action'>app.layersubobj</attribute>
             </item>
           </section>
         </submenu>

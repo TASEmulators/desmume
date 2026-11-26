@@ -31,6 +31,10 @@ void desmume_config_apply(desmume::config::Config *config);
  * home folder).  Owned string. */
 char *desmume_config_rom_directory(desmume::config::Config *config);
 
+/* Folder the backup import/export dialogs start in (Path Settings > SRAM
+ * import/export, else the home folder).  Owned string. */
+char *desmume_config_sram_directory(desmume::config::Config *config);
+
 /* Remember the folder of a ROM that was just opened, when Path Settings has
  * "Remember the folder of the last opened ROM" enabled. */
 void desmume_config_note_rom_dir(desmume::config::Config *config,

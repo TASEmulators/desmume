@@ -708,6 +708,7 @@ GTK4 里 `GtkDrawingArea` 不再有独立 `GdkWindow`，`WGPU_PresentFrame()` �
 | **P7** | **wgpu（必做，最后补齐）** | 离屏 + 回读；滤镜对齐；GPU 选项恢复 | 滤镜输出与 GTK3 wgpu 一致（或明确差异） | 2–4 周 |
 | **P8** | 收尾 | 文档、桌面文件、man、CI 矩阵、弃用清理 | 发布检查表全过 | 1 周 |
 | **P9** | 设置补齐 | 8 页统一设置窗；路径/Slot/固件/Wi-Fi/麦克风/3D 实验开关；BGR666 输出 | 与 GTK3 各设置对话框逐项对齐 | 1 周 |
+| **P10** | ROM 生命周期 + 图层 | ROM Info、存档导入/导出、`Saves 0–6`、ADVANsCEne 导入、View Layers 10 项 | 与 GTK3/Windows 同名菜单项行为一致 | 3–4 天 |
 
 总计约 **12–18 周**（单人、熟悉 GTK 的前提下）。P0–P3 完成即可日常使用；P4–P5 决定能否替代 GTK3；P7 不补齐则 GPU 滤镜功能缺位，不能宣布完全对齐。
 
@@ -1680,6 +1681,45 @@ GTK4 沿用既有的统一窗口，把三页扩成八页。
   `GtkAlertDialog`、`GtkDropDown`、`gtk_editable_*`）的 4.10 可用性与下拉框索引范围。
   上线前建议人工过一遍：Paths 改目录后打开 ROM 落在新目录、R4/调试设备要求填目录、
   改 BIOS/固件后弹 Reset、Wi-Fi 页在有 libpcap 的机器上列出网卡。
+
+---
+
+### P10：ROM 生命周期与图层（2026-11-26）
+
+**目标**：把 GTK3（以及 Windows 独有的 ADVANsCEne 导入）里"围绕 ROM 本身"的一组动作
+搬到 GTK4——看 ROM 信息、换存档文件、手动指定存档类型、导入游戏数据库、逐图层开关。
+这些都是薄 UI + 内核既有能力的组合，没有新的渲染或编码工作。
+
+| 路径 | 改动 |
+|---|---|
+| `gtk4/emulation.h` | 新增 `DesmumeRomInfoRow`（label/value 对，NULL 结尾）与 `desmume_emu_rom_info()` / `_free()`、`import_backup` / `export_backup`、`set_save_type` / `get_save_type`、`import_advanscene()`、`set_layer_enabled` / `get_layer_enabled` |
+| `gtk4/emulation.cpp` | ROM Info 组装（标题/游戏码/厂商/卡带容量/载入大小/CRC32/存档类型/CPU/3D 引擎）；备份内存导入导出（`MMU_new.backupDevice.importData` / `exportData`）；`backup_setManualBackupType` + `backup_forceManualBackupType`；ADVANsCEne `convertDB()` 写出 `desmume.ddb`；`GPU->GetEngine{Main,Sub}()->SetLayerEnableState()` |
+| `gtk4/main.cpp` | `app.rominfo` 对话框（GtkGrid，值可选中复制）、`app.importbackup` / `app.exportbackup`（暂停 → `GtkFileDialog` → 恢复）、`app.savetype`（字符串 state，单选菜单）、`app.importdb`、10 个 stateful 图层 action；`SetRunButton()` 统一工具条按钮状态 |
+| `gtk4/configdialog.{h,cpp}` | `desmume_config_sram_directory()`：导入/导出对话框的起始目录 |
+| `gtk4/menu.ui` | File：ROM Info、导入/导出备份、ADVANsCEne 导入；Emulation：`Saves` 子菜单 7 项；View：`View Layers` 子菜单 10 项 |
+
+**设计要点**：
+- **桥接层不泄露内核头文件**：ROM Info 以 `label/value` 数组返回，`main.cpp` 仍不 include
+  `NDSSystem.h`；厂商名走 `Database::MakerNameForMakerCode()`，存档类型名取 `save_types[]`。
+- **导入/导出先暂停**：`importData()` 成功后会 `NDS_Reset()`，运行中重写备份内存没有意义。
+  对话框打开时若原本在跑，回调结束时恢复运行并同步工具条按钮（`SetRunButton`）。
+- **存档类型立即生效**：`backup_setManualBackupType()` 只记设置，已有 ROM 的备份设备不会
+  自己改变，所以随后调 `backup_forceManualBackupType()` 重新检测；写回 `config.savetype`。
+- **ADVANsCEne 路径**：`.ddb` 放在模块目录（POSIX 是 `~/.config/desmume/`）。
+  `path.pathToModule` 由 `NDS_LoadROM()` 填充，导入可能早于首次载入 ROM，因此用
+  `g_get_user_config_dir()` 兜底；拼接一律用 `g_build_filename`，因为 `pathToModule`
+  不带结尾分隔符（`NDS_Init()` 里的 `strcat` 在 POSIX 会拼错，属内核遗留问题）。
+- **图层是会话状态**：GTK3 也不持久化，重开即全部可见；`SetLayerEnableState()` 需要活跃的
+  GPU，因此 setter 返回 `FALSE` 时菜单不翻转勾选，避免出现"勾了但没生效"。
+
+**验证**（Arch/WSL，GTK 4.24.2）：
+- `ninja gtk4/desmume` 与 `gtk4-builder-tool validate menu.ui` 通过，无新增警告
+- 临时测试程序（链接 `emulation.cpp.o` + `libdesmume.a`）覆盖：无 ROM 时 ROM Info 返回
+  NULL、导入/导出给出错误串、存档类型往返与越界回退到 autodetect、核心未启动时图层
+  setter 返回 FALSE、伪造 RtoolDS XML 导入得到 1 条记录且 `.ddb` 落在配置目录
+- **未做**：对话框没有在真实显示器上打开过（本机无 X/Wayland）。上线前建议人工过一遍：
+  ROM Info 的九行内容、导入 `.sav` 后游戏内读档、`Saves` 单选标记跟随启动配置、
+  逐项关图层应只影响对应背景/OBJ。
 
 ---
 
