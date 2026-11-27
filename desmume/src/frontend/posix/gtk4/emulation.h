@@ -360,10 +360,25 @@ gboolean desmume_emu_set_mic_config(int mode, const char *sample_file);
 
 
 /* Keyvals use the GTK3 default keymap.  Touch coordinates are in NDS logical
- * space (0..255 / 0..191), exactly what DesmumeDisplay's signals emit. */
-void desmume_emu_set_key(guint keyval, gboolean pressed);
+ * space (0..255 / 0..191), exactly what DesmumeDisplay's signals emit.
+ *
+ * desmume_emu_set_key() returns TRUE when the key is bound to a DS button or
+ * a turbo key, so the display widget can consume it instead of letting a
+ * menu accelerator see the same press.  Modified keys are never game input. */
+gboolean desmume_emu_set_key(guint keyval, gboolean pressed,
+                             GdkModifierType state);
 void desmume_emu_touch(double x, double y);
 void desmume_emu_release_touch(void);
+
+/* Read/write the [KEYS], [JOYKEYS] and [TURBOKEYS] groups from a config key
+ * file.  The tables themselves are the shared ctrlssdl ones, so the values
+ * mean exactly what they do in GTK3. */
+void desmume_emu_load_input_config(GKeyFile *keyfile);
+void desmume_emu_save_input_config(GKeyFile *keyfile);
+
+/* While a joystick binding dialog is open, get_joy_key() owns SDL's event
+ * queue; stop the frame loop from draining it. */
+void desmume_emu_set_joy_capture(gboolean active);
 
 G_END_DECLS
 

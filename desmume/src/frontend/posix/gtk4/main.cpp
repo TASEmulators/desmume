@@ -40,8 +40,10 @@
 #include "configdialog.h"
 #include "display.h"
 #include "emulation.h"
+#include "hotkeys.h"
 #include "tools.h"
 #include "tools/movie.h"
+#include "../shared/ctrlssdl.h"
 #if defined(HAVE_LUA)
 #include "tools/luaScriptConsole.h"
 #endif
@@ -530,12 +532,13 @@ static void OnTouchRelease(DesmumeDisplay *display, gpointer user_data)
 }
 
 static void OnKeyEvent(DesmumeDisplay *display, guint keyval,
-                       gboolean pressed, gpointer user_data)
+                       gboolean pressed, guint state, gpointer user_data)
 {
-	(void)display;
 	(void)user_data;
 
-	desmume_emu_set_key(keyval, pressed);
+	const gboolean handled = desmume_emu_set_key(
+		keyval, pressed, (GdkModifierType)state);
+	desmume_display_set_key_handled(display, handled);
 }
 
 static guint sHoldKey = 0;
@@ -543,21 +546,173 @@ static GdkModifierType sHoldMods = (GdkModifierType)0;
 static guint sHoldKeycode = 0;
 static gboolean sHoldActive = FALSE;
 
-static void ApplyHoldShortcut(void)
+/* Menu shortcuts that can be rebound.  The list and the [HOTKEYS] slugs are
+ * the same as GTK3's, so a config written by either frontend keeps its
+ * bindings.  Actions without a GTK4 equivalent are deliberately absent; the
+ * remaining ones map to the actions registered in app_entries[]. */
+static const DesmumeHotkeyDef kHotkeyDefs[] =
 {
-	sHoldKey = 0;
-	sHoldMods = (GdkModifierType)0;
-	gtk_accelerator_parse(pConfig->fast_forward_hold.get().c_str(), &sHoldKey, &sHoldMods);
-	if (sHoldKey == GDK_KEY_ISO_Left_Tab)
-		sHoldKey = GDK_KEY_Tab;
-	sHoldKey = gdk_keyval_to_lower(sHoldKey);
-	sHoldActive = FALSE;
-	desmume_emu_set_fast_forward_held(FALSE);
+	{ "open",              "Open ROM",              "app.open",                   "<Control>o" },
+	{ "pause",             "Pause / Resume",        "app.run",                    "Pause" },
+	{ "reset",             "Reset",                 "app.reset",                  NULL },
+	{ "frame-advance",     "Frame Advance",         "app.frame-advance",          "<Control>n" },
+	{ "screenshot",        "Take a Screenshot",     "app.screenshot",             "<Control>s" },
+	{ "fullscreen",        "Toggle Fullscreen",     "app.fullscreen",             "F11" },
+	{ "swap-screens",      "Swap Screens",          "app.swapscreens",            "space" },
+	{ "view-menu",         "Toggle Menu Bar",       "app.view-menu",              NULL },
 
-	static const char *tab[] = { "Tab", NULL };
+	{ "fps-limiter",       "Toggle Speed Limiter",  "app.fps-limiter",            NULL },
+	{ "audio",             "Toggle Audio",          "app.enableaudio",            NULL },
+	{ "view-statusbar",    "Toggle Status Bar",     "app.view-statusbar",         NULL },
+	{ "view-toolbar",      "Toggle Toolbar",        "app.view-toolbar",           NULL },
+	{ "layout-vertical",   "Layout: Vertical",      "app.orient('vertical')",     "<Control>1" },
+	{ "layout-horizontal", "Layout: Horizontal",    "app.orient('horizontal')",   "<Control>2" },
+	{ "layout-single",     "Layout: Single Screen", "app.orient('single')",       "<Control>0" },
+	{ "layout-hybrid",     "Layout: Hybrid",        "app.orient('hybrid_equal')", "<Control>3" },
+	{ "fast-forward",      "Fast Forward (Hold)",   NULL,                         NULL },
+};
+
+static gchar *sHotkeyAccel[G_N_ELEMENTS(kHotkeyDefs)];
+
+static void ParseAccelString(const char *accel, guint *keyval,
+                             GdkModifierType *mods)
+{
+	*keyval = 0;
+	*mods = (GdkModifierType)0;
+	if ((accel == NULL) || (accel[0] == '\0'))
+	{
+		return;
+	}
+
+	gtk_accelerator_parse(accel, keyval, mods);
+	if (*keyval == GDK_KEY_ISO_Left_Tab)
+	{
+		*keyval = GDK_KEY_Tab;
+	}
+	if (*keyval == 0)
+	{
+		*mods = (GdkModifierType)0;
+	}
+}
+
+int
+desmume_hotkey_count(void)
+{
+	return (int)G_N_ELEMENTS(kHotkeyDefs);
+}
+
+const DesmumeHotkeyDef *
+desmume_hotkey_def(int index)
+{
+	if ((index < 0) || (index >= (int)G_N_ELEMENTS(kHotkeyDefs)))
+	{
+		return NULL;
+	}
+	return &kHotkeyDefs[index];
+}
+
+const char *
+desmume_hotkey_accel(int index)
+{
+	if ((index < 0) || (index >= (int)G_N_ELEMENTS(kHotkeyDefs)))
+	{
+		return "";
+	}
+	return (sHotkeyAccel[index] != NULL) ? sHotkeyAccel[index] : "";
+}
+
+void
+desmume_hotkey_set_accel(int index, const char *accel)
+{
+	if ((index < 0) || (index >= (int)G_N_ELEMENTS(kHotkeyDefs)))
+	{
+		return;
+	}
+	g_free(sHotkeyAccel[index]);
+	sHotkeyAccel[index] = g_strdup((accel != NULL) ? accel : "");
+}
+
+void
+desmume_hotkeys_load(GKeyFile *keyfile)
+{
+	for (int i = 0; i < (int)G_N_ELEMENTS(kHotkeyDefs); ++i)
+	{
+		gchar *value = NULL;
+		if (keyfile != NULL)
+		{
+			value = g_key_file_get_string(keyfile, "HOTKEYS",
+			                              kHotkeyDefs[i].slug, NULL);
+		}
+		if (value == NULL)
+		{
+			value = g_strdup((kHotkeyDefs[i].def_accel != NULL)
+			                 ? kHotkeyDefs[i].def_accel : "");
+		}
+
+		g_free(sHotkeyAccel[i]);
+		sHotkeyAccel[i] = value;
+	}
+}
+
+void
+desmume_hotkeys_save(GKeyFile *keyfile)
+{
+	if (keyfile == NULL)
+	{
+		return;
+	}
+
+	for (int i = 0; i < (int)G_N_ELEMENTS(kHotkeyDefs); ++i)
+	{
+		g_key_file_set_string(keyfile, "HOTKEYS", kHotkeyDefs[i].slug,
+		                      (sHotkeyAccel[i] != NULL) ? sHotkeyAccel[i] : "");
+	}
+}
+
+void
+desmume_hotkeys_apply(GtkApplication *app)
+{
+	if (app == NULL)
+	{
+		return;
+	}
+
 	static const char *none[] = { NULL };
-	gtk_application_set_accels_for_action(pApp, "app.fast-forward",
-	                                      sHoldKey == GDK_KEY_Tab && sHoldMods == 0 ? none : tab);
+	static const char *tab[] = { "Tab", NULL };
+
+	for (int i = 0; i < (int)G_N_ELEMENTS(kHotkeyDefs); ++i)
+	{
+		const char *accel = (sHotkeyAccel[i] != NULL) ? sHotkeyAccel[i] : "";
+
+		if (kHotkeyDefs[i].action == NULL)
+		{
+			ParseAccelString(accel, &sHoldKey, &sHoldMods);
+			sHoldKey = gdk_keyval_to_lower(sHoldKey);
+			sHoldKeycode = 0;
+			sHoldActive = FALSE;
+			desmume_emu_set_fast_forward_held(FALSE);
+
+			/* Tab normally toggles fast forward.  If the user assigns Tab
+			 * itself to the hold action, remove the toggle accelerator so
+			 * the two cannot fire together. */
+			gtk_application_set_accels_for_action(
+				app, "app.fast-forward",
+				(sHoldKey == GDK_KEY_Tab && sHoldMods == 0) ? none : tab);
+			continue;
+		}
+
+		if (accel[0] != '\0')
+		{
+			const char *list[] = { accel, NULL };
+			gtk_application_set_accels_for_action(app,
+			                                      kHotkeyDefs[i].action, list);
+		}
+		else
+		{
+			gtk_application_set_accels_for_action(app,
+			                                      kHotkeyDefs[i].action, none);
+		}
+	}
 }
 
 static gboolean OnHoldKeyPressed(GtkEventControllerKey *controller, guint keyval,
@@ -1463,6 +1618,27 @@ FpsLimiterChanged(GSimpleAction *action, GVariant *value, gpointer user_data){
 }
 
 static void
+AudioEnabledChanged(GSimpleAction *action, GVariant *value, gpointer user_data)
+{
+	(void)user_data;
+
+	const gboolean enabled = g_variant_get_boolean(value);
+	g_simple_action_set_state(action, value);
+	if (pConfig == NULL)
+	{
+		return;
+	}
+
+	pConfig->audio_enabled = (enabled != FALSE);
+	desmume_emu_set_audio_config(pConfig->audio_enabled.get(),
+	                             pConfig->audio_volume.get(),
+	                             pConfig->audio_sync.get(),
+	                             pConfig->audio_interpolation.get());
+	pConfig->save();
+	SetStatus(enabled ? "Audio on" : "Audio off");
+}
+
+static void
 AutoFrameskipChanged(GSimpleAction *action, GVariant *value, gpointer user_data)
 {
 	(void)user_data;
@@ -1887,7 +2063,7 @@ static void CheatsDisableChanged(GSimpleAction *action, GVariant *value, gpointe
 static void OnConfigApplied(gpointer user_data)
 {
 	(void)user_data;
-	ApplyHoldShortcut();
+	desmume_hotkeys_apply(pApp);
 
 	/* The dialog may have changed the GPU filter, which also has a View-menu
 	 * radio action; keep its state in step. */
@@ -2040,6 +2216,7 @@ static const GActionEntry app_entries[] =
 	{ "importdb",       ActionImportDatabase, NULL, NULL, NULL },
 	{ "savetype",       ActionSaveType,   "s",  "'autodetect'", NULL },
 	{ "fps-limiter",    NULL,             NULL, "true", FpsLimiterChanged },
+	{ "enableaudio",    NULL,             NULL, "true", AudioEnabledChanged },
 	{ "auto-frameskip", NULL,             NULL, "true", AutoFrameskipChanged },
 	{ "frameskip",      ActionFrameskip,  "s",  "'0'",  NULL },
 	{ "fast-forward",   NULL,             NULL, "false", FastForwardChanged },
@@ -2247,6 +2424,11 @@ static void OnActivate(GtkApplication *app, gpointer user_data)
 		SetActionBooleanState("cheatsdisable", cheats_disabled);
 	}
 
+	/* The audio toggle has no menu entry of its own (GTK3 exposed it through
+	 * the Sound settings), but the hotkey action still needs the real state. */
+	SetActionBooleanState("enableaudio",
+	                      pConfig->audio_enabled.get() ? TRUE : FALSE);
+
 	/* P7a: restore the optional WebGPU upscaler filter. A filter is only run
 	 * when both presentation is enabled and a non-Off filter is selected;
 	 * the default (Off) keeps the plain GSK texture path. Failure to create
@@ -2386,6 +2568,13 @@ int main(int argc, char *argv[])
 
 	pConfig = new desmume::config::Config();
 	pConfig->load();
+
+	/* init_joy() resets the joypad table to its defaults, so it has to run
+	 * before the saved [JOYKEYS] values are read.  GTK3 has the same order. */
+	init_joy();
+	desmume_emu_load_input_config(pConfig->key_file());
+	desmume_hotkeys_load(pConfig->key_file());
+
 	/* Emulation/BIOS/firmware/3D/addon/microphone/Wi-Fi/path settings.  This
 	 * runs before the audio and graphics mirrors below so a 3D renderer that
 	 * is created for the first ROM already sees the graphics switches. */
@@ -2432,20 +2621,11 @@ int main(int argc, char *argv[])
 	/* Stop Movie is only meaningful while playback/recording is active. */
 	UpdateMovieActions();
 
-	static const char *open_accels[] = { "<Control>o", NULL };
+	/* Rebinding Open/Pause/Reset/... lives in the [HOTKEYS] group.  The
+	 * non-rebindable application shortcuts stay here. */
 	static const char *quit_accels[] = { "<Control>q", NULL };
-	static const char *run_accels[] = { "Pause", NULL };
-	static const char *frame_advance_accels[] = { "<Control>n", NULL };
-	static const char *fullscreen_accels[] = { "F11", NULL };
-	static const char *screenshot_accels[] = { "<Control>s", NULL };
 	static const char *config_accels[] = { "<Control>p", NULL };
-	gtk_application_set_accels_for_action(app, "app.open", open_accels);
 	gtk_application_set_accels_for_action(app, "app.quit", quit_accels);
-	gtk_application_set_accels_for_action(app, "app.run", run_accels);
-	gtk_application_set_accels_for_action(app, "app.frame-advance", frame_advance_accels);
-	ApplyHoldShortcut();
-	gtk_application_set_accels_for_action(app, "app.fullscreen", fullscreen_accels);
-	gtk_application_set_accels_for_action(app, "app.screenshot", screenshot_accels);
 	gtk_application_set_accels_for_action(app, "app.config", config_accels);
 
 	/* Slot accelerators for parameterised actions.  menu.ui also carries them,
@@ -2467,25 +2647,17 @@ int main(int argc, char *argv[])
 		g_free(load_accel_str);
 	}
 
-	/* View actions with string parameters also need their accels registered
-	 * explicitly for the PopoverMenuBar. */
-	struct { const char *target; const char *accel; } orient_accels[] =
+	/* Install the rebindable shortcuts.  This also refreshes the special
+	 * Fast Forward (Hold) key and the Tab toggle. */
+	desmume_hotkeys_apply(app);
+
+	/* Hybrid vertical has no GTK3 hotkey row, but it has always had Ctrl+4
+	 * in this frontend, so keep that accelerator. */
 	{
-		{ "vertical", "<Control>1" },
-		{ "horizontal", "<Control>2" },
-		{ "single", "<Control>0" },
-		{ "hybrid_equal", "<Control>3" },
-		{ "hybrid_vertical", "<Control>4" },
-	};
-	for (guint i = 0; i < G_N_ELEMENTS(orient_accels); ++i)
-	{
-		char *action = g_strdup_printf("app.orient('%s')", orient_accels[i].target);
-		const char *accels[] = { orient_accels[i].accel, NULL };
-		gtk_application_set_accels_for_action(app, action, accels);
-		g_free(action);
+		static const char *hybrid_vertical_accels[] = { "<Control>4", NULL };
+		gtk_application_set_accels_for_action(
+			app, "app.orient('hybrid_vertical')", hybrid_vertical_accels);
 	}
-	static const char *swap_accels[] = { "space", NULL };
-	gtk_application_set_accels_for_action(app, "app.swapscreens", swap_accels);
 
 	const int status = g_application_run(G_APPLICATION(app), argc, argv);
 
@@ -2493,6 +2665,7 @@ int main(int argc, char *argv[])
 	 * programmatic quit bypass it.  Stop here too before touching the core. */
 	StopEmulation();
 	desmume_emu_shutdown();
+	uninit_joy();
 	g_free(sInitialRom);
 	sInitialRom = NULL;
 

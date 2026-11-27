@@ -54,6 +54,8 @@
 #include "arm_jit.h"
 #endif
 #include "../shared/sndsdl.h"
+#include "../shared/ctrlssdl.h"
+#include "../shared/desmume_config.h"
 #include "../../shared/ram_debug_core.h"
 #include "filter/videofilter.h"
 #include "utils/colorspacehandler/colorspacehandler.h"
@@ -341,18 +343,37 @@ release_gpu_filter(void)
 	sGpuFilterReady = FALSE;
 }
 
-/* Bit layout mirrors shared/ctrlssdl.h so the defaults are identical to the
- * GTK3 frontend: 0 A, 1 B, 2 Select, 3 Start, 4 Right, 5 Left, 6 Up,
- * 7 Down, 8 R, 9 L, 10 X, 11 Y, 12 Debug, 13 Boost, 14 unused, 15 Lid. */
-static guint sKeyBindings[16] =
+/* Defaults match GTK3's gtk_kb_cfg and shared/ctrlssdl.h: 0 A, 1 B,
+ * 2 Select, 3 Start, 4 Right, 5 Left, 6 Up, 7 Down, 8 R, 9 L, 10 X,
+ * 11 Y, 12 Debug, 13 Boost, 14 Lid.  The live tables (keyboard_cfg,
+ * joypad_cfg and turbo_keys) belong to shared/ctrlssdl.cpp so the GTK3 and
+ * GTK4 frontends read, write and interpret the same configuration. */
+static const u32 kDefaultKeyboardCfg[NB_KEYS] =
 {
 	GDK_KEY_x, GDK_KEY_z, GDK_KEY_Shift_R, GDK_KEY_Return,
 	GDK_KEY_Right, GDK_KEY_Left, GDK_KEY_Up, GDK_KEY_Down,
 	GDK_KEY_w, GDK_KEY_q, GDK_KEY_s, GDK_KEY_a,
-	GDK_KEY_p, GDK_KEY_o, 0, GDK_KEY_BackSpace
+	GDK_KEY_p, GDK_KEY_o, GDK_KEY_BackSpace
 };
 
 static guint16 sKeys = 0;
+static guint16 sTurboHeld = 0;
+static gboolean sJoyCapture = FALSE;
+
+/* Turbo keys are an extra binding per button; unlike GTK3's local helper this
+ * has to live in the core bridge because the key latch is updated there. */
+static u16
+lookup_turbo_key(guint keyval)
+{
+	for (int i = 0; i < NB_KEYS; ++i)
+	{
+		if ((turbo_keys[i] != 0) && (turbo_keys[i] == keyval))
+		{
+			return (u16)KEYMASK_(i);
+		}
+	}
+	return 0;
+}
 
 /* ------------------------------------------------------- frame pacing (P3d) */
 
@@ -1041,21 +1062,9 @@ desmume_emu_get_layer_enabled(int layer)
 static void
 apply_keys(void)
 {
-	const guint16 k = sKeys;
-	NDS_setPad((k >> 4) & 1,   /* R */
-	           (k >> 5) & 1,   /* L */
-	           (k >> 7) & 1,   /* Down */
-	           (k >> 6) & 1,   /* Up */
-	           (k >> 2) & 1,   /* Select */
-	           (k >> 3) & 1,   /* Start */
-	           (k >> 1) & 1,   /* B */
-	           (k >> 0) & 1,   /* A */
-	           (k >> 11) & 1,  /* Y */
-	           (k >> 10) & 1,  /* X */
-	           (k >> 9) & 1,   /* L shoulder */
-	           (k >> 8) & 1,   /* R shoulder */
-	           (k >> 12) & 1,  /* Debug */
-	           (k >> 15) & 1); /* Lid */
+	/* The shared helper applies the antipodal restriction and the turbo
+	 * pattern, and commits the pad exactly the way GTK3 does. */
+	update_keypad(sKeys);
 }
 
 /* ---------------------------------------------------------------- audio */
@@ -1911,23 +1920,88 @@ desmume_emu_set_mic_config(int mode, const char *sample_file)
 }
 
 void
-desmume_emu_set_key(guint keyval, gboolean pressed)
+desmume_emu_load_input_config(GKeyFile *keyfile)
 {
-	for (guint i = 0; i < G_N_ELEMENTS(sKeyBindings); ++i)
+	load_default_config(kDefaultKeyboardCfg);
+
+	if (keyfile == NULL)
 	{
-		if ((sKeyBindings[i] != 0) && (keyval == sKeyBindings[i]))
+		return;
+	}
+
+	desmume_config_read_keys(keyfile, "KEYS");
+	desmume_config_read_joykeys(keyfile);
+	/* Also migrates the pre-TURBOKEYS 0/1 flags, like GTK3. */
+	desmume_config_read_turbokeys(keyfile);
+}
+
+void
+desmume_emu_save_input_config(GKeyFile *keyfile)
+{
+	if (keyfile == NULL)
+	{
+		return;
+	}
+
+	for (int i = 0; i < NB_KEYS; ++i)
+	{
+		g_key_file_set_integer(keyfile, "KEYS", key_names[i],
+		                       (gint)keyboard_cfg[i]);
+		g_key_file_set_integer(keyfile, "JOYKEYS", key_names[i],
+		                       (gint)joypad_cfg[i]);
+		g_key_file_set_integer(keyfile, "TURBOKEYS", key_names[i],
+		                       (gint)turbo_keys[i]);
+	}
+}
+
+void
+desmume_emu_set_joy_capture(gboolean active)
+{
+	sJoyCapture = active;
+	if (active)
+	{
+		/* The capture dialog owns the pad while it is open. */
+		sTurboHeld = 0;
+		ctrls_set_turbo_held(0);
+	}
+}
+
+gboolean
+desmume_emu_set_key(guint keyval, gboolean pressed, GdkModifierType state)
+{
+	/* Game and turbo buttons are bare keys.  A modified key (Ctrl+X) belongs
+	 * to an accelerator, matching GTK3's Key_Press(). */
+	if (pressed && ((state & gtk_accelerator_get_default_mod_mask()) != 0))
+	{
+		return FALSE;
+	}
+
+	const u16 key = (u16)lookup_key(keyval);
+	const u16 turbo = lookup_turbo_key(keyval);
+	if ((key == 0) && (turbo == 0))
+	{
+		return FALSE;
+	}
+
+	if (pressed)
+	{
+		sKeys |= key;
+		if (turbo != 0)
 		{
-			if (pressed)
-			{
-				sKeys |= (guint16)(1u << i);
-			}
-			else
-			{
-				sKeys &= (guint16)~(1u << i);
-			}
-			return;
+			sTurboHeld |= turbo;
+			ctrls_set_turbo_held(sTurboHeld);
 		}
 	}
+	else
+	{
+		sKeys &= (guint16)~key;
+		if (turbo != 0)
+		{
+			sTurboHeld &= (guint16)~turbo;
+			ctrls_set_turbo_held(sTurboHeld);
+		}
+	}
+	return TRUE;
 }
 
 void
@@ -2347,6 +2421,25 @@ run_core_frame(gboolean skip)
 	if (skip)
 	{
 		NDS_SkipNextFrame();
+	}
+
+	/* Merge gamepad input into the same latch the keyboard writes to, exactly
+	 * like GTK3's EmuSingleFrame().  get_joy_key() polls SDL itself while the
+	 * joystick page is capturing a binding, so skip the normal poll then. */
+	if (!sJoyCapture)
+	{
+		process_joystick_events(&sKeys);
+	}
+
+	if (touchpad.down)
+	{
+		NDS_setTouchPos(touchpad.x * 256, touchpad.y * 192);
+		touchpad.down = 2;
+	}
+	if (touchpad.click)
+	{
+		NDS_releaseTouch();
+		touchpad.click = 0;
 	}
 
 	apply_keys();

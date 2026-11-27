@@ -151,6 +151,11 @@ struct _DesmumeDisplay
 	gint64 last_present_us;
 	gboolean inactive;
 	gboolean active_signal_connected;
+
+	/* Set by the key-event handler when the emulation bridge consumed the
+	 * key.  Signals cannot return a value through g_signal_emit(), so the
+	 * handler reports it here. */
+	gboolean key_handled;
 };
 
 G_DEFINE_TYPE(DesmumeDisplay, desmume_display, GTK_TYPE_WIDGET)
@@ -777,9 +782,16 @@ on_key_pressed(GtkEventControllerKey *controller, guint keyval,
 	DesmumeDisplay *self = DESMUME_DISPLAY(user_data);
 	(void)controller;
 	(void)keycode;
-	(void)state;
 
-	g_signal_emit(self, display_signals[SIG_KEY_EVENT], 0, keyval, TRUE);
+	self->key_handled = FALSE;
+	g_signal_emit(self, display_signals[SIG_KEY_EVENT], 0, keyval, TRUE,
+	              (guint)state);
+	if (self->key_handled)
+	{
+		/* A bound game or turbo key owns the press; a modified key was not
+		 * consumed by the bridge, so accelerators still work. */
+		return TRUE;
+	}
 	if (keyval == GDK_KEY_Tab || keyval == GDK_KEY_ISO_Left_Tab)
 		return TRUE;
 	return FALSE; /* let accelerators (F11, Ctrl+O, ...) still work */
@@ -792,10 +804,11 @@ on_key_released(GtkEventControllerKey *controller, guint keyval,
 	DesmumeDisplay *self = DESMUME_DISPLAY(user_data);
 	(void)controller;
 	(void)keycode;
-	(void)state;
 
-	g_signal_emit(self, display_signals[SIG_KEY_EVENT], 0, keyval, FALSE);
-	return FALSE;
+	self->key_handled = FALSE;
+	g_signal_emit(self, display_signals[SIG_KEY_EVENT], 0, keyval, FALSE,
+	              (guint)state);
+	return self->key_handled;
 }
 
 /* ------------------------------------------------------------------ GObject */
@@ -838,7 +851,15 @@ desmume_display_class_init(DesmumeDisplayClass *klass)
 		NULL, NULL, NULL, G_TYPE_NONE, 2, G_TYPE_DOUBLE, G_TYPE_DOUBLE);
 	display_signals[SIG_KEY_EVENT] = g_signal_new(
 		"key-event", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_FIRST, 0,
-		NULL, NULL, NULL, G_TYPE_NONE, 2, G_TYPE_UINT, G_TYPE_BOOLEAN);
+		NULL, NULL, NULL, G_TYPE_NONE, 3, G_TYPE_UINT, G_TYPE_BOOLEAN,
+		G_TYPE_UINT);
+}
+
+void
+desmume_display_set_key_handled(DesmumeDisplay *self, gboolean handled)
+{
+	g_return_if_fail(DESMUME_IS_DISPLAY(self));
+	self->key_handled = handled;
 }
 
 static void

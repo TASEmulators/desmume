@@ -102,6 +102,12 @@ public:
 	virtual ~Config();
 	void load();
 	void save();
+
+	/* The input tables (KEYS/JOYKEYS/TURBOKEYS/HOTKEYS) are not scalar
+	 * options: they are per-button groups that must stay byte-compatible with
+	 * GTK3.  The frontend reads and writes those groups directly through the
+	 * same key file, then calls save() to flush everything at once. */
+	GKeyFile *key_file() { return this->mKeyFile; }
 }; /* class Config */
 
 #undef DESMUME_CONFIG_CONFIG

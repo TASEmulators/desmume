@@ -178,9 +178,12 @@ gboolean desmume_config_read_turbokeys(GKeyFile *keyfile)
 
     // Migrate configs written before turbo keys existed: back then a 0/1 flag
     // in "TURBO" meant "auto-fire this button while its own key is held", so
-    // point the turbo key at that same key to keep the old behaviour.
+    // point the turbo key at that same key to keep the old behaviour. Explicit
+    // TURBOKEYS entries, including disabled ones, take precedence.
     if (g_key_file_has_group(keyfile, "TURBO")) {
         for (int i = 0; i < NB_KEYS; i++) {
+            if (g_key_file_has_key(keyfile, "TURBOKEYS", key_names[i], NULL))
+                continue;
             GError *error = NULL;
             gint value = g_key_file_get_integer(keyfile, "TURBO", key_names[i], &error);
             if (error != NULL) {

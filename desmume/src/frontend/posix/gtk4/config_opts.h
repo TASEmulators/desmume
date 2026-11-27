@@ -34,6 +34,9 @@ OPT(view_statusbar, bool, true, View, ShowStatusbar)
 
 /* Shared with GTK3's Hotkey Configuration. */
 OPT(fast_forward_hold, std::string, "", HOTKEYS, fast-forward)
+/* Let Left+Right / Up+Down be pressed at the same time instead of the core
+ * cancelling them.  Same section and key as GTK3. */
+OPT(allow_up_down, bool, false, Config, AllowUpAndDown)
 
 /* Window */
 OPT(window_scale, int, 0, Window, Scale2x)

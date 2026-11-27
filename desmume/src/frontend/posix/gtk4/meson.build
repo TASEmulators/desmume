@@ -41,6 +41,8 @@ desmume_src = [
   '../../shared/memory_viewer_core.cpp',
   '../../shared/disassembly_core.cpp',
   '../shared/sndsdl.cpp',
+  # Keyboard/joystick tables and turbo/antipodal logic, shared with GTK3.
+  '../shared/ctrlssdl.cpp',
   'config.cpp',
   'configdialog.cpp',
   'display.cpp',
@@ -62,6 +64,9 @@ includes = include_directories(
   '../../../../src',
   '../../../../src/libretro-common/include',
   '../../../../src/frontend',
+  # ctrlssdl.cpp pulls in the shared OSD AGG helpers, same as the GTK3 target.
+  '../../../../src/frontend/windows/agg/include',
+  '../../../../src/frontend/windows/agg/font_freetype',
 )
 
 executable('desmume',

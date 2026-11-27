@@ -65,6 +65,11 @@ gboolean desmume_display_map_touch(DesmumeDisplay *display,
                                    double x, double y,
                                    double *out_x, double *out_y);
 
+/* The "key-event" signal has no return value, so the handler reports whether
+ * the emulation bridge consumed the key through this setter.  It is reset
+ * before every emission. */
+void desmume_display_set_key_handled(DesmumeDisplay *display, gboolean handled);
+
 G_END_DECLS
 
 #endif /* DESMUME_GTK4_DISPLAY_H_ */

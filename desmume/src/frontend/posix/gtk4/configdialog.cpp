@@ -39,6 +39,8 @@
 #include <vector>
 
 #include "emulation.h"
+#include "hotkeys.h"
+#include "../shared/ctrlssdl.h"
 #include "../../shared/path_settings_core.h"
 #include "../../shared/wgpu_present.h"
 
@@ -106,6 +108,40 @@ static const char *const kCFlashModes[3] =
 	"Directory",
 	"Image file",
 	"ROM directory"
+};
+
+/* Grid order for the control dialog, Windows-style: D-pad and face buttons on
+ * the left, Start/Select/shoulders plus the frontend extras on the right.
+ * The same layout is used by GTK3 and by the joystick page. */
+static const int kControlGrid[2][8] =
+{
+	{  6, 5,  7,  4, 1, 0, 11, 10 },   /* Up, Left, Down, Right, B, A, Y, X */
+	{  3, 2,  9,  8, 12, 13, 14, -1 }, /* Start, Select, L, R, Debug, Boost, Lid */
+};
+
+/* Turbo keys are offered for the buttons a player would auto-fire. */
+static const int kTurboGrid[2][6] =
+{
+	{ 0, 1, 10, 11, 9, 8 },   /* A, B, X, Y, L, R */
+	{ 6, 7,  5,  4, 3, 2 },   /* Up, Down, Left, Right, Start, Select */
+};
+
+enum KeySlotKind
+{
+	KEY_SLOT_CONTROL,
+	KEY_SLOT_TURBO,
+	KEY_SLOT_HOTKEY
+};
+
+struct KeySlot
+{
+	GtkWidget *button;
+	GtkWidget *label;
+	GtkWidget *hint; /* page-local message line */
+	guint keyval;
+	GdkModifierType mods;
+	KeySlotKind kind;
+	int index; /* key_names index, or hotkey index */
 };
 
 struct ConfigDialog
@@ -205,9 +241,19 @@ struct ConfigDialog
 	GtkWidget *shotFormatDrop;
 	GtkWidget *shotNameEntry;
 	GtkWidget *saveLastVisit;
-	GtkWidget *fastForwardButton;
-	gchar *fastForwardAccel;
-	gboolean capturingFastForward;
+
+	/* Controls and Hotkeys pages.  The arrays are private copies so Cancel
+	 * leaves the live input tables untouched. */
+	guint controlKeys[NB_KEYS];
+	guint turboKeys[NB_KEYS];
+	guint joyKeys[NB_KEYS];
+	GtkWidget *controlButtons[NB_KEYS];
+	GtkWidget *turboButtons[NB_KEYS];
+	GtkWidget *joyButtons[NB_KEYS];
+	GtkWidget *allowUpDown;
+	std::vector<KeySlot> keySlots;
+	int capturingSlot; /* index into keySlots, -1 when idle */
+	GtkWidget *keyHint;
 
 	/* The filter drop-down skips entries the build cannot provide, so the
 	 * selected row has to be mapped back to a WGPUPresentUpscaler value. */
@@ -343,36 +389,11 @@ NewHint(const char *text)
 	return label;
 }
 
-void
-RefreshFastForwardButton(ConfigDialog *d)
-{
-	guint key = 0;
-	GdkModifierType mods = (GdkModifierType)0;
-	gtk_accelerator_parse(d->fastForwardAccel, &key, &mods);
-	gchar *label = key ? gtk_accelerator_get_label(key, mods) : g_strdup("Disabled");
-	gtk_button_set_label(GTK_BUTTON(d->fastForwardButton),
-	                     d->capturingFastForward ? "Press a key..." : label);
-	g_free(label);
-}
+/* ------------------------------------------------------ key binding widgets */
 
-void
-OnFastForwardClicked(GtkButton *button, gpointer user_data)
+bool
+KeyIsModifierKey(guint keyval)
 {
-	(void)button;
-	ConfigDialog *d = (ConfigDialog *)user_data;
-	d->capturingFastForward = TRUE;
-	RefreshFastForwardButton(d);
-}
-
-gboolean
-OnShortcutCapture(GtkEventControllerKey *controller, guint keyval, guint keycode,
-                  GdkModifierType state, gpointer user_data)
-{
-	(void)controller;
-	(void)keycode;
-	ConfigDialog *d = (ConfigDialog *)user_data;
-	if (!d->capturingFastForward)
-		return FALSE;
 	switch (keyval)
 	{
 		case GDK_KEY_Shift_L: case GDK_KEY_Shift_R:
@@ -383,33 +404,583 @@ OnShortcutCapture(GtkEventControllerKey *controller, guint keyval, guint keycode
 		case GDK_KEY_Hyper_L: case GDK_KEY_Hyper_R:
 		case GDK_KEY_Caps_Lock: case GDK_KEY_Num_Lock: case GDK_KEY_Shift_Lock:
 		case GDK_KEY_ISO_Level3_Shift: case GDK_KEY_ISO_Level5_Shift:
-			return TRUE;
+			return true;
+		default:
+			return false;
 	}
-	state = (GdkModifierType)(state & gtk_accelerator_get_default_mod_mask());
-	if (keyval == GDK_KEY_ISO_Left_Tab)
-		keyval = GDK_KEY_Tab;
-	g_free(d->fastForwardAccel);
-	d->fastForwardAccel = (keyval == GDK_KEY_Escape && state == 0)
-		? g_strdup("") : gtk_accelerator_name(keyval, state);
-	d->capturingFastForward = FALSE;
-	RefreshFastForwardButton(d);
+}
+
+/* Readable name of a bare key symbol, e.g. "Backspace" or "Up".  Returns a
+ * pointer to a static buffer for the fallback path. */
+const char *
+KeySymbolLabel(guint keyval)
+{
+	static char buffer[64];
+	static const struct { const char *symbol; const char *text; } renames[] =
+	{
+		{ "BackSpace", "Backspace" }, { "Return", "Enter" }, { "Escape", "Esc" },
+		{ "space", "Space" }, { "Print", "Print Screen" },
+		{ "Scroll_Lock", "Scroll Lock" }, { "Caps_Lock", "Caps Lock" },
+		{ "Num_Lock", "Num Lock" }, { "Page_Up", "Page Up" }, { "Page_Down", "Page Down" },
+	};
+
+	const char *name = gdk_keyval_name(keyval);
+	if (name == NULL)
+	{
+		g_snprintf(buffer, sizeof(buffer), "0x%04X", keyval);
+		return buffer;
+	}
+
+	for (size_t i = 0; i < G_N_ELEMENTS(renames); ++i)
+	{
+		if (strcmp(name, renames[i].symbol) == 0)
+		{
+			return renames[i].text;
+		}
+	}
+
+	size_t n = 0;
+	for (const char *p = name; (*p != '\0') && (n < sizeof(buffer) - 1); ++p)
+	{
+		buffer[n++] = (*p == '_') ? ' ' : *p;
+	}
+	buffer[n] = '\0';
+	return buffer;
+}
+
+void
+EnsureKeyFieldStyle(void)
+{
+	static bool done = false;
+	if (done)
+	{
+		return;
+	}
+	done = true;
+
+	GtkCssProvider *provider = gtk_css_provider_new();
+	gtk_css_provider_load_from_data(provider,
+		"button.keyfield.conflict, button.keyfield.conflict label { color: #e01b24; }\n"
+		"button.keyfield.conflict { background-image: none;"
+		" background-color: alpha(#e01b24, 0.16); }\n"
+		"button.keyfield.capturing { background-image: none;"
+		" background-color: alpha(#3584e4, 0.20); }\n",
+		-1);
+	GdkDisplay *display = gdk_display_get_default();
+	if (display != NULL)
+	{
+		gtk_style_context_add_provider_for_display(
+			display, GTK_STYLE_PROVIDER(provider),
+			GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+	}
+	g_object_unref(provider);
+}
+
+void
+RefreshKeySlot(ConfigDialog *d, int index)
+{
+	KeySlot *slot = &d->keySlots[index];
+	gchar *text;
+
+	if (d->capturingSlot == index)
+	{
+		text = g_strdup("Press a key...");
+	}
+	else if (slot->keyval == 0)
+	{
+		text = g_strdup("Disabled");
+	}
+	else if (slot->kind == KEY_SLOT_HOTKEY)
+	{
+		text = gtk_accelerator_get_label(slot->keyval, slot->mods);
+	}
+	else
+	{
+		text = g_strdup(KeySymbolLabel(slot->keyval));
+	}
+
+	gtk_label_set_text(GTK_LABEL(slot->label), text);
+	g_free(text);
+}
+
+/* Two entries clash when they use the same key with the same modifiers.  A
+ * modified hotkey (Ctrl+X) does not clash with a bare game button (X). */
+void
+UpdateKeyConflicts(ConfigDialog *d)
+{
+	for (size_t i = 0; i < d->keySlots.size(); ++i)
+	{
+		const KeySlot &slot = d->keySlots[i];
+		bool conflict = false;
+
+		if (slot.keyval != 0)
+		{
+			for (size_t j = 0; j < d->keySlots.size(); ++j)
+			{
+				if (j == i)
+				{
+					continue;
+				}
+				const KeySlot &other = d->keySlots[j];
+				if ((other.keyval == slot.keyval) && (other.mods == slot.mods))
+				{
+					conflict = true;
+					break;
+				}
+			}
+		}
+
+		if (conflict)
+		{
+			gtk_widget_add_css_class(slot.button, "conflict");
+		}
+		else
+		{
+			gtk_widget_remove_css_class(slot.button, "conflict");
+		}
+	}
+}
+
+void
+EndKeyCapture(ConfigDialog *d)
+{
+	const int index = d->capturingSlot;
+	d->capturingSlot = -1;
+
+	if (index >= 0)
+	{
+		KeySlot *slot = &d->keySlots[index];
+		gtk_widget_remove_css_class(slot->button, "capturing");
+		if (slot->hint != NULL)
+		{
+			gtk_label_set_text(GTK_LABEL(slot->hint), "");
+		}
+		RefreshKeySlot(d, index);
+		gtk_window_set_focus(GTK_WINDOW(d->window), slot->button);
+	}
+
+	UpdateKeyConflicts(d);
+}
+
+void
+StartKeyCapture(ConfigDialog *d, int index)
+{
+	if (d->capturingSlot == index)
+	{
+		return;
+	}
+
+	if (d->capturingSlot >= 0)
+	{
+		EndKeyCapture(d);
+	}
+
+	d->capturingSlot = index;
+	for (size_t i = 0; i < d->keySlots.size(); ++i)
+	{
+		RefreshKeySlot(d, (int)i);
+	}
+	gtk_widget_add_css_class(d->keySlots[index].button, "capturing");
+
+	/* Move the focus off the buttons: otherwise Space or Return would activate
+	 * the focused button instead of being captured. */
+	gtk_window_set_focus(GTK_WINDOW(d->window), NULL);
+	if (d->keySlots[index].hint != NULL)
+	{
+		gtk_label_set_text(GTK_LABEL(d->keySlots[index].hint),
+		                   "Press the key to use, or Escape to disable it.");
+	}
+}
+
+void
+OnKeySlotClicked(GtkButton *button, gpointer user_data)
+{
+	ConfigDialog *d = (ConfigDialog *)user_data;
+	const int index = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(button), "key-slot-index"));
+	StartKeyCapture(d, index);
+}
+
+gboolean
+OnKeyCapture(GtkEventControllerKey *controller, guint keyval, guint keycode,
+             GdkModifierType state, gpointer user_data)
+{
+	(void)controller;
+	(void)keycode;
+	ConfigDialog *d = (ConfigDialog *)user_data;
+
+	if ((d->capturingSlot < 0) || (d->capturingSlot >= (int)d->keySlots.size()))
+	{
+		return FALSE;
+	}
+
+	KeySlot *slot = &d->keySlots[d->capturingSlot];
+	const GdkModifierType mods =
+		(GdkModifierType)(state & gtk_accelerator_get_default_mod_mask());
+
+	if ((keyval == GDK_KEY_Escape) && (mods == 0))
+	{
+		slot->keyval = 0;
+		slot->mods = (GdkModifierType)0;
+		EndKeyCapture(d);
+		return TRUE;
+	}
+
+	if ((keyval == 0) ||
+	    ((slot->kind == KEY_SLOT_HOTKEY) && KeyIsModifierKey(keyval)))
+	{
+		return TRUE;
+	}
+
+	if ((slot->kind != KEY_SLOT_HOTKEY) && (mods != 0))
+	{
+		if (slot->hint != NULL)
+		{
+			gtk_label_set_text(GTK_LABEL(slot->hint),
+			                   "Game and turbo buttons are single keys: press it "
+			                   "without Shift/Ctrl/Alt.");
+		}
+		return TRUE;
+	}
+
+	slot->keyval = (keyval == GDK_KEY_ISO_Left_Tab) ? GDK_KEY_Tab : keyval;
+	slot->mods = (slot->kind == KEY_SLOT_HOTKEY) ? mods : (GdkModifierType)0;
+	EndKeyCapture(d);
 	return TRUE;
+}
+
+void
+AttachKeySlot(ConfigDialog *d, GtkGrid *grid, int row, int col,
+              const char *labelText, GtkWidget *hint, KeySlotKind kind,
+              int index, guint keyval, GdkModifierType mods)
+{
+	GtkWidget *label = gtk_label_new(labelText);
+	gtk_label_set_xalign(GTK_LABEL(label), 1.0f);
+	gtk_grid_attach(grid, label, col, row, 1, 1);
+
+	GtkWidget *button = gtk_button_new();
+	GtkWidget *text = gtk_label_new(NULL);
+	gtk_button_set_child(GTK_BUTTON(button), text);
+	gtk_widget_set_size_request(button, 150, -1);
+	gtk_widget_add_css_class(button, "keyfield");
+	gtk_grid_attach(grid, button, col + 1, row, 1, 1);
+
+	KeySlot slot;
+	slot.button = button;
+	slot.label = text;
+	slot.hint = hint;
+	slot.keyval = keyval;
+	slot.mods = mods;
+	slot.kind = kind;
+	slot.index = index;
+	d->keySlots.push_back(slot);
+
+	const int slotIndex = (int)d->keySlots.size() - 1;
+	g_object_set_data(G_OBJECT(button), "key-slot-index",
+	                  GINT_TO_POINTER((gint)slotIndex));
+	g_signal_connect(button, "clicked", G_CALLBACK(OnKeySlotClicked), d);
+	RefreshKeySlot(d, slotIndex);
+}
+
+/* ------------------------------------------------------------ joystick rows */
+
+gchar *
+JoyKeyLabel(guint key)
+{
+	if ((key == 0xFFFF) || (key == 0))
+	{
+		return g_strdup("Disabled");
+	}
+	return g_strdup_printf("%u", key);
+}
+
+void
+RefreshJoyButton(ConfigDialog *d, int index)
+{
+	gchar *label = JoyKeyLabel(d->joyKeys[index]);
+	gtk_button_set_label(GTK_BUTTON(d->joyButtons[index]), label);
+	g_free(label);
+}
+
+struct JoyCapture
+{
+	ConfigDialog *d;
+	int index;
+	GtkWidget *window;
+	GtkWidget *label;
+	GtkWidget *ok;
+	guint source;
+	gboolean found;
+	guint key;
+};
+
+void
+OnJoyCaptureDestroy(GtkWidget *widget, gpointer user_data)
+{
+	(void)widget;
+	JoyCapture *ctx = (JoyCapture *)user_data;
+
+	if (ctx->source != 0)
+	{
+		g_source_remove(ctx->source);
+		ctx->source = 0;
+	}
+	desmume_emu_set_joy_capture(FALSE);
+	g_free(ctx);
+}
+
+gboolean
+OnJoyCapturePoll(gpointer user_data)
+{
+	JoyCapture *ctx = (JoyCapture *)user_data;
+	bool modified = false;
+	const u16 key = get_joy_key(ctx->index, &modified);
+
+	if (!modified)
+	{
+		return G_SOURCE_CONTINUE;
+	}
+
+	ctx->found = TRUE;
+	ctx->key = key;
+	ctx->source = 0;
+
+	gchar *text = g_strdup_printf("You pressed: %u\nClick OK to keep this key.", key);
+	gtk_label_set_text(GTK_LABEL(ctx->label), text);
+	g_free(text);
+	gtk_widget_set_sensitive(ctx->ok, TRUE);
+	return G_SOURCE_REMOVE;
+}
+
+void
+OnJoyCaptureOk(GtkButton *button, gpointer user_data)
+{
+	(void)button;
+	JoyCapture *ctx = (JoyCapture *)user_data;
+
+	if (ctx->found)
+	{
+		ctx->d->joyKeys[ctx->index] = ctx->key;
+		RefreshJoyButton(ctx->d, ctx->index);
+	}
+	gtk_window_destroy(GTK_WINDOW(ctx->window));
+}
+
+void
+OnJoyCaptureCancel(GtkButton *button, gpointer user_data)
+{
+	(void)button;
+	JoyCapture *ctx = (JoyCapture *)user_data;
+	gtk_window_destroy(GTK_WINDOW(ctx->window));
+}
+
+void
+OnJoyButtonClicked(GtkButton *button, gpointer user_data)
+{
+	ConfigDialog *d = (ConfigDialog *)user_data;
+	const int index = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(button), "joy-slot-index"));
+
+	JoyCapture *ctx = g_new0(JoyCapture, 1);
+	ctx->d = d;
+	ctx->index = index;
+
+	GtkWidget *window = gtk_window_new();
+	ctx->window = window;
+	gtk_window_set_title(GTK_WINDOW(window), "Configure Joystick Button");
+	gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(d->window));
+	gtk_window_set_modal(GTK_WINDOW(window), TRUE);
+	gtk_window_set_destroy_with_parent(GTK_WINDOW(window), TRUE);
+	gtk_window_set_default_size(GTK_WINDOW(window), 320, 150);
+
+	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+	gtk_widget_set_margin_start(box, 12);
+	gtk_widget_set_margin_end(box, 12);
+	gtk_widget_set_margin_top(box, 12);
+	gtk_widget_set_margin_bottom(box, 12);
+	gtk_window_set_child(GTK_WINDOW(window), box);
+
+	gchar *prompt = g_strdup_printf("Press \"%s\" button ...", key_names[index]);
+	ctx->label = gtk_label_new(prompt);
+	g_free(prompt);
+	gtk_label_set_wrap(GTK_LABEL(ctx->label), TRUE);
+	gtk_box_append(GTK_BOX(box), ctx->label);
+
+	GtkWidget *buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_widget_set_halign(buttons, GTK_ALIGN_END);
+	gtk_box_append(GTK_BOX(box), buttons);
+
+	GtkWidget *cancel = gtk_button_new_with_label("_Cancel");
+	gtk_button_set_use_underline(GTK_BUTTON(cancel), TRUE);
+	g_signal_connect(cancel, "clicked", G_CALLBACK(OnJoyCaptureCancel), ctx);
+	gtk_box_append(GTK_BOX(buttons), cancel);
+
+	ctx->ok = gtk_button_new_with_label("_OK");
+	gtk_button_set_use_underline(GTK_BUTTON(ctx->ok), TRUE);
+	gtk_widget_add_css_class(ctx->ok, "suggested-action");
+	gtk_widget_set_sensitive(ctx->ok, FALSE);
+	g_signal_connect(ctx->ok, "clicked", G_CALLBACK(OnJoyCaptureOk), ctx);
+	gtk_box_append(GTK_BOX(buttons), ctx->ok);
+	gtk_window_set_default_widget(GTK_WINDOW(window), ctx->ok);
+
+	g_signal_connect(window, "destroy", G_CALLBACK(OnJoyCaptureDestroy), ctx);
+	desmume_emu_set_joy_capture(TRUE);
+	ctx->source = g_timeout_add(100, OnJoyCapturePoll, ctx);
+	gtk_window_present(GTK_WINDOW(window));
+}
+
+/* ------------------------------------------------------------- pages */
+
+GtkWidget *
+BuildControlsPage(ConfigDialog *d)
+{
+	memcpy(d->controlKeys, keyboard_cfg, sizeof(d->controlKeys));
+	memcpy(d->turboKeys, turbo_keys, sizeof(d->turboKeys));
+	memcpy(d->joyKeys, joypad_cfg, sizeof(d->joyKeys));
+	d->capturingSlot = -1;
+
+	GtkWidget *page = NewPage();
+	GtkWidget *notebook = gtk_notebook_new();
+	gtk_box_append(GTK_BOX(page), notebook);
+
+	/* Keyboard tab. */
+	GtkWidget *keyboard = NewPage();
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), keyboard,
+	                         gtk_label_new("Keyboard"));
+
+	GtkWidget *grid = NULL;
+	GtkWidget *section = NewSection("Buttons", &grid);
+	gtk_box_append(GTK_BOX(keyboard), section);
+
+	GtkWidget *hint = NewHint("Red means the key is used by another action. "
+	                          "A button can be disabled using Escape.");
+	gtk_box_append(GTK_BOX(keyboard), hint);
+
+	for (int row = 0; row < 8; ++row)
+	{
+		for (int col = 0; col < 2; ++col)
+		{
+			const int key = kControlGrid[col][row];
+			if (key < 0)
+			{
+				continue;
+			}
+
+			gchar *name = g_ascii_strup(key_names[key], -1);
+			AttachKeySlot(d, GTK_GRID(grid), row, col * 2, name, hint,
+			              KEY_SLOT_CONTROL, key, d->controlKeys[key],
+			              (GdkModifierType)0);
+			g_free(name);
+		}
+	}
+
+	d->allowUpDown = gtk_check_button_new_with_label(
+		"Allow Left+Right / Up+Down");
+	gtk_check_button_set_active(GTK_CHECK_BUTTON(d->allowUpDown),
+	                            d->config->allow_up_down.get() ? TRUE : FALSE);
+	gtk_box_append(GTK_BOX(keyboard), d->allowUpDown);
+
+	/* Joystick tab. */
+	GtkWidget *joystick = NewPage();
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), joystick,
+	                         gtk_label_new("Joystick"));
+
+	grid = NULL;
+	section = NewSection("Buttons", &grid);
+	gtk_box_append(GTK_BOX(joystick), section);
+
+	gtk_box_append(GTK_BOX(joystick),
+	               NewHint("Click a button, then press the pad button or move "
+	                       "the axis to bind it."));
+
+	for (int row = 0; row < 8; ++row)
+	{
+		for (int col = 0; col < 2; ++col)
+		{
+			const int key = kControlGrid[col][row];
+			if (key < 0)
+			{
+				continue;
+			}
+
+			gchar *name = g_ascii_strup(key_names[key], -1);
+			GtkWidget *label = gtk_label_new(name);
+			g_free(name);
+			gtk_label_set_xalign(GTK_LABEL(label), 1.0f);
+			gtk_grid_attach(GTK_GRID(grid), label, col * 2, row, 1, 1);
+
+			GtkWidget *button = gtk_button_new();
+			gtk_widget_set_size_request(button, 150, -1);
+			gtk_grid_attach(GTK_GRID(grid), button, col * 2 + 1, row, 1, 1);
+			d->joyButtons[key] = button;
+			g_object_set_data(G_OBJECT(button), "joy-slot-index",
+			                  GINT_TO_POINTER(key));
+			g_signal_connect(button, "clicked",
+			                 G_CALLBACK(OnJoyButtonClicked), d);
+			RefreshJoyButton(d, key);
+		}
+	}
+
+	EnsureKeyFieldStyle();
+	return page;
 }
 
 GtkWidget *
 BuildHotkeysPage(ConfigDialog *d)
 {
 	GtkWidget *page = NewPage();
-	GtkWidget *grid;
+
+	GtkWidget *hint = NewHint("Click a shortcut and press a key. Press Escape "
+	                          "to disable it. Assigning Tab replaces the Tab "
+	                          "shortcut for the fast-forward toggle.");
+	gtk_box_append(GTK_BOX(page), hint);
+
+	GtkWidget *grid = NULL;
 	GtkWidget *section = NewSection("Hotkeys", &grid);
-	d->fastForwardAccel = g_strdup(d->config->fast_forward_hold.get().c_str());
-	d->fastForwardButton = gtk_button_new();
-	g_signal_connect(d->fastForwardButton, "clicked", G_CALLBACK(OnFastForwardClicked), d);
-	AddRow(GTK_GRID(grid), 0, "Fast Forward (Hold):", d->fastForwardButton);
-	RefreshFastForwardButton(d);
 	gtk_box_append(GTK_BOX(page), section);
-	gtk_box_append(GTK_BOX(page), NewHint("Click the shortcut and press a key. Press Escape to disable it. "
-	                                    "Assigning Tab replaces the Tab shortcut for the fast-forward toggle."));
+
+	const int count = desmume_hotkey_count();
+	const int rows = (count + 1) / 2;
+	for (int i = 0; i < count; ++i)
+	{
+		const DesmumeHotkeyDef *def = desmume_hotkey_def(i);
+		guint keyval = 0;
+		GdkModifierType mods = (GdkModifierType)0;
+		const char *accel = desmume_hotkey_accel(i);
+
+		if ((accel != NULL) && (accel[0] != '\0'))
+		{
+			gtk_accelerator_parse(accel, &keyval, &mods);
+			if (keyval == GDK_KEY_ISO_Left_Tab)
+			{
+				keyval = GDK_KEY_Tab;
+			}
+		}
+
+		AttachKeySlot(d, GTK_GRID(grid), i % rows, (i / rows) * 2,
+		              def->label, hint, KEY_SLOT_HOTKEY, i, keyval, mods);
+	}
+
+	grid = NULL;
+	section = NewSection("Turbo Keys", &grid);
+	gtk_box_append(GTK_BOX(page), section);
+
+	for (int row = 0; row < 6; ++row)
+	{
+		for (int col = 0; col < 2; ++col)
+		{
+			const int key = kTurboGrid[col][row];
+			gchar *name = g_ascii_strup(key_names[key], -1);
+			AttachKeySlot(d, GTK_GRID(grid), row, col * 2, name, hint,
+			              KEY_SLOT_TURBO, key, d->turboKeys[key],
+			              (GdkModifierType)0);
+			g_free(name);
+		}
+	}
+
+	gtk_box_append(GTK_BOX(page),
+	               NewHint("Holding a turbo key auto-fires that button, and it "
+	                       "does not have to be the button's own key."));
+
+	UpdateKeyConflicts(d);
 	return page;
 }
 
@@ -1964,7 +2535,48 @@ CollectValues(ConfigDialog *d)
 	config->mic_sample_file = Trim(gtk_editable_get_text(
 		GTK_EDITABLE(d->micSampleEntry)));
 
-	config->fast_forward_hold = d->fastForwardAccel;
+	/* Controls and hotkeys.  The dialog edits private copies; commit them to
+	 * the shared ctrlssdl tables only when OK is pressed, so Cancel really
+	 * cancels. */
+	for (int i = 0; i < NB_KEYS; ++i)
+	{
+		joypad_cfg[i] = d->joyKeys[i];
+	}
+	ctrls_set_allow_up_down(gtk_check_button_get_active(
+		GTK_CHECK_BUTTON(d->allowUpDown)) != FALSE);
+	config->allow_up_down = ctrls_get_allow_up_down();
+
+	for (size_t i = 0; i < d->keySlots.size(); ++i)
+	{
+		const KeySlot &slot = d->keySlots[i];
+		if (slot.kind == KEY_SLOT_CONTROL)
+		{
+			keyboard_cfg[slot.index] = slot.keyval;
+			continue;
+		}
+		if (slot.kind == KEY_SLOT_TURBO)
+		{
+			turbo_keys[slot.index] = slot.keyval;
+			continue;
+		}
+
+		gchar *accel = (slot.keyval == 0)
+			? g_strdup("")
+			: gtk_accelerator_name(slot.keyval, slot.mods);
+		desmume_hotkey_set_accel(slot.index, accel);
+
+		const DesmumeHotkeyDef *def = desmume_hotkey_def(slot.index);
+		if ((def != NULL) && (strcmp(def->slug, "fast-forward") == 0))
+		{
+			/* Keep the scalar option in step with the [HOTKEYS] group.  Both
+			 * write the same key, and Config::save() runs last. */
+			config->fast_forward_hold = accel;
+		}
+		g_free(accel);
+	}
+
+	desmume_emu_save_input_config(config->key_file());
+	desmume_hotkeys_save(config->key_file());
 
 	/* Paths. */
 	for (int i = 0; i < kPathCategoryCount; ++i)
@@ -2135,7 +2747,6 @@ OnDialogDestroy(GtkWidget *widget, gpointer user_data)
 	}
 	g_free(d->filterValues);
 	g_free(d->presentationMasks);
-	g_free(d->fastForwardAccel);
 	g_free(d);
 	/* The window's sole reference is owned by GTK.  Do not ref_sink it on
 	 * creation or unref it here: an extra ref keeps the object alive past
@@ -2807,11 +3418,14 @@ desmume_config_dialog_show_page(GtkWindow *parent,
 	                         WrapPage(BuildPathsPage(d)),
 	                         gtk_label_new("Paths"));
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook),
+	                         WrapPage(BuildControlsPage(d)),
+	                         gtk_label_new("Controls"));
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook),
 	                         WrapPage(BuildHotkeysPage(d)),
 	                         gtk_label_new("Hotkeys"));
 	GtkEventController *shortcutCapture = gtk_event_controller_key_new();
 	gtk_event_controller_set_propagation_phase(shortcutCapture, GTK_PHASE_CAPTURE);
-	g_signal_connect(shortcutCapture, "key-pressed", G_CALLBACK(OnShortcutCapture), d);
+	g_signal_connect(shortcutCapture, "key-pressed", G_CALLBACK(OnKeyCapture), d);
 	gtk_widget_add_controller(d->window, shortcutCapture);
 
 	GtkWidget *buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
