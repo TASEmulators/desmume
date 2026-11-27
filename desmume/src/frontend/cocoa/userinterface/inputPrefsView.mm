@@ -94,6 +94,8 @@
 					NSMutableArray *newInputList = [[NSMutableArray alloc] initWithArray:inputList copyItems:YES];
 					[reconstructedMappings setObject:[newInputList autorelease] forKey:mappingKey];
 				}
+				if ([reconstructedMappings objectForKey:@"Fast Forward (Hold)"] == nil)
+					[reconstructedMappings setObject:[NSMutableArray array] forKey:@"Fast Forward (Hold)"];
 				
 				[reconstructedProfile setObject:[reconstructedMappings autorelease] forKey:profileKey];
 			}
@@ -198,6 +200,8 @@
 					NSMutableArray *newInputList = [[NSMutableArray alloc] initWithArray:inputList copyItems:YES];
 					[reconstructedMappings setObject:[newInputList autorelease] forKey:mappingKey];
 				}
+				if ([reconstructedMappings objectForKey:@"Fast Forward (Hold)"] == nil)
+					[reconstructedMappings setObject:[NSMutableArray array] forKey:@"Fast Forward (Hold)"];
 				
 				[reconstructedProfile setObject:[reconstructedMappings autorelease] forKey:profileKey];
 			}

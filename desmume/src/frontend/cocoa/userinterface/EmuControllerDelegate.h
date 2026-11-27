@@ -327,6 +327,8 @@ class AudioSampleBlockGenerator;
 
 - (void) cmdSetSpeedScalar:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdToggleSpeedLimiter:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdFastForwardHold:(const ClientCommandAttributes &)cmdAttr;
+- (void) clearFastForwardDevice:(const char *)device element:(const char *)element;
 - (void) cmdToggleAutoFrameSkip:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdToggleCheats:(const ClientCommandAttributes &)cmdAttr;
 - (void) cmdToggleExecutePause:(const ClientCommandAttributes &)cmdAttr;

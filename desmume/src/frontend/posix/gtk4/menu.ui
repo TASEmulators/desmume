@@ -203,7 +203,6 @@
         <item>
           <attribute name='label' translatable='yes'>Fast _forward</attribute>
           <attribute name='action'>app.fast-forward</attribute>
-          <attribute name='accel'>Tab</attribute>
         </item>
         <item>
           <attribute name='label' translatable='yes'>Re_set</attribute>
@@ -579,6 +578,11 @@
           <attribute name='label' translatable='yes'>_Path settings…</attribute>
           <attribute name='action'>app.configpage</attribute>
           <attribute name='target' type='s'>'paths'</attribute>
+        </item>
+        <item>
+          <attribute name='label' translatable='yes'>Edit _Hotkeys…</attribute>
+          <attribute name='action'>app.configpage</attribute>
+          <attribute name='target' type='s'>'hotkeys'</attribute>
         </item>
       </section>
     </submenu>

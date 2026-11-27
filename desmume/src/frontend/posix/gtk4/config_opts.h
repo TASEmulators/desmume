@@ -32,6 +32,9 @@ OPT(view_menu, bool, true, View, ShowMenu)
 OPT(view_toolbar, bool, true, View, ShowToolbar)
 OPT(view_statusbar, bool, true, View, ShowStatusbar)
 
+/* Shared with GTK3's Hotkey Configuration. */
+OPT(fast_forward_hold, std::string, "", HOTKEYS, fast-forward)
+
 /* Window */
 OPT(window_scale, int, 0, Window, Scale2x)
 /* GTK4 window decoration policy: 0 = auto, 1 = force server-side, 2 = force

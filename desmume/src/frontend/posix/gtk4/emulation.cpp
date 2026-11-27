@@ -363,6 +363,7 @@ static gboolean sFpsLimiter = TRUE;       /* config.fpslimiter */
 static gboolean sAutoFrameskip = TRUE;    /* config.autoframeskip */
 static int sFrameskipMax = 0;             /* config.frameskip, 0..9 */
 static gboolean sFastForward = FALSE;     /* the toggled "fast forward" action */
+static gboolean sFastForwardHeld = FALSE;
 static int sFrameMod3 = 0;                /* 17+17+16 ms => 60 fps over 3 frames */
 
 /* Rolling FPS counter.  Counts every emulated core frame, including the ones
@@ -2490,7 +2491,7 @@ desmume_emu_step(void)
 	}
 
 	const gint64 now = g_get_monotonic_time();
-	const gboolean boost = sFastForward || (((sKeys >> 13) & 1) != 0);
+	const gboolean boost = sFastForward || sFastForwardHeld || (((sKeys >> 13) & 1) != 0);
 	const gboolean throttle = sFpsLimiter && !boost;
 	guint emulated = 0;
 
@@ -2625,6 +2626,8 @@ desmume_emu_set_fast_forward(gboolean enabled)
 }
 
 gboolean desmume_emu_get_fast_forward(void) { return sFastForward; }
+
+void desmume_emu_set_fast_forward_held(gboolean held) { sFastForwardHeld = held; }
 
 guint desmume_emu_get_fps(void) { return sFpsValue; }
 

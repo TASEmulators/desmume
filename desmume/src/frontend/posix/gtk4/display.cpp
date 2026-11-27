@@ -780,6 +780,8 @@ on_key_pressed(GtkEventControllerKey *controller, guint keyval,
 	(void)state;
 
 	g_signal_emit(self, display_signals[SIG_KEY_EVENT], 0, keyval, TRUE);
+	if (keyval == GDK_KEY_Tab || keyval == GDK_KEY_ISO_Left_Tab)
+		return TRUE;
 	return FALSE; /* let accelerators (F11, Ctrl+O, ...) still work */
 }
 

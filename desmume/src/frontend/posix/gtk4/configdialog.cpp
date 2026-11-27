@@ -205,6 +205,9 @@ struct ConfigDialog
 	GtkWidget *shotFormatDrop;
 	GtkWidget *shotNameEntry;
 	GtkWidget *saveLastVisit;
+	GtkWidget *fastForwardButton;
+	gchar *fastForwardAccel;
+	gboolean capturingFastForward;
 
 	/* The filter drop-down skips entries the build cannot provide, so the
 	 * selected row has to be mapped back to a WGPUPresentUpscaler value. */
@@ -338,6 +341,76 @@ NewHint(const char *text)
 	gtk_label_set_wrap_mode(GTK_LABEL(label), PANGO_WRAP_WORD_CHAR);
 	gtk_widget_add_css_class(label, "dim-label");
 	return label;
+}
+
+void
+RefreshFastForwardButton(ConfigDialog *d)
+{
+	guint key = 0;
+	GdkModifierType mods = (GdkModifierType)0;
+	gtk_accelerator_parse(d->fastForwardAccel, &key, &mods);
+	gchar *label = key ? gtk_accelerator_get_label(key, mods) : g_strdup("Disabled");
+	gtk_button_set_label(GTK_BUTTON(d->fastForwardButton),
+	                     d->capturingFastForward ? "Press a key..." : label);
+	g_free(label);
+}
+
+void
+OnFastForwardClicked(GtkButton *button, gpointer user_data)
+{
+	(void)button;
+	ConfigDialog *d = (ConfigDialog *)user_data;
+	d->capturingFastForward = TRUE;
+	RefreshFastForwardButton(d);
+}
+
+gboolean
+OnShortcutCapture(GtkEventControllerKey *controller, guint keyval, guint keycode,
+                  GdkModifierType state, gpointer user_data)
+{
+	(void)controller;
+	(void)keycode;
+	ConfigDialog *d = (ConfigDialog *)user_data;
+	if (!d->capturingFastForward)
+		return FALSE;
+	switch (keyval)
+	{
+		case GDK_KEY_Shift_L: case GDK_KEY_Shift_R:
+		case GDK_KEY_Control_L: case GDK_KEY_Control_R:
+		case GDK_KEY_Alt_L: case GDK_KEY_Alt_R:
+		case GDK_KEY_Meta_L: case GDK_KEY_Meta_R:
+		case GDK_KEY_Super_L: case GDK_KEY_Super_R:
+		case GDK_KEY_Hyper_L: case GDK_KEY_Hyper_R:
+		case GDK_KEY_Caps_Lock: case GDK_KEY_Num_Lock: case GDK_KEY_Shift_Lock:
+		case GDK_KEY_ISO_Level3_Shift: case GDK_KEY_ISO_Level5_Shift:
+			return TRUE;
+	}
+	state = (GdkModifierType)(state & gtk_accelerator_get_default_mod_mask());
+	if (keyval == GDK_KEY_ISO_Left_Tab)
+		keyval = GDK_KEY_Tab;
+	g_free(d->fastForwardAccel);
+	d->fastForwardAccel = (keyval == GDK_KEY_Escape && state == 0)
+		? g_strdup("") : gtk_accelerator_name(keyval, state);
+	d->capturingFastForward = FALSE;
+	RefreshFastForwardButton(d);
+	return TRUE;
+}
+
+GtkWidget *
+BuildHotkeysPage(ConfigDialog *d)
+{
+	GtkWidget *page = NewPage();
+	GtkWidget *grid;
+	GtkWidget *section = NewSection("Hotkeys", &grid);
+	d->fastForwardAccel = g_strdup(d->config->fast_forward_hold.get().c_str());
+	d->fastForwardButton = gtk_button_new();
+	g_signal_connect(d->fastForwardButton, "clicked", G_CALLBACK(OnFastForwardClicked), d);
+	AddRow(GTK_GRID(grid), 0, "Fast Forward (Hold):", d->fastForwardButton);
+	RefreshFastForwardButton(d);
+	gtk_box_append(GTK_BOX(page), section);
+	gtk_box_append(GTK_BOX(page), NewHint("Click the shortcut and press a key. Press Escape to disable it. "
+	                                    "Assigning Tab replaces the Tab shortcut for the fast-forward toggle."));
+	return page;
 }
 
 /* ------------------------------------------------------------------ browsing */
@@ -1891,6 +1964,8 @@ CollectValues(ConfigDialog *d)
 	config->mic_sample_file = Trim(gtk_editable_get_text(
 		GTK_EDITABLE(d->micSampleEntry)));
 
+	config->fast_forward_hold = d->fastForwardAccel;
+
 	/* Paths. */
 	for (int i = 0; i < kPathCategoryCount; ++i)
 	{
@@ -2060,6 +2135,7 @@ OnDialogDestroy(GtkWidget *widget, gpointer user_data)
 	}
 	g_free(d->filterValues);
 	g_free(d->presentationMasks);
+	g_free(d->fastForwardAccel);
 	g_free(d);
 	/* The window's sole reference is owned by GTK.  Do not ref_sink it on
 	 * creation or unref it here: an extra ref keeps the object alive past
@@ -2730,6 +2806,13 @@ desmume_config_dialog_show_page(GtkWindow *parent,
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook),
 	                         WrapPage(BuildPathsPage(d)),
 	                         gtk_label_new("Paths"));
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook),
+	                         WrapPage(BuildHotkeysPage(d)),
+	                         gtk_label_new("Hotkeys"));
+	GtkEventController *shortcutCapture = gtk_event_controller_key_new();
+	gtk_event_controller_set_propagation_phase(shortcutCapture, GTK_PHASE_CAPTURE);
+	g_signal_connect(shortcutCapture, "key-pressed", G_CALLBACK(OnShortcutCapture), d);
+	gtk_widget_add_controller(d->window, shortcutCapture);
 
 	GtkWidget *buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_widget_set_halign(buttons, GTK_ALIGN_END);

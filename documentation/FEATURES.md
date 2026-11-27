@@ -120,6 +120,11 @@ feature. Each entry says what you can do with it — not how it is built.
 
 ## macOS (Cocoa)
 
+### Input shortcuts
+- **Fast Forward (Hold)** can be mapped to a keyboard key or controller input
+  in Preferences > Input. It bypasses the speed limiter only while held,
+  without changing the saved limiter setting.
+
 ### Video recording
 - **Hardware encoding** — encoders are listed as they are found (H.264, HEVC,
   AV1 and others where available), with MP4/MOV containers and a choice of
@@ -382,7 +387,7 @@ feature. Each entry says what you can do with it — not how it is built.
   decorations, and needs GTK 4.10 or newer.
 - **A complete emulator window, not a shell** — background ROM loading,
   ten instant-save slots (F1–F10 / Shift+F1–F10), screenshots, recent ROMs,
-  and one settings window with eight pages. LCD layouts (including hybrid),
+  and one settings window. LCD layouts (including hybrid),
   screen swap, rotation and gap, plus keyboard, mouse and stylus input, are
   restored from saved preferences.
 - **The full settings set GTK3 has** — one window holds Emulation (bus timing,
@@ -390,9 +395,13 @@ feature. Each entry says what you can do with it — not how it is built.
   output colour depth, multisampling, SoftRasterizer and accuracy switches,
   texture options, presentation and GPU filter), Sound, Firmware (nickname,
   message, colour, birthday, language, MAC), Slot 1/Slot 2 devices, Wi-Fi,
-  Microphone, and Paths (per-category folders plus the screenshot format and
-  file-name pattern). Settings the core only reads at boot offer a reset when
-  they change, and each page is reachable straight from the Config menu.
+  Microphone, Paths (per-category folders plus the screenshot format and
+  file-name pattern), and Hotkeys. The configurable **Fast Forward (Hold)**
+  shortcut shares its setting with GTK3 and is unbound by default. Assigning
+  Tab to it replaces the Tab shortcut for the fast-forward toggle; the toggle
+  remains available in the Emulation menu. Settings the core only reads at
+  boot offer a reset when they change, and each page is reachable straight
+  from the Config menu.
 - **ROM-level actions** — a ROM Info window (title, game code, maker, cartridge
   and loaded size, CRC32, save type, CPU and 3D engine), import/export of the
   battery save (raw `.sav`, No$GBA, `.dsv`, Action Replay `.duc`/`.dss`), a
@@ -425,6 +434,14 @@ feature. Each entry says what you can do with it — not how it is built.
 ---
 
 ## Linux / POSIX (GTK3)
+
+### Keyboard shortcuts
+- **Fast Forward (Hold)** in Config > Edit Hotkeys is unbound by default.
+  Hold the assigned shortcut to bypass the speed limiter temporarily; releasing
+  it restores the existing limiter setting. The separate Boost control remains
+  available.
+- Tab no longer moves focus to the main toolbar, so it can be used as a game
+  control or shortcut.
 
 ### WebGPU presentation (X11 and Wayland)
 - **Native presentation** in the GTK drawing area, with Wayland avoiding races

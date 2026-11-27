@@ -57,7 +57,8 @@ enum DesmumeConfigPage
 	DESMUME_CONFIG_PAGE_SLOTS,
 	DESMUME_CONFIG_PAGE_WIFI,
 	DESMUME_CONFIG_PAGE_MICROPHONE,
-	DESMUME_CONFIG_PAGE_PATHS
+	DESMUME_CONFIG_PAGE_PATHS,
+	DESMUME_CONFIG_PAGE_HOTKEYS
 };
 
 /* Show the modal config dialog.  A second call presents the existing window

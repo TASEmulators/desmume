@@ -33,6 +33,8 @@
 #import "cocoa_util.h"
 #import "cocoa_globals.h"
 
+#include <Carbon/Carbon.h>
+
 @implementation CocoaDisplayView
 
 @synthesize inputManager;
@@ -849,7 +851,7 @@
 - (void)keyDown:(NSEvent *)theEvent
 {
 	BOOL isHandled = [self handleKeyPress:theEvent keyPressed:YES];
-	if (!isHandled)
+	if (!isHandled && [theEvent keyCode] != kVK_Tab)
 	{
 		[super keyDown:theEvent];
 	}
@@ -945,6 +947,7 @@
 
 - (BOOL)resignFirstResponder
 {
+	[[inputManager emuControl] clearFastForwardDevice:"NSEventKeyboard" element:NULL];
 	return YES;
 }
 

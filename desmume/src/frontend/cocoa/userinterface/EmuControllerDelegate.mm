@@ -620,7 +620,7 @@ static const NSUInteger kPathSettingCount =
 	[[newWindowController view] setAllowViewUpdates:YES];
 
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	const BOOL useVerticalSync = ([[newWindowController view] layer] != nil) || [cdsCore isFrameSkipEnabled] || (([cdsCore speedScalar] < 1.03f) && [cdsCore isSpeedLimitEnabled]);
+	const BOOL useVerticalSync = ([[newWindowController view] layer] != nil) || [cdsCore isFrameSkipEnabled] || (([cdsCore speedScalar] < 1.03f) && [cdsCore isSpeedLimitEnabled] && ![cdsCore execControl]->GetFastForwardHeld());
 	[[newWindowController view] setUseVerticalSync:useVerticalSync];
 
 	MacDisplayViewOutput *dvo = [[newWindowController view] displayViewOutput];
@@ -1541,7 +1541,7 @@ static const NSUInteger kPathSettingCount =
 	if ( ([[(DisplayWindowController *)[windowList objectAtIndex:0] view] layer] == nil) && ([windowList count] > 0) )
 	{
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-		const BOOL useVerticalSync = [cdsCore isFrameSkipEnabled] || (([cdsCore speedScalar] < 1.03f) && [cdsCore isSpeedLimitEnabled]);
+		const BOOL useVerticalSync = [cdsCore isFrameSkipEnabled] || (([cdsCore speedScalar] < 1.03f) && [cdsCore isSpeedLimitEnabled] && ![cdsCore execControl]->GetFastForwardHeld());
 
 		for (DisplayWindowController *windowController in windowList)
 		{
@@ -2190,6 +2190,30 @@ static const NSUInteger kPathSettingCount =
 	}
 
 	[self setVerticalSyncForNonLayerBackedViews:nil];
+}
+
+- (void) cmdFastForwardHold:(const ClientCommandAttributes &)cmdAttr
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	if (cdsCore == nil)
+		return;
+	[cdsCore execControl]->SetFastForwardInput(cmdAttr.input.deviceCode, cmdAttr.input.elementCode,
+	                                           cmdAttr.input.state != ClientInputDeviceState_Off);
+	if ([windowList count] > 0)
+		[self setVerticalSyncForNonLayerBackedViews:nil];
+}
+
+- (void) clearFastForwardDevice:(const char *)device element:(const char *)element
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	if (cdsCore == nil)
+		return;
+	if (element != NULL)
+		[cdsCore execControl]->SetFastForwardInput(device, element, false);
+	else
+		[cdsCore execControl]->ClearFastForwardInputsForDevice(device);
+	if ([windowList count] > 0)
+		[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
 - (void) cmdToggleSpeedLimiter:(const ClientCommandAttributes &)cmdAttr

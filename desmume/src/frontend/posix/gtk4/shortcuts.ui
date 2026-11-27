@@ -29,8 +29,8 @@
               </object>
             </child>
             <child>
-              <object class='GtkShortcutsShortcut'>
-                <property name='title' translatable='yes'>Fast forward</property>
+              <object class='GtkShortcutsShortcut' id='fast-forward-shortcut'>
+                <property name='title' translatable='yes'>Fast forward toggle</property>
                 <property name='accelerator'>Tab</property>
               </object>
             </child>

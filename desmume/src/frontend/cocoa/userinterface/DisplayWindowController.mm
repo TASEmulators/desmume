@@ -1416,6 +1416,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 }
 
+- (void)windowDidResignKey:(NSNotification *)notification
+{
+	[emuControl clearFastForwardDevice:"NSEventKeyboard" element:NULL];
+}
+
 - (void)windowDidBecomeMain:(NSNotification *)notification
 {
 	MacDisplayViewOutput *dvo = [[self view] displayViewOutput];

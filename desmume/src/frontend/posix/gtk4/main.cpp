@@ -73,6 +73,7 @@ static desmume::config::Config *pConfig = NULL;
 static GtkWidget *pWindow = NULL;
 static GtkWidget *pMenuBar = NULL;
 static GtkWidget *pShortcutsWindow = NULL;
+static GObject *pFastForwardShortcut = NULL;
 static GtkWidget *pToolBar = NULL;
 static GtkWidget *pStatusBar = NULL;
 static GtkWidget *pStatusLabel = NULL;
@@ -535,6 +536,81 @@ static void OnKeyEvent(DesmumeDisplay *display, guint keyval,
 	(void)user_data;
 
 	desmume_emu_set_key(keyval, pressed);
+}
+
+static guint sHoldKey = 0;
+static GdkModifierType sHoldMods = (GdkModifierType)0;
+static guint sHoldKeycode = 0;
+static gboolean sHoldActive = FALSE;
+
+static void ApplyHoldShortcut(void)
+{
+	sHoldKey = 0;
+	sHoldMods = (GdkModifierType)0;
+	gtk_accelerator_parse(pConfig->fast_forward_hold.get().c_str(), &sHoldKey, &sHoldMods);
+	if (sHoldKey == GDK_KEY_ISO_Left_Tab)
+		sHoldKey = GDK_KEY_Tab;
+	sHoldKey = gdk_keyval_to_lower(sHoldKey);
+	sHoldActive = FALSE;
+	desmume_emu_set_fast_forward_held(FALSE);
+
+	static const char *tab[] = { "Tab", NULL };
+	static const char *none[] = { NULL };
+	gtk_application_set_accels_for_action(pApp, "app.fast-forward",
+	                                      sHoldKey == GDK_KEY_Tab && sHoldMods == 0 ? none : tab);
+}
+
+static gboolean OnHoldKeyPressed(GtkEventControllerKey *controller, guint keyval,
+                                  guint keycode, GdkModifierType state, gpointer data)
+{
+	(void)controller;
+	(void)data;
+	if (keyval == GDK_KEY_ISO_Left_Tab)
+		keyval = GDK_KEY_Tab;
+	keyval = gdk_keyval_to_lower(keyval);
+	if (sHoldKey && keyval == sHoldKey &&
+	    (state & gtk_accelerator_get_default_mod_mask()) == sHoldMods)
+	{
+		sHoldActive = TRUE;
+		sHoldKeycode = keycode;
+		desmume_emu_set_fast_forward_held(TRUE);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static void OnHoldKeyReleased(GtkEventControllerKey *controller, guint keyval,
+                               guint keycode, GdkModifierType state, gpointer data)
+{
+	(void)controller;
+	(void)state;
+	(void)data;
+	GdkModifierType modifier = (GdkModifierType)0;
+	switch (keyval)
+	{
+		case GDK_KEY_Shift_L: case GDK_KEY_Shift_R: modifier = GDK_SHIFT_MASK; break;
+		case GDK_KEY_Control_L: case GDK_KEY_Control_R: modifier = GDK_CONTROL_MASK; break;
+		case GDK_KEY_Alt_L: case GDK_KEY_Alt_R: modifier = GDK_ALT_MASK; break;
+		case GDK_KEY_Super_L: case GDK_KEY_Super_R: modifier = GDK_SUPER_MASK; break;
+		case GDK_KEY_Meta_L: case GDK_KEY_Meta_R: modifier = GDK_META_MASK; break;
+		case GDK_KEY_Hyper_L: case GDK_KEY_Hyper_R: modifier = GDK_HYPER_MASK; break;
+	}
+	if (sHoldActive && (keycode == sHoldKeycode || (sHoldMods & modifier)))
+	{
+		sHoldActive = FALSE;
+		desmume_emu_set_fast_forward_held(FALSE);
+	}
+}
+
+static void OnWindowActiveChanged(GObject *window, GParamSpec *spec, gpointer data)
+{
+	(void)spec;
+	(void)data;
+	if (!gtk_window_is_active(GTK_WINDOW(window)))
+	{
+		sHoldActive = FALSE;
+		desmume_emu_set_fast_forward_held(FALSE);
+	}
 }
 
 static void OnAlertDone(GObject *source, GAsyncResult *result, gpointer user_data);
@@ -1702,6 +1778,7 @@ static void ActionShortcuts(GSimpleAction *action, GVariant *parameter, gpointer
 			"/org/desmume/DeSmuME/shortcuts.ui");
 		pShortcutsWindow = GTK_WIDGET(g_object_ref(
 			gtk_builder_get_object(builder, "shortcuts")));
+		pFastForwardShortcut = gtk_builder_get_object(builder, "fast-forward-shortcut");
 		g_object_unref(builder);
 
 		gtk_window_set_transient_for(GTK_WINDOW(pShortcutsWindow), GTK_WINDOW(pWindow));
@@ -1709,6 +1786,9 @@ static void ActionShortcuts(GSimpleAction *action, GVariant *parameter, gpointer
 		                 G_CALLBACK(OnShortcutsClose), NULL);
 	}
 
+	g_object_set(pFastForwardShortcut, "title",
+	             sHoldKey == GDK_KEY_Tab && sHoldMods == 0
+	                 ? "Fast forward (hold)" : "Fast forward toggle", NULL);
 	gtk_window_present(GTK_WINDOW(pShortcutsWindow));
 }
 
@@ -1807,6 +1887,7 @@ static void CheatsDisableChanged(GSimpleAction *action, GVariant *value, gpointe
 static void OnConfigApplied(gpointer user_data)
 {
 	(void)user_data;
+	ApplyHoldShortcut();
 
 	/* The dialog may have changed the GPU filter, which also has a View-menu
 	 * radio action; keep its state in step. */
@@ -1857,6 +1938,7 @@ static void ActionConfigPage(GSimpleAction *action, GVariant *parameter,
 		{ "wifi",        DESMUME_CONFIG_PAGE_WIFI },
 		{ "microphone",  DESMUME_CONFIG_PAGE_MICROPHONE },
 		{ "paths",       DESMUME_CONFIG_PAGE_PATHS },
+		{ "hotkeys",     DESMUME_CONFIG_PAGE_HOTKEYS },
 	};
 
 	int page = DESMUME_CONFIG_PAGE_EMULATION;
@@ -1989,6 +2071,8 @@ static const GActionEntry app_entries[] =
 static GtkWidget *MakeToolButton(const char *icon_name, const char *tooltip, const char *action_name)
 {
 	GtkWidget *button = gtk_button_new_from_icon_name(icon_name);
+	gtk_widget_set_focusable(button, FALSE);
+	gtk_widget_set_focus_on_click(button, FALSE);
 	gtk_widget_set_tooltip_text(button, tooltip);
 	gtk_widget_add_css_class(button, "flat");
 	gtk_actionable_set_action_name(GTK_ACTIONABLE(button), action_name);
@@ -2005,6 +2089,12 @@ static void BuildWindow(GtkApplication *app)
 	gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(pWindow), FALSE);
 	g_signal_connect(pWindow, "close-request",
 	                 G_CALLBACK(OnWindowCloseRequest), NULL);
+	g_signal_connect(pWindow, "notify::is-active", G_CALLBACK(OnWindowActiveChanged), NULL);
+	GtkEventController *holdKey = gtk_event_controller_key_new();
+	gtk_event_controller_set_propagation_phase(holdKey, GTK_PHASE_CAPTURE);
+	g_signal_connect(holdKey, "key-pressed", G_CALLBACK(OnHoldKeyPressed), NULL);
+	g_signal_connect(holdKey, "key-released", G_CALLBACK(OnHoldKeyReleased), NULL);
+	gtk_widget_add_controller(pWindow, holdKey);
 
 	GtkWidget *root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_window_set_child(GTK_WINDOW(pWindow), root);
@@ -2057,6 +2147,7 @@ static void BuildWindow(GtkApplication *app)
 	g_signal_connect(pDisplayArea, "touch-release", G_CALLBACK(OnTouchRelease), NULL);
 	g_signal_connect(pDisplayArea, "key-event", G_CALLBACK(OnKeyEvent), NULL);
 	gtk_box_append(GTK_BOX(root), pDisplayArea);
+	gtk_window_set_focus(GTK_WINDOW(pWindow), pDisplayArea);
 
 	pStatusBar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
 	gtk_widget_add_css_class(pStatusBar, "desmume-status");
@@ -2088,6 +2179,8 @@ static void BuildWindow(GtkApplication *app)
 		gtk_header_bar_set_title_widget(GTK_HEADER_BAR(header), title);
 
 		GtkWidget *header_open = gtk_button_new_from_icon_name("document-open-symbolic");
+		gtk_widget_set_focusable(header_open, FALSE);
+		gtk_widget_set_focus_on_click(header_open, FALSE);
 		gtk_widget_set_tooltip_text(header_open, "Open ROM (Ctrl+O)");
 		gtk_accessible_update_property(GTK_ACCESSIBLE(header_open),
 		                               GTK_ACCESSIBLE_PROPERTY_LABEL, "Open ROM", -1);
@@ -2343,7 +2436,6 @@ int main(int argc, char *argv[])
 	static const char *quit_accels[] = { "<Control>q", NULL };
 	static const char *run_accels[] = { "Pause", NULL };
 	static const char *frame_advance_accels[] = { "<Control>n", NULL };
-	static const char *fast_forward_accels[] = { "Tab", NULL };
 	static const char *fullscreen_accels[] = { "F11", NULL };
 	static const char *screenshot_accels[] = { "<Control>s", NULL };
 	static const char *config_accels[] = { "<Control>p", NULL };
@@ -2351,7 +2443,7 @@ int main(int argc, char *argv[])
 	gtk_application_set_accels_for_action(app, "app.quit", quit_accels);
 	gtk_application_set_accels_for_action(app, "app.run", run_accels);
 	gtk_application_set_accels_for_action(app, "app.frame-advance", frame_advance_accels);
-	gtk_application_set_accels_for_action(app, "app.fast-forward", fast_forward_accels);
+	ApplyHoldShortcut();
 	gtk_application_set_accels_for_action(app, "app.fullscreen", fullscreen_accels);
 	gtk_application_set_accels_for_action(app, "app.screenshot", screenshot_accels);
 	gtk_application_set_accels_for_action(app, "app.config", config_accels);

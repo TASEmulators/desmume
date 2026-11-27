@@ -1021,6 +1021,9 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	{
 		if ([hidDevice hidDeviceRef] == inIOHIDDeviceRef)
 		{
+			char deviceCode[INPUT_HANDLER_STRING_LENGTH] = {0};
+			if (InputDeviceCodeFromHIDDevice(inIOHIDDeviceRef, deviceCode))
+				[[[hidManager inputManager] emuControl] clearFastForwardDevice:deviceCode element:NULL];
 			[hidDevice stopForceFeedback];
 			[[hidManager deviceListController] removeObject:hidDevice];
 			break;
@@ -1090,6 +1093,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 				   [NSImage imageNamed:@"Icon_AutoholdClear_420x420"],				@"Autohold - Clear",
 				   [NSImage imageNamed:@"Icon_DisplayToggle_16x16"],				@"Toggle All Displays",
 				   [NSImage imageNamed:@"Icon_SetSpeed_16x16"],						@"Set Speed",
+				   [NSImage imageNamed:@"Icon_SetSpeed_16x16"],						@"Fast Forward (Hold)",
 				   [NSImage imageNamed:@"Icon_SpeedLimiterEnable_16x16"],			@"Enable/Disable Speed Limiter",
 				   [NSImage imageNamed:@"Icon_RotateCCW_16x16"],					@"Rotate Display Left",
 				   [NSImage imageNamed:@"Icon_RotateCW_16x16"],						@"Rotate Display Right",
@@ -1177,6 +1181,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	cmdSetSpeed.floatValue[3] = 8.0f; // The next speed scaler to include in the sequence. Only applies for Latch List mode.
 	
 	ClientCommandAttributes cmdToggleSpeedLimiter				= NewCommandAttributesWithFunction("Enable/Disable Speed Limiter", &ClientCommandToggleSpeedLimiter);
+	ClientCommandAttributes cmdFastForwardHold					= NewCommandAttributesWithFunction("Fast Forward (Hold)", &ClientCommandFastForwardHold);
 	ClientCommandAttributes cmdToggleAutoFrameSkip				= NewCommandAttributesWithFunction("Enable/Disable Auto Frame Skip", &ClientCommandToggleAutoFrameSkip);
 	ClientCommandAttributes cmdToggleCheats						= NewCommandAttributesWithFunction("Enable/Disable Cheat System", &ClientCommandToggleCheats);
 	ClientCommandAttributes cmdCoreExecute						= NewCommandAttributesWithFunction("Execute", &ClientCommandCoreExecute);
@@ -1233,6 +1238,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	defaultCommandAttributes["Rotate Display Right"]			= cmdRotateDisplayRight;
 	defaultCommandAttributes["Toggle All Displays"]				= cmdToggleAllDisplays;
 	defaultCommandAttributes["Set Speed"]						= cmdSetSpeed;
+	defaultCommandAttributes["Fast Forward (Hold)"]			= cmdFastForwardHold;
 	defaultCommandAttributes["Enable/Disable Speed Limiter"]	= cmdToggleSpeedLimiter;
 	defaultCommandAttributes["Enable/Disable Auto Frame Skip"]	= cmdToggleAutoFrameSkip;
 	defaultCommandAttributes["Enable/Disable Cheat System"]		= cmdToggleCheats;
@@ -1461,6 +1467,9 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	}
 	
 	const std::string inputKey = std::string(deviceCode) + ":" + std::string(elementCode);
+	InputCommandMap::iterator mapped = commandMap.find(inputKey);
+	if (mapped != commandMap.end() && strcmp(mapped->second.tag, "Fast Forward (Hold)") == 0)
+		[emuControl clearFastForwardDevice:deviceCode element:elementCode];
 	commandMap.erase(inputKey);
 	
 	for (NSString *inputCommandTag in inputMappings)
@@ -1493,16 +1502,26 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	}
 	
 	// This loop removes all mappings to commandTag, with the exception of IBAction mappings.
-	for (InputCommandMap::iterator it=commandMap.begin(); it!=commandMap.end(); ++it)
-	{
-		if (it->first.find("IBAction") == std::string::npos && strncmp(it->second.tag, cmdTag, INPUT_HANDLER_STRING_LENGTH) == 0)
-		{
-			commandMap.erase(it);
-		}
-	}
-	
 	NSString *commandTag = [NSString stringWithCString:cmdTag encoding:NSUTF8StringEncoding];
 	NSMutableArray *inputList = (NSMutableArray *)[[self inputMappings] valueForKey:commandTag];
+	if ([commandTag isEqualToString:@"Fast Forward (Hold)"])
+	{
+		for (NSDictionary *deviceInfo in inputList)
+		{
+			const char *device = [[deviceInfo valueForKey:@"deviceCode"] UTF8String];
+			const char *element = [[deviceInfo valueForKey:@"elementCode"] UTF8String];
+			if (device != NULL && element != NULL)
+				[emuControl clearFastForwardDevice:device element:element];
+		}
+	}
+	for (InputCommandMap::iterator it=commandMap.begin(); it!=commandMap.end(); )
+	{
+		if (it->first.find("IBAction") == std::string::npos && strncmp(it->second.tag, cmdTag, INPUT_HANDLER_STRING_LENGTH) == 0)
+			commandMap.erase(it++);
+		else
+			++it;
+	}
+	
 	[inputList removeAllObjects];
 }
 
@@ -2295,6 +2314,12 @@ void ClientCommandToggleSpeedLimiter(const ClientCommandAttributes &cmdAttr, voi
 {
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
 	[emuControl cmdToggleSpeedLimiter:cmdAttr];
+}
+
+void ClientCommandFastForwardHold(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdFastForwardHold:cmdAttr];
 }
 
 void ClientCommandToggleAutoFrameSkip(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)

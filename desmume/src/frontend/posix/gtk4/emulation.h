@@ -121,6 +121,7 @@ void desmume_emu_set_frameskip(int value);
 int desmume_emu_get_frameskip(void);
 void desmume_emu_set_fast_forward(gboolean enabled);
 gboolean desmume_emu_get_fast_forward(void);
+void desmume_emu_set_fast_forward_held(gboolean held);
 
 /* Emulated frames per second over a rolling one-second window, including
  * frames that were skipped (matches GTK3's title-bar FPS counter). */

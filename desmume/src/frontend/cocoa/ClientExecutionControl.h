@@ -20,6 +20,7 @@
 
 #include <pthread.h>
 #include <map>
+#include <set>
 #include <string>
 
 #include "ClientInputHandler.h"
@@ -214,6 +215,7 @@ protected:
 	
 	ClientExecutionControlSettings _settingsPending;
 	ClientExecutionControlSettings _settingsApplied;
+	std::set<std::pair<std::string, std::string> > _fastForwardInputs;
 	
 	NDSFrameInfo _ndsFrameInfo;
 	
@@ -347,6 +349,9 @@ public:
 	bool GetEnableSpeedLimiter();
 	bool GetEnableSpeedLimiterApplied();
 	void SetEnableSpeedLimiter(bool enable);
+	void SetFastForwardInput(const char *device, const char *element, bool held);
+	void ClearFastForwardInputsForDevice(const char *device);
+	bool GetFastForwardHeld();
 	
 	double GetExecutionSpeed();
 	double GetExecutionSpeedApplied();

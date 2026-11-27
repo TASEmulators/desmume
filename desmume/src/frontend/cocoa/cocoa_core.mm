@@ -1200,11 +1200,11 @@ static void* RunCoreThread(void *arg)
 			needRestoreExecutionWaitBias = true;
 		}
 		
-		if ( (behavior == ExecutionBehavior_Run) && lastExecutionSpeedLimitEnable && !execControl->GetEnableSpeedLimiter() )
+		if ( (behavior == ExecutionBehavior_Run) && lastExecutionSpeedLimitEnable && !execControl->GetEnableSpeedLimiterApplied() )
 		{
 			lastExecutionWaitBias = executionWaitBias;
 		}
-		else if ( (behavior == ExecutionBehavior_Run) && !lastExecutionSpeedLimitEnable && execControl->GetEnableSpeedLimiter() )
+		else if ( (behavior == ExecutionBehavior_Run) && !lastExecutionSpeedLimitEnable && execControl->GetEnableSpeedLimiterApplied() )
 		{
 			needRestoreExecutionWaitBias = true;
 		}

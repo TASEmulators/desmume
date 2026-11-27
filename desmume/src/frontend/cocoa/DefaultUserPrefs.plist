@@ -827,6 +827,8 @@
 				<integer>2</integer>
 			</dict>
 		</array>
+		<key>Fast Forward (Hold)</key>
+		<array/>
 		<key>Enable/Disable Speed Limiter</key>
 		<array/>
 		<key>Enable/Disable Auto Frame Skip</key>

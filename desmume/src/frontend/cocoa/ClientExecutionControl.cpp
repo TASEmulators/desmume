@@ -758,6 +758,48 @@ void ClientExecutionControl::SetEnableSpeedLimiter(bool enable)
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 }
 
+void ClientExecutionControl::SetFastForwardInput(const char *device, const char *element, bool held)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	const std::pair<std::string, std::string> input(device, element);
+	bool changed;
+	if (held)
+		changed = this->_fastForwardInputs.insert(input).second;
+	else
+		changed = this->_fastForwardInputs.erase(input) != 0;
+	if (changed)
+		this->_newSettingsPendingOnExecutionLoopStart = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+}
+
+void ClientExecutionControl::ClearFastForwardInputsForDevice(const char *device)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	bool changed = false;
+	for (std::set<std::pair<std::string, std::string> >::iterator it = this->_fastForwardInputs.begin();
+	     it != this->_fastForwardInputs.end(); )
+	{
+		if (it->first == device)
+		{
+			this->_fastForwardInputs.erase(it++);
+			changed = true;
+		}
+		else
+			++it;
+	}
+	if (changed)
+		this->_newSettingsPendingOnExecutionLoopStart = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+}
+
+bool ClientExecutionControl::GetFastForwardHeld()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	const bool held = !this->_fastForwardInputs.empty();
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	return held;
+}
+
 double ClientExecutionControl::GetExecutionSpeed()
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
@@ -1180,7 +1222,7 @@ void ClientExecutionControl::ApplySettingsOnExecutionLoopStart()
 	if (this->_newSettingsPendingOnExecutionLoopStart)
 	{
 		const double speedScalar = (this->_settingsPending.executionSpeed > SPEED_SCALAR_MIN) ? this->_settingsPending.executionSpeed : SPEED_SCALAR_MIN;
-		this->_settingsApplied.enableExecutionSpeedLimiter	= this->_settingsPending.enableExecutionSpeedLimiter;
+		this->_settingsApplied.enableExecutionSpeedLimiter	= this->_settingsPending.enableExecutionSpeedLimiter && this->_fastForwardInputs.empty();
 		this->_settingsApplied.executionSpeed				= speedScalar;
 		this->_settingsApplied.framesToSkipSetting			= this->_settingsPending.framesToSkipSetting;
 		

@@ -639,6 +639,10 @@ struct modify_key_ctx {
 };
 
 static u16 keys_latch = 0;
+static guint sFastForwardKeyval = 0;
+static GdkModifierType sFastForwardMods = (GdkModifierType)0;
+static guint sFastForwardKeycode = 0;
+static bool sFastForwardHeld = false;
 
 /* Buttons currently held through their turbo key.  A turbo key is an extra
    binding that belongs to a DS button but may be a different key, so it is
@@ -4586,6 +4590,16 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
   // reports raw keyboard state.
   sLuaPressedKeys.insert(e->keyval);
 #endif
+  GdkModifierType state = (GdkModifierType)e->state;
+  gdk_keymap_add_virtual_modifiers(gdk_keymap_get_for_display(gtk_widget_get_display(w)), &state);
+  const guint keyval = e->keyval == GDK_KEY_ISO_Left_Tab ? GDK_KEY_Tab : gdk_keyval_to_lower(e->keyval);
+  if (sFastForwardKeyval != 0 && keyval == sFastForwardKeyval &&
+      (state & gtk_accelerator_get_default_mod_mask()) == sFastForwardMods) {
+    sFastForwardHeld = true;
+    sFastForwardKeycode = e->hardware_keycode;
+    return TRUE;
+  }
+
   guint mask;
   mask = gtk_accelerator_get_default_mod_mask ();
   if( (e->state & mask) == 0){
@@ -4610,6 +4624,10 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
     return 1;
   }
 #endif
+  if (e->keyval == GDK_KEY_Tab || e->keyval == GDK_KEY_ISO_Left_Tab) {
+    gtk_window_activate_key(GTK_WINDOW(w), e);
+    return TRUE;
+  }
   return 0;
 }
 
@@ -4618,6 +4636,19 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 #ifdef HAVE_LUA
   sLuaPressedKeys.erase(e->keyval);
 #endif
+  GdkModifierType releasedModifier = (GdkModifierType)0;
+  switch (e->keyval) {
+    case GDK_KEY_Shift_L: case GDK_KEY_Shift_R: releasedModifier = GDK_SHIFT_MASK; break;
+    case GDK_KEY_Control_L: case GDK_KEY_Control_R: releasedModifier = GDK_CONTROL_MASK; break;
+    case GDK_KEY_Alt_L: case GDK_KEY_Alt_R: releasedModifier = GDK_MOD1_MASK; break;
+    case GDK_KEY_Super_L: case GDK_KEY_Super_R: releasedModifier = GDK_SUPER_MASK; break;
+    case GDK_KEY_Meta_L: case GDK_KEY_Meta_R: releasedModifier = GDK_META_MASK; break;
+    case GDK_KEY_Hyper_L: case GDK_KEY_Hyper_R: releasedModifier = GDK_HYPER_MASK; break;
+  }
+  if (sFastForwardHeld && (e->hardware_keycode == sFastForwardKeycode ||
+                           (sFastForwardMods & releasedModifier) != 0))
+    sFastForwardHeld = false;
+
   u16 TurboKey = lookup_turbo_key(e->keyval);
   if(TurboKey){
     RM_KEY( turbo_latch, TurboKey );
@@ -4628,6 +4659,28 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
   RM_KEY( keys_latch, Key );
   return 1;
 
+}
+
+static gboolean MainWindowFocusOut(GtkWidget *widget, GdkEventFocus *event, gpointer data)
+{
+    sFastForwardHeld = false;
+#ifdef HAVE_LUA
+    LuaWindowFocusOut(widget, event, data);
+#endif
+    return FALSE;
+}
+
+static void DisableToolbarFocus(GtkWidget *toolbar)
+{
+    GList *children = gtk_container_get_children(GTK_CONTAINER(toolbar));
+    for (GList *child = children; child != NULL; child = child->next) {
+        GtkWidget *button = gtk_bin_get_child(GTK_BIN(child->data));
+        if (button != NULL) {
+            gtk_widget_set_can_focus(button, FALSE);
+            gtk_widget_set_focus_on_click(button, FALSE);
+        }
+    }
+    g_list_free(children);
 }
 
 /////////////////////////////// SOUND SETTINGS //////////////////////////////////////
@@ -5718,6 +5771,7 @@ static const hotkey_def hotkey_defs[] = {
     { "layout-horizontal","Layout: Horizontal",    "app.orient('horizontal')",   "<Primary>2" },
     { "layout-single",    "Layout: Single Screen", "app.orient('single')",       "<Primary>0" },
     { "layout-hybrid",    "Layout: Hybrid",        "app.orient('hybrid_equal')", "<Primary>3" },
+    { "fast-forward",     "Fast Forward (Hold)",   NULL,                         NULL },
 };
 
 #define HOTKEY_COUNT ((int)(sizeof(hotkey_defs) / sizeof(hotkey_defs[0])))
@@ -5735,6 +5789,8 @@ static void ParseAccelString(const char *accel, guint *keyval, GdkModifierType *
         return;
 
     gtk_accelerator_parse(accel, keyval, mods);
+    if (*keyval == GDK_KEY_ISO_Left_Tab)
+        *keyval = GDK_KEY_Tab;
     if (*keyval == 0)
         *mods = (GdkModifierType)0;
 }
@@ -5779,6 +5835,12 @@ static void HotkeysApply(void)
     for (int i = 0; i < HOTKEY_COUNT; i++) {
         const gchar *accel = sHotkeyAccel[i];
 
+        if (hotkey_defs[i].action == NULL) {
+            ParseAccelString(accel, &sFastForwardKeyval, &sFastForwardMods);
+            sFastForwardKeyval = gdk_keyval_to_lower(sFastForwardKeyval);
+            sFastForwardHeld = false;
+            continue;
+        }
         if (accel != NULL && accel[0] != '\0') {
             const gchar *list[] = { accel, NULL };
             gtk_application_set_accels_for_action(pApp, hotkey_defs[i].action, list);
@@ -6064,7 +6126,7 @@ static gboolean KeyDialogKeyPress(GtkWidget *widget, GdkEventKey *event, gpointe
         return TRUE;
     }
 
-    slot->keyval = event->keyval;
+    slot->keyval = event->keyval == GDK_KEY_ISO_Left_Tab ? GDK_KEY_Tab : event->keyval;
     slot->mods = (slot->kind == KEY_SLOT_HOTKEY) ? mods : (GdkModifierType)0;
     KeyDialogEndCapture(state);
     return TRUE;
@@ -6274,12 +6336,13 @@ static void HotkeyConfigDialog(GSimpleAction *action, GVariant *parameter, gpoin
 
     GtkWidget *hotkeyGrid = NULL;
     KeyDialogGridFrame("Hotkeys", column, &hotkeyGrid);
+    const int hotkeyRows = (HOTKEY_COUNT + 1) / 2;
     for (int i = 0; i < HOTKEY_COUNT; i++) {
         guint keyval;
         GdkModifierType mods;
         ParseAccelString(sHotkeyAccel[i], &keyval, &mods);
 
-        KeyDialogAttachSlot(&state, GTK_GRID(hotkeyGrid), i % 8, (i < 8) ? 0 : 2,
+        KeyDialogAttachSlot(&state, GTK_GRID(hotkeyGrid), i % hotkeyRows, (i / hotkeyRows) * 2,
                             hotkey_defs[i].label, KEY_SLOT_HOTKEY, i, keyval, mods);
     }
 
@@ -7862,7 +7925,7 @@ gboolean EmuLoop(gpointer data)
     EmuSingleFrame();
 
 
-    if (!config.fpslimiter || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
+    if (!config.fpslimiter || sFastForwardHeld || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
         if (autoframeskip) {
             Frameskip = 0;
         } else {
@@ -7987,7 +8050,8 @@ BaseDriver::eStepMainLoopResult GtkDriver::EMU_StepMainLoop(bool allowSleep, boo
     // Pace only when the script asked for normal speed.  Pump events while
     // waiting so Stop and repainting keep working even during the sleep.
     static gint64 sLuaNextFrame = 0;
-    const bool throttle = allowSleep && config.fpslimiter && !(keys_latch & KEYMASK_(KEY_BOOST - 1));
+    const bool throttle = allowSleep && config.fpslimiter && !sFastForwardHeld &&
+                          !(keys_latch & KEYMASK_(KEY_BOOST - 1));
     if (throttle && !disableCore)
     {
         const gint64 now = g_get_monotonic_time();
@@ -8611,6 +8675,8 @@ common_gtk_main(GApplication *app, gpointer user_data)
     pContentBox = GTK_WIDGET(gtk_builder_get_object(builder, "content-box"));
     g_object_unref(builder);
 
+    DisableToolbarFocus(pToolBar);
+
     /* Set colors for content box background and status bar text */
     GdkRGBA color_black = { 0.0, 0.0, 0.0, 1.0 };
     gtk_widget_override_background_color(pContentBox, GTK_STATE_FLAG_NORMAL, &color_black);
@@ -8623,9 +8689,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(OnMainWindowDestroy), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
-#ifdef HAVE_LUA
-    g_signal_connect(G_OBJECT(pWindow), "focus-out-event", G_CALLBACK(LuaWindowFocusOut), NULL);
-#endif
+    g_signal_connect(G_OBJECT(pWindow), "focus-out-event", G_CALLBACK(MainWindowFocusOut), NULL);
 
     /* Update audio toggle status */
     if (my_config->disable_sound || !config.audio_enabled) {

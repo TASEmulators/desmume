@@ -52,6 +52,7 @@
 		<string>Rotate Display Right</string>
 		<string>Toggle All Displays</string>
 		<string>Set Speed</string>
+		<string>Fast Forward (Hold)</string>
 		<string>Enable/Disable Speed Limiter</string>
 		<string>Enable/Disable Auto Frame Skip</string>
 		<string>Enable/Disable Cheat System</string>
@@ -801,6 +802,8 @@
 						<integer>2</integer>
 					</dict>
 				</array>
+				<key>Fast Forward (Hold)</key>
+				<array/>
 				<key>Enable/Disable Speed Limiter</key>
 				<array/>
 				<key>Enable/Disable Auto Frame Skip</key>
