@@ -579,10 +579,17 @@ void hq2x32(const u8 *srcPtr, const u32 srcPitch, const u8 *dstPtr, const u32 ds
 	u32 *src2 = src1 + srcPitch;
 	hq2x_32_def(dst0, dst1, src0, src0, src1, width);
 	
+	// A single source line is already fully handled by the call above. Without
+	// this early exit the trailing block would write past the destination.
+	if (height == 1)
+	{
+		return;
+	}
+	
 	int count = height;
 	
 	count -= 2;
-	while (count)
+	while (count > 0)
 	{
 		dst0 += dstPitch;
 		dst1 += dstPitch;
@@ -636,10 +643,17 @@ void hq2xS32(const u8 *srcPtr, const u32 srcPitch, const u8 *dstPtr, const u32 d
 	u32 *src2 = src1 + srcPitch;
 	hq2xS_32_def(dst0, dst1, src0, src0, src1, width);
 	
+	// A single source line is already fully handled by the call above. Without
+	// this early exit the trailing block would write past the destination.
+	if (height == 1)
+	{
+		return;
+	}
+	
 	int count = height;
 	
 	count -= 2;
-	while (count)
+	while (count > 0)
 	{
 		dst0 += dstPitch;
 		dst1 += dstPitch;

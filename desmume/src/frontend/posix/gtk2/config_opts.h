@@ -27,6 +27,9 @@ OPT(view_swap, bool, false, View, SwapScreens)
 OPT(view_rot, int, 0, View, Rotation)
 OPT(view_gap, bool, false, View, ScreenGap)
 OPT(view_filter, int, 0, View, Filter)
+/* Worker threads used by CPU video filters. 0 means "automatic", which uses
+ * the number of CPU cores at runtime. */
+OPT(view_filterThreads, int, 0, View, FilterThreads)
 OPT(view_cairoFilter, int, 3, View, SecondaryFilter) /* default: nearest-neighbour */
 OPT(view_menu, bool, true, View, ShowMenu)
 OPT(view_toolbar, bool, true, View, ShowToolbar)

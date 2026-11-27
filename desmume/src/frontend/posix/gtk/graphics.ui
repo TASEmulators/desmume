@@ -477,6 +477,28 @@
                             <property name="width">2</property>
                           </packing>
                         </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">Video filter threads:</property>
+                            <property name="xalign">0</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">7</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton" id="filter_threads">
+                            <property name="can-focus">False</property>
+                            <property name="numeric">True</property>
+                            <property name="tooltip-text" translatable="yes">Number of worker threads used by CPU video filters. The default is the number of CPU cores. Set to 0 to use the automatic value.</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">7</property>
+                          </packing>
+                        </child>
                       </object>
                     </child>
                     <child type="label">

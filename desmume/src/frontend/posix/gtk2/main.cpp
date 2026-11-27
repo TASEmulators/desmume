@@ -2582,6 +2582,22 @@ static void Edit_Joystick_Controls()
 }
 
 
+static int ResolveVideoFilterThreadCount(const int configuredThreadCount)
+{
+	int threadCount = (configuredThreadCount > 0) ? configuredThreadCount : NDS_GetCPUCoreCount();
+
+	if (threadCount < 1)
+	{
+		threadCount = 1;
+	}
+	else if (threadCount > 64)
+	{
+		threadCount = 64;
+	}
+
+	return threadCount;
+}
+
 static void GraphicsSettingsDialog() {
 #if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES)
 	#define ANY_GL_ENABLED 1
@@ -2590,9 +2606,9 @@ static void GraphicsSettingsDialog() {
 #endif
 	GtkWidget *gsDialog;
 	GtkWidget *gsKey, *coreCombo, *wTable, *wPosterize, *wScale, *wSmoothing, *wMultisample, *wHCInterpolate;
-	GtkWidget *wGPUScale;
+	GtkWidget *wGPUScale, *wFilterThreads;
 	int trow, tcol;
-	const int nrows = 6 + ANY_GL_ENABLED;
+	const int nrows = 7 + ANY_GL_ENABLED;
 
 	gsDialog = gtk_dialog_new_with_buttons("Graphics Settings",
 			GTK_WINDOW(pWindow),
@@ -2725,6 +2741,22 @@ static void GraphicsSettingsDialog() {
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 10, 0);
 
 
+	// CPU video filter worker threads
+	++trow, tcol = 0;
+	gsKey = gtk_label_new("Video filter threads:");
+	gtk_misc_set_alignment(GTK_MISC(gsKey), 0.0, 0.5);
+	gtk_table_attach(GTK_TABLE(wTable), gsKey, tcol, tcol+1, trow, trow+1,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
+
+	tcol = 1;
+	wFilterThreads = gtk_spin_button_new_with_range(0, 64, 1);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(wFilterThreads), (config.view_filterThreads > 0) ? config.view_filterThreads.get() : ResolveVideoFilterThreadCount(0));
+	gtk_table_attach(GTK_TABLE(wTable), wFilterThreads, tcol, tcol+1, trow, trow+1,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
+
+
 	gtk_widget_show_all(gtk_dialog_get_content_area(GTK_DIALOG(gsDialog)));
 
     switch (gtk_dialog_run(GTK_DIALOG(gsDialog))) {
@@ -2822,6 +2854,14 @@ static void GraphicsSettingsDialog() {
 			gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(wGPUScale), gpu_scale_factor);
 		config.gpuScaleFactor = gpu_scale_factor;
+
+		// Video filter threads. 0 keeps the automatic (CPU core count) value.
+		const int filterThreads = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(wFilterThreads));
+		config.view_filterThreads = filterThreads;
+		if (video != NULL)
+		{
+			video->SetThreadCount((size_t)ResolveVideoFilterThreadCount(filterThreads));
+		}
 		
 		gtk2gpuEvent->SetFramebufferDimensions( (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor) + 0.5), (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor) + 0.5) );
 
@@ -3738,8 +3778,7 @@ common_gtk_main( class configured_features *my_config)
     gtk2gpuEvent->SetFramebufferDimensions( (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor) + 0.5), (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor) + 0.5) );
 	
     const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-    video = new VideoFilter(dispInfo.customWidth, dispInfo.customHeight * 2, VideoFilterTypeID_None, CommonSettings.num_cores);
-    g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
+    video = new VideoFilter(dispInfo.customWidth, dispInfo.customHeight * 2, VideoFilterTypeID_None, ResolveVideoFilterThreadCount(config.view_filterThreads));
 
     /* Init the hud / osd stuff */
 #ifdef HAVE_LIBAGG
@@ -3866,6 +3905,7 @@ common_gtk_main( class configured_features *my_config)
         config.view_filter = VideoFilterTypeID_None;
     }
     video->ChangeFilterByID((VideoFilterTypeID)config.view_filter.get());
+    g_printerr("Using %d threads for video filter.\n", (int)video->GetThreadCount());
     gtk_action_group_add_radio_actions(action_group, pri_interpolation_entries, G_N_ELEMENTS(pri_interpolation_entries),
             config.view_filter, G_CALLBACK(Modify_PriInterpolation), NULL);
 

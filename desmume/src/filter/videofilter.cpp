@@ -87,7 +87,7 @@ VideoFilter::VideoFilter(size_t srcWidth,
 						 VideoFilterTypeID typeID = VideoFilterTypeID_None,
 						 size_t threadCount = 0)
 {
-	__InstanceInit(srcWidth, srcHeight, VideoFilterTypeID_None, threadCount);
+	__InstanceInit(srcWidth, srcHeight, typeID, threadCount);
 }
 
 /********************************************************************************************
@@ -161,6 +161,7 @@ void VideoFilter::__InstanceInit(size_t srcWidth, size_t srcHeight, VideoFilterT
 	_useInternalDstBuffer = true;
 	__isCPUFilterRunning = false;
 	__vfSrcSurfacePixBuffer = NULL;
+	_requestedThreadCount = threadCount;
 	
 	if (typeID < VideoFilterTypeIDCount)
 	{
@@ -172,29 +173,171 @@ void VideoFilter::__InstanceInit(size_t srcWidth, size_t srcHeight, VideoFilterT
 	}
 	
 	_pixelScale = (float)_vfAttributes.scaleMultiply / (float)_vfAttributes.scaleDivide;
+	__vfFunc = _vfAttributes.filterFunction;
 	
 	ThreadLockInit(&_lockSrc);
 	ThreadLockInit(&_lockDst);
 	ThreadLockInit(&_lockAttributes);
 	ThreadCondInit(&__condCPUFilterRunning);
 	
-	// Create all threads
-	__vfThread.resize(threadCount);
+	// Only create worker threads if a CPU filter is actually active. When the
+	// filter is "None", defer thread creation until the user selects a filter
+	// so that no idle worker threads are left running.
+	const size_t initialThreadCount = (__vfFunc != NULL) ? _requestedThreadCount : 0;
+	__SetThreadCount(initialThreadCount, __vfFunc, (int)_vfAttributes.scaleDivide);
+	
+	SetSourceSize(srcWidth, srcHeight);
+}
+
+void VideoFilter::__SetThreadCount(const size_t threadCount, const VideoFilterFunc filterFunction, const int lineBlockSize)
+{
+	ThreadLockLock(&this->_lockSrc);
+	ThreadLockLock(&this->_lockDst);
+	
+	// Destroy existing worker threads if the requested count changed. Holding
+	// the source and destination locks guarantees that RunFilter() is not
+	// dispatching work to these threads while they are being torn down.
+	const size_t currentThreadCount = this->__vfThread.size();
+	if (currentThreadCount != threadCount)
+	{
+		for (size_t i = 0; i < currentThreadCount; i++)
+		{
+			this->__vfThread[i].task->finish();
+			this->__vfThread[i].task->shutdown();
+			delete this->__vfThread[i].task;
+			this->__vfThread[i].task = NULL;
+		}
+		
+		this->__vfThread.clear();
+		this->__vfThread.resize(threadCount);
+		
+		for (size_t i = 0; i < threadCount; i++)
+		{
+			this->__vfThread[i].task = NULL;
+		}
+	}
 	
 	for (size_t i = 0; i < threadCount; i++)
 	{
-		__vfThread[i].param.srcSurface = __vfSrcSurface;
-		__vfThread[i].param.dstSurface = __vfDstSurface;
-		__vfThread[i].param.filterFunction = NULL;
+		this->__vfThread[i].param.filterFunction = filterFunction;
 		
-		__vfThread[i].task = new Task;
-		char name[16];
-		snprintf(name, 16, "video filter %d", (int)i);
-		__vfThread[i].task->start(false, 0, name);
+		if (this->__vfThread[i].task == NULL)
+		{
+			char name[16];
+			snprintf(name, 16, "video filter %d", (int)i);
+			this->__vfThread[i].task = new Task;
+			this->__vfThread[i].task->start(false, 0, name);
+		}
 	}
 	
-	__vfFunc = _vfAttributes.filterFunction;
-	SetSourceSize(srcWidth, srcHeight);
+	this->__UpdateThreadSrcSurfaces(lineBlockSize);
+	this->__UpdateThreadDstSurfaces();
+	
+	ThreadLockUnlock(&this->_lockDst);
+	ThreadLockUnlock(&this->_lockSrc);
+}
+
+void VideoFilter::__UpdateThreadSrcSurfaces(const int lineBlockSize)
+{
+	const size_t threadCount = this->__vfThread.size();
+	if (threadCount == 0)
+	{
+		return;
+	}
+	
+	// Some filters (the 1.5x ones) process the source in blocks of lines
+	// rather than one line at a time. Give each thread a whole number of
+	// blocks so that the number of destination lines it produces always
+	// matches its assigned destination range.
+	const int blockSize = (lineBlockSize > 1) ? lineBlockSize : 1;
+	const int srcHeight = this->__vfSrcSurface.Height;
+	const int totalBlocks = srcHeight / blockSize;
+	const int blocksPerThread = (threadCount > 1) ? totalBlocks/(int)threadCount : totalBlocks;
+	const int remainingLinesAtEnd = srcHeight % blockSize;
+	int remainingBlocks = totalBlocks;
+	int srcStart = 0;
+	
+	for (size_t i = 0; i < threadCount; i++)
+	{
+		int blockCount = (blocksPerThread < remainingBlocks) ? blocksPerThread : remainingBlocks;
+		remainingBlocks -= blockCount;
+		
+		// Add any remaining blocks to the last thread.
+		if (i == threadCount-1)
+		{
+			blockCount += remainingBlocks;
+		}
+		
+		int srcLines = blockCount * blockSize;
+		if (i == threadCount-1)
+		{
+			srcLines += remainingLinesAtEnd;
+		}
+		
+		SSurface &threadSrcSurface = this->__vfThread[i].param.srcSurface;
+		threadSrcSurface = this->__vfSrcSurface;
+		threadSrcSurface.Height = srcLines;
+		threadSrcSurface.Surface = (this->__vfSrcSurface.Surface != NULL)
+		                         ? (unsigned char *)((uint32_t *)this->__vfSrcSurface.Surface + ((size_t)srcStart * (size_t)this->__vfSrcSurface.Width))
+		                         : NULL;
+		
+		srcStart += srcLines;
+	}
+}
+
+void VideoFilter::__UpdateThreadDstSurfaces()
+{
+	const size_t threadCount = this->__vfThread.size();
+	if (threadCount == 0)
+	{
+		return;
+	}
+	
+	const int srcHeight = this->__vfSrcSurface.Height;
+	const int dstHeight = this->__vfDstSurface.Height;
+	const int dstWidth  = this->__vfDstSurface.Width;
+	
+	// Derive each thread's destination range from its source range. Dividing
+	// the destination height independently would make the source and
+	// destination ranges disagree whenever the height isn't evenly divisible
+	// by the thread count, causing filters to write outside their assigned
+	// destination region.
+	int srcStart = 0;
+	
+	for (size_t i = 0; i < threadCount; i++)
+	{
+		const int srcLines = this->__vfThread[i].param.srcSurface.Height;
+		const int srcEnd = srcStart + srcLines;
+		const int dstStart = (srcHeight > 0) ? (int)(((long long)srcStart * dstHeight) / srcHeight) : 0;
+		const int dstEnd   = (srcHeight > 0) ? (int)(((long long)srcEnd   * dstHeight) / srcHeight) : 0;
+		
+		SSurface &threadDstSurface = this->__vfThread[i].param.dstSurface;
+		threadDstSurface = this->__vfDstSurface;
+		threadDstSurface.Height = dstEnd - dstStart;
+		
+		if (this->__vfDstSurface.Surface != NULL)
+		{
+			threadDstSurface.Surface = (unsigned char *)((uint32_t *)this->__vfDstSurface.Surface + ((size_t)dstStart * (size_t)dstWidth));
+			
+			for (size_t j = 0; j < FILTER_MAX_WORKING_SURFACE_COUNT; j++)
+			{
+				threadDstSurface.workingSurface[j] = (this->__vfDstSurface.workingSurface[j] != NULL)
+				                                   ? (unsigned char *)((uint32_t *)this->__vfDstSurface.workingSurface[j] + ((size_t)dstStart * (size_t)dstWidth))
+				                                   : NULL;
+			}
+		}
+		else
+		{
+			threadDstSurface.Surface = NULL;
+			
+			for (size_t j = 0; j < FILTER_MAX_WORKING_SURFACE_COUNT; j++)
+			{
+				threadDstSurface.workingSurface[j] = NULL;
+			}
+		}
+		
+		srcStart = srcEnd;
+	}
 }
 
 bool VideoFilter::__AllocateDstBuffer(const size_t dstWidth, const size_t dstHeight, const size_t workingSurfaceCount)
@@ -240,34 +383,7 @@ bool VideoFilter::__AllocateDstBuffer(const size_t dstWidth, const size_t dstHei
 	}
 	
 	// Update the surfaces on threads.
-	const size_t threadCount = this->__vfThread.size();
-	const int linesPerThread = (threadCount > 1) ? (int)(dstHeight/threadCount) : (int)dstHeight;
-	int remainingLines = (int)dstHeight;
-	
-	for (size_t i = 0; i < threadCount; i++)
-	{
-		SSurface &threadDstSurface = this->__vfThread[i].param.dstSurface;
-		threadDstSurface = this->__vfDstSurface;
-		threadDstSurface.Height = (linesPerThread < remainingLines) ? linesPerThread : remainingLines;
-		remainingLines -= threadDstSurface.Height;
-		
-		// Add any remaining lines to the last thread.
-		if (i == threadCount-1)
-		{
-			threadDstSurface.Height += remainingLines;
-		}
-		
-		if (i > 0)
-		{
-			SSurface &prevThreadDstSurface = this->__vfThread[i - 1].param.dstSurface;
-			threadDstSurface.Surface = (unsigned char *)((uint32_t *)prevThreadDstSurface.Surface + (prevThreadDstSurface.Width * prevThreadDstSurface.Height));
-			
-			for (size_t j = 0; j < workingSurfaceCount; j++)
-			{
-				threadDstSurface.workingSurface[j] = (unsigned char *)((uint32_t *)prevThreadDstSurface.workingSurface[j] + (prevThreadDstSurface.Width * prevThreadDstSurface.Height));
-			}
-		}
-	}
+	this->__UpdateThreadDstSurfaces();
 	
 	ThreadLockUnlock(&this->_lockDst);
 	
@@ -294,6 +410,7 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 {
 	bool result = false;
 	bool sizeChanged = false;
+	const VideoFilterAttributes vfAttr = this->GetAttributes();
 	
 	ThreadLockLock(&this->_lockSrc);
 	
@@ -322,35 +439,12 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	this->__vfSrcSurfacePixBuffer = newPixBuffer;
 	
 	// Update the surfaces on threads.
-	size_t threadCount = this->__vfThread.size();
-	const int linesPerThread = (threadCount > 1) ? this->__vfSrcSurface.Height/(int)threadCount : this->__vfSrcSurface.Height;
-	int remainingLines = this->__vfSrcSurface.Height;
-	
-	for (size_t i = 0; i < threadCount; i++)
-	{
-		SSurface &threadSrcSurface = this->__vfThread[i].param.srcSurface;
-		threadSrcSurface = this->__vfSrcSurface;
-		threadSrcSurface.Height = (linesPerThread < remainingLines) ? linesPerThread : remainingLines;
-		remainingLines -= threadSrcSurface.Height;
-		
-		// Add any remaining lines to the last thread.
-		if (i == threadCount-1)
-		{
-			threadSrcSurface.Height += remainingLines;
-		}
-		
-		if (i > 0)
-		{
-			SSurface &prevThreadSrcSurface = this->__vfThread[i - 1].param.srcSurface;
-			threadSrcSurface.Surface = (unsigned char *)((uint32_t *)prevThreadSrcSurface.Surface + (prevThreadSrcSurface.Width * prevThreadSrcSurface.Height));
-		}
-	}
+	this->__UpdateThreadSrcSurfaces((int)vfAttr.scaleDivide);
 	
 	ThreadLockUnlock(&this->_lockSrc);
 	
 	if (sizeChanged)
 	{
-		const VideoFilterAttributes vfAttr = this->GetAttributes();
 		const size_t dstWidth  = width  * vfAttr.scaleMultiply / vfAttr.scaleDivide;
 		const size_t dstHeight = height * vfAttr.scaleMultiply / vfAttr.scaleDivide;
 		
@@ -406,6 +500,19 @@ bool VideoFilter::ChangeFilterByID(const VideoFilterTypeID typeID)
 		A bool that reports if the filter change was successful. A value of true means
 		success, while a value of false means failure.
  ********************************************************************************************/
+void VideoFilter::SetThreadCount(const size_t threadCount)
+{
+	ThreadLockLock(&this->_lockAttributes);
+	this->_requestedThreadCount = threadCount;
+	ThreadLockUnlock(&this->_lockAttributes);
+	
+	// Only keep worker threads alive while a CPU filter is active. When the
+	// filter is "None", remember the requested count for the next filter.
+	const VideoFilterAttributes vfAttr = this->GetAttributes();
+	const size_t activeThreadCount = (vfAttr.filterFunction != NULL) ? threadCount : 0;
+	this->__SetThreadCount(activeThreadCount, vfAttr.filterFunction, (int)vfAttr.scaleDivide);
+}
+
 bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr)
 {
 	bool result = false;
@@ -415,12 +522,17 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr)
 		return result;
 	}
 	
+	// Worker threads are only needed for an actual CPU filter. Create them when
+	// a filter is selected, and tear them down again when switching back to
+	// VideoFilterTypeID_None.
+	const size_t threadCount = (vfAttr.filterFunction != NULL) ? this->_requestedThreadCount : 0;
+	this->__SetThreadCount(threadCount, vfAttr.filterFunction, (int)vfAttr.scaleDivide);
+	
 	ThreadLockLock(&this->_lockDst);
 	unsigned char *dstSurface = this->__vfDstSurface.Surface;
 	ThreadLockUnlock(&this->_lockDst);
 	
 	const VideoFilterAttributes currentAttr = this->GetAttributes();
-	const size_t threadCount = this->__vfThread.size();
 	
 	if (dstSurface != NULL &&
 		currentAttr.scaleMultiply == vfAttr.scaleMultiply &&
@@ -441,10 +553,6 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr)
 		}
 		
 		this->__vfFunc = vfAttr.filterFunction;
-		for (size_t i = 0; i < threadCount; i++)
-		{
-			this->__vfThread[i].param.filterFunction = this->__vfFunc;
-		}
 		
 		ThreadLockUnlock(&this->_lockDst);
 	}
@@ -459,10 +567,6 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr)
 		ThreadLockLock(&this->_lockDst);
 		
 		this->__vfFunc = vfAttr.filterFunction;
-		for (size_t i = 0; i < threadCount; i++)
-		{
-			this->__vfThread[i].param.filterFunction = this->__vfFunc;
-		}
 		
 		ThreadLockUnlock(&this->_lockDst);
 		
@@ -509,14 +613,25 @@ uint32_t* VideoFilter::RunFilter()
 		const size_t threadCount = this->__vfThread.size();
 		if (threadCount > 0)
 		{
+			// Skip threads that were given no work. Some filters write whole
+			// line pairs unconditionally, so calling them with a zero-height
+			// surface would write past the end of their assigned range.
 			for (size_t i = 0; i < threadCount; i++)
 			{
-				this->__vfThread[i].task->execute(&RunVideoFilterTask, &this->__vfThread[i].param);
+				VideoFilterThreadParam &param = this->__vfThread[i].param;
+				if (param.srcSurface.Height > 0 && param.dstSurface.Height > 0)
+				{
+					this->__vfThread[i].task->execute(&RunVideoFilterTask, &param);
+				}
 			}
 			
 			for (size_t i = 0; i < threadCount; i++)
 			{
-				this->__vfThread[i].task->finish();
+				VideoFilterThreadParam &param = this->__vfThread[i].param;
+				if (param.srcSurface.Height > 0 && param.dstSurface.Height > 0)
+				{
+					this->__vfThread[i].task->finish();
+				}
 			}
 		}
 		else
@@ -720,6 +835,11 @@ const char* VideoFilter::GetTypeString()
 	ThreadLockUnlock(&this->_lockAttributes);
 	
 	return typeString;
+}
+
+size_t VideoFilter::GetThreadCount() const
+{
+	return this->__vfThread.size();
 }
 
 uint32_t* VideoFilter::GetSrcBufferPtr()

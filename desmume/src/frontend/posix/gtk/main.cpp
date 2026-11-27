@@ -6762,13 +6762,29 @@ static void CoreDefaultClicked(GtkWidget *widget, gpointer data)
 	gtk_combo_box_set_active(GTK_COMBO_BOX(data), RENDERID_SOFTRASTERIZER);
 }
 
+static int ResolveVideoFilterThreadCount(const int configuredThreadCount)
+{
+	int threadCount = (configuredThreadCount > 0) ? configuredThreadCount : NDS_GetCPUCoreCount();
+
+	if (threadCount < 1)
+	{
+		threadCount = 1;
+	}
+	else if (threadCount > 64)
+	{
+		threadCount = 64;
+	}
+
+	return threadCount;
+}
+
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
 	GtkDialog *dialog;
 	GtkComboBox *coreCombo, *wScale, *wColorDepth;
 	GtkToggleButton *wPosterize, *wSmoothing, *wHCInterpolate;
 	GtkToggleButton *wTxtHack, *wLineHack, *wEdgeMark, *wFog, *wTextures;
 	GtkToggleButton *wShadowPolygons, *wZeroAlpha, *wNDSDepth, *wDepthLEqual;
-	GtkSpinButton *wGPUScale;
+	GtkSpinButton *wGPUScale, *wFilterThreads;
 	GtkLabel *wMultisampleLabel;
 	GtkWidget *wCoreDefault, *wAccelFrame, *wAccuracyFrame, *wPresentationFrame;
 #if defined(ENABLE_OPENGL_STANDARD) || defined(ENABLE_OPENGL_ES) || defined(ENABLE_WGPU)
@@ -6789,6 +6805,10 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 	wGPUScale = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "gpuscale"));
 	gtk_spin_button_set_range(wGPUScale, GPU_SCALE_FACTOR_MIN, GPU_SCALE_FACTOR_MAX);
 	gtk_spin_button_set_increments(wGPUScale, 0.5, 1.0);
+	wFilterThreads = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "filter_threads"));
+	gtk_spin_button_set_range(wFilterThreads, 0, 64);
+	gtk_spin_button_set_increments(wFilterThreads, 1, 1);
+	gtk_spin_button_set_value(wFilterThreads, (config.view_filterThreads > 0) ? config.view_filterThreads.get() : ResolveVideoFilterThreadCount(0));
 	wMultisampleLabel = GTK_LABEL(gtk_builder_get_object(builder, "multisample_label"));
 	wAccelFrame = GTK_WIDGET(gtk_builder_get_object(builder, "accel_frame"));
 	wAccuracyFrame = GTK_WIDGET(gtk_builder_get_object(builder, "accuracy_frame"));
@@ -7060,6 +7080,14 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 			gpu_scale_factor = GPU_SCALE_FACTOR_MAX;
 		gtk_spin_button_set_value(wGPUScale, gpu_scale_factor);
 		config.gpuScaleFactor = gpu_scale_factor;
+
+		// Video filter threads. 0 keeps the automatic (CPU core count) value.
+		const int filterThreads = gtk_spin_button_get_value_as_int(wFilterThreads);
+		config.view_filterThreads = filterThreads;
+		if (video != NULL)
+		{
+			video->SetThreadCount((size_t)ResolveVideoFilterThreadCount(filterThreads));
+		}
 
 		gtk3gpuEvent->SetFramebufferDimensions( (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor) + 0.5), (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor) + 0.5) );
 
@@ -8487,8 +8515,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     gtk3gpuEvent->SetFramebufferDimensions( (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * gpu_scale_factor) + 0.5), (size_t)(((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * gpu_scale_factor) + 0.5) );
 	
     const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-    video = new VideoFilter(dispInfo.customWidth, dispInfo.customHeight * 2, VideoFilterTypeID_None, CommonSettings.num_cores);
-    g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
+    video = new VideoFilter(dispInfo.customWidth, dispInfo.customHeight * 2, VideoFilterTypeID_None, ResolveVideoFilterThreadCount(config.view_filterThreads));
 
     /* Init the hud / osd stuff */
 #ifdef HAVE_LIBAGG
@@ -8663,6 +8690,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
         config.view_filter = VideoFilterTypeID_None;
     }
     video->ChangeFilterByID((VideoFilterTypeID)config.view_filter.get());
+    g_printerr("Using %d threads for video filter.\n", (int)video->GetThreadCount());
     switch (config.view_filter) {
 		case VideoFilterTypeID_None:
 			string = "none";

@@ -156,6 +156,7 @@ private:
 	uint32_t *__vfSrcSurfacePixBuffer;
 	VideoFilterFunc __vfFunc;
 	std::vector<VideoFilterThread> __vfThread;
+	size_t _requestedThreadCount;
 	bool _useInternalDstBuffer;
 	
 	bool __isCPUFilterRunning;
@@ -163,6 +164,9 @@ private:
 	
 	void __InstanceInit(size_t srcWidth, size_t srcHeight, VideoFilterTypeID typeID, size_t threadCount);
 	bool __AllocateDstBuffer(const size_t dstWidth, const size_t dstHeight, const size_t workingSurfaceCount);
+	void __SetThreadCount(const size_t threadCount, const VideoFilterFunc filterFunction, const int lineBlockSize);
+	void __UpdateThreadSrcSurfaces(const int lineBlockSize);
+	void __UpdateThreadDstSurfaces();
 	
 protected:
 	VideoFilterAttributes _vfAttributes;
@@ -189,6 +193,8 @@ public:
 	VideoFilterAttributes GetAttributes();
 	VideoFilterTypeID GetTypeID();
 	const char* GetTypeString();
+	void SetThreadCount(const size_t threadCount);
+	size_t GetThreadCount() const;
 	uint32_t* GetSrcBufferPtr();
 	uint32_t* GetDstBufferPtr();
 	void SetDstBufferPtr(uint32_t *pageAlignedBuffer);
