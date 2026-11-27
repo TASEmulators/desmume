@@ -291,7 +291,7 @@ namespace
 	{
 		const int row = ComboBox_GetCurSel(GetDlgItem(st->dlg, IDC_REC_FILTER));
 		if (row < 0 || row >= recordCompose::FilterCount())
-			return VideoInfo::NONE;
+			return VideoFilterTypeID_None;
 
 		return row;
 	}
@@ -539,7 +539,7 @@ namespace
 	void SelectFilter(RecordSettingsState *st, int filter)
 	{
 		if (filter < 0 || filter >= recordCompose::FilterCount())
-			filter = VideoInfo::NONE;
+			filter = VideoFilterTypeID_None;
 
 		ComboBox_SetCurSel(GetDlgItem(st->dlg, IDC_REC_FILTER), filter);
 	}
@@ -1023,7 +1023,7 @@ void LoadRecordingParams(RecordParams *params)
 	// Picture: what goes into the stream, not just how it is encoded.
 	params->pictureMode	  = GetPrivateProfileInt("Recording", "Picture", RECORD_PICTURE_NATIVE, IniName);
 	params->pictureSize	  = GetPrivateProfileInt("Recording", "Picture Size", RECORD_SIZE_WINDOW, IniName);
-	params->pictureFilter = GetPrivateProfileInt("Recording", "Picture Filter", VideoInfo::NONE, IniName);
+	params->pictureFilter = GetPrivateProfileInt("Recording", "Picture Filter ID", VideoFilterTypeID_None, IniName);
 
 	char value[128];
 	value[0] = '\0';
@@ -1059,7 +1059,7 @@ void LoadRecordingParams(RecordParams *params)
 
 	if (params->pictureFilter < 0 || params->pictureFilter >= recordCompose::FilterCount())
 	{
-		params->pictureFilter = VideoInfo::NONE;
+		params->pictureFilter = VideoFilterTypeID_None;
 	}
 }
 
@@ -1092,7 +1092,7 @@ void SaveRecordingParams(const RecordParams &params)
 	WritePrivateProfileString("Recording", "Picture Size", number, IniName);
 
 	sprintf(number, "%d", params.pictureFilter);
-	WritePrivateProfileString("Recording", "Picture Filter", number, IniName);
+	WritePrivateProfileString("Recording", "Picture Filter ID", number, IniName);
 
 	std::wstring video = videoEncoders::isNullGuid(params.videoSubtype)
 	                         ? std::wstring(L"none")

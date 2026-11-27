@@ -143,11 +143,6 @@ DWORD display_invoke_timeout = 500;
 CRITICAL_SECTION display_invoke_handler_cs;
 static void InvokeOnMainThread(void(*function)(DWORD), DWORD argument);
 
-int scanline_filter_a = 0;
-int scanline_filter_b = 2;
-int scanline_filter_c = 2;
-int scanline_filter_d = 4;
-
 #pragma pack(push,1)
 struct pix24
 {
@@ -831,7 +826,7 @@ void DoDisplay()
 		}
 	}
 
-	const bool needsVideoFiltering = (video.currentfilter != video.NONE);
+	const bool needsVideoFiltering = (video.currentfilter != VideoFilterTypeID_None);
 	const bool needsBacklightApply = (dispInfo.backlightIntensity[NDSDisplayID_Main] < 1.0f) || (dispInfo.backlightIntensity[NDSDisplayID_Touch] < 1.0f);
 	const bool darkIdleScreen = useDarkIdleScreen();
 
@@ -859,9 +854,13 @@ void DoDisplay()
 		return;
 	displayNoPostponeNext = false;
 
-	if (displayNeedsBufferUpdates)
+	if (displayNeedsBufferUpdates || video.appliedFilterThreads != video.GetFilterThreadCount())
 	{
-		video.ResizeBuffers();
+		if (!video.ResizeBuffers())
+		{
+			INFO("Unable to allocate video filter buffers.\n");
+			return;
+		}
 
 		if (!isRunningDirectDraw && !isRunningWGPU)
 		{
@@ -1086,6 +1085,7 @@ void KillDisplay()
 	SetEvent(display_wakeup_event);
 	if (display_thread)
 		sthread_join(display_thread);
+	video.ShutdownFilter();
 }
 
 void SetDisplayNeedsBufferUpdates()

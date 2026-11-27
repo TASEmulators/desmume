@@ -23,6 +23,14 @@ were found while testing that change.
   `View/FilterThreads` in the config file. `0` means automatic, which resolves
   to `NDS_GetCPUCoreCount()` at runtime; values are clamped to 1..64 when
   applied.
+* Windows uses `VideoFilter` for display and composed recording. The 3D settings
+  dialog's "Video filter threads" controls both paths: `0` runs synchronously
+  (the default), and `1..64` selects worker threads. The recording snapshots
+  this setting when it starts. Threaded filters may differ at slice boundaries
+  as described below.
+* Windows stores shared filter IDs in `Video/Filter ID` and
+  `Recording/Picture Filter ID`. The older keys used a different ID order and
+  are not read; missing or invalid values select `None`.
 
 ## Bugs found
 
@@ -206,6 +214,9 @@ Standalone probes live in `filter/tests/`:
 * `filter_simd_test.cpp` - checks Bilinear32 and EPX output against scalar
   references on vector boundaries, odd sizes, and 256x192, and checks that
   destination row padding remains untouched.
+* `windows_video_filter_test.cpp` - checks display and composed recording
+  dimensions and pixels for every filter while switching between synchronous
+  and four-thread execution, invalid display filter IDs, and 2x GPU prescaling.
 
 Build and run them against the static library produced by the meson/ninja
 build (from the repository root, adjust the `-I` and library paths as needed):

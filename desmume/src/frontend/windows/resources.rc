@@ -185,7 +185,7 @@ BEGIN
     PUSHBUTTON      "&Cancel",IDCANCEL,127,94,50,16
 END
 
-IDD_3DSETTINGS DIALOGEX 0, 0, 329, 273
+IDD_3DSETTINGS DIALOGEX 0, 0, 329, 294
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "3D Settings"
 FONT 8, "MS Sans Serif", 400, 0, 0x0
@@ -200,8 +200,8 @@ BEGIN
     EDITTEXT        IDC_TEXT_PRESCALEHD,273,17,31,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_NUD_PRESCALEHD,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS,303,17,12,14
     PUSHBUTTON      "Default",IDC_DEFAULT,135,19,50,15
-    DEFPUSHBUTTON   "OK",IDOK,211,252,50,15
-    PUSHBUTTON      "Cancel",IDCANCEL,273,252,50,15
+    DEFPUSHBUTTON   "OK",IDOK,211,273,50,15
+    PUSHBUTTON      "Cancel",IDCANCEL,273,273,50,15
     GROUPBOX        "3D Rendering Engine",IDC_STATIC,7,7,184,34
     GROUPBOX        "SoftRasterizer Options",IDC_STATIC,7,44,184,83
     LTEXT           "Fixes some graphical bugs involving lines, but causes some other bugs. Not many games use lines.",ID_LABEL_ZELDA_SHADOW_DEPTH_HACK2,12,106,170,18
@@ -231,6 +231,9 @@ BEGIN
     LTEXT           "Disabling this option may cause some colors to look darker than normal.",ID_LABEL_S_0_ALPHA_BLEND,172,183,137,16
     LTEXT           "Disabling this option may cause some fragments to disappear. Disabled by default due to performance impact.",ID_LABEL_DEPTH_L_EQUAL_PF,172,213,137,24
     GROUPBOX        "Rendering Accuracy Options",IDC_STATIC,12,161,305,81,BS_CENTER
+    LTEXT           "Video filter threads (0 = synchronous)",IDC_STATIC,12,254,144,8
+    EDITTEXT        IDC_VIDEO_FILTER_THREADS,165,251,31,14,ES_NUMBER | ES_AUTOHSCROLL
+    CONTROL         "",IDC_VIDEO_FILTER_THREADS_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS,195,251,12,14
 END
 
 IDD_ABOUT_BOX DIALOGEX 0, 0, 268, 198
@@ -1782,7 +1785,10 @@ BEGIN
             MENUITEM "LQ2x",                        IDM_RENDER_LQ2X
             MENUITEM "LQ2xS",                       IDM_RENDER_LQ2XS
             MENUITEM "HQ2x",                        IDM_RENDER_HQ2X
+            MENUITEM "HQ3x",                        IDM_RENDER_HQ3X
+            MENUITEM "HQ3xS",                       IDM_RENDER_HQ3XS
             MENUITEM "HQ4x",                        IDM_RENDER_HQ4X
+            MENUITEM "HQ4xS",                       IDM_RENDER_HQ4XS
             MENUITEM "HQ2xS",                       IDM_RENDER_HQ2XS
             MENUITEM "2XSaI",                       IDM_RENDER_2XSAI
             MENUITEM "Super2XSaI",                  IDM_RENDER_SUPER2XSAI
@@ -1800,6 +1806,7 @@ BEGIN
             MENUITEM "3xBRZ",                       IDM_RENDER_3XBRZ
             MENUITEM "4xBRZ",                       IDM_RENDER_4XBRZ
             MENUITEM "5xBRZ",                       IDM_RENDER_5XBRZ
+            MENUITEM "6xBRZ",                       IDM_RENDER_6XBRZ
         END
         MENUITEM "&Maintain Aspect Ratio",      IDC_FORCERATIO
         MENUITEM "&Pad To Integer",             IDC_VIEW_PADTOINTEGER

@@ -1151,6 +1151,7 @@ static void _FillPicture(RecordPicture *picture, const RecordParams &params, con
 	picture->swap	 = video.swap;
 	picture->mainScreenIsEngineMain = (dispInfo.engineID[NDSDisplayID_Main] == GPUEngineID_Main);
 	picture->filter	  = params.pictureFilter;
+	picture->filterThreads = video.GetFilterThreadCount();
 	picture->gapColor = ScreenGapColor;
 }
 

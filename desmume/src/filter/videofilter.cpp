@@ -419,6 +419,7 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	uint32_t *newPixBuffer = (uint32_t *)malloc_alignedPage(width * (height + 8) * sizeof(uint32_t));
 	if (newPixBuffer == NULL)
 	{
+		ThreadLockUnlock(&this->_lockSrc);
 		return result;
 	}
 	memset(newPixBuffer, 0, width * (height + 8) * sizeof(uint32_t));

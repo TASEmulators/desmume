@@ -22,6 +22,7 @@
 
 #include "types.h"
 #include "GPU.h"
+#include "filter/videofilter.h"
 
 // Turns the emulator's two screens into the frames a recording is made of.
 //
@@ -89,7 +90,8 @@ struct RecordPicture
 	int screengap; // video.screengap
 	int swap;	   // video.swap
 	bool mainScreenIsEngineMain; // what video.swap 2 and 3 are about
-	int filter;	   // VideoInfo::NONE or one of the CPU filters
+	int filter;	   // VideoFilterTypeID
+	int filterThreads;
 	int gapColor;  // 0x00BBGGRR, the colour the window paints the gap with
 };
 
@@ -141,23 +143,15 @@ private:
 	ScreenRect _screen[2];
 	ScreenRect _gapRect;
 
-	// 32-bit working copies.  Rows are tightly packed, which is what the CPU
-	// filters require: they are handed a Pitch of width * 2 ("16-bit pitch")
-	// and scale it themselves, so a padded stride shears the picture.  The
-	// extra rows around the picture are over-allocation only -- several of the
-	// filters read a row above and below the surface they are given.
-	u32 *_src;
+	VideoFilter _videoFilter;
 	u32 *_srcSurface;
-	u32 *_filtered;
 	u32 *_filteredSurface;
 	size_t _filteredWidth;
-	size_t _filteredHeight;
 	int _filter;
 
 	bool _ready;
 
 	void FreeBuffers();
-	void FilterFrame();
 	void ComposeRowsTo(u8 *dstBase, size_t firstLine, size_t lastLine, const u32 *src, size_t srcPitchPx) const;
 };
 

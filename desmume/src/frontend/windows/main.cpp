@@ -2451,17 +2451,15 @@ int _main()
 	
 	FrameLimit = (cmdline.disable_limiter == 1) ? false : GetPrivateProfileBool("FrameLimit", "FrameLimit", true, IniName);
 	
-	// Temporary scanline parameter setting for Windows.
-	// TODO: When videofilter.cpp becomes Windows-friendly, replace the direct setting of
-	// variables with SetFilterParameteri()	.
-	//myVideoFilterObject->SetFilterParameteri(VF_PARAM_SCANLINE_A, _scanline_filter_a);
-    //myVideoFilterObject->SetFilterParameteri(VF_PARAM_SCANLINE_B, _scanline_filter_b);
-    //myVideoFilterObject->SetFilterParameteri(VF_PARAM_SCANLINE_C, _scanline_filter_c);
-    //myVideoFilterObject->SetFilterParameteri(VF_PARAM_SCANLINE_D, _scanline_filter_d);
-	scanline_filter_a = _scanline_filter_a;
-	scanline_filter_b = _scanline_filter_b;
-	scanline_filter_c = _scanline_filter_c;
-	scanline_filter_d = _scanline_filter_d;
+	video.InitFilter();
+	{
+		const int threads = (int)GetPrivateProfileInt("Video", "Filter Threads", 0, IniName);
+		video.SetFilterThreadCount((threads >= 0 && threads <= 64) ? threads : 0);
+	}
+	video.pixelFilter->SetFilterParameteri(VF_PARAM_SCANLINE_A, _scanline_filter_a);
+	video.pixelFilter->SetFilterParameteri(VF_PARAM_SCANLINE_B, _scanline_filter_b);
+	video.pixelFilter->SetFilterParameteri(VF_PARAM_SCANLINE_C, _scanline_filter_c);
+	video.pixelFilter->SetFilterParameteri(VF_PARAM_SCANLINE_D, _scanline_filter_d);
 
 	Desmume_InitOnce();
 	aggDraw.hud->setFont(fonts_list[GetPrivateProfileInt("Display","HUD Font", font_Nums-1, IniName)].name);
@@ -2851,7 +2849,7 @@ int _main()
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.ExtFirmwarePath, 256, IniName);
 	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", false, IniName);
 	
-	UINT magFilterID = GetPrivateProfileInt("Video", "Filter", video.NONE, IniName);
+	UINT magFilterID = GetPrivateProfileInt("Video", "Filter ID", VideoFilterTypeID_None, IniName);
 	SetWindowMagnificationFilter(MainWindow->getHWnd(), (int)magFilterID, false);
 	
 	// Read the firmware settings from the init file
@@ -4083,7 +4081,7 @@ void SetWindowMagnificationFilter(HWND hwnd, int filterID, bool user)
 	if (romloaded)
 		Display();
 
-	WritePrivateProfileInt("Video", "Filter", video.currentfilter, IniName);
+	WritePrivateProfileInt("Video", "Filter ID", video.currentfilter, IniName);
 	WritePrivateProfileInt("Video", "Width", video.width, IniName);
 	WritePrivateProfileInt("Video", "Height", video.height, IniName);
 
@@ -4384,29 +4382,33 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//TODO - change how the gpu visibility flags work
 
 			//Filters
-			MainWindow->checkMenu(IDM_RENDER_NORMAL, video.currentfilter == video.NONE );
-			MainWindow->checkMenu(IDM_RENDER_LQ2X, video.currentfilter == video.LQ2X );
-			MainWindow->checkMenu(IDM_RENDER_LQ2XS, video.currentfilter == video.LQ2XS );
-			MainWindow->checkMenu(IDM_RENDER_HQ2X, video.currentfilter == video.HQ2X );
-			MainWindow->checkMenu(IDM_RENDER_HQ4X, video.currentfilter == video.HQ4X );
-			MainWindow->checkMenu(IDM_RENDER_HQ2XS, video.currentfilter == video.HQ2XS );
-			MainWindow->checkMenu(IDM_RENDER_2XSAI, video.currentfilter == video._2XSAI );
-			MainWindow->checkMenu(IDM_RENDER_SUPER2XSAI, video.currentfilter == video.SUPER2XSAI );
-			MainWindow->checkMenu(IDM_RENDER_SUPEREAGLE, video.currentfilter == video.SUPEREAGLE );
-			MainWindow->checkMenu(IDM_RENDER_SCANLINE, video.currentfilter == video.SCANLINE );
-			MainWindow->checkMenu(IDM_RENDER_BILINEAR, video.currentfilter == video.BILINEAR );
-			MainWindow->checkMenu(IDM_RENDER_NEAREST2X, video.currentfilter == video.NEAREST2X );
-			MainWindow->checkMenu(IDM_RENDER_EPX, video.currentfilter == video.EPX );
-			MainWindow->checkMenu(IDM_RENDER_EPXPLUS, video.currentfilter == video.EPXPLUS );
-			MainWindow->checkMenu(IDM_RENDER_EPX1POINT5, video.currentfilter == video.EPX1POINT5 );
-			MainWindow->checkMenu(IDM_RENDER_EPXPLUS1POINT5, video.currentfilter == video.EPXPLUS1POINT5 );
-			MainWindow->checkMenu(IDM_RENDER_NEAREST1POINT5, video.currentfilter == video.NEAREST1POINT5 );
-			MainWindow->checkMenu(IDM_RENDER_NEARESTPLUS1POINT5, video.currentfilter == video.NEARESTPLUS1POINT5 );
+			MainWindow->checkMenu(IDM_RENDER_NORMAL, video.currentfilter == VideoFilterTypeID_None );
+			MainWindow->checkMenu(IDM_RENDER_LQ2X, video.currentfilter == VideoFilterTypeID_LQ2X );
+			MainWindow->checkMenu(IDM_RENDER_LQ2XS, video.currentfilter == VideoFilterTypeID_LQ2XS );
+			MainWindow->checkMenu(IDM_RENDER_HQ2X, video.currentfilter == VideoFilterTypeID_HQ2X );
+			MainWindow->checkMenu(IDM_RENDER_HQ3X, video.currentfilter == VideoFilterTypeID_HQ3X );
+			MainWindow->checkMenu(IDM_RENDER_HQ3XS, video.currentfilter == VideoFilterTypeID_HQ3XS );
+			MainWindow->checkMenu(IDM_RENDER_HQ4X, video.currentfilter == VideoFilterTypeID_HQ4X );
+			MainWindow->checkMenu(IDM_RENDER_HQ4XS, video.currentfilter == VideoFilterTypeID_HQ4XS );
+			MainWindow->checkMenu(IDM_RENDER_HQ2XS, video.currentfilter == VideoFilterTypeID_HQ2XS );
+			MainWindow->checkMenu(IDM_RENDER_2XSAI, video.currentfilter == VideoFilterTypeID_2xSaI );
+			MainWindow->checkMenu(IDM_RENDER_SUPER2XSAI, video.currentfilter == VideoFilterTypeID_Super2xSaI );
+			MainWindow->checkMenu(IDM_RENDER_SUPEREAGLE, video.currentfilter == VideoFilterTypeID_SuperEagle );
+			MainWindow->checkMenu(IDM_RENDER_SCANLINE, video.currentfilter == VideoFilterTypeID_Scanline );
+			MainWindow->checkMenu(IDM_RENDER_BILINEAR, video.currentfilter == VideoFilterTypeID_Bilinear );
+			MainWindow->checkMenu(IDM_RENDER_NEAREST2X, video.currentfilter == VideoFilterTypeID_Nearest2X );
+			MainWindow->checkMenu(IDM_RENDER_EPX, video.currentfilter == VideoFilterTypeID_EPX );
+			MainWindow->checkMenu(IDM_RENDER_EPXPLUS, video.currentfilter == VideoFilterTypeID_EPXPlus );
+			MainWindow->checkMenu(IDM_RENDER_EPX1POINT5, video.currentfilter == VideoFilterTypeID_EPX1_5X );
+			MainWindow->checkMenu(IDM_RENDER_EPXPLUS1POINT5, video.currentfilter == VideoFilterTypeID_EPXPlus1_5X );
+			MainWindow->checkMenu(IDM_RENDER_NEAREST1POINT5, video.currentfilter == VideoFilterTypeID_Nearest1_5X );
+			MainWindow->checkMenu(IDM_RENDER_NEARESTPLUS1POINT5, video.currentfilter == VideoFilterTypeID_NearestPlus1_5X );
 
-			MainWindow->checkMenu(IDM_RENDER_2XBRZ, video.currentfilter == video._2XBRZ );
-			MainWindow->checkMenu(IDM_RENDER_3XBRZ, video.currentfilter == video._3XBRZ );
-			MainWindow->checkMenu(IDM_RENDER_4XBRZ, video.currentfilter == video._4XBRZ );
-			MainWindow->checkMenu(IDM_RENDER_5XBRZ, video.currentfilter == video._5XBRZ );
+			MainWindow->checkMenu(IDM_RENDER_2XBRZ, video.currentfilter == VideoFilterTypeID_2xBRZ );
+			MainWindow->checkMenu(IDM_RENDER_3XBRZ, video.currentfilter == VideoFilterTypeID_3xBRZ );
+			MainWindow->checkMenu(IDM_RENDER_4XBRZ, video.currentfilter == VideoFilterTypeID_4xBRZ );
+			MainWindow->checkMenu(IDM_RENDER_5XBRZ, video.currentfilter == VideoFilterTypeID_5xBRZ );
+			MainWindow->checkMenu(IDM_RENDER_6XBRZ, video.currentfilter == VideoFilterTypeID_6xBRZ );
 
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_VSYNC, (GetStyle()&DWS_VSYNC)!=0);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, displayMethod == DISPMETHOD_DDRAW_HW);
@@ -5292,70 +5294,82 @@ DOKEYDOWN:
 			break;
 #endif
 		case IDM_RENDER_NORMAL:
-			SetWindowMagnificationFilter(hwnd, video.NONE);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_None);
 			break;
 		case IDM_RENDER_LQ2X:
-			SetWindowMagnificationFilter(hwnd, video.LQ2X);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_LQ2X);
 			break;
 		case IDM_RENDER_LQ2XS:
-			SetWindowMagnificationFilter(hwnd, video.LQ2XS);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_LQ2XS);
 			break;
 		case IDM_RENDER_HQ2X:
-			SetWindowMagnificationFilter(hwnd, video.HQ2X);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_HQ2X);
+			break;
+		case IDM_RENDER_HQ3X:
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_HQ3X);
+			break;
+		case IDM_RENDER_HQ3XS:
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_HQ3XS);
 			break;
 		case IDM_RENDER_HQ4X:
-			SetWindowMagnificationFilter(hwnd, video.HQ4X);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_HQ4X);
+			break;
+		case IDM_RENDER_HQ4XS:
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_HQ4XS);
 			break;
 		case IDM_RENDER_HQ2XS:
-			SetWindowMagnificationFilter(hwnd, video.HQ2XS);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_HQ2XS);
 			break;
 		case IDM_RENDER_2XSAI:
-			SetWindowMagnificationFilter(hwnd, video._2XSAI);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_2xSaI);
 			break;
 		case IDM_RENDER_SUPER2XSAI:
-			SetWindowMagnificationFilter(hwnd, video.SUPER2XSAI);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_Super2xSaI);
 			break;
 		case IDM_RENDER_SUPEREAGLE:
-			SetWindowMagnificationFilter(hwnd, video.SUPEREAGLE);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_SuperEagle);
 			break;
 		case IDM_RENDER_SCANLINE:
-			SetWindowMagnificationFilter(hwnd, video.SCANLINE);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_Scanline);
 			break;
 		case IDM_RENDER_BILINEAR:
-			SetWindowMagnificationFilter(hwnd, video.BILINEAR);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_Bilinear);
 			break;
 		case IDM_RENDER_NEAREST2X:
-			SetWindowMagnificationFilter(hwnd, video.NEAREST2X);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_Nearest2X);
 			break;
 		case IDM_RENDER_EPX:
-			SetWindowMagnificationFilter(hwnd, video.EPX);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_EPX);
 			break;
 		case IDM_RENDER_EPXPLUS:
-			SetWindowMagnificationFilter(hwnd, video.EPXPLUS);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_EPXPlus);
 			break;
 		case IDM_RENDER_EPX1POINT5:
-			SetWindowMagnificationFilter(hwnd, video.EPX1POINT5);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_EPX1_5X);
 			break;
 		case IDM_RENDER_EPXPLUS1POINT5:
-			SetWindowMagnificationFilter(hwnd, video.EPXPLUS1POINT5);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_EPXPlus1_5X);
 			break;
 		case IDM_RENDER_NEAREST1POINT5:
-			SetWindowMagnificationFilter(hwnd, video.NEAREST1POINT5);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_Nearest1_5X);
 			break;
 		case IDM_RENDER_NEARESTPLUS1POINT5:
-			SetWindowMagnificationFilter(hwnd, video.NEARESTPLUS1POINT5);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_NearestPlus1_5X);
 			break;
 		case IDM_RENDER_2XBRZ:
-			SetWindowMagnificationFilter(hwnd, video._2XBRZ);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_2xBRZ);
 			break;
 		case IDM_RENDER_3XBRZ:
-			SetWindowMagnificationFilter(hwnd, video._3XBRZ);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_3xBRZ);
 			break;
 		case IDM_RENDER_4XBRZ:
-			SetWindowMagnificationFilter(hwnd, video._4XBRZ);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_4xBRZ);
 			break;
 		case IDM_RENDER_5XBRZ:
-			SetWindowMagnificationFilter(hwnd, video._5XBRZ);
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_5xBRZ);
+			break;
+		case IDM_RENDER_6XBRZ:
+			SetWindowMagnificationFilter(hwnd, VideoFilterTypeID_6xBRZ);
 			break;
 
 		case IDM_STATE_LOAD:
@@ -6549,6 +6563,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, (LPARAM)WinGPUEvent->GetFramebufferDimensionsByScaleFactorInteger());
+			SendDlgItemMessage(hw, IDC_VIDEO_FILTER_THREADS_SPIN, UDM_SETRANGE32, 0, 64);
+			SendDlgItemMessage(hw, IDC_VIDEO_FILTER_THREADS_SPIN, UDM_SETPOS32, 0, video.GetFilterThreadCount());
 
 			// Generate the Color Depth pop-up menu
 			ComboBox_AddString(GetDlgItem(hw, IDC_GPU_COLOR_DEPTH), "15 bit");
@@ -6623,6 +6639,20 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			{
 			case IDOK:
 				{
+					BOOL threadsValid = FALSE;
+					const UINT filterThreads = GetDlgItemInt(hw, IDC_VIDEO_FILTER_THREADS, &threadsValid, FALSE);
+					if (!threadsValid || filterThreads > 64)
+					{
+						MessageBoxW(hw, L"Video filter threads must be between 0 and 64.", L"Invalid setting", MB_OK | MB_ICONERROR);
+						return TRUE;
+					}
+					if ((int)filterThreads != video.GetFilterThreadCount())
+					{
+						video.SetFilterThreadCount((int)filterThreads);
+						WritePrivateProfileInt("Video", "Filter Threads", (int)filterThreads, IniName);
+						SetDisplayNeedsBufferUpdates();
+						Display();
+					}
 					CommonSettings.GFX3D_HighResolutionInterpolateColor = IsDlgCheckboxChecked(hw, IDC_INTERPOLATECOLOR);
 					CommonSettings.GFX3D_LineHack = IsDlgCheckboxChecked(hw, IDC_3DSETTINGS_LINEHACK);
 					CommonSettings.GFX3D_TXTHack = IsDlgCheckboxChecked(hw, IDC_TXTHACK);

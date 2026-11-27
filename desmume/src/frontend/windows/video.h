@@ -18,7 +18,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _VIDEO_H_
 #define _VIDEO_H_
 
-#include "filter/filter.h"
+#include "filter/videofilter.h"
 #include "common.h"
 
 class VideoInfo
@@ -28,6 +28,9 @@ public:
 	VideoInfo()
 		: buffer(NULL)
 		, filteredbuffer(NULL)
+		, pixelFilter(NULL)
+		, filterThreadCount(0)
+		, appliedFilterThreads(-1)
 	{
 	}
 
@@ -48,15 +51,36 @@ public:
 	int prescalePost; //not supported yet
 	int prescaleTotal;
 
-	size_t scratchBufferSize;
-	size_t rawBufferSize;
 	u8* srcBuffer;
 	size_t srcBufferSize;
-	u32 *buffer, *buffer_raw;
+	u32 *buffer;
 	u32 *filteredbuffer;
+	VideoFilter *pixelFilter;
+	volatile LONG filterThreadCount;
+	int appliedFilterThreads;
 
-	SSurface filterSrcSurface;
-	SSurface filterDstSurface;
+	void SetFilterThreadCount(int count)
+	{
+		InterlockedExchange(&filterThreadCount, count);
+	}
+
+	int GetFilterThreadCount()
+	{
+		return (int)InterlockedCompareExchange(&filterThreadCount, 0, 0);
+	}
+
+	void InitFilter()
+	{
+		pixelFilter = new VideoFilter(32, 32, VideoFilterTypeID_None, 0);
+	}
+
+	void ShutdownFilter()
+	{
+		delete pixelFilter;
+		pixelFilter = NULL;
+		buffer = NULL;
+		filteredbuffer = NULL;
+	}
 
 	void SetPrescale(int prescaleHD, int prescalePost)
 	{
@@ -73,203 +97,52 @@ public:
 		}
 	}
 
-	void ResizeBuffers()
+	bool ResizeBuffers()
 	{
-		// all these stupid video filters read outside of their buffer. let's allocate too much and hope it stays filled with black. geeze
-		const int kPadSize = 4;
-
-		// raw buffer
-		u32* oldRawBuffer = buffer_raw;
-		size_t rawBufferWidth = prefilterWidth + (kPadSize * 2);
-		size_t rawBufferHeight = prefilterHeight + (kPadSize * 2);
-		rawBufferSize = rawBufferWidth * rawBufferHeight * 4;
-		buffer_raw = buffer = (u32*)malloc_alignedPage(rawBufferSize);
-		free_aligned(oldRawBuffer);
-
-		// display buffer
-		u32* oldFilteredBuffer = filteredbuffer;
-		size_t scratchBufferWidth = width + (kPadSize * 2);
-		size_t scratchBufferHeight = height + (kPadSize * 2);
-		scratchBufferSize = scratchBufferWidth * scratchBufferHeight * 4;
-		filteredbuffer = (u32*)malloc_alignedPage(scratchBufferSize);
-		free_aligned(oldFilteredBuffer);
-
-		//move the buffer pointer inside it's padded area so that earlier reads won't go out of the buffer we allocated
-		buffer += (kPadSize*rawBufferWidth + kPadSize) * 4;
-
-		filterSrcSurface.Height = 384 * prescaleHD;
-		filterSrcSurface.Width = 256 * prescaleHD;
-		filterSrcSurface.Pitch = filterSrcSurface.Width * 2;
-		filterSrcSurface.Surface = (u8*)buffer;
-
-		filterDstSurface.Height = height * prescaleHD;
-		filterDstSurface.Width = width * prescaleHD;
-		filterDstSurface.Pitch = width * 2;
-		filterDstSurface.Surface = (u8*)filteredbuffer;
-
-		// clean the new buffers
-		clear();
+		const int threads = GetFilterThreadCount();
+		pixelFilter->SetThreadCount((size_t)threads);
+		if (!pixelFilter->ChangeFilterByID((VideoFilterTypeID)currentfilter) ||
+		    !pixelFilter->SetSourceSize(prefilterWidth, prefilterHeight))
+		{
+			buffer = NULL;
+			filteredbuffer = NULL;
+			return false;
+		}
+		buffer = pixelFilter->GetSrcBufferPtr();
+		filteredbuffer = pixelFilter->GetDstBufferPtr();
+		appliedFilterThreads = threads;
+		return true;
 	}
-
-	enum {
-		NONE,
-		HQ2X,
-		_2XSAI,
-		SUPER2XSAI,
-		SUPEREAGLE,
-		SCANLINE,
-		BILINEAR,
-		NEAREST2X,
-		HQ2XS,
-		LQ2X,
-		LQ2XS,
-		EPX,
-		NEARESTPLUS1POINT5,
-		NEAREST1POINT5,
-		EPXPLUS,
-		EPX1POINT5,
-		EPXPLUS1POINT5,
-		HQ4X,
-		_2XBRZ,
-		_3XBRZ,
-		_4XBRZ,
-		_5XBRZ,
-
-		NUM_FILTERS,
-	};
 
 	void clear()
 	{
-		//I dont understand this...
-		//if (srcBuffer)
-		//{
-		//	memset(srcBuffer, 0xFF, size() * 2);
-		//}
-		memset(buffer_raw, 0, rawBufferSize);
-		memset(filteredbuffer, 0, scratchBufferSize);
+		if (buffer != NULL)
+			memset(buffer, 0, pixelFilter->GetSrcWidth() * pixelFilter->GetSrcHeight() * sizeof(u32));
+		if (filteredbuffer != NULL)
+			memset(filteredbuffer, 0, pixelFilter->GetDstWidth() * pixelFilter->GetDstHeight() * sizeof(u32));
 	}
 
 	void setfilter(int filter) {
 
-		if (filter < 0 || filter >= NUM_FILTERS)
-			filter = NONE;
+		if (filter < 0 || filter >= VideoFilterTypeIDCount)
+			filter = VideoFilterTypeID_None;
 
 		currentfilter = filter;
 
-		switch (filter) {
-
-		case NONE:
-			width = prefilterWidth;
-			height = prefilterHeight;
-			break;
-		case EPX1POINT5:
-		case EPXPLUS1POINT5:
-		case NEAREST1POINT5:
-		case NEARESTPLUS1POINT5:
-			width = prefilterWidth * 3 / 2;
-			height = prefilterHeight * 3 / 2;
-			break;
-
-		case _5XBRZ:
-			width = prefilterWidth * 5;
-			height = prefilterHeight * 5;
-			break;
-
-		case HQ4X:
-		case _4XBRZ:
-			width = prefilterWidth * 4;
-			height = prefilterHeight * 4;
-			break;
-
-		case _3XBRZ:
-			width = prefilterWidth * 3;
-			height = prefilterHeight * 3;
-			break;
-
-		case _2XBRZ:
-		default:
-			width = prefilterWidth * 2;
-			height = prefilterHeight * 2;
-			break;
-		}
+		const VideoFilterAttributes attr = VideoFilter::GetAttributesByID((VideoFilterTypeID)filter);
+		width = (int)(prefilterWidth * attr.scaleMultiply / attr.scaleDivide);
+		height = (int)(prefilterHeight * attr.scaleMultiply / attr.scaleDivide);
 	}
 
 	u16* finalBuffer() const
 	{
-		if (currentfilter == NONE)
+		if (currentfilter == VideoFilterTypeID_None)
 			return (u16*)buffer;
 		else return (u16*)filteredbuffer;
 	}
 
 	void filter() {
-		switch (currentfilter)
-		{
-		case NONE:
-			break;
-		case LQ2X:
-			RenderLQ2X(filterSrcSurface, filterDstSurface);
-			break;
-		case LQ2XS:
-			RenderLQ2XS(filterSrcSurface, filterDstSurface);
-			break;
-		case HQ2X:
-			RenderHQ2X(filterSrcSurface, filterDstSurface);
-			break;
-		case HQ4X:
-			RenderHQ4X(filterSrcSurface, filterDstSurface);
-			break;
-		case HQ2XS:
-			RenderHQ2XS(filterSrcSurface, filterDstSurface);
-			break;
-		case _2XSAI:
-			Render2xSaI(filterSrcSurface, filterDstSurface);
-			break;
-		case SUPER2XSAI:
-			RenderSuper2xSaI(filterSrcSurface, filterDstSurface);
-			break;
-		case SUPEREAGLE:
-			RenderSuperEagle(filterSrcSurface, filterDstSurface);
-			break;
-		case SCANLINE:
-			RenderScanline(filterSrcSurface, filterDstSurface);
-			break;
-		case BILINEAR:
-			RenderBilinear(filterSrcSurface, filterDstSurface);
-			break;
-		case NEAREST2X:
-			RenderNearest2X(filterSrcSurface, filterDstSurface);
-			break;
-		case EPX:
-			RenderEPX(filterSrcSurface, filterDstSurface);
-			break;
-		case EPXPLUS:
-			RenderEPXPlus(filterSrcSurface, filterDstSurface);
-			break;
-		case EPX1POINT5:
-			RenderEPX_1Point5x(filterSrcSurface, filterDstSurface);
-			break;
-		case EPXPLUS1POINT5:
-			RenderEPXPlus_1Point5x(filterSrcSurface, filterDstSurface);
-			break;
-		case NEAREST1POINT5:
-			RenderNearest_1Point5x(filterSrcSurface, filterDstSurface);
-			break;
-		case NEARESTPLUS1POINT5:
-			RenderNearestPlus_1Point5x(filterSrcSurface, filterDstSurface);
-			break;
-		case _2XBRZ:
-			Render2xBRZ(filterSrcSurface, filterDstSurface);
-			break;
-		case _3XBRZ:
-			Render3xBRZ(filterSrcSurface, filterDstSurface);
-			break;
-		case _4XBRZ:
-			Render4xBRZ(filterSrcSurface, filterDstSurface);
-			break;
-		case _5XBRZ:
-			Render5xBRZ(filterSrcSurface, filterDstSurface);
-			break;
-		}
+		pixelFilter->RunFilter();
 	}
 
 	int size() {

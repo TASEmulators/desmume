@@ -144,18 +144,11 @@ extern HANDLE display_invoke_done_event;
 extern DWORD display_invoke_timeout;
 extern CRITICAL_SECTION display_invoke_handler_cs;
 
-// Scanline filter parameters. The first set is from commandline.cpp, the second
-// set is externed to scanline.cpp.
-// TODO: When videofilter.cpp becomes Windows-friendly, remove the second set of
-// variables, as they will no longer be necessary at that point.
+// Scanline filter parameters from commandline.cpp.
 extern int _scanline_filter_a;
 extern int _scanline_filter_b;
 extern int _scanline_filter_c;
 extern int _scanline_filter_d;
-extern int scanline_filter_a;
-extern int scanline_filter_b;
-extern int scanline_filter_c;
-extern int scanline_filter_d;
 
 void Display();
 void DoDisplay();

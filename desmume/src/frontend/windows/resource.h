@@ -1168,6 +1168,12 @@
 #define IDM_RENDER_HQ2XS                60081
 #define IDM_RENDER_LQ2X                 60082
 #define IDM_RENDER_LQ2XS                60083
+#define IDM_RENDER_HQ3X                 60084
+#define IDM_RENDER_HQ3XS                60085
+#define IDM_RENDER_HQ4XS                60086
+#define IDM_RENDER_6XBRZ                60087
+#define IDC_VIDEO_FILTER_THREADS        60088
+#define IDC_VIDEO_FILTER_THREADS_SPIN   60089
 #define IDC_SAVETYPE                    64000
 #define IDC_AUTOLOADLUA                 64001
 #define IDC_TXTHACK                     64002

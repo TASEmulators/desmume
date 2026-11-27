@@ -161,9 +161,11 @@
     <ClCompile Include="..\..\filter\deposterize.cpp" />
     <ClCompile Include="..\..\filter\epx.cpp" />
     <ClCompile Include="..\..\filter\hq2x.cpp" />
+    <ClCompile Include="..\..\filter\hq3x.cpp" />
     <ClCompile Include="..\..\filter\hq4x.cpp" />
     <ClCompile Include="..\..\filter\lq2x.cpp" />
     <ClCompile Include="..\..\filter\scanline.cpp" />
+    <ClCompile Include="..\..\filter\videofilter.cpp" />
     <ClCompile Include="..\..\filter\xbrz.cpp">
       <!-- The xBRZ 1.9 core (filter/xbrz19) uses if constexpr. -->
       <LanguageStandard>stdcpp17</LanguageStandard>

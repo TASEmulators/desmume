@@ -100,7 +100,7 @@ struct RecordParams
 	// record_compositor.h as RECORD_PICTURE_* and RECORD_SIZE_*.
 	int pictureMode;	 // RECORD_PICTURE_*
 	int pictureSize;	 // RECORD_SIZE_*, composed only
-	int pictureFilter;	 // a VideoInfo filter id, composed only
+	int pictureFilter;	 // a VideoFilterTypeID, composed only
 
 	// Client area of the emulator window when the recording starts, filled in
 	// by RecordVideoTo().  Only read when pictureSize is RECORD_SIZE_WINDOW.

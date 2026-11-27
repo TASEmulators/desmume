@@ -394,6 +394,9 @@
     <ClCompile Include="..\..\filter\hq2x.cpp">
       <Filter>filter</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\filter\hq3x.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\filter\hq4x.cpp">
       <Filter>filter</Filter>
     </ClCompile>
@@ -401,6 +404,9 @@
       <Filter>filter</Filter>
     </ClCompile>
     <ClCompile Include="..\..\filter\scanline.cpp">
+      <Filter>filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\filter\videofilter.cpp">
       <Filter>filter</Filter>
     </ClCompile>
     <ClCompile Include="..\..\filter\2xsai.cpp">

@@ -25,42 +25,14 @@
 #include "common.h"
 #include "video.h"
 
-// Several CPU filters read a row above and below the surface they are handed,
-// and EPX even reads the pixel to the left of the first one.  The buffers are
-// over-allocated and the surface pointer starts a few rows in, so those reads
-// stay inside the allocation.  The rows themselves stay tightly packed: a
-// filter is given a Pitch of width * 2 and derives the real 32-bit stride
-// itself, so padding between rows would shear the picture.
-static const int kComposePadRows = 4;
-static const int kComposePadPixels = 4;
-
-static u32 *SurfacePointer(u32 *base, size_t width)
-{
-	return base + (size_t)kComposePadRows * width + (size_t)kComposePadPixels;
-}
-
 namespace
 {
-	bool FilterIsOneAndAHalf(int filter)
-	{
-		return (filter == VideoInfo::EPX1POINT5) || (filter == VideoInfo::EPXPLUS1POINT5) ||
-		       (filter == VideoInfo::NEAREST1POINT5) || (filter == VideoInfo::NEARESTPLUS1POINT5);
-	}
-
 	double FilterScaleOf(int filter)
 	{
-		if (FilterIsOneAndAHalf(filter))
-			return 1.5;
-
-		switch (filter)
-		{
-			case VideoInfo::NONE:	  return 1.0;
-			case VideoInfo::_3XBRZ:	  return 3.0;
-			case VideoInfo::HQ4X:
-			case VideoInfo::_4XBRZ:	  return 4.0;
-			case VideoInfo::_5XBRZ:	  return 5.0;
-			default:				  return 2.0;
-		}
+		if (filter < 0 || filter >= VideoFilterTypeIDCount)
+			return 1.0;
+		const VideoFilterAttributes attr = VideoFilter::GetAttributesByID((VideoFilterTypeID)filter);
+		return (double)attr.scaleMultiply / attr.scaleDivide;
 	}
 
 	int NormalizeRotation(int rotation)
@@ -185,42 +157,14 @@ void recordCompose::ContentSize(size_t screenWidth, size_t screenHeight, int lay
 
 const char *recordCompose::FilterName(int filter)
 {
-	// In VideoInfo's order; the values are what the settings file stores, so
-	// this table must not be reordered on its own.
-	static const char *names[VideoInfo::NUM_FILTERS] = {
-		"None",
-		"HQ2X",
-		"2xSaI",
-		"Super2xSaI",
-		"SuperEagle",
-		"Scanline",
-		"Bilinear",
-		"Nearest 2x",
-		"HQ2XS",
-		"LQ2X",
-		"LQ2XS",
-		"EPX",
-		"Nearest+ 1.5x",
-		"Nearest 1.5x",
-		"EPX+",
-		"EPX 1.5x",
-		"EPX+ 1.5x",
-		"HQ4X",
-		"2xBRZ",
-		"3xBRZ",
-		"4xBRZ",
-		"5xBRZ",
-	};
-
-	if (filter < 0 || filter >= VideoInfo::NUM_FILTERS)
+	if (filter < 0 || filter >= VideoFilterTypeIDCount)
 		return NULL;
-
-	return names[filter];
+	return VideoFilter::GetTypeStringByID((VideoFilterTypeID)filter);
 }
 
 int recordCompose::FilterCount()
 {
-	return VideoInfo::NUM_FILTERS;
+	return VideoFilterTypeIDCount;
 }
 
 // --- RecordCompositor ------------------------------------------------------
@@ -238,13 +182,10 @@ RecordCompositor::RecordCompositor()
 	memset(this->_screen, 0, sizeof(this->_screen));
 	memset(&this->_gapRect, 0, sizeof(this->_gapRect));
 
-	this->_src			  = NULL;
-	this->_srcSurface	  = NULL;
-	this->_filtered		  = NULL;
+	this->_srcSurface = NULL;
 	this->_filteredSurface = NULL;
 	this->_filteredWidth  = 0;
-	this->_filteredHeight = 0;
-	this->_filter		  = VideoInfo::NONE;
+	this->_filter		  = VideoFilterTypeID_None;
 
 	this->_ready = false;
 }
@@ -256,15 +197,9 @@ RecordCompositor::~RecordCompositor()
 
 void RecordCompositor::FreeBuffers()
 {
-	free_aligned(this->_src);
-	this->_src		  = NULL;
-	this->_srcSurface = NULL;
-
-	free_aligned(this->_filtered);
-	this->_filtered		   = NULL;
-	this->_filteredSurface = NULL;
-
 	this->_ready = false;
+	this->_srcSurface = NULL;
+	this->_filteredSurface = NULL;
 }
 
 bool RecordCompositor::Configure(const RecordPicture &picture, size_t srcWidth, size_t srcHeight)
@@ -280,8 +215,8 @@ bool RecordCompositor::Configure(const RecordPicture &picture, size_t srcWidth, 
 	this->_gapColor	 = (u32)picture.gapColor;
 	this->_filter	 = picture.filter;
 
-	if (this->_filter < 0 || this->_filter >= VideoInfo::NUM_FILTERS)
-		this->_filter = VideoInfo::NONE;
+	if (this->_filter < 0 || this->_filter >= VideoFilterTypeIDCount)
+		this->_filter = VideoFilterTypeID_None;
 
 	const double filterScale = FilterScaleOf(this->_filter);
 
@@ -471,34 +406,17 @@ bool RecordCompositor::Configure(const RecordPicture &picture, size_t srcWidth, 
 		this->_gapRect.dstH = (int)(rh * scale + 0.5);
 	}
 
-	// Working buffers.  The source surface always covers both screens stacked,
-	// because that is the shape a frame arrives in.
-	const size_t srcRows = (srcHeight * 2) + (size_t)(kComposePadRows * 2);
-	const size_t srcCols = srcWidth + (size_t)(kComposePadPixels * 2);
-
-	this->_src = (u32 *)malloc_alignedCacheLine(srcCols * srcRows * sizeof(u32));
-	if (this->_src == NULL)
+	if (picture.filterThreads < 0 || picture.filterThreads > 64)
 		return false;
-
-	this->_srcSurface = SurfacePointer(this->_src, srcWidth);
-
-	if (this->_filter != VideoInfo::NONE)
+	this->_videoFilter.SetThreadCount((size_t)picture.filterThreads);
+	if (!this->_videoFilter.ChangeFilterByID((VideoFilterTypeID)this->_filter) ||
+	    !this->_videoFilter.SetSourceSize(srcWidth, srcHeight * 2))
 	{
-		this->_filteredWidth  = (size_t)(screenW + 0.5);
-		this->_filteredHeight = (size_t)(screenH * 2.0 + 0.5);
-
-		const size_t filteredRows = this->_filteredHeight + (size_t)(kComposePadRows * 2);
-		const size_t filteredCols = this->_filteredWidth + (size_t)(kComposePadPixels * 2);
-
-		this->_filtered = (u32 *)malloc_alignedCacheLine(filteredCols * filteredRows * sizeof(u32));
-		if (this->_filtered == NULL)
-		{
-			this->FreeBuffers();
-			return false;
-		}
-
-		this->_filteredSurface = SurfacePointer(this->_filtered, this->_filteredWidth);
+		return false;
 	}
+	this->_filteredWidth = this->_videoFilter.GetDstWidth();
+	this->_srcSurface = this->_videoFilter.GetSrcBufferPtr();
+	this->_filteredSurface = this->_videoFilter.GetDstBufferPtr();
 
 	this->_ready = true;
 	return true;
@@ -542,59 +460,9 @@ void RecordCompositor::BeginFrame(const void *src, const NDSColorFormat colorFor
 		}
 	}
 
-	if (this->_filter != VideoInfo::NONE)
+	if (this->_filter != VideoFilterTypeID_None)
 	{
-		this->FilterFrame();
-	}
-}
-
-void RecordCompositor::FilterFrame()
-{
-	// SSurface::Pitch is the "16-bit" pitch, not bytes: every filter in
-	// src/filter scales it itself (>> 1 for a 32-bit pixel index, * 2 for a
-	// byte offset).  Handing it a real byte pitch is what turned the picture
-	// into a doubled image, because each filter then walked two rows at a
-	// time.  The rows behind these surfaces are tightly packed for the same
-	// reason.
-	SSurface src;
-	memset(&src, 0, sizeof(src));
-	src.Surface = (u8 *)this->_srcSurface;
-	src.Pitch	= (int)(this->_srcWidth * 2);
-	src.Width	= (int)this->_srcWidth;
-	src.Height	= (int)(this->_srcHeight * 2);
-
-	SSurface dst;
-	memset(&dst, 0, sizeof(dst));
-	dst.Surface = (u8 *)this->_filteredSurface;
-	dst.Pitch	= (int)(this->_filteredWidth * 2);
-	dst.Width	= (int)this->_filteredWidth;
-	dst.Height	= (int)this->_filteredHeight;
-
-	switch (this->_filter)
-	{
-		case VideoInfo::HQ2X:				RenderHQ2X(src, dst); break;
-		case VideoInfo::_2XSAI:				Render2xSaI(src, dst); break;
-		case VideoInfo::SUPER2XSAI:			RenderSuper2xSaI(src, dst); break;
-		case VideoInfo::SUPEREAGLE:			RenderSuperEagle(src, dst); break;
-		case VideoInfo::SCANLINE:			RenderScanline(src, dst); break;
-		case VideoInfo::BILINEAR:			RenderBilinear(src, dst); break;
-		case VideoInfo::NEAREST2X:			RenderNearest2X(src, dst); break;
-		case VideoInfo::HQ2XS:				RenderHQ2XS(src, dst); break;
-		case VideoInfo::LQ2X:				RenderLQ2X(src, dst); break;
-		case VideoInfo::LQ2XS:				RenderLQ2XS(src, dst); break;
-		case VideoInfo::EPX:				RenderEPX(src, dst); break;
-		case VideoInfo::NEARESTPLUS1POINT5:	RenderNearestPlus_1Point5x(src, dst); break;
-		case VideoInfo::NEAREST1POINT5:		RenderNearest_1Point5x(src, dst); break;
-		case VideoInfo::EPXPLUS:			RenderEPXPlus(src, dst); break;
-		case VideoInfo::EPX1POINT5:			RenderEPX_1Point5x(src, dst); break;
-		case VideoInfo::EPXPLUS1POINT5:		RenderEPXPlus_1Point5x(src, dst); break;
-		case VideoInfo::HQ4X:				RenderHQ4X(src, dst); break;
-		case VideoInfo::_2XBRZ:				Render2xBRZ(src, dst); break;
-		case VideoInfo::_3XBRZ:				Render3xBRZ(src, dst); break;
-		case VideoInfo::_4XBRZ:				Render4xBRZ(src, dst); break;
-		case VideoInfo::_5XBRZ:				Render5xBRZ(src, dst); break;
-
-		default: break;
+		this->_videoFilter.RunFilter();
 	}
 }
 
@@ -603,7 +471,7 @@ void RecordCompositor::ComposeRows(u8 *dstBase, size_t firstLine, size_t lastLin
 	if (!this->_ready || dstBase == NULL || firstLine > lastLine)
 		return;
 
-	if (this->_filter != VideoInfo::NONE)
+	if (this->_filter != VideoFilterTypeID_None)
 	{
 		this->ComposeRowsTo(dstBase, firstLine, lastLine, this->_filteredSurface, this->_filteredWidth);
 	}
