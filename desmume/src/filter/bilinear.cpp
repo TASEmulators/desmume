@@ -6,6 +6,7 @@
 
 #include "filter.h"
 #include "types.h"
+#include "filter_simd.h"
 
 int systemRedShift    = 16;
 int systemGreenShift  = 8;
@@ -20,8 +21,13 @@ int systemBlueShift   = 0;
 //kind of a waste of memory, it'd be nice if we could share this with other filters
 //then again, we may want to multi-thread them later, so.. we should allocate filter objects which carry their own buffers
 //the largest conceivable prescale... 32x!
-static u8 row_cur[3*(256+8)*32];
-static u8 row_next[3*(256+8)*32];
+//
+// These scratch rows must be per-thread: VideoFilter runs the same filter entry
+// point concurrently on one horizontal slice per worker thread, so a shared
+// buffer made the threads overwrite each other's rows (about 60% of the output
+// was wrong with four threads).
+static thread_local u8 row_cur[3*(256+8)*32];
+static thread_local u8 row_next[3*(256+8)*32];
 
 static void fill_rgb_row_16(u16 *from, int src_width, u8 *row, int width)
 {
@@ -245,6 +251,65 @@ void BilinearPlus(u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
 void Bilinear32(u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
                 u8 *dstPtr, u32 dstPitch, int width, int height)
 {
+#ifdef DESMUME_FILTER_SIMD_ENABLED
+  if (width <= 0 || height <= 0)
+    return;
+
+  const filter_simd::Vec4u32 rgbMask = filter_simd::set1(0x00FFFFFF);
+  for (int y = 0; y < height; y++) {
+    const u32 *src0 = reinterpret_cast<const u32 *>(srcPtr + y * srcPitch);
+    const u32 *src1 = (y + 1 < height) ?
+        reinterpret_cast<const u32 *>(srcPtr + (y + 1) * srcPitch) : src0;
+    u32 *dst0 = reinterpret_cast<u32 *>(dstPtr + (y * 2) * dstPitch);
+    u32 *dst1 = reinterpret_cast<u32 *>(dstPtr + (y * 2 + 1) * dstPitch);
+
+    int x = 0;
+    for (; width - x >= 5; x += 4) {
+      const filter_simd::Vec4u32 a =
+          filter_simd::bitAnd(filter_simd::load(src0 + x), rgbMask);
+      const filter_simd::Vec4u32 b =
+          filter_simd::bitAnd(filter_simd::load(src0 + x + 1), rgbMask);
+      const filter_simd::Vec4u32 c =
+          filter_simd::bitAnd(filter_simd::load(src1 + x), rgbMask);
+      const filter_simd::Vec4u32 d =
+          filter_simd::bitAnd(filter_simd::load(src1 + x + 1), rgbMask);
+      const filter_simd::Vec4u32 ab = filter_simd::average2RgbFloor(a, b);
+      const filter_simd::Vec4u32 ac = filter_simd::average2RgbFloor(a, c);
+      const filter_simd::Vec4u32 abcd = filter_simd::average4RgbFloor(a, b, c, d);
+
+      filter_simd::store(dst0 + x * 2, filter_simd::interleaveLow(a, ab));
+      filter_simd::store(dst0 + x * 2 + 4, filter_simd::interleaveHigh(a, ab));
+      filter_simd::store(dst1 + x * 2, filter_simd::interleaveLow(ac, abcd));
+      filter_simd::store(dst1 + x * 2 + 4, filter_simd::interleaveHigh(ac, abcd));
+    }
+
+    for (; x < width; x++) {
+      const u32 a = src0[x];
+      const u32 b = (x + 1 < width) ? src0[x + 1] : a;
+      const u32 c = src1[x];
+      const u32 d = (x + 1 < width) ? src1[x + 1] : c;
+      const u32 ar = (a >> systemRedShift) & 0xFF;
+      const u32 ag = (a >> systemGreenShift) & 0xFF;
+      const u32 ab = (a >> systemBlueShift) & 0xFF;
+      const u32 br = (b >> systemRedShift) & 0xFF;
+      const u32 bg = (b >> systemGreenShift) & 0xFF;
+      const u32 bb = (b >> systemBlueShift) & 0xFF;
+      const u32 cr = (c >> systemRedShift) & 0xFF;
+      const u32 cg = (c >> systemGreenShift) & 0xFF;
+      const u32 cb = (c >> systemBlueShift) & 0xFF;
+      const u32 dr = (d >> systemRedShift) & 0xFF;
+      const u32 dg = (d >> systemGreenShift) & 0xFF;
+      const u32 db = (d >> systemBlueShift) & 0xFF;
+
+      dst0[x * 2] = RGB1(ar, ag, ab);
+      dst0[x * 2 + 1] = RGB1((ar + br) >> 1, (ag + bg) >> 1, (ab + bb) >> 1);
+      dst1[x * 2] = RGB1((ar + cr) >> 1, (ag + cg) >> 1, (ab + cb) >> 1);
+      dst1[x * 2 + 1] = RGB1((ar + br + cr + dr) >> 2,
+                              (ag + bg + cg + dg) >> 2,
+                              (ab + bb + cb + db) >> 2);
+    }
+  }
+#else
   u8 *rgb_row_cur = row_cur;
   u8 *rgb_row_next = row_next;
 
@@ -260,8 +325,13 @@ void Bilinear32(u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
     u32 *from_orig = from;
     u32 *to_orig = to;
 
+    // The next source row starts one pitch away, not width+1 pixels away:
+    // sampling at "from + width + 1" shifted the whole vertical blend one
+    // pixel to the right and read past the end of the last row.
+    u32 *from_next = (u32 *)((u8 *)from + srcPitch);
+
     if (y+1 < height)
-      fill_rgb_row_32(from+width+1, from_width, rgb_row_next,
+      fill_rgb_row_32(from_next, from_width, rgb_row_next,
                    width+1);
     else
       fill_rgb_row_32(from, from_width, rgb_row_next, width+1);
@@ -322,6 +392,7 @@ void Bilinear32(u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
     to = (u32 *)((u8 *)to_orig + (dstPitch << 1));
     to_odd = (u32 *)((u8 *)to + dstPitch);
   }
+#endif
 }
 
 void BilinearPlus32(u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
@@ -342,8 +413,13 @@ void BilinearPlus32(u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
     u32 *from_orig = from;
     u32 *to_orig = to;
 
+    // The next source row starts one pitch away, not width+1 pixels away:
+    // sampling at "from + width + 1" shifted the whole vertical blend one
+    // pixel to the right and read past the end of the last row.
+    u32 *from_next = (u32 *)((u8 *)from + srcPitch);
+
     if (y+1 < height)
-      fill_rgb_row_32(from+width+1, from_width, rgb_row_next,
+      fill_rgb_row_32(from_next, from_width, rgb_row_next,
                    width+1);
     else
       fill_rgb_row_32(from, from_width, rgb_row_next, width+1);

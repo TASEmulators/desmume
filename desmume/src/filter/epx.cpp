@@ -18,9 +18,36 @@
 #include "filter.h"
 #include "types.h"
 #include "interp.h"
+#include "filter_simd.h"
 
 // transforms each 1 pixel into a 2x2 block of output pixels
 // where each corner is selected based on equivalence of neighboring pixels
+static inline void RenderEPXPixel(const u32 *SrcPixel, unsigned int srcPitch,
+                                  u32 *DstLine1, u32 *DstLine2)
+{
+	const u32 L = SrcPixel[-1];
+	const u32 C = SrcPixel[0];
+	const u32 R = SrcPixel[1];
+	if (L != R)
+	{
+		const u32 U = *(SrcPixel - srcPitch);
+		const u32 D = *(SrcPixel + srcPitch);
+		if (U != D)
+		{
+			DstLine1[0] = (U == L) ? U : C;
+			DstLine1[1] = (R == U) ? R : C;
+			DstLine2[0] = (L == D) ? L : C;
+			DstLine2[1] = (D == R) ? D : C;
+			return;
+		}
+	}
+
+	DstLine1[0] = C;
+	DstLine1[1] = C;
+	DstLine2[0] = C;
+	DstLine2[1] = C;
+}
+
 void RenderEPX (SSurface Src, SSurface Dst)
 {
 	u32 *lpSrc;
@@ -37,33 +64,52 @@ void RenderEPX (SSurface Src, SSurface Dst)
 	for(u32 j = 0; j < srcHeight; j++)
 	{
 		u32* SrcLine = lpSrc + srcPitch*j;
+		u32* SrcLineAbove = SrcLine - srcPitch;
+		u32* SrcLineBelow = SrcLine + srcPitch;
 		u32* DstLine1 = lpDst + dstPitch*(j*2);
 		u32* DstLine2 = lpDst + dstPitch*(j*2+1);
-		for(u32 i = 0; i < srcWidth; i++)
+		u32 i = 0;
+		if (i < srcWidth)
 		{
-			u32 L = *(SrcLine-1);
-			u32 C = *(SrcLine);
-			u32 R = *(SrcLine+1);
-			if(L != R)
-			{
-				u32 U = *(SrcLine-srcPitch);
-				u32 D = *(SrcLine+srcPitch);
-				if(U != D)
-				{
-					*DstLine1++ = (U == L) ? U : C;
-					*DstLine1++ = (R == U) ? R : C;
-					*DstLine2++ = (L == D) ? L : C;
-					*DstLine2++ = (D == R) ? D : C;
-					SrcLine++;
-					continue;
-				}
-			}
-			*DstLine1++ = C; 
-			*DstLine1++ = C; 
-			*DstLine2++ = C; 
-			*DstLine2++ = C; 
-			SrcLine++;
+			RenderEPXPixel(SrcLine, srcPitch, DstLine1, DstLine2);
+			i++;
 		}
+
+#ifdef DESMUME_FILTER_SIMD_ENABLED
+		const filter_simd::Vec4u32 all = filter_simd::set1(~u32(0));
+		for (; srcWidth - i >= 5; i += 4)
+		{
+			const filter_simd::Vec4u32 left = filter_simd::load(SrcLine + i - 1);
+			const filter_simd::Vec4u32 curr = filter_simd::load(SrcLine + i);
+			const filter_simd::Vec4u32 right = filter_simd::load(SrcLine + i + 1);
+			const filter_simd::Vec4u32 top = filter_simd::load(SrcLineAbove + i);
+			const filter_simd::Vec4u32 bottom = filter_simd::load(SrcLineBelow + i);
+
+			const filter_simd::Vec4u32 edge = filter_simd::bitAnd(
+				filter_simd::andNot(filter_simd::equal(left, right), all),
+				filter_simd::andNot(filter_simd::equal(top, bottom), all));
+			const filter_simd::Vec4u32 topLeft = filter_simd::select(
+				filter_simd::bitAnd(edge, filter_simd::equal(left, top)), top, curr);
+			const filter_simd::Vec4u32 topRight = filter_simd::select(
+				filter_simd::bitAnd(edge, filter_simd::equal(right, top)), top, curr);
+			const filter_simd::Vec4u32 bottomLeft = filter_simd::select(
+				filter_simd::bitAnd(edge, filter_simd::equal(left, bottom)), bottom, curr);
+			const filter_simd::Vec4u32 bottomRight = filter_simd::select(
+				filter_simd::bitAnd(edge, filter_simd::equal(right, bottom)), bottom, curr);
+
+			filter_simd::store(DstLine1 + i * 2,
+				filter_simd::interleaveLow(topLeft, topRight));
+			filter_simd::store(DstLine1 + i * 2 + 4,
+				filter_simd::interleaveHigh(topLeft, topRight));
+			filter_simd::store(DstLine2 + i * 2,
+				filter_simd::interleaveLow(bottomLeft, bottomRight));
+			filter_simd::store(DstLine2 + i * 2 + 4,
+				filter_simd::interleaveHigh(bottomLeft, bottomRight));
+		}
+#endif
+
+		for (; i < srcWidth; i++)
+			RenderEPXPixel(SrcLine + i, srcPitch, DstLine1 + i * 2, DstLine2 + i * 2);
 	}
 }
 

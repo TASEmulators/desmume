@@ -21,7 +21,6 @@
 #include <string.h>
 
 extern int scanline_filter_a, scanline_filter_b, scanline_filter_c, scanline_filter_d;
-static int fac_a, fac_b, fac_c, fac_d;
 
 #if defined(ENABLE_SSE2)
 template <size_t LINEWIDTH>
@@ -94,10 +93,12 @@ FORCEINLINE static void DoubleLine32(u32 *__restrict lpDst, const u32 *__restric
 
 void RenderScanline(SSurface Src, SSurface Dst)
 {
-	fac_a = (16-scanline_filter_a);
-	fac_b = (16-scanline_filter_b);
-	fac_c = (16-scanline_filter_c);
-	fac_d = (16-scanline_filter_d);
+	// Keep the factors local: RenderScanline() is called from several worker
+	// threads at once, so writing them into shared statics raced.
+	const int fac_a = (16-scanline_filter_a);
+	const int fac_b = (16-scanline_filter_b);
+	const int fac_c = (16-scanline_filter_c);
+	const int fac_d = (16-scanline_filter_d);
 	size_t dstLineIndex = 0;
 
 	const size_t srcHeight = Src.Height;

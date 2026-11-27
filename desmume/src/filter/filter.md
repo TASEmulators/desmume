@@ -63,6 +63,30 @@ were found while testing that change.
    trailing block wrote one extra block past the buffer. Added an early return
    for `height == 1`.
 
+8. **Bilinear sampled the next source row one pixel to the right.**
+   `Bilinear32()`/`BilinearPlus32()` (`filter/bilinear.cpp`) called
+   `fill_rgb_row_32(from + width + 1, ...)` for the row below. `from` is a
+   `u32*` at the start of the current row, so the next row starts at
+   `from + width` (the source surface is tightly packed), not `from + width + 1`.
+   Every lower-left/lower-right destination pixel was therefore blended with the
+   pixel one column to the right of the intended one, and the last row read one
+   pixel past the buffer. The 16-bit `Bilinear()` and VBA's `Bilinear32()` both
+   use the row start, which is what confirms the off-by-one. Now stepped by
+   `srcPitch` so it also stays correct if the surface ever gains padding.
+
+9. **Bilinear's scratch rows were shared between worker threads.**
+   `row_cur`/`row_next` were file-scope `static` buffers, but `VideoFilter`
+   calls the filter entry point once per worker thread on one horizontal slice
+   each. With four threads the threads overwrote each other's unpacked rows and
+   ~60% of the destination pixels were wrong (119100 of 196608 for 256x192).
+   They are `thread_local` now; what remains is the usual one-row seam at each
+   thread boundary (bug 7).
+
+10. **Scanline kept its factors in shared statics.**
+    `RenderScanline()` recomputed `fac_a..fac_d` into file-scope statics on every
+    call. All threads store the same values, so the output did not change, but
+    the writes raced. The factors are local variables now.
+
 ### Open
 
 6. **1.5x filters overrun the destination for odd source heights.**
@@ -93,9 +117,82 @@ were found while testing that change.
    single-threaded output. The stress test therefore ignores differences within
    `2 * scaleMultiply` rows of a thread boundary.
 
+## Comparison with VBA-RR's filters
+
+`github.com/CarterLi/vba-rr-modernized/src/filters` was compared filter by filter.
+Method: the DeSmuME entry points (`RenderXxx(SSurface, SSurface)`) and the VBA-RR
+entry points (`xxx(u8*, srcPitch, delta, u8*, dstPitch, w, h)`, byte pitches) were
+compiled into one binary, run over the same ARGB images at 256x192 (plus 1x1,
+1xW, Hx1, 2x2 and odd sizes), and compared pixel by pixel, with ASAN for the
+out-of-bounds checks. Timings are best of 5 x 40 iterations at 256x192 on Apple
+Silicon, `-O2`, i.e. the scalar paths that macOS actually builds.
+
+| filter | output vs DeSmuME | VBA time / DeSmuME time |
+| --- | --- | --- |
+| HQ2x | identical | 1.00 |
+| HQ2xS | differs, first/last column of every row | 0.96 |
+| LQ2x | identical | 1.00 |
+| HQ3x | ~3.1% of pixels differ (other edge metric) | 1.56 |
+| HQ4x | ~3.7% of pixels differ | 1.39 |
+| 2xSaI | 1 pixel per row (left edge) | 1.29 |
+| Super 2xSaI | same | 1.30 |
+| Super Eagle | same | 1.56 |
+| Bilinear | wrong colours (see below) | 0.90 |
+| Scanline | different effect (blanks the line) | 0.15 |
+| EPX vs AdMAME2x | 1 pixel | 1.66 |
+| Nearest 2x vs Simple2x | identical | 1.71 |
+
+**Verdict: nothing should be replaced.** Every VBA-RR filter that computes the
+same result is equal or slower on this platform, and the ones that are faster
+either compute a different picture (Scanline) or are broken (Bilinear). Its
+`xbrz.cpp` is not a candidate either: `filter/xbrz19/` already *is* the VBA-M
+rework of xBRZ 1.9, including its SSE2/NEON paths.
+
+The bugs that VBA-RR still carries, i.e. exactly the classes fixed here:
+
+* `hq2x32()`, `hq2xS32()`, `lq2x32()`: `count = height - 2; while (count)` and no
+  `height == 1` early return - bugs 4 and 5 above, still present. `height == 1`
+  runs away and dies with SIGBUS in the harness.
+* `hq2xS_32_def()`: reads `src0[-1]`/`src0[1]` without the `i > 0` /
+  `i < count - 1` guards, so it reads outside the row at both ends (ASAN:
+  heap-buffer-overflow at `hq2x.cpp:433`) and the first/last column picks up the
+  neighbouring row. This is why its output differs from `RenderHQ2XS()`.
+* `internal_scale2x_32_def()` (AdMAME2x = EPX): `unsigned count; count -= 2;
+  while (count)` - for `width == 1` the count underflows and the loop runs away.
+* `Scanlines32()`/`ScanlinesTV32()`: `do { ... } while (--height)` hangs for
+  `height == 0`, and the scalar 32-bit path writes two pixels past every row when
+  `width` is odd (255x191, 7x5, 1x1 all trip a guard word).
+* 16-bit `hq3x32()`: `if ((j > 0) || (j < Yres - 1)) line = srcPitch;` should be
+  `&&`, so the first and last source row reach one row outside the surface. The
+  32-bit path has the correct `&&`; DeSmuME never uses the 16-bit one.
+* `Bilinear32()` scalar path: `fill_rgb_row_32()` is a copy of the 16-bit loader
+  (`& 0x1f`, `<< 3`) and `RGB()` shifts by 3/4, so 32bpp input is unpacked as if
+  it were 15/16bpp - the colours come out wrong. Its SSE2 path is fine.
+
+What *is* worth importing is the vectorisation, not the filters:
+
+* `Bilinear32_SSE2()` averages packed ARGB with `_mm_avg_epu8` and needs no
+  scratch rows at all. Built through `sse2neon` on arm64 it is bit-identical to
+  the fixed `RenderBilinear()` for 5-bit-expanded colours (which is all the DS
+  produces) and 10.5x faster: 19.9 us vs 208.4 us.
+* `AdMame2x32` through the same path: identical output to `RenderEPX()`,
+  26.0 us vs 64.1 us (2.5x).
+
+Note that VBA-RR's own macOS build gets none of this: `simd_common.h` only
+enables `USE_SSE2` for `_M_ARM64` (MSVC) or real SSE2, so clang/arm64 compiles the
+scalar fallbacks that were measured above.
+
+The two kernels are now implemented here using native SSE2 or NEON through
+`filter_simd.h`, with the existing scalar implementations retained as fallback.
+The SIMD paths match the scalar output across the tested dimensions, including
+small widths and vector tails. On Apple Silicon at `-O2`, the standalone
+256x192 probe averaged 41.0 us vs 215.9 us for Bilinear32 (5.3x), and 24.8 us
+vs 66.0 us for EPX (2.7x), over five runs. These are isolated single-threaded
+kernel timings; whole-frame gains depend on the filter pipeline and threading.
+
 ## Tests
 
-Two standalone probes live in `filter/tests/`:
+Standalone probes live in `filter/tests/`:
 
 * `videofilter_stress_test.cpp` - creates a `VideoFilter` for every filter
   type, several image sizes and thread counts (including 0 and 1), checks lazy
@@ -106,6 +203,9 @@ Two standalone probes live in `filter/tests/`:
 * `videofilter_boundary_probe.cpp` - prints which destination rows differ
   between a single-threaded and a multi-threaded run, to show that differences
   are confined to thread boundaries.
+* `filter_simd_test.cpp` - checks Bilinear32 and EPX output against scalar
+  references on vector boundaries, odd sizes, and 256x192, and checks that
+  destination row padding remains untouched.
 
 Build and run them against the static library produced by the meson/ninja
 build (from the repository root, adjust the `-I` and library paths as needed):
@@ -122,6 +222,16 @@ The boundary probe takes an optional filter type ID and thread count:
 
 ```
 /tmp/videofilter_boundary_probe 3 4    # HQ2x with 4 threads
+```
+
+The SIMD consistency test can be built directly with the filter sources:
+
+```
+clang++ -std=c++14 -O2 -Idesmume/src -Idesmume/src/libretro-common/include \
+    desmume/src/filter/tests/filter_simd_test.cpp \
+    desmume/src/filter/bilinear.cpp desmume/src/filter/epx.cpp \
+    -o /tmp/filter_simd_test
+/tmp/filter_simd_test
 ```
 
 Known result at the time of writing: the stress test passes for the even
